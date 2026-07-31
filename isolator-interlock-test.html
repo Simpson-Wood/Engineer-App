@@ -140,7 +140,7 @@
       <img src="sw-logo.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v13.0</p>
+        <p id="versionLabel">v14.0</p>
       </div>
     </a>
     <div class="who">
@@ -252,7 +252,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v13.0";
+const VERSION = "v14.0";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -534,7 +534,7 @@ async function loadSiteData() {
     rebuildSuggestions();
 
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
-    currentJobStatus = jobSnap.exists() ? (jobSnap.data().jobStatus || 'In Progress') : 'In Progress';
+    currentJobStatus = jobSnap.exists() ? ((jobSnap.data().isolator && jobSnap.data().isolator.jobStatus) || 'In Progress') : 'In Progress';
     updateJobStatusUI();
   } catch (e) {
     console.error('Site data load failed:', e);
@@ -555,7 +555,7 @@ document.getElementById('readyForQsBtn').addEventListener('click', async () => {
   if (!siteRef) return;
   if (!confirm('Mark this site ready for QS review? The QS team will be emailed.')) return;
   try {
-    await updateDoc(doc(db, 'jobs', siteRef), { jobStatus: 'Ready for QS' });
+    await updateDoc(doc(db, 'jobs', siteRef), { 'isolator.jobStatus': 'Ready for QS' });
     currentJobStatus = 'Ready for QS';
     updateJobStatusUI();
 
@@ -605,11 +605,14 @@ document.getElementById('addSiteBtn').addEventListener('click', async () => {
   if (!ref || !name) { alert('Site reference and name are both required.'); return; }
   try {
     await setDoc(doc(db, 'jobs', ref), {
-      name, status: 'Active', jobStatus: 'In Progress', createdAt: serverTimestamp(),
+      name, status: 'Active', createdAt: serverTimestamp(),
       addressLine: document.getElementById('newSiteAddressLine').value.trim(),
       postcode: document.getElementById('newSitePostcode').value.trim(),
-      agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
-      agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+      isolator: {
+        jobStatus: 'In Progress',
+        agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
+        agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+      }
     });
     ['newSiteRef','newSiteName','newSiteAddressLine','newSitePostcode','newSiteLimitations','newSiteAgreedWith'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('addSiteForm').style.display = 'none';

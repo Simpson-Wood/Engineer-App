@@ -143,7 +143,7 @@
       <img src="sw-logo.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v11.0 · Management</p>
+        <p id="versionLabel">v12.0 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -541,7 +541,7 @@ function isLimitedRecord(record) {
 }
 
 function isSiteComplete() {
-  return siteMeta.jobStatus === 'Complete';
+  return siteMeta.isolator && siteMeta.isolator.jobStatus === 'Complete';
 }
 
 function matchesSearch(latest, eq, query) {
@@ -683,14 +683,14 @@ async function renderSitesList() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
           <div style="cursor:pointer;" data-select-site="${r.id}">
             <div class="name">${r.id} — ${r.name || ''}</div>
-            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${r.certificateNumber ? ' · Cert #' + r.certificateNumber : ''}</div>
+            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${(r.isolator && r.isolator.certificateNumber) ? ' · Cert #' + r.isolator.certificateNumber : ''}</div>
           </div>
           <button type="button" class="remove-btn" data-delete-site="${r.id}">Delete site</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <label style="margin:0;font-size:11.5px;">Status:</label>
           <select data-status-for="${r.id}" style="width:auto;padding:6px 8px;font-size:12.5px;border:1.5px solid var(--line);border-radius:6px;">
-            ${['In Progress','Ready for QS','In QS','Complete','Sent to Client'].map(s => `<option ${(r.jobStatus || 'In Progress') === s ? 'selected' : ''}>${s}</option>`).join('')}
+            ${['In Progress','Ready for QS','In QS','Complete','Sent to Client'].map(s => `<option ${((r.isolator && r.isolator.jobStatus) || 'In Progress') === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
           <button type="button" class="edit-btn" data-select-site="${r.id}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
         </div>
@@ -709,7 +709,7 @@ async function renderSitesList() {
     list.querySelectorAll('[data-status-for]').forEach(sel => {
       sel.addEventListener('change', async () => {
         try {
-          await setDoc(doc(db, 'jobs', sel.dataset.statusFor), { jobStatus: sel.value }, { merge: true });
+          await setDoc(doc(db, 'jobs', sel.dataset.statusFor), { 'isolator.jobStatus': sel.value }, { merge: true });
           renderSitesList();
         } catch (e) { alert('Could not update status — ' + (e.message || e.code || 'unknown error')); }
       });
@@ -744,12 +744,14 @@ document.getElementById('addSiteBtn').addEventListener('click', async () => {
     await setDoc(doc(db, 'jobs', ref), {
       name,
       status: 'Active',
-      jobStatus: 'In Progress',
       createdAt: serverTimestamp(),
       addressLine: document.getElementById('newSiteAddressLine').value.trim(),
       postcode: document.getElementById('newSitePostcode').value.trim(),
-      agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
-      agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+      isolator: {
+        jobStatus: 'In Progress',
+        agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
+        agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+      }
     });
     ['newSiteRef','newSiteName','newSiteAddressLine','newSitePostcode','newSiteLimitations','newSiteAgreedWith'].forEach(id => document.getElementById(id).value = '');
     await renderSitesList();
@@ -1267,15 +1269,16 @@ function tallyEngineers(groups) {
 
 function renderFront() {
   const siteSelect = document.getElementById('site');
+  const iso = siteMeta.isolator || {};
   document.getElementById('metaName').value = siteMeta.name || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
-  document.getElementById('metaCertNumber').value = siteMeta.certificateNumber || '';
+  document.getElementById('metaCertNumber').value = iso.certificateNumber || '';
   document.getElementById('metaAddressLine').value = siteMeta.addressLine || '';
   document.getElementById('metaPostcode').value = siteMeta.postcode || '';
   document.getElementById('postcodeStatus').textContent = '';
-  document.getElementById('metaStarted').value = siteMeta.testingStarted || suggestedTestingStarted();
-  document.getElementById('metaDue').value = siteMeta.nextRetestDue || suggestedRetestDue();
-  document.getElementById('metaLimitations').value = siteMeta.agreedLimitations || '';
-  document.getElementById('metaAgreedWith').value = siteMeta.agreedWith || '';
+  document.getElementById('metaStarted').value = iso.testingStarted || suggestedTestingStarted();
+  document.getElementById('metaDue').value = iso.nextRetestDue || suggestedRetestDue();
+  document.getElementById('metaLimitations').value = iso.agreedLimitations || '';
+  document.getElementById('metaAgreedWith').value = iso.agreedWith || '';
   if (siteMeta.postcode) checkPostcode();
 
   const groups = getReportGroups();
@@ -1302,21 +1305,22 @@ document.getElementById('saveMetaBtn').addEventListener('click', async () => {
   if (!siteRef) return;
   try {
     await setDoc(doc(db, 'jobs', siteRef), {
-      certificateNumber: document.getElementById('metaCertNumber').value.trim(),
       addressLine: document.getElementById('metaAddressLine').value.trim(),
       postcode: document.getElementById('metaPostcode').value.trim(),
-      testingStarted: document.getElementById('metaStarted').value,
-      nextRetestDue: document.getElementById('metaDue').value.trim(),
-      agreedLimitations: document.getElementById('metaLimitations').value.trim(),
-      agreedWith: document.getElementById('metaAgreedWith').value.trim()
+      'isolator.certificateNumber': document.getElementById('metaCertNumber').value.trim(),
+      'isolator.testingStarted': document.getElementById('metaStarted').value,
+      'isolator.nextRetestDue': document.getElementById('metaDue').value.trim(),
+      'isolator.agreedLimitations': document.getElementById('metaLimitations').value.trim(),
+      'isolator.agreedWith': document.getElementById('metaAgreedWith').value.trim()
     }, { merge: true });
-    siteMeta.certificateNumber = document.getElementById('metaCertNumber').value.trim();
     siteMeta.addressLine = document.getElementById('metaAddressLine').value.trim();
     siteMeta.postcode = document.getElementById('metaPostcode').value.trim();
-    siteMeta.testingStarted = document.getElementById('metaStarted').value;
-    siteMeta.nextRetestDue = document.getElementById('metaDue').value.trim();
-    siteMeta.agreedLimitations = document.getElementById('metaLimitations').value.trim();
-    siteMeta.agreedWith = document.getElementById('metaAgreedWith').value.trim();
+    siteMeta.isolator = siteMeta.isolator || {};
+    siteMeta.isolator.certificateNumber = document.getElementById('metaCertNumber').value.trim();
+    siteMeta.isolator.testingStarted = document.getElementById('metaStarted').value;
+    siteMeta.isolator.nextRetestDue = document.getElementById('metaDue').value.trim();
+    siteMeta.isolator.agreedLimitations = document.getElementById('metaLimitations').value.trim();
+    siteMeta.isolator.agreedWith = document.getElementById('metaAgreedWith').value.trim();
     const banner = document.getElementById('banner');
     banner.className = 'banner ok'; banner.textContent = 'Installation details saved.'; banner.style.display = 'block';
   } catch (e) {
