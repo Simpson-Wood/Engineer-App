@@ -9,41 +9,40 @@
 <style>
   :root{
     --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
-    --line:#e2e2e2; --bg:#f6f5f4; --card:#ffffff;
+    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);}
-  header{background:var(--ink);padding:18px 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  header{background:var(--ink);padding:16px 18px calc(14px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:12px;}
   header .brand{display:flex;align-items:center;gap:12px;}
-  header img{height:36px;display:block;}
-  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
-  header .title-block p{margin:2px 0 0;font-size:12px;color:#8f8f8f;}
+  header img{height:32px;display:block;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
+  header .title-block p{margin:2px 0 0;font-size:11px;color:#8f8f8f;}
   header .who{text-align:right;}
-  header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
-  header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
+  header .who .name{color:#fff;font-size:12px;font-weight:600;}
+  header .who button{background:none;border:none;color:#e2b0b3;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
 
-  main{max-width:900px;margin:0 auto;padding:32px 20px;}
-  .intro{font-size:14px;color:var(--grey);margin:0 0 24px;}
+  main{max-width:520px;margin:0 auto;padding:28px 20px 40px;}
 
-  .app-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;}
-  .app-card{
-    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;
-    text-decoration:none;color:var(--ink);display:block;transition:border-color .15s, box-shadow .15s;
+  .group-label{
+    font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--grey);margin:0 0 14px 2px;
   }
-  .app-card:hover{border-color:var(--red);box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .app-card .badge{
-    display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-    padding:3px 9px;border-radius:20px;margin-bottom:10px;
-  }
-  .app-card .badge.engineer{background:#eaf7ee;color:#1f8a3d;}
-  .app-card .badge.management{background:#fbe9e9;color:var(--red);}
-  .app-card h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:17px;margin:0 0 6px;}
-  .app-card p{font-size:12.5px;color:var(--grey);margin:0;line-height:1.5;}
+  .group-label:not(:first-child){margin-top:32px;}
 
-  .section-label{
-    font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;
-    letter-spacing:.04em;font-size:13px;color:var(--red);margin:32px 0 12px;
+  .app-icon-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(84px, 1fr));gap:22px 14px;}
+  .app-tile{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--ink);}
+  .app-icon{
+    width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .1s ease;
   }
+  .app-icon svg{width:28px;height:28px;}
+  .app-icon.red{background:linear-gradient(160deg,#e4383f,var(--red-dark));}
+  .app-icon.dark{background:linear-gradient(160deg,#3a3a3a,var(--ink));}
+  .app-tile:active .app-icon{transform:scale(.9);}
+  .app-label{margin-top:8px;font-size:12px;font-weight:600;text-align:center;line-height:1.25;}
+
+  .empty-note{color:var(--grey);font-size:12.5px;text-align:center;padding:20px 0;}
 
   #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
   #signinScreen img{height:44px;margin-bottom:28px;}
@@ -81,21 +80,31 @@
   </header>
 
   <main>
-    <p class="intro">Pick a tool below. You're signed in once here — the other tools should recognise you automatically.</p>
-
-    <p class="section-label">Isolator / Interlock Testing</p>
-    <div class="app-grid">
-      <a class="app-card" href="isolator-interlock-test.html">
-        <span class="badge engineer">Engineer</span>
-        <h2>Log a Test</h2>
-        <p>Log isolator, motor isolator, emergency stop and safety interlock tests on site, and review each site's register.</p>
+    <p class="group-label">Isolator / Interlock</p>
+    <div class="app-icon-grid">
+      <a class="app-tile" href="isolator-interlock-test.html">
+        <div class="app-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+            <rect x="9" y="1.5" width="6" height="3" rx="1"></rect>
+            <polyline points="8.5 12.5 11 15 16 9.5"></polyline>
+          </svg>
+        </div>
+        <div class="app-label">Log a Test</div>
       </a>
-      <a class="app-card" href="isolator-interlock-report.html">
-        <span class="badge management">Management</span>
-        <h2>Reports</h2>
-        <p>Manage sites and staff, review and QS submitted tests, and generate the customer-facing PDF report.</p>
+      <a class="app-tile" href="isolator-interlock-report.html" id="reportsTile" style="display:none;">
+        <div class="app-icon dark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+            <line x1="8" y1="8" x2="16" y2="8"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+            <line x1="8" y1="16" x2="13" y2="16"></line>
+          </svg>
+        </div>
+        <div class="app-label">Reports</div>
       </a>
     </div>
+    <div class="empty-note" id="noAppsNote" style="display:none;">Nothing else available to you yet.</div>
   </main>
 </div>
 
@@ -105,6 +114,9 @@ import {
   getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, doc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -117,6 +129,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
@@ -142,14 +155,21 @@ getRedirectResult(auth).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById('signinScreen').style.display = 'none';
-    document.getElementById('appRoot').style.display = 'block';
-    document.getElementById('whoName').textContent = user.displayName || user.email;
-  } else {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
     document.getElementById('signinScreen').style.display = 'flex';
     document.getElementById('appRoot').style.display = 'none';
+    return;
+  }
+  document.getElementById('signinScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('whoName').textContent = user.displayName || user.email;
+
+  try {
+    const snap = await getDoc(doc(db, 'managers', user.email));
+    if (snap.exists()) document.getElementById('reportsTile').style.display = 'flex';
+  } catch (e) {
+    console.error('Manager check failed:', e);
   }
 });
 </script>
