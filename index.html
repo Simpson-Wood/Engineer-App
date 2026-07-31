@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simpson & Wood — Engineer Apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
+    --line:#e2e2e2; --bg:#f6f5f4; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:var(--ink);padding:18px 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img{height:36px;display:block;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
+  header .title-block p{margin:2px 0 0;font-size:12px;color:#8f8f8f;}
+  header .who{text-align:right;}
+  header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
+  header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
+
+  main{max-width:900px;margin:0 auto;padding:32px 20px;}
+  .intro{font-size:14px;color:var(--grey);margin:0 0 24px;}
+
+  .app-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;}
+  .app-card{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;
+    text-decoration:none;color:var(--ink);display:block;transition:border-color .15s, box-shadow .15s;
+  }
+  .app-card:hover{border-color:var(--red);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .app-card .badge{
+    display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:20px;margin-bottom:10px;
+  }
+  .app-card .badge.engineer{background:#eaf7ee;color:#1f8a3d;}
+  .app-card .badge.management{background:#fbe9e9;color:var(--red);}
+  .app-card h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:17px;margin:0 0 6px;}
+  .app-card p{font-size:12.5px;color:var(--grey);margin:0;line-height:1.5;}
+
+  .section-label{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;font-size:13px;color:var(--red);margin:32px 0 12px;
+  }
+
+  #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
+  #signinScreen img{height:44px;margin-bottom:28px;}
+  #signinScreen h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:20px;margin:0 0 8px;}
+  #signinScreen p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 26px;}
+  .ms-btn{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
+  .ms-btn:active{background:#000;}
+  #signinScreen .err{color:var(--red);font-size:13px;margin-top:16px;max-width:320px;}
+  #appRoot{display:none;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>Engineer Apps</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to see what's available to you.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <div class="brand">
+      <img src="sw-logo.png" alt="Simpson & Wood">
+      <div class="title-block">
+        <h1>Engineer Apps</h1>
+        <p>One login, everything in one place</p>
+      </div>
+    </div>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="intro">Pick a tool below. You're signed in once here — the other tools should recognise you automatically.</p>
+
+    <p class="section-label">Isolator / Interlock Testing</p>
+    <div class="app-grid">
+      <a class="app-card" href="isolator-interlock-test.html">
+        <span class="badge engineer">Engineer</span>
+        <h2>Log a Test</h2>
+        <p>Log isolator, motor isolator, emergency stop and safety interlock tests on site, and review each site's register.</p>
+      </a>
+      <a class="app-card" href="isolator-interlock-report.html">
+        <span class="badge management">Management</span>
+        <h2>Reports</h2>
+        <p>Manage sites and staff, review and QS submitted tests, and generate the customer-facing PDF report.</p>
+      </a>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('signinScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    document.getElementById('whoName').textContent = user.displayName || user.email;
+  } else {
+    document.getElementById('signinScreen').style.display = 'flex';
+    document.getElementById('appRoot').style.display = 'none';
+  }
+});
+</script>
+
+</body>
+</html>

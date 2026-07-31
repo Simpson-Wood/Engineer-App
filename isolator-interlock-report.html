@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isolator / Interlock Reports — Simpson & Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
+    --line:#e2e2e2; --bg:#f6f5f4; --card:#ffffff; --pass:#1f8a3d; --fail:#c0272d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:var(--ink);padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img{height:32px;display:block;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
+  header .title-block p{margin:2px 0 0;font-size:11.5px;color:#8f8f8f;}
+  header .who{text-align:right;}
+  header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
+  header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
+
+  .site-bar{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;}
+  .site-bar-inner{max-width:1600px;margin:0 auto;}
+  .site-bar label{font-size:12px;font-weight:600;margin-bottom:5px;display:block;}
+  .site-bar select{width:100%;max-width:340px;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-family:'Barlow',sans-serif;}
+  .site-status{font-size:11.5px;color:var(--grey);margin-top:5px;}
+
+  .tab-bar{display:flex;max-width:1600px;margin:0 auto;background:#fff;border-bottom:1px solid var(--line);}
+  .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:13px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
+  .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
+
+  main{max-width:1600px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
+  .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
+  .hint{color:var(--grey);font-size:12.5px;}
+  label{display:block;font-size:12.5px;font-weight:600;margin:0 0 5px;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:0 24px;align-items:start;}
+  .form-grid .field-wide{grid-column:1 / -1;}
+  input[type=text], input[type=date]{width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;font-family:'Barlow',sans-serif;}
+  .postcode-ok{color:var(--pass);}
+  .postcode-bad{color:var(--fail);}
+
+  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .site-item, .staff-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .site-item .name, .staff-item .name{font-weight:700;font-size:13.5px;}
+  .site-item .meta, .staff-item .meta{font-size:11.5px;color:var(--grey);margin-top:2px;}
+  .remove-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
+  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;}
+  .pending-item .cat, .preview-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+  .pending-item .meta, .preview-item .meta{font-size:12px;color:var(--grey);margin-top:4px;}
+  .pending-item .btns{display:flex;gap:8px;margin-top:10px;}
+  .btn-confirm{flex:1;background:var(--fail);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .btn-restore{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .empty-note{color:var(--grey);font-size:13px;text-align:center;padding:14px 0;}
+
+  .preview-item{opacity:1;transition:opacity .2s;}
+  .preview-item.qsed{opacity:.5;}
+  .preview-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .chip-pass{background:#eaf7ee;color:var(--pass);}
+  .chip-fail{background:#fbe9e9;color:var(--fail);}
+  .preview-item .detail-line{font-size:12.5px;color:var(--ink);margin-top:3px;}
+  .qsed-check{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--grey);white-space:nowrap;}
+  .edit-btn{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+  .preview-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+  .preview-edit label{font-size:11.5px;}
+  .preview-edit input, .preview-edit textarea{width:100%;padding:8px 9px;font-size:13.5px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
+  .preview-edit textarea{min-height:44px;resize:vertical;}
+  .id-live{background:#f2f2f2;border:1px dashed var(--line);border-radius:6px;padding:7px 9px;font-size:12.5px;font-weight:600;margin-bottom:10px;}
+  .preview-edit .btns{display:flex;gap:8px;}
+  .btn-save{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .btn-cancel{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .pill{font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--grey);cursor:pointer;font-weight:600;}
+  .pill.active{border-color:var(--red);background:var(--red);color:#fff;}
+  .loc-select{max-width:240px;margin-bottom:14px;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;}
+
+  .schedule-wrap{overflow-x:auto;margin-bottom:8px;}
+  .schedule-cat-label{font-size:13px;font-weight:700;margin:0 0 8px;}
+  .schedule-legend{font-size:11px;color:var(--grey);margin:0 0 20px;line-height:1.6;}
+  table.schedule{border-collapse:collapse;font-size:11.5px;border:1px solid var(--line);}
+  table.schedule th, table.schedule td{border:1px solid var(--line);padding:6px 8px;}
+  table.schedule th{background:#f2f1ee;font-weight:600;color:var(--grey);}
+  table.schedule tbody tr:nth-child(even){background:#faf9f7;}
+  .cell-pass{color:var(--pass);text-align:center;font-weight:700;}
+  .cell-fail{color:var(--fail);text-align:center;font-weight:700;}
+
+  .satisfactory-box{padding:16px;border-radius:8px;text-align:center;margin-top:12px;}
+  .satisfactory-box.ok{background:#eaf7ee;}
+  .satisfactory-box.bad{background:#fbe9e9;}
+  .satisfactory-box .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:0;}
+  .satisfactory-box .verdict{font-size:22px;font-weight:700;margin:4px 0 0;}
+  .satisfactory-box.ok .label, .satisfactory-box.ok .verdict{color:var(--pass);}
+  .satisfactory-box.bad .label, .satisfactory-box.bad .verdict{color:var(--fail);}
+  .satisfactory-box .sub{font-size:12px;margin:4px 0 0;}
+
+  .generate-btn{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-top:14px;}
+  .generate-btn:disabled{background:#c9a3a5;cursor:not-allowed;}
+  .save-meta-btn{background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px 16px;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer;}
+
+  .banner{display:none;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
+  .banner.ok{background:#eaf7ee;color:var(--pass);border:1px solid #b9e2c4;}
+  .banner.bad{background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;}
+
+  #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
+  #signinScreen img{height:44px;margin-bottom:28px;}
+  #signinScreen h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:20px;margin:0 0 8px;}
+  #signinScreen p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 26px;}
+  .ms-btn{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
+  .ms-btn:active{background:#000;}
+  #signinScreen .err{color:var(--fail);font-size:13px;margin-top:16px;max-width:320px;}
+  #appRoot{display:none;}
+
+  #notAuthorised{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
+  #notAuthorised h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;color:var(--fail);margin:0 0 10px;}
+  #notAuthorised p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 20px;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>Isolator / Interlock Reports</h2>
+  <p>Management sign-in required.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="notAuthorised">
+  <img src="sw-logo.png" alt="Simpson & Wood" style="height:40px;margin-bottom:24px;">
+  <h2>Access restricted</h2>
+  <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span> — if this should have access, contact whoever manages the Firebase project.</p>
+  <button class="ms-btn" id="signOutBtn2">Sign out</button>
+</div>
+
+<div id="appRoot">
+  <header>
+    <div class="brand">
+      <img src="sw-logo.png" alt="Simpson & Wood">
+      <div class="title-block">
+        <h1>Isolator / Interlock Reports</h1>
+        <p id="versionLabel">v11.0 · Management</p>
+      </div>
+    </div>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="manageStaffLink" style="margin-right:12px;">Manage staff</button>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <select id="site" style="display:none;"></select>
+      <label style="margin-bottom:4px;">Currently working on</label>
+      <div id="currentSiteDisplay" style="font-weight:700;font-size:15px;">No site selected — pick one from the Sites tab</div>
+      <p class="site-status" id="siteStatus"></p>
+      <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button id="tabSitesBtn" class="active">Sites</button>
+    <button id="tabReviewBtn">Review</button>
+    <button id="tabScheduleBtn">Test schedule</button>
+    <button id="tabFrontBtn">Front page & generate</button>
+  </div>
+
+  <main>
+    <div id="banner" class="banner"></div>
+
+    <div id="sitesTab">
+      <div class="card">
+        <p class="section-label">Add new customer / site</p>
+        <div class="form-grid">
+          <div>
+            <label>Site reference <span class="hint">(suggested automatically — edit if you need something different, can't be changed later)</span></label>
+            <input type="text" id="newSiteRef">
+          </div>
+          <div>
+            <label>Customer / site name</label>
+            <input type="text" id="newSiteName">
+          </div>
+          <div>
+            <label>Address line</label>
+            <input type="text" id="newSiteAddressLine">
+          </div>
+          <div>
+            <label>Postcode</label>
+            <input type="text" id="newSitePostcode" style="text-transform:uppercase;">
+          </div>
+          <div>
+            <label>Agreed with</label>
+            <input type="text" id="newSiteAgreedWith">
+          </div>
+          <div class="field-wide">
+            <label>Agreed limitations <span class="hint">(what's out of scope, and why)</span></label>
+            <textarea id="newSiteLimitations" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;min-height:60px;font-family:'Barlow',sans-serif;"></textarea>
+          </div>
+        </div>
+        <button type="button" class="save-meta-btn" id="addSiteBtn" style="width:100%;background:var(--red);color:#fff;border:none;">Add site</button>
+      </div>
+      <div class="card">
+        <p class="section-label">Existing sites</p>
+        <div id="sitesList"><div class="empty-note">Loading…</div></div>
+      </div>
+    </div>
+
+    <div id="staffTab" style="display:none;">
+      <button type="button" id="backFromStaffBtn" style="background:none;border:none;color:var(--grey);font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:underline;">← Back</button>
+      <div class="card">
+        <p class="section-label">Add staff member</p>
+        <div class="form-grid">
+          <div>
+            <label>Name</label>
+            <input type="text" id="newStaffName">
+          </div>
+          <div>
+            <label>Email <span class="hint">(must match their Microsoft sign-in email)</span></label>
+            <input type="text" id="newStaffEmail">
+          </div>
+          <div>
+            <label>Position <span class="hint">(used to identify who the QS is, for notifications)</span></label>
+            <select id="newStaffPosition">
+              <option value="" disabled selected>Select</option>
+              <option>Apprentice electrician</option>
+              <option>Electrical improver</option>
+              <option>Electrician</option>
+              <option>QS</option>
+              <option>Manager</option>
+              <option>Director</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="save-meta-btn" id="addStaffBtn" style="width:100%;background:var(--red);color:#fff;border:none;">Add staff member</button>
+      </div>
+      <div class="card">
+        <p class="section-label">Existing staff</p>
+        <div id="staffList"><div class="empty-note">Loading…</div></div>
+      </div>
+    </div>
+
+    <div id="reviewTab" style="display:none;">
+      <div class="card">
+        <p class="section-label">Overview</p>
+        <div id="statsBar" style="display:flex;gap:18px;flex-wrap:wrap;"></div>
+      </div>
+      <div class="card">
+        <p class="section-label">Pending deletions</p>
+        <div id="pendingList"><div class="empty-note">Select a site to review.</div></div>
+      </div>
+      <div class="card">
+        <p class="section-label">Limitations / not fully tested</p>
+        <p class="hint" style="display:block;margin-bottom:14px;">Items agreed as limited on site — chase access before the next visit.</p>
+        <div id="limitedList"><div class="empty-note">Select a site to review.</div></div>
+      </div>
+      <div class="card">
+        <p class="section-label">Report preview</p>
+        <p class="hint" style="display:block;margin-bottom:14px;">Newest tests first. Tick QSed once you've checked an item — it drops to the bottom, out of the way. Test results aren't editable here, only wording.</p>
+        <input type="text" id="previewSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-bottom:10px;"><input type="checkbox" id="selectAllBox" style="width:auto;margin:0;">Select all visible</label>
+        <div id="bulkDeleteBar" style="display:none;margin-bottom:12px;">
+          <button type="button" class="remove-btn" id="bulkDeleteBtn" style="width:100%;padding:9px;">Delete selected (<span id="bulkDeleteCount">0</span>)</button>
+        </div>
+        <div id="previewList"><div class="empty-note">Select a site to preview.</div></div>
+      </div>
+    </div>
+
+    <div id="scheduleTab" style="display:none;">
+      <div class="card">
+        <p class="section-label">Test schedule</p>
+        <input type="text" id="scheduleSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <div class="pill-row" id="catPills"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <select class="loc-select" id="locFilter" style="margin-bottom:0;"><option value="">All locations</option></select>
+          <select id="schedulePassFilter" style="padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">Pass or Fail</option>
+            <option value="pass">Pass only</option>
+            <option value="fail">Fail only</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="scheduleOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="scheduleLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        </div>
+        <div id="scheduleContent"><div class="empty-note">Select a site.</div></div>
+      </div>
+    </div>
+
+    <div id="frontTab" style="display:none;">
+      <div class="card">
+        <p class="section-label">Installation details</p>
+        <input type="text" id="metaName" style="display:none;">
+        <div class="form-grid">
+          <div>
+            <label>Certificate number <span class="hint">(manually set — increment yourself for a repeat annual test)</span></label>
+            <input type="text" id="metaCertNumber">
+          </div>
+          <div>
+            <label>Address line <span class="hint">(building / street)</span></label>
+            <input type="text" id="metaAddressLine">
+          </div>
+          <div>
+            <label>Postcode</label>
+            <input type="text" id="metaPostcode" style="text-transform:uppercase;">
+            <p id="postcodeStatus" class="hint" style="margin:-6px 0 12px;"></p>
+          </div>
+          <div>
+            <label>Testing started <span class="hint">(suggested automatically from the earliest test on record, editable)</span></label>
+            <input type="date" id="metaStarted">
+          </div>
+          <div>
+            <label>Next retest due <span class="hint">(suggested automatically, editable)</span></label>
+            <input type="text" id="metaDue">
+          </div>
+          <div>
+            <label>Agreed with</label>
+            <input type="text" id="metaAgreedWith">
+          </div>
+          <div class="field-wide">
+            <label>Agreed limitations <span class="hint">(review this every year — carried over from site creation, editable here)</span></label>
+            <textarea id="metaLimitations" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;min-height:60px;font-family:'Barlow',sans-serif;"></textarea>
+          </div>
+        </div>
+        <button type="button" class="save-meta-btn" id="saveMetaBtn">Save details</button>
+        <div id="satisfactoryBox"></div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Sign-off</p>
+        <p class="hint" style="display:block;margin-bottom:14px;">Defaults to whoever tested the most items on this report — override if needed. Signatures are uploaded fresh each time a report is generated, not stored.</p>
+        <div class="form-grid">
+          <div>
+            <label>Inspected and tested by</label>
+            <select id="signInspectedName" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;"></select>
+          </div>
+          <div>
+            <label>Position</label>
+            <input type="text" id="signInspectedPosition" placeholder="E.g. Electrician">
+          </div>
+          <div>
+            <label>Signature <span class="hint">(image file)</span></label>
+            <input type="file" accept="image/*" id="signInspectedFile" style="margin-bottom:20px;">
+          </div>
+          <div>
+            <label>Report authorised by</label>
+            <input type="text" id="signAuthName" disabled style="background:#f2f2f2;">
+          </div>
+          <div>
+            <label>Position</label>
+            <input type="text" id="signAuthPosition" placeholder="E.g. QS">
+          </div>
+          <div>
+            <label>Signature <span class="hint">(image file)</span></label>
+            <input type="file" accept="image/*" id="signAuthFile">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Generate report</p>
+        <p class="hint" style="display:block;">Builds a landscape/portrait mixed PDF: front page, one section per equipment category (sorted by mill location), an Observations page, and a final Declaration/Scope/Limitations page. Resolve pending deletions first for an accurate report.</p>
+        <button type="button" class="generate-btn" id="generateBtn">Generate PDF</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="qsedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:10px;padding:22px;max-width:380px;width:100%;">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:15px;color:var(--red);margin:0 0 10px;">Not everything's been QSed</p>
+    <p id="qsedModalText" style="font-size:13.5px;color:var(--grey);margin:0 0 18px;"></p>
+    <button type="button" id="qsedWithBtn" style="width:100%;padding:11px;margin-bottom:8px;border:1.5px solid var(--line);background:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Generate with non-QSed items included</button>
+    <button type="button" id="qsedWithoutBtn" style="width:100%;padding:11px;margin-bottom:8px;border:none;background:var(--red);color:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Generate without them</button>
+    <button type="button" id="qsedCancelBtn" style="width:100%;padding:11px;border:none;background:none;color:var(--grey);font-weight:600;font-size:13px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc,
+  query, where, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// Kept in sync by hand with the engineer tool's CATEGORIES object.
+const CATEGORIES = {
+  'Panel Isolator': {
+    fields: [{ key: 'millLocation', label: 'Mill Location' }, { key: 'panelName', label: 'Panel Name' }],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'PI', hasIsolatorSpecs: true,
+    checks: [
+      { key: 'operation', label: 'Operation' }, { key: 'guards', label: 'All guards & shields in place' },
+      { key: 'handle', label: 'Handle' }, { key: 'interlock', label: 'Interlock working' },
+      { key: 'heat', label: 'No signs of heat on any connections' }, { key: 'connectionsSecure', label: 'Connections secure' }
+    ]
+  },
+  'Motor Isolator': {
+    fields: [{ key: 'millLocation', label: 'Mill Location' }, { key: 'equipmentName', label: 'Equipment Name' }],
+    locationKey: 'millLocation', idMode: 'tag', tagField: 'equipmentName', suffix: 'MI', hasIsolatorSpecs: true,
+    checks: [
+      { key: 'operation', label: 'Operation' }, { key: 'handleCondition', label: 'Handle in good condition' },
+      { key: 'interlock', label: 'Interlock working' }, { key: 'heat', label: 'No signs of heat on any connections' },
+      { key: 'enclosure', label: 'Enclosure in satisfactory condition' }, { key: 'auxContacts', label: 'Aux contacts working' },
+      { key: 'labelled', label: 'Correctly labelled with relevant equipment name (e.g. C16)' },
+      { key: 'connectionsSecure', label: 'Connections secure' }, { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  },
+  'Emergency Stop': {
+    fields: [{ key: 'millLocation', label: 'Mill Location' }, { key: 'physicalLocation', label: 'Physical Location' },
+      { key: 'relayLocation', label: 'Location of Safety Relay' }, { key: 'equipmentAffected', label: 'Equipment Affected When Pressed' }],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'ES',
+    checks: [
+      { key: 'buttonOperation', label: 'Button operation' }, { key: 'shroudLabel', label: 'Shroud and/or label in correct position' },
+      { key: 'terminalBlocks', label: 'Terminal blocks secure on rear' }, { key: 'relayOperates', label: 'E-stop relay operates' },
+      { key: 'channelsDisconnect', label: 'Do both channels disconnect' }, { key: 'machineryStops', label: 'All required machinery stops immediately' },
+      { key: 'resetOperational', label: 'E-stop relay reset button operational' }, { key: 'restartWhilePressed', label: 'Can the machinery be restarted when button is pressed?' },
+      { key: 'connectionsSecure', label: 'Connections secure' }, { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  },
+  'Safety Interlock': {
+    fields: [{ key: 'millLocation', label: 'Mill Location' }, { key: 'physicalLocation', label: 'Physical Location' },
+      { key: 'equipmentAffected', label: 'Equipment Affected' }],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'SI',
+    checks: [
+      { key: 'mounted', label: 'Interlock correctly mounted and secure' }, { key: 'channelsDisconnect', label: 'Do both safety channels disconnect' },
+      { key: 'machineryStops', label: 'All required machinery stops immediately' }, { key: 'resetOperational', label: 'E-stop relay reset button operational' },
+      { key: 'restartWhileOpen', label: 'Can the machinery be restarted when interlock is open' }, { key: 'lockEngaged', label: 'Lock engaged fully when machine is running' },
+      { key: 'cantOpenUntilStopped', label: "Can't be opened until machine has stopped" }, { key: 'latchCondition', label: 'Latching mechanism is not bent or worn out' },
+      { key: 'tamperInspection', label: 'Inspect the switch and surrounding area for signs of tampering' },
+      { key: 'connectionsSecure', label: 'Connections secure' }, { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  }
+};
+const CATEGORY_NAMES = Object.keys(CATEGORIES);
+const SECTION_HEADINGS = {
+  'Panel Isolator': 'Panel Isolator Functional Testing',
+  'Motor Isolator': 'Motor Isolator Functional Testing',
+  'Emergency Stop': 'Emergency Stop Functional Testing',
+  'Safety Interlock': 'Safety Interlock Functional Testing'
+};
+
+const LOCATION_CODES = {
+  'Press line 1': 'PL1', 'Press line 2': 'PL2', 'Press line 3': 'PL3', 'Press line 4': 'PL4',
+  'Intake': 'INT', 'Front outloading': 'FOL', 'Rear outloading': 'ROL', 'Blending': 'BLD',
+  'Routing': 'RTG', 'Mixing': 'MIX', 'Mixer 1': 'MX1', 'Mixer 2': 'MX2', 'Packing': 'PKG',
+  'Weigher 1': 'WG1', 'Weigher 2': 'WG2', 'Weigher 3': 'WG3', 'Weigher 4': 'WG4', 'Weigher 5': 'WG5',
+  'Weigher 6': 'WG6', 'Weigher 7': 'WG7', 'Weigher 8': 'WG8', 'Weigher 9': 'WG9',
+  'Grinder 1': 'GR1', 'Grinder 2': 'GR2', 'Grinder 3': 'GR3',
+  'Mixing shed mixer 1': 'MSM1', 'Mixing shed mixer 2': 'MSM2'
+};
+function locationCode(name) {
+  if (!name) return '';
+  const trimmed = name.trim();
+  if (LOCATION_CODES[trimmed]) return LOCATION_CODES[trimmed];
+  const words = trimmed.split(/\s+/);
+  let code = words.length === 1 ? words[0].slice(0, 4) : words.map(w => w[0]).join('').slice(0, 4);
+  return code.toUpperCase();
+}
+function letterFromIndex(i) {
+  let s = ''; i++;
+  while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+  return s;
+}
+function computeLetterId(category, locCode) {
+  const def = CATEGORIES[category];
+  const escaped = locCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('^' + escaped + '-([A-Z]+)-' + def.suffix + '$');
+  const used = new Set();
+  siteHistoryCache.forEach(d => {
+    if (d.category === category && d.equipmentId) {
+      const m = d.equipmentId.match(re);
+      if (m) used.add(m[1]);
+    }
+  });
+  let idx = 0;
+  while (used.has(letterFromIndex(idx))) idx++;
+  return locCode + '-' + letterFromIndex(idx) + '-' + def.suffix;
+}
+function computeTagId(category, locCode, tag) {
+  const def = CATEGORIES[category];
+  if (!tag) return '';
+  return locCode + '-' + tag.trim().toUpperCase().replace(/\s+/g, '') + '-' + def.suffix;
+}
+function computeEquipmentId(category, values) {
+  const def = CATEGORIES[category];
+  if (!def) return '';
+  const locName = values[def.locationKey];
+  if (!locName) return '';
+  const locCode = locationCode(locName);
+  if (def.idMode === 'tag') {
+    const tag = values[def.tagField];
+    return tag ? computeTagId(category, locCode, tag) : '';
+  }
+  return computeLetterId(category, locCode);
+}
+
+function locationOf(record) {
+  const def = CATEGORIES[record.category];
+  if (!def) return '';
+  return record[def.locationKey] || '';
+}
+
+let currentUser = null;
+let siteHistoryCache = [];
+let siteMeta = {};
+let editingId = null;
+let activeCatFilter = 'All';
+let activeLocFilter = '';
+
+function overallPassOf(record) {
+  if (record.checks && Object.keys(record.checks).length) return !Object.values(record.checks).some(v => v === 'Fail');
+  return true;
+}
+
+function isLimitedRecord(record) {
+  return record && record.testingStatus === 'Limited';
+}
+
+function isSiteComplete() {
+  return siteMeta.jobStatus === 'Complete';
+}
+
+function matchesSearch(latest, eq, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (eq.toLowerCase().includes(q)) return true;
+  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber'];
+  return fields.some(f => latest[f] && String(latest[f]).toLowerCase().includes(q));
+}
+
+function getReportGroups() {
+  const byEquip = {};
+  siteHistoryCache.filter(d => !d.deletedFlag).forEach(d => {
+    if (!byEquip[d.equipmentId]) byEquip[d.equipmentId] = [];
+    byEquip[d.equipmentId].push(d);
+  });
+  return Object.keys(byEquip).sort().map(eq => {
+    const hist = byEquip[eq];
+    return { eq, latest: hist[hist.length - 1], hist };
+  });
+}
+
+// ---- Sign-in ----
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+document.getElementById('signOutBtn2').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  document.getElementById('signinScreen').style.display = 'none';
+  document.getElementById('notAuthorised').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'none';
+  if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
+
+  let isManager = false;
+  try {
+    const snap = await getDoc(doc(db, 'managers', user.email));
+    isManager = snap.exists();
+  } catch (e) { console.error('Manager check failed:', e); }
+
+  if (!isManager) {
+    document.getElementById('notAuthEmail').textContent = user.email;
+    document.getElementById('notAuthorised').style.display = 'flex';
+    return;
+  }
+
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('whoName').textContent = user.displayName || user.email;
+  boot();
+});
+
+function boot() {
+  loadSites();
+  buildCatPills();
+  renderSitesList();
+  renderStaffList();
+  suggestNextSiteRef();
+}
+
+async function suggestNextSiteRef() {
+  const refInput = document.getElementById('newSiteRef');
+  if (refInput.value.trim()) return;
+  try {
+    const snap = await getDocs(collection(db, 'jobs'));
+    let maxN = 0;
+    snap.forEach(d => {
+      const m = d.id.match(/^SW-ISO-(\d+)$/);
+      if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+    });
+    refInput.value = 'SW-ISO-' + String(maxN + 1).padStart(2, '0');
+  } catch (e) { /* leave blank if this fails, not critical */ }
+}
+
+// ---- Tabs ----
+document.getElementById('tabSitesBtn').addEventListener('click', () => switchTab('sites'));
+document.getElementById('tabReviewBtn').addEventListener('click', () => switchTab('review'));
+document.getElementById('tabScheduleBtn').addEventListener('click', () => switchTab('schedule'));
+document.getElementById('tabFrontBtn').addEventListener('click', () => switchTab('front'));
+function switchTab(which) {
+  document.getElementById('sitesTab').style.display = which === 'sites' ? 'block' : 'none';
+  document.getElementById('reviewTab').style.display = which === 'review' ? 'block' : 'none';
+  document.getElementById('scheduleTab').style.display = which === 'schedule' ? 'block' : 'none';
+  document.getElementById('frontTab').style.display = which === 'front' ? 'block' : 'none';
+  document.getElementById('tabSitesBtn').classList.toggle('active', which === 'sites');
+  document.getElementById('tabReviewBtn').classList.toggle('active', which === 'review');
+  document.getElementById('tabScheduleBtn').classList.toggle('active', which === 'schedule');
+  document.getElementById('tabFrontBtn').classList.toggle('active', which === 'front');
+  if (which === 'schedule') renderSchedule();
+  if (which === 'front') renderFront();
+  if (which === 'review') renderStatsBar();
+}
+
+document.getElementById('manageStaffLink').addEventListener('click', () => {
+  ['sitesTab','reviewTab','scheduleTab','frontTab'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('staffTab').style.display = 'block';
+  document.querySelector('.tab-bar').style.display = 'none';
+});
+document.getElementById('backFromStaffBtn').addEventListener('click', () => {
+  document.getElementById('staffTab').style.display = 'none';
+  document.querySelector('.tab-bar').style.display = 'flex';
+  switchTab('sites');
+});
+document.getElementById('refreshSiteBtn').addEventListener('click', () => loadSiteData());
+
+// ---- Sites management ----
+async function renderSitesList() {
+  const list = document.getElementById('sitesList');
+  try {
+    const snap = await getDocs(collection(db, 'jobs'));
+    if (snap.empty) { list.innerHTML = '<div class="empty-note">No sites yet.</div>'; return; }
+    const rows = [];
+    snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => a.id.localeCompare(b.id));
+    const currentSiteRef = document.getElementById('site').value;
+    list.innerHTML = rows.map(r => {
+      const createdDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString('en-GB') : '—';
+      const isSelected = r.id === currentSiteRef;
+      return `
+      <div class="site-item" style="flex-direction:column;align-items:stretch;gap:8px;${isSelected ? 'border-color:var(--red);background:#fff8f8;' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="cursor:pointer;" data-select-site="${r.id}">
+            <div class="name">${r.id} — ${r.name || ''}</div>
+            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${r.certificateNumber ? ' · Cert #' + r.certificateNumber : ''}</div>
+          </div>
+          <button type="button" class="remove-btn" data-delete-site="${r.id}">Delete site</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label style="margin:0;font-size:11.5px;">Status:</label>
+          <select data-status-for="${r.id}" style="width:auto;padding:6px 8px;font-size:12.5px;border:1.5px solid var(--line);border-radius:6px;">
+            ${['In Progress','Ready for QS','In QS','Complete','Sent to Client'].map(s => `<option ${(r.jobStatus || 'In Progress') === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+          <button type="button" class="edit-btn" data-select-site="${r.id}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
+        </div>
+      </div>
+    `;
+    }).join('');
+
+    list.querySelectorAll('[data-select-site]').forEach(el => {
+      el.addEventListener('click', () => {
+        const siteSelect = document.getElementById('site');
+        siteSelect.value = el.dataset.selectSite;
+        siteSelect.dispatchEvent(new Event('change'));
+        renderSitesList();
+      });
+    });
+    list.querySelectorAll('[data-status-for]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        try {
+          await setDoc(doc(db, 'jobs', sel.dataset.statusFor), { jobStatus: sel.value }, { merge: true });
+          renderSitesList();
+        } catch (e) { alert('Could not update status — ' + (e.message || e.code || 'unknown error')); }
+      });
+    });
+    list.querySelectorAll('[data-delete-site]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ref = btn.dataset.deleteSite;
+        if (!confirm('Permanently delete "' + ref + '" and every test record under it? This cannot be undone.')) return;
+        try {
+          const testsSnap = await getDocs(query(collection(db, 'isolatorTests'), where('siteRef', '==', ref)));
+          for (const d of testsSnap.docs) { await deleteDoc(doc(db, 'isolatorTests', d.id)); }
+          await deleteDoc(doc(db, 'jobs', ref));
+          if (document.getElementById('site').value === ref) {
+            document.getElementById('site').value = '';
+            document.getElementById('currentSiteDisplay').textContent = 'No site selected — pick one from the Sites tab';
+          }
+          await loadSites();
+          renderSitesList();
+        } catch (e) { alert('Could not delete site — ' + (e.message || e.code || 'unknown error')); }
+      });
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  }
+}
+
+document.getElementById('addSiteBtn').addEventListener('click', async () => {
+  const ref = document.getElementById('newSiteRef').value.trim();
+  const name = document.getElementById('newSiteName').value.trim();
+  if (!ref || !name) { alert('Site reference and name are both required.'); return; }
+  try {
+    await setDoc(doc(db, 'jobs', ref), {
+      name,
+      status: 'Active',
+      jobStatus: 'In Progress',
+      createdAt: serverTimestamp(),
+      addressLine: document.getElementById('newSiteAddressLine').value.trim(),
+      postcode: document.getElementById('newSitePostcode').value.trim(),
+      agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
+      agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+    });
+    ['newSiteRef','newSiteName','newSiteAddressLine','newSitePostcode','newSiteLimitations','newSiteAgreedWith'].forEach(id => document.getElementById(id).value = '');
+    await renderSitesList();
+    await loadSites();
+    await suggestNextSiteRef();
+    const banner = document.getElementById('banner');
+    banner.className = 'banner ok'; banner.textContent = 'Site added: ' + ref; banner.style.display = 'block';
+  } catch (e) {
+    alert('Could not add site — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+// ---- Staff management ----
+async function renderStaffList() {
+  const list = document.getElementById('staffList');
+  try {
+    const snap = await getDocs(collection(db, 'staff'));
+    if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
+    const rows = [];
+    snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    list.innerHTML = rows.map(r => `
+      <div class="staff-item">
+        <div>
+          <div class="name">${r.name || r.id}</div>
+          <div class="meta">${r.id} · ${r.position || 'No position set'}</div>
+        </div>
+        <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
+        try { await deleteDoc(doc(db, 'staff', btn.dataset.email)); await renderStaffList(); }
+        catch (e) { alert('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+      });
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  }
+}
+
+document.getElementById('addStaffBtn').addEventListener('click', async () => {
+  const name = document.getElementById('newStaffName').value.trim();
+  const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
+  const position = document.getElementById('newStaffPosition').value.trim();
+  if (!name || !email) { alert('Name and email are both required.'); return; }
+  try {
+    await setDoc(doc(db, 'staff', email), { name, position });
+    ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
+    await renderStaffList();
+    const banner = document.getElementById('banner');
+    banner.className = 'banner ok'; banner.textContent = 'Staff member added: ' + name; banner.style.display = 'block';
+  } catch (e) {
+    alert('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+// ---- Sites ----
+async function loadSites() {
+  const siteSelect = document.getElementById('site');
+  const status = document.getElementById('siteStatus');
+  siteSelect.innerHTML = '<option value="" disabled selected>Loading…</option>';
+  try {
+    const q = query(collection(db, 'jobs'), where('status', '==', 'Active'));
+    const snap = await getDocs(q);
+    siteSelect.innerHTML = '<option value="" disabled selected>Select site</option>';
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const opt = document.createElement('option');
+      opt.value = docSnap.id; opt.textContent = d.name || docSnap.id;
+      siteSelect.appendChild(opt);
+    });
+    status.textContent = snap.empty ? 'No active sites found.' : '';
+  } catch (e) {
+    status.textContent = 'Could not load site list — ' + (e.message || e.code || 'unknown error');
+  }
+}
+document.getElementById('site').addEventListener('change', loadSiteData);
+
+async function loadSiteData() {
+  const siteSelect = document.getElementById('site');
+  const siteRef = siteSelect.value;
+  const display = document.getElementById('currentSiteDisplay');
+  display.textContent = siteRef && siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : 'No site selected — pick one from the Sites tab';
+  siteHistoryCache = [];
+  siteMeta = {};
+  const pendingList = document.getElementById('pendingList');
+  if (!siteRef) { pendingList.innerHTML = '<div class="empty-note">Select a site to review.</div>'; return; }
+  pendingList.innerHTML = '<div class="empty-note">Loading…</div>';
+  try {
+    const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
+    const snap = await getDocs(q);
+    snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
+    const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    siteMeta = jobSnap.exists() ? jobSnap.data() : {};
+    renderPending();
+    renderLimitedList();
+    renderStatsBar();
+    renderPreview();
+    buildLocFilterOptions();
+    if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
+    if (document.getElementById('frontTab').style.display !== 'none') renderFront();
+  } catch (e) {
+    pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  }
+}
+
+// ---- Pending deletions ----
+function renderPending() {
+  const pendingList = document.getElementById('pendingList');
+  const flagged = siteHistoryCache.filter(d => d.deletedFlag);
+  if (flagged.length === 0) { pendingList.innerHTML = '<div class="empty-note">Nothing pending — all clear.</div>'; return; }
+  pendingList.innerHTML = flagged.map(d => `
+    <div class="pending-item">
+      <div class="cat">${d.category || 'Uncategorised'}</div>
+      <div class="eq">${d.equipmentId}</div>
+      <div class="meta">Test date ${d.date || '—'} by ${d.engineer || '—'} · flagged by ${d.deletedBy || '—'}</div>
+      <div class="btns">
+        <button type="button" class="btn-restore" data-id="${d._id}" data-action="restore">Restore</button>
+        <button type="button" class="btn-confirm" data-id="${d._id}" data-action="confirm">Confirm removal</button>
+      </div>
+    </div>
+  `).join('');
+  pendingList.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      const id = btn.dataset.id;
+      try {
+        if (btn.dataset.action === 'restore') {
+          await updateDoc(doc(db, 'isolatorTests', id), { deletedFlag: false });
+        } else {
+          if (!confirm('Permanently delete this test record? This cannot be undone.')) return;
+          await deleteDoc(doc(db, 'isolatorTests', id));
+        }
+        await loadSiteData();
+      } catch (e) {
+        alert('Action failed — ' + (e.message || e.code || 'unknown error'));
+      }
+    });
+  });
+}
+
+// ---- Report preview (Review tab) ----
+function updateBulkDeleteBar() {
+  const selected = document.querySelectorAll('.bulk-select:checked');
+  const bar = document.getElementById('bulkDeleteBar');
+  document.getElementById('bulkDeleteCount').textContent = selected.length;
+  bar.style.display = selected.length > 0 ? 'block' : 'none';
+}
+document.getElementById('bulkDeleteBtn').addEventListener('click', async () => {
+  if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+  const selected = Array.from(document.querySelectorAll('.bulk-select:checked')).map(cb => cb.dataset.bulkId);
+  if (selected.length === 0) return;
+  if (!confirm('Permanently delete ' + selected.length + ' test record' + (selected.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
+  try {
+    for (const id of selected) { await deleteDoc(doc(db, 'isolatorTests', id)); }
+    await loadSiteData();
+  } catch (e) {
+    alert('Could not delete all selected records — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+// ---- Limited / not fully tested items ----
+// ---- Stats bar ----
+function renderStatsBar() {
+  const bar = document.getElementById('statsBar');
+  const groups = getReportGroups();
+  const total = groups.length;
+  const failed = groups.filter(g => g.latest && !overallPassOf(g.latest)).length;
+  const limited = groups.filter(g => isLimitedRecord(g.latest)).length;
+  const passed = total - failed;
+  const qsed = groups.filter(g => g.latest && g.latest.qsed).length;
+  const stat = (label, val, color) => `<div><div style="font-size:22px;font-weight:700;${color ? 'color:' + color + ';' : ''}">${val}</div><div style="font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;">${label}</div></div>`;
+  bar.innerHTML = stat('Total', total) + stat('Passed', passed, 'var(--pass)') + stat('Failed', failed, 'var(--fail)') + stat('Limitations', limited, '#8a6d1a') + stat('QSed', qsed + ' / ' + total);
+}
+
+document.getElementById('selectAllBox').addEventListener('change', (e) => {
+  document.querySelectorAll('.bulk-select').forEach(cb => { cb.checked = e.target.checked; });
+  updateBulkDeleteBar();
+});
+
+function renderLimitedList() {
+  const list = document.getElementById('limitedList');
+  const groups = getReportGroups().filter(g => isLimitedRecord(g.latest));
+  if (groups.length === 0) { list.innerHTML = '<div class="empty-note">Nothing limited on this site right now.</div>'; return; }
+  groups.sort((a, b) => a.eq.localeCompare(b.eq));
+  list.innerHTML = groups.map(g => {
+    const latest = g.latest;
+    return `
+      <div class="pending-item">
+        <div class="cat">${latest.category || 'Uncategorised'}</div>
+        <div class="eq">${g.eq}</div>
+        <div class="meta">${latest.limitationReason || 'No reason recorded'}</div>
+        <div class="meta">Agreed with: ${latest.limitationAgreedWith || '—'} · ${latest.date || '—'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('previewSearch').addEventListener('input', renderPreview);
+
+function renderPreview() {
+  const previewList = document.getElementById('previewList');
+  let groups = getReportGroups();
+  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing active to report for this site.</div>'; return; }
+
+  const searchQuery = document.getElementById('previewSearch').value.trim();
+  if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
+  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing matches that search.</div>'; return; }
+
+  groups.sort((a, b) => {
+    const aQ = !!a.latest.qsed, bQ = !!b.latest.qsed;
+    if (aQ !== bQ) return aQ ? 1 : -1;
+    return (b.latest.date || '').localeCompare(a.latest.date || '');
+  });
+
+  previewList.innerHTML = groups.map(g => {
+    const latest = g.latest;
+    const def = CATEGORIES[latest.category];
+    const detailLine = def ? def.fields.map(f => latest[f.key]).filter(Boolean).join(' · ') : '';
+    const isEditing = editingId === latest._id;
+    const isQsed = !!latest.qsed;
+
+    if (!isEditing) {
+      const isPass = overallPassOf(latest);
+      return `
+        <div class="preview-item ${isQsed ? 'qsed' : ''}">
+          <div class="top">
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <input type="checkbox" class="bulk-select" data-bulk-id="${latest._id}" style="margin-top:4px;">
+              <div>
+                <div class="cat">${latest.category || 'Uncategorised'} · ${latest.date || '—'}</div>
+                <div class="eq">${g.eq}</div>
+                ${detailLine ? `<div class="detail-line">${detailLine}</div>` : ''}
+                ${latest.manufacturer || latest.model ? `<div class="detail-line">${[latest.manufacturer, latest.model].filter(Boolean).join(', ')}</div>` : ''}
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+              <span class="chip ${isPass ? 'chip-pass' : 'chip-fail'}">${isPass ? 'Pass' : 'Fail'}</span>
+              <button type="button" class="edit-btn" data-id="${latest._id}">Edit</button>
+              <button type="button" class="remove-btn" data-single-delete="${latest._id}">Delete</button>
+              <label class="qsed-check"><input type="checkbox" data-qsed-id="${latest._id}" ${isQsed ? 'checked' : ''}> QSed</label>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const fieldInputs = (def ? def.fields : []).map(f => `
+      <label>${f.label}</label>
+      <input type="text" data-edit-field="${f.key}" value="${(latest[f.key] || '').replace(/"/g,'&quot;')}">
+    `).join('');
+
+    const checksSummary = def ? def.checks.map(c => {
+      const v = latest.checks ? latest.checks[c.key] : '';
+      const color = v === 'Pass' ? 'var(--pass)' : v === 'Fail' ? 'var(--fail)' : 'var(--grey)';
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px;"><span>${c.label}</span><span style="font-weight:700;color:${color};">${v || '—'}</span></div>`;
+    }).join('') : '';
+
+    const photosHtml =
+      (latest.photoBase64 ? `<div style="margin-bottom:10px;"><p class="hint" style="margin:0 0 4px;font-weight:600;">General photo</p><img src="data:image/jpeg;base64,${latest.photoBase64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;" data-full-photo="${latest.photoBase64}"></div>` : '') +
+      (latest.photoInternalsBase64 ? `<div style="margin-bottom:10px;"><p class="hint" style="margin:0 0 4px;font-weight:600;">Internals photo</p><img src="data:image/jpeg;base64,${latest.photoInternalsBase64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;" data-full-photo="${latest.photoInternalsBase64}"></div>` : '') +
+      (!latest.photoBase64 && !latest.photoInternalsBase64 ? '<p class="hint">No photos on this test.</p>' : '');
+
+    return `
+      <div class="preview-item">
+        <div class="top">
+          <div><div class="cat">${latest.category || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
+        </div>
+        <div style="border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:10px 0;margin-bottom:10px;">
+          <p class="hint" style="font-weight:600;margin:0 0 6px;">Checklist result (read-only)</p>
+          ${checksSummary || '<p class="hint">No checklist recorded.</p>'}
+        </div>
+        <div style="margin-bottom:10px;">
+          <p class="hint" style="font-weight:600;margin:0 0 6px;">Photos <span style="font-weight:400;">(click to view full size)</span></p>
+          ${photosHtml}
+        </div>
+        <div class="preview-edit" data-doc-id="${latest._id}" data-category="${latest.category}">
+          ${fieldInputs}
+          <label>Equipment ID (updates automatically)</label>
+          <div class="id-live" data-role="idLive">${g.eq}</div>
+          <label>Manufacturer</label>
+          <input type="text" data-edit-field="manufacturer" value="${(latest.manufacturer || '').replace(/"/g,'&quot;')}">
+          <label>Model</label>
+          <input type="text" data-edit-field="model" value="${(latest.model || '').replace(/"/g,'&quot;')}">
+          <label>Part number</label>
+          <input type="text" data-edit-field="partNumber" value="${(latest.partNumber || '').replace(/"/g,'&quot;')}">
+          <label>Observations</label>
+          <textarea data-edit-field="observations">${latest.observations || ''}</textarea>
+          <div class="btns">
+            <button type="button" class="btn-cancel" data-role="cancel">Cancel</button>
+            <button type="button" class="btn-save" data-role="save">Save changes</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  previewList.querySelectorAll('[data-qsed-id]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); cb.checked = !cb.checked; return; }
+      try {
+        await updateDoc(doc(db, 'isolatorTests', cb.dataset.qsedId), { qsed: cb.checked });
+        await loadSiteData();
+      } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
+    });
+  });
+
+  previewList.querySelectorAll('.bulk-select').forEach(cb => {
+    cb.addEventListener('change', updateBulkDeleteBar);
+  });
+  previewList.querySelectorAll('[data-single-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      if (!confirm('Permanently delete this test record? This cannot be undone.')) return;
+      try { await deleteDoc(doc(db, 'isolatorTests', btn.dataset.singleDelete)); await loadSiteData(); }
+      catch (e) { alert('Could not delete — ' + (e.message || e.code || 'unknown error')); }
+    });
+  });
+
+  previewList.querySelectorAll('[data-full-photo]').forEach(img => {
+    img.addEventListener('click', () => {
+      const w = window.open();
+      if (w) w.document.write('<img src="data:image/jpeg;base64,' + img.dataset.fullPhoto + '" style="max-width:100%;">');
+    });
+  });
+
+  previewList.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => { editingId = btn.dataset.id; renderPreview(); });
+  });
+
+  previewList.querySelectorAll('.preview-edit').forEach(editBox => {
+    const category = editBox.dataset.category;
+    const def = CATEGORIES[category];
+    const idLive = editBox.querySelector('[data-role="idLive"]');
+
+    function refreshIdLive() {
+      const values = {};
+      (def ? def.fields : []).forEach(f => { values[f.key] = editBox.querySelector(`[data-edit-field="${f.key}"]`).value; });
+      idLive.textContent = computeEquipmentId(category, values) || '(incomplete)';
+    }
+    editBox.querySelectorAll('[data-edit-field]').forEach(inp => {
+      if (def && def.fields.some(f => f.key === inp.dataset.editField)) inp.addEventListener('input', refreshIdLive);
+    });
+
+    editBox.querySelector('[data-role="cancel"]').addEventListener('click', () => { editingId = null; renderPreview(); });
+
+    editBox.querySelector('[data-role="save"]').addEventListener('click', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      const docId = editBox.dataset.docId;
+      const update = {};
+      const values = {};
+      editBox.querySelectorAll('[data-edit-field]').forEach(inp => {
+        update[inp.dataset.editField] = inp.value.trim();
+        if (def && def.fields.some(f => f.key === inp.dataset.editField)) values[inp.dataset.editField] = inp.value.trim();
+      });
+      const newId = def ? computeEquipmentId(category, values) : null;
+      if (newId) update.equipmentId = newId;
+      try {
+        await updateDoc(doc(db, 'isolatorTests', docId), update);
+        editingId = null;
+        await loadSiteData();
+      } catch (e) { alert('Could not save — ' + (e.message || e.code || 'unknown error')); }
+    });
+  });
+}
+
+// ---- Test schedule tab ----
+function buildCatPills() {
+  const wrap = document.getElementById('catPills');
+  const tabsArr = ['All', ...CATEGORY_NAMES];
+  wrap.innerHTML = tabsArr.map(t => `<button type="button" class="pill ${t === activeCatFilter ? 'active' : ''}" data-cat="${t}">${t}</button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCatFilter = btn.dataset.cat;
+      wrap.querySelectorAll('.pill').forEach(b => b.classList.toggle('active', b === btn));
+      buildLocFilterOptions();
+      renderSchedule();
+    });
+  });
+}
+
+function buildLocFilterOptions() {
+  const sel = document.getElementById('locFilter');
+  const groups = getReportGroups().filter(g => activeCatFilter === 'All' || g.latest.category === activeCatFilter);
+  const locs = Array.from(new Set(groups.map(g => locationOf(g.latest)).filter(Boolean))).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option ${l === current ? 'selected' : ''}>${l}</option>`).join('');
+  if (!locs.includes(current)) { activeLocFilter = ''; sel.value = ''; }
+}
+document.getElementById('locFilter').addEventListener('change', (e) => { activeLocFilter = e.target.value; renderSchedule(); });
+document.getElementById('scheduleSearch').addEventListener('input', renderSchedule);
+document.getElementById('schedulePassFilter').addEventListener('change', renderSchedule);
+document.getElementById('scheduleOverdueOnly').addEventListener('change', renderSchedule);
+document.getElementById('scheduleLimitedOnly').addEventListener('change', renderSchedule);
+
+function renderSchedule() {
+  const content = document.getElementById('scheduleContent');
+  if (!document.getElementById('site').value) { content.innerHTML = '<div class="empty-note">Select a site.</div>'; return; }
+  let groups = getReportGroups();
+  if (groups.length === 0) { content.innerHTML = '<div class="empty-note">Nothing active for this site.</div>'; return; }
+
+  const today = new Date();
+  groups = groups.map(g => {
+    let overdue = false;
+    if (g.latest && g.latest.date) overdue = Math.floor((today - new Date(g.latest.date)) / 86400000) > 365;
+    return { ...g, overdue };
+  });
+
+  const passFilter = document.getElementById('schedulePassFilter').value;
+  if (passFilter) groups = groups.filter(g => passFilter === 'pass' ? overallPassOf(g.latest) : !overallPassOf(g.latest));
+  if (document.getElementById('scheduleOverdueOnly').checked) groups = groups.filter(g => g.overdue);
+  if (document.getElementById('scheduleLimitedOnly').checked) groups = groups.filter(g => isLimitedRecord(g.latest));
+  const searchQuery = document.getElementById('scheduleSearch').value.trim();
+  if (searchQuery) groups = groups.filter(g => matchesSearch(g.latest, g.eq, searchQuery));
+
+  const catsToShow = activeCatFilter === 'All' ? CATEGORY_NAMES : [activeCatFilter];
+  let html = '';
+  catsToShow.forEach(cat => {
+    const def = CATEGORIES[cat];
+    let rows = groups.filter(g => g.latest.category === cat);
+    if (activeLocFilter) rows = rows.filter(g => locationOf(g.latest) === activeLocFilter);
+    if (rows.length === 0) return;
+    rows.sort((a, b) => locationOf(a.latest).localeCompare(locationOf(b.latest)) || a.eq.localeCompare(b.eq));
+
+    const checkCodes = def.checks.map((c, i) => 'T' + (i + 1));
+    html += `<p class="schedule-cat-label">${cat}</p>`;
+    html += `<p class="schedule-legend">${def.checks.map((c, i) => 'T' + (i + 1) + ' = ' + c.label).join(' &nbsp;·&nbsp; ')}</p>`;
+    html += `<div class="schedule-wrap"><table class="schedule"><thead><tr>`;
+    html += `<th>Location</th><th>Equipment ID</th><th>Manufacturer</th>`;
+    if (def.hasIsolatorSpecs) html += `<th>Current rating</th><th>Poles</th><th>Auxiliary</th>`;
+    checkCodes.forEach(code => { html += `<th>${code}</th>`; });
+    html += `<th>Model</th><th>Status</th><th>Observations</th></tr></thead><tbody>`;
+
+    rows.forEach(g => {
+      const latest = g.latest;
+      html += `<tr><td>${locationOf(latest) || '—'}</td><td style="font-weight:600;white-space:nowrap;">${g.eq}</td><td>${latest.manufacturer || '—'}</td>`;
+      if (def.hasIsolatorSpecs) html += `<td>${latest.currentRating || '—'}</td><td>${latest.poles || '—'}</td><td>${latest.auxiliary || '—'}</td>`;
+      def.checks.forEach(c => {
+        const v = latest.checks ? latest.checks[c.key] : '';
+        const cellClass = v === 'Pass' ? 'cell-pass' : v === 'Fail' ? 'cell-fail' : '';
+        const cellText = v === 'Pass' ? '✓' : v === 'Fail' ? '✕' : v === 'N/A' ? 'N/A' : '—';
+        html += `<td class="${cellClass}">${cellText}</td>`;
+      });
+      const statusLabel = isLimitedRecord(latest) ? '<span class="chip" style="background:#fff3cd;color:#8a6d1a;">Limitation</span>' : '<span class="chip chip-pass">Full</span>';
+      html += `<td style="white-space:nowrap;">${latest.model || '—'}</td><td>${statusLabel}</td><td style="max-width:220px;">${latest.observations || '-'}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  content.innerHTML = html || '<div class="empty-note">Nothing matches this filter.</div>';
+}
+
+// ---- Front page tab ----
+function suggestedRetestDue() {
+  const groups = getReportGroups().filter(g => g.latest && g.latest.date);
+  if (groups.length === 0) return '';
+  const earliest = groups.reduce((min, g) => g.latest.date < min ? g.latest.date : min, groups[0].latest.date);
+  const d = new Date(earliest);
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function suggestedTestingStarted() {
+  const groups = getReportGroups().filter(g => g.latest && g.latest.date);
+  if (groups.length === 0) return '';
+  return groups.reduce((min, g) => g.latest.date < min ? g.latest.date : min, groups[0].latest.date);
+}
+
+let postcodeArea = '';
+let postcodeCheckTimer = null;
+async function checkPostcode() {
+  const input = document.getElementById('metaPostcode');
+  const status = document.getElementById('postcodeStatus');
+  const raw = input.value.trim();
+  if (!raw) { status.textContent = ''; status.className = 'hint'; postcodeArea = ''; return; }
+  status.textContent = 'Checking…'; status.className = 'hint';
+  try {
+    const res = await fetch('https://api.postcodes.io/postcodes/' + encodeURIComponent(raw));
+    const data = await res.json();
+    if (data.status === 200 && data.result) {
+      input.value = data.result.postcode;
+      postcodeArea = [data.result.admin_district, data.result.region].filter(Boolean).join(', ');
+      status.textContent = '✓ ' + postcodeArea;
+      status.className = 'hint postcode-ok';
+    } else {
+      postcodeArea = '';
+      status.textContent = 'Postcode not found — check for typos';
+      status.className = 'hint postcode-bad';
+    }
+  } catch (e) {
+    postcodeArea = '';
+    status.textContent = 'Could not check postcode — no connection';
+    status.className = 'hint postcode-bad';
+  }
+}
+document.getElementById('metaPostcode').addEventListener('blur', checkPostcode);
+document.getElementById('metaPostcode').addEventListener('input', () => {
+  clearTimeout(postcodeCheckTimer);
+  postcodeCheckTimer = setTimeout(checkPostcode, 900);
+});
+
+function fullAddress() {
+  const line = document.getElementById('metaAddressLine').value.trim();
+  const pc = document.getElementById('metaPostcode').value.trim();
+  return [line, pc].filter(Boolean).join(', ');
+}
+
+function tallyEngineers(groups) {
+  const counts = {};
+  groups.forEach(g => { if (g.latest && g.latest.engineer) counts[g.latest.engineer] = (counts[g.latest.engineer] || 0) + 1; });
+  return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+}
+
+function renderFront() {
+  const siteSelect = document.getElementById('site');
+  document.getElementById('metaName').value = siteMeta.name || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
+  document.getElementById('metaCertNumber').value = siteMeta.certificateNumber || '';
+  document.getElementById('metaAddressLine').value = siteMeta.addressLine || '';
+  document.getElementById('metaPostcode').value = siteMeta.postcode || '';
+  document.getElementById('postcodeStatus').textContent = '';
+  document.getElementById('metaStarted').value = siteMeta.testingStarted || suggestedTestingStarted();
+  document.getElementById('metaDue').value = siteMeta.nextRetestDue || suggestedRetestDue();
+  document.getElementById('metaLimitations').value = siteMeta.agreedLimitations || '';
+  document.getElementById('metaAgreedWith').value = siteMeta.agreedWith || '';
+  if (siteMeta.postcode) checkPostcode();
+
+  const groups = getReportGroups();
+  const anyFail = groups.some(g => g.latest && !overallPassOf(g.latest));
+  const box = document.getElementById('satisfactoryBox');
+  box.innerHTML = `
+    <div class="satisfactory-box ${anyFail ? 'bad' : 'ok'}">
+      <p class="label">Overall assessment</p>
+      <p class="verdict">${anyFail ? 'Unsatisfactory' : 'Satisfactory'}</p>
+      <p class="sub">Calculated automatically from the active register — not editable.</p>
+    </div>
+  `;
+
+  const engineers = tallyEngineers(groups);
+  const nameSelect = document.getElementById('signInspectedName');
+  nameSelect.innerHTML = engineers.length
+    ? engineers.map(e => `<option>${e}</option>`).join('')
+    : '<option value="">No tests logged yet</option>';
+  document.getElementById('signAuthName').value = currentUser.displayName || currentUser.email;
+}
+
+document.getElementById('saveMetaBtn').addEventListener('click', async () => {
+  const siteRef = document.getElementById('site').value;
+  if (!siteRef) return;
+  try {
+    await setDoc(doc(db, 'jobs', siteRef), {
+      certificateNumber: document.getElementById('metaCertNumber').value.trim(),
+      addressLine: document.getElementById('metaAddressLine').value.trim(),
+      postcode: document.getElementById('metaPostcode').value.trim(),
+      testingStarted: document.getElementById('metaStarted').value,
+      nextRetestDue: document.getElementById('metaDue').value.trim(),
+      agreedLimitations: document.getElementById('metaLimitations').value.trim(),
+      agreedWith: document.getElementById('metaAgreedWith').value.trim()
+    }, { merge: true });
+    siteMeta.certificateNumber = document.getElementById('metaCertNumber').value.trim();
+    siteMeta.addressLine = document.getElementById('metaAddressLine').value.trim();
+    siteMeta.postcode = document.getElementById('metaPostcode').value.trim();
+    siteMeta.testingStarted = document.getElementById('metaStarted').value;
+    siteMeta.nextRetestDue = document.getElementById('metaDue').value.trim();
+    siteMeta.agreedLimitations = document.getElementById('metaLimitations').value.trim();
+    siteMeta.agreedWith = document.getElementById('metaAgreedWith').value.trim();
+    const banner = document.getElementById('banner');
+    banner.className = 'banner ok'; banner.textContent = 'Installation details saved.'; banner.style.display = 'block';
+  } catch (e) {
+    alert('Could not save — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+// ---- PDF generation ----
+function loadImageAsDataURL(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      resolve({ dataUrl: canvas.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function fileToImageData(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve({ dataUrl: reader.result, w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatDateDMY(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function askQsedChoice(notQsedCount, total) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('qsedModal');
+    document.getElementById('qsedModalText').textContent =
+      notQsedCount + ' of ' + total + ' items on the register haven\'t been QSed yet. How should the report handle them?';
+    modal.style.display = 'flex';
+    const withBtn = document.getElementById('qsedWithBtn');
+    const withoutBtn = document.getElementById('qsedWithoutBtn');
+    const cancelBtn = document.getElementById('qsedCancelBtn');
+    function cleanup(result) {
+      modal.style.display = 'none';
+      withBtn.removeEventListener('click', onWith);
+      withoutBtn.removeEventListener('click', onWithout);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onWith() { cleanup('with'); }
+    function onWithout() { cleanup('without'); }
+    function onCancel() { cleanup('cancel'); }
+    withBtn.addEventListener('click', onWith);
+    withoutBtn.addEventListener('click', onWithout);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
+function drawTick(pdf, cx, cy, size, color) {
+  pdf.setDrawColor(color[0], color[1], color[2]); pdf.setLineWidth(1.2);
+  pdf.line(cx - size * 0.5, cy, cx - size * 0.1, cy + size * 0.4);
+  pdf.line(cx - size * 0.1, cy + size * 0.4, cx + size * 0.5, cy - size * 0.4);
+  pdf.setLineWidth(0.75);
+}
+function drawCross(pdf, cx, cy, size, color) {
+  pdf.setDrawColor(color[0], color[1], color[2]); pdf.setLineWidth(1.2);
+  pdf.line(cx - size * 0.4, cy - size * 0.4, cx + size * 0.4, cy + size * 0.4);
+  pdf.line(cx - size * 0.4, cy + size * 0.4, cx + size * 0.4, cy - size * 0.4);
+  pdf.setLineWidth(0.75);
+}
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  const banner = document.getElementById('banner');
+  banner.style.display = 'none';
+  const siteSelect = document.getElementById('site');
+  const siteRef = siteSelect.value;
+  const siteName = document.getElementById('metaName').value || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
+  if (!siteRef) { banner.className = 'banner bad'; banner.textContent = 'Select a site first.'; banner.style.display = 'block'; return; }
+
+  let groups = getReportGroups();
+  if (groups.length === 0) { banner.className = 'banner bad'; banner.textContent = 'Nothing to report for this site.'; banner.style.display = 'block'; return; }
+
+  const notQsedCount = groups.filter(g => g.latest && !g.latest.qsed).length;
+  if (notQsedCount > 0) {
+    const choice = await askQsedChoice(notQsedCount, groups.length);
+    if (choice === 'cancel') return;
+    if (choice === 'without') groups = groups.filter(g => g.latest && g.latest.qsed);
+    if (groups.length === 0) { banner.className = 'banner bad'; banner.textContent = 'Nothing left to report once non-QSed items are excluded.'; banner.style.display = 'block'; return; }
+  }
+
+  const logo = await loadImageAsDataURL('sw-logo.png').catch(() => null);
+  const inspectedFileInput = document.getElementById('signInspectedFile').files[0];
+  const authFileInput = document.getElementById('signAuthFile').files[0];
+  const inspectedSig = inspectedFileInput ? await fileToImageData(inspectedFileInput).catch(() => null) : null;
+  const authSig = authFileInput ? await fileToImageData(authFileInput).catch(() => null) : null;
+
+  const certNumber = document.getElementById('metaCertNumber').value.trim() || (siteRef.toUpperCase() + '-' + new Date().toISOString().slice(0, 10));
+  const reportRef = certNumber;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+  const marginX = 40;
+  let pageW = pdf.internal.pageSize.getWidth();
+  let pageH = pdf.internal.pageSize.getHeight();
+
+  const RED = [208, 34, 42];
+  const PASS_COLOR = [31, 138, 61];
+  const FAIL_COLOR = [192, 39, 45];
+
+  function sectionBar(y, label, width) {
+    pdf.setFillColor(...RED);
+    pdf.rect(marginX, y, width, 20, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5);
+    pdf.text(label.toUpperCase(), marginX + 8, y + 14);
+    return y + 20;
+  }
+
+  function labelValueRow(y, width, label, value, alt) {
+    pdf.setFillColor(alt ? 244 : 250, alt ? 243 : 249, alt ? 240 : 247);
+    pdf.rect(marginX, y, width, 22, 'F');
+    pdf.setDrawColor(225, 223, 218);
+    pdf.rect(marginX, y, width, 22);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5);
+    pdf.setTextColor(90, 90, 90);
+    pdf.text(label, marginX + 8, y + 14);
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(26, 26, 26);
+    pdf.text(String(value || '-'), marginX + 160, y + 14);
+    return y + 22;
+  }
+
+  // ---- Front page ----
+  const contentW = pageW - marginX * 2;
+
+  function ensureRoom(needed) {
+    if (y + needed > pageH - 40) {
+      pdf.addPage('a4', 'portrait');
+      pageW = pdf.internal.pageSize.getWidth();
+      pageH = pdf.internal.pageSize.getHeight();
+      y = 40;
+    }
+  }
+
+  if (logo) {
+    const logoW = 130;
+    const logoH = logoW * (logo.h / logo.w);
+    pdf.addImage(logo.dataUrl, 'PNG', marginX, 30, logoW, logoH);
+  }
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
+  pdf.setTextColor(26, 26, 26);
+  pdf.text('ISOLATOR / INTERLOCK TEST REPORT', pageW - marginX, 45, { align: 'right' });
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+  pdf.setTextColor(110, 110, 110);
+  pdf.text('Isolator, interlock and emergency stop testing record', pageW - marginX, 58, { align: 'right' });
+  pdf.text('Certificate number: ' + certNumber, pageW - marginX, 70, { align: 'right' });
+
+  let y = 95;
+  pdf.setDrawColor(220, 220, 220);
+  pdf.line(marginX, y, pageW - marginX, y);
+  y += 22;
+
+  y = sectionBar(y, 'Installation Details', contentW);
+  const metaRows = [
+    ['Installation', siteName],
+    ['Address', fullAddress()],
+    ['Testing started', formatDateDMY(document.getElementById('metaStarted').value)],
+    ['Report generated', formatDateDMY(new Date().toISOString().slice(0, 10))],
+    ['Next retest due', document.getElementById('metaDue').value]
+  ];
+  metaRows.forEach((r, i) => { ensureRoom(22); y = labelValueRow(y, contentW, r[0], r[1], i % 2 === 1); });
+
+  y += 26;
+  ensureRoom(20 + 22 * 4);
+  y = sectionBar(y, 'Simpson & Wood — Company Details', contentW);
+  const companyRows = [
+    ['Trading title', 'Simpson & Wood Ltd'],
+    ['Address', 'Unit 7-10 The Bull Commercial Centre, Stockton Lane, York, YO32 9LE'],
+    ['Phone', '01904400144'],
+    ['Website', 'www.simpsonandwood.co.uk'],
+    ['NICEIC enrolment number', '015032']
+  ];
+  companyRows.forEach((r, i) => { ensureRoom(22); y = labelValueRow(y, contentW, r[0], r[1], i % 2 === 1); });
+
+  y += 26;
+  ensureRoom(20 + 74);
+  const anyFail = groups.some(g => g.latest && !overallPassOf(g.latest));
+  y = sectionBar(y, 'Overall Assessment', contentW);
+  const boxH = 74;
+  pdf.setFillColor(anyFail ? 251 : 234, anyFail ? 235 : 247, anyFail ? 235 : 238);
+  pdf.rect(marginX, y, contentW, boxH, 'F');
+  pdf.setDrawColor(225, 223, 218);
+  pdf.rect(marginX, y, contentW, boxH);
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
+  pdf.setTextColor(anyFail ? 192 : 31, anyFail ? 39 : 138, anyFail ? 45 : 61);
+  pdf.text(anyFail ? 'UNSATISFACTORY' : 'SATISFACTORY', marginX + contentW / 2, y + 26, { align: 'center' });
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+  pdf.setTextColor(90, 90, 90);
+  pdf.text(anyFail
+    ? 'One or more items on the register have failed testing and require further action.'
+    : 'No outstanding failures recorded against this site at the time of generation.', marginX + 12, y + 44);
+
+  // Reserve this page + coordinate now; the actual Observations page number
+  // isn't known until that section is built later in the document, so the
+  // real text gets filled in via a setPage() jump-back right before saving.
+  const assessmentPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
+  const pageRefX = marginX + 12, pageRefY = y + 62;
+  y += boxH + 10;
+
+  // Short declaration, with the sign-off flowing directly beneath it under
+  // the same heading - this is distinct from the full Final Declaration
+  // page at the very end of the document.
+  y += 16;
+  ensureRoom(20 + 50);
+  y = sectionBar(y, 'Declaration & Sign-off', contentW);
+  y += 10;
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
+  const shortDeclText = "I/We, being the person(s) responsible for the inspection and functional testing of the machinery safety and isolation devices identified in this report, as indicated by my/our signatures below, having exercised reasonable skill and care when carrying out the inspection and testing, hereby declare that the information contained in this report, including the recorded results, observations and attached schedules, provides an accurate assessment of the functional condition of the devices tested at the time of the inspection, taking into account the stated scope, operating conditions, extent and limitations of the work.";
+  const shortDeclLines = pdf.splitTextToSize(shortDeclText, contentW);
+  ensureRoom(shortDeclLines.length * 11 + 10);
+  pdf.text(shortDeclLines, marginX, y);
+  y += shortDeclLines.length * 11 + 16;
+
+  function signOffBlock(label, name, position, sig, dateStr) {
+    ensureRoom(90);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(26, 26, 26);
+    pdf.text(label, marginX, y);
+    y += 14;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
+    pdf.text('Name: ' + (name || '-'), marginX, y);
+    pdf.text('Position: ' + (position || '-'), marginX + 220, y);
+    pdf.text('Date: ' + formatDateDMY(dateStr), marginX + 400, y);
+    y += 10;
+    if (sig) {
+      const sigW = 100, sigH = sigW * (sig.h / sig.w);
+      pdf.addImage(sig.dataUrl, marginX, y, sigW, Math.min(sigH, 45));
+      y += Math.min(sigH, 45) + 10;
+    } else {
+      pdf.setFont('helvetica', 'italic'); pdf.setFontSize(8.5); pdf.setTextColor(150, 150, 150);
+      pdf.text('No signature uploaded', marginX, y + 12);
+      y += 26;
+    }
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  signOffBlock('Inspected and tested by', document.getElementById('signInspectedName').value, document.getElementById('signInspectedPosition').value.trim(), inspectedSig, todayStr);
+  signOffBlock('Report authorised by', document.getElementById('signAuthName').value, document.getElementById('signAuthPosition').value.trim(), authSig, todayStr);
+
+  // ---- Agreed Limitations - its own page, so it never pushes the front
+  // page or sign-off onto page 2 ----
+  pdf.addPage('a4', 'portrait');
+  pageW = pdf.internal.pageSize.getWidth();
+  pageH = pdf.internal.pageSize.getHeight();
+  let ly = 40;
+  ly = sectionBar(ly, 'Agreed Limitations', pageW - marginX * 2);
+  ly += 14;
+
+  const limitationsText = document.getElementById('metaLimitations').value.trim();
+  const agreedWithSite = document.getElementById('metaAgreedWith').value.trim();
+  const limitedGroups = groups.filter(g => g.latest && isLimitedRecord(g.latest));
+
+  if (!limitationsText && limitedGroups.length === 0) {
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(60, 60, 60);
+    pdf.text('All identified equipment was fully tested, with no agreed limitations recorded for this site.', marginX, ly);
+  } else {
+    if (limitationsText) {
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
+      const limLines = pdf.splitTextToSize(limitationsText, pageW - marginX * 2);
+      pdf.text(limLines, marginX, ly);
+      ly += limLines.length * 11 + 8;
+      if (agreedWithSite) {
+        pdf.setFont('helvetica', 'italic'); pdf.setFontSize(8.5); pdf.setTextColor(110, 110, 110);
+        pdf.text('Agreed with: ' + agreedWithSite, marginX, ly);
+        ly += 20;
+      }
+    }
+
+    if (limitedGroups.length > 0) {
+      ly += 10;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5); pdf.setTextColor(26, 26, 26);
+      pdf.text('Items Tested With Agreed Limitations', marginX, ly);
+      ly += 16;
+
+      const limCols = [
+        { key: 'eq', label: 'Equipment ID', w: 130 },
+        { key: 'reason', label: 'Reason', w: (pageW - marginX * 2) - 130 - 110 - 70 },
+        { key: 'agreedWith', label: 'Agreed With', w: 110 },
+        { key: 'date', label: 'Date', w: 70 }
+      ];
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(90, 90, 90);
+      let lx = marginX;
+      limCols.forEach(c => { pdf.text(c.label, lx + 3, ly + 11); lx += c.w; });
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(marginX, ly + 16, pageW - marginX, ly + 16);
+      ly += 20;
+
+      limitedGroups.forEach((g, idx) => {
+        const latest = g.latest;
+        const rowVals = { eq: g.eq, reason: latest.limitationReason || '-', agreedWith: latest.limitationAgreedWith || '-', date: formatDateDMY(latest.date) };
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40);
+        const cellLines = limCols.map(c => pdf.splitTextToSize(String(rowVals[c.key]), c.w - 6));
+        const maxLines = Math.max(1, ...cellLines.map(l => l.length));
+        const rowH = maxLines * 10 + 6;
+        if (ly + rowH > pageH - 40) {
+          pdf.addPage('a4', 'portrait');
+          pageW = pdf.internal.pageSize.getWidth();
+          pageH = pdf.internal.pageSize.getHeight();
+          ly = 40;
+        }
+        if (idx % 2 === 1) { pdf.setFillColor(250, 249, 247); pdf.rect(marginX, ly - 3, pageW - marginX * 2, rowH, 'F'); }
+        let cx = marginX;
+        limCols.forEach((c, ci) => { pdf.text(cellLines[ci], cx + 3, ly + 6); cx += c.w; });
+        ly += rowH;
+      });
+    }
+  }
+
+  // ---- One landscape table per category, sorted by location ----
+  // Observations are collected here and printed on their own page at the end,
+  // rather than as a column in this grid (keeps the grid within page width and
+  // matches how the EIC reference document separates its test schedule from
+  // its narrative comments).
+  const allObservations = [];
+
+  CATEGORY_NAMES.forEach(cat => {
+    const def = CATEGORIES[cat];
+    let rowsForCat = groups.filter(g => g.latest && g.latest.category === cat);
+    if (rowsForCat.length === 0) return;
+    rowsForCat.sort((a, b) => locationOf(a.latest).localeCompare(locationOf(b.latest)) || a.eq.localeCompare(b.eq));
+
+    pdf.addPage('a4', 'landscape');
+    pageW = pdf.internal.pageSize.getWidth();
+    pageH = pdf.internal.pageSize.getHeight();
+    let ty = 40;
+    ty = sectionBar(ty, SECTION_HEADINGS[cat] || cat, pageW - marginX * 2);
+    ty += 10;
+    const usableW = pageW - marginX * 2;
+
+    const cols = [{ key: 'location', label: 'Location' }];
+    (def.fields || []).forEach(f => { if (f.key !== def.locationKey) cols.push({ key: f.key, label: f.label }); });
+    cols.push({ key: 'equipmentId', label: 'Equipment ID', bold: true });
+    cols.push({ key: 'manufacturer', label: 'Manufacturer' });
+    if (def.hasIsolatorSpecs) {
+      cols.push({ key: 'currentRating', label: 'Rating' });
+      cols.push({ key: 'poles', label: 'Poles' });
+      cols.push({ key: 'auxiliary', label: 'Auxiliary' });
+    }
+    const checkCols = def.checks.map((c, i) => ({ key: 'check:' + c.key, label: 'T' + (i + 1), check: true, checkLabel: c.label }));
+    cols.push(...checkCols);
+    cols.push({ key: 'model', label: 'Model' });
+
+    function cellValue(latest, eq, c) {
+      if (c.key === 'equipmentId') return eq;
+      if (c.key === 'location') return locationOf(latest) || '-';
+      const v = latest[c.key];
+      return v !== undefined && v !== '' ? String(v) : '-';
+    }
+
+    // Legend for the coded check columns, laid out as a clean grid rather than
+    // a single run-on line.
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(110, 110, 110);
+    const colsPerRow = 2;
+    const legendColW = usableW / colsPerRow;
+    checkCols.forEach((c, i) => {
+      const col = i % colsPerRow, row = Math.floor(i / colsPerRow);
+      const text = c.label + ' — ' + c.checkLabel;
+      const lines = pdf.splitTextToSize(text, legendColW - 10);
+      pdf.text(lines, marginX + col * legendColW, ty + row * (lines.length > 1 ? 18 : 10) + 8);
+    });
+    const legendRows = Math.ceil(checkCols.length / colsPerRow);
+    ty += legendRows * 12 + 12;
+
+    // Dynamic column widths based on header + actual content
+    pdf.setFontSize(8);
+    let sumFixed = 0;
+    cols.forEach(c => {
+      if (c.check) { c.w = 20; sumFixed += c.w; return; }
+      let maxW = pdf.getTextWidth(c.label);
+      rowsForCat.forEach(g => {
+        const w = pdf.getTextWidth(cellValue(g.latest, g.eq, c));
+        if (w > maxW) maxW = w;
+      });
+      const cap = (c.key === 'equipmentId' || c.key === 'location') ? 140 : 100;
+      c.w = Math.min(cap, maxW + 12);
+      sumFixed += c.w;
+    });
+
+    // Always fill the full page width - shrink OR grow non-check columns
+    // proportionally so every table looks consistent regardless of column count.
+    const shrinkable = cols.filter(c => !c.check);
+    const shrinkableSum = shrinkable.reduce((s, c) => s + c.w, 0);
+    const checkSum = sumFixed - shrinkableSum;
+    const available = usableW - checkSum;
+    if (shrinkableSum > 0 && available > 0) {
+      const ratio = Math.max(0.5, available / shrinkableSum);
+      shrinkable.forEach(c => { c.w = Math.max(30, Math.round(c.w * ratio)); });
+    }
+
+    // Header row - extracted so it can be redrawn on a continuation page.
+    let x;
+    function drawColumnHeaderRow(headerY) {
+      let hx = marginX;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(90, 90, 90);
+      cols.forEach(c => {
+        const lines = pdf.splitTextToSize(c.label, c.w - 4);
+        pdf.text(lines, hx + 3, headerY + 10);
+        hx += c.w;
+      });
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(marginX, headerY + 24, marginX + cols.reduce((s,c)=>s+c.w,0), headerY + 24);
+      return headerY + 24 + 4;
+    }
+    ty = drawColumnHeaderRow(ty);
+
+    rowsForCat.forEach((g, idx) => {
+      const latest = g.latest;
+      const cellLines = cols.map(c => c.check ? ['#'] : pdf.splitTextToSize(cellValue(latest, g.eq, c), c.w - 6));
+      const maxLines = Math.max(1, ...cellLines.map(l => l.length));
+      const rowH = maxLines * 9 + 6;
+
+      if (ty + rowH > pageH - 40) {
+        pdf.addPage('a4', 'landscape');
+        pageW = pdf.internal.pageSize.getWidth();
+        pageH = pdf.internal.pageSize.getHeight();
+        ty = 40;
+        ty = sectionBar(ty, (SECTION_HEADINGS[cat] || cat) + ' — CONTINUED', pageW - marginX * 2);
+        ty += 10;
+        ty = drawColumnHeaderRow(ty);
+      }
+      const rowW = cols.reduce((s,c)=>s+c.w,0);
+      if (idx % 2 === 1) { pdf.setFillColor(250, 249, 247); pdf.rect(marginX, ty - 3, rowW, rowH, 'F'); }
+
+      x = marginX;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40);
+      cols.forEach((c, ci) => {
+        if (c.check) {
+          const cv = latest.checks ? latest.checks[c.key.split(':')[1]] : '';
+          const cx = x + c.w / 2, cy = ty + 3;
+          if (cv === 'Pass') drawTick(pdf, cx, cy, 7, PASS_COLOR);
+          else if (cv === 'Fail') drawCross(pdf, cx, cy, 7, FAIL_COLOR);
+          else if (cv === 'N/A') { pdf.setFontSize(6.5); pdf.setTextColor(150, 150, 150); pdf.text('N/A', cx - 6, cy + 3); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40); }
+          else { pdf.setTextColor(180, 180, 180); pdf.text('-', cx - 2, cy + 3); pdf.setTextColor(40, 40, 40); }
+        } else {
+          if (c.bold) pdf.setFont('helvetica', 'bold');
+          pdf.text(cellLines[ci], x + 3, ty + 6);
+          if (c.bold) pdf.setFont('helvetica', 'normal');
+        }
+        x += c.w;
+      });
+      ty += rowH;
+
+      if (latest.observations) {
+        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text: latest.observations });
+      }
+    });
+  });
+
+  // ---- Observations page ----
+  let observationsPageNum = null;
+  if (allObservations.length > 0) {
+    allObservations.sort((a, b) => {
+      if (a.pass !== b.pass) return a.pass ? 1 : -1; // failed items first
+      return a.eq.localeCompare(b.eq);
+    });
+
+    pdf.addPage('a4', 'portrait');
+    pageW = pdf.internal.pageSize.getWidth();
+    pageH = pdf.internal.pageSize.getHeight();
+    observationsPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
+    let oy = 40;
+    oy = sectionBar(oy, 'Observations', pageW - marginX * 2);
+    oy += 14;
+
+    allObservations.forEach((o) => {
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+      const lines = pdf.splitTextToSize(o.text, pageW - marginX * 2);
+      const entryH = 13 + lines.length * 11 + 6 + 14; // header line + wrapped text + gap + divider gap
+
+      // Measure the whole entry before drawing anything, so a header can never
+      // get stranded at the bottom of a page with its text orphaned on the next.
+      if (oy + entryH > pageH - 40) {
+        pdf.addPage('a4', 'portrait');
+        pageW = pdf.internal.pageSize.getWidth();
+        pageH = pdf.internal.pageSize.getHeight();
+        oy = 40;
+        oy = sectionBar(oy, 'Observations — Continued', pageW - marginX * 2);
+        oy += 14;
+      }
+
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(26, 26, 26);
+      pdf.text(o.eq, marginX, oy);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(110, 110, 110);
+      pdf.text(o.category, marginX + 200, oy);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(o.pass ? PASS_COLOR[0] : FAIL_COLOR[0], o.pass ? PASS_COLOR[1] : FAIL_COLOR[1], o.pass ? PASS_COLOR[2] : FAIL_COLOR[2]);
+      pdf.text(o.pass ? 'PASS' : 'FAIL', pageW - marginX - 30, oy, { align: 'right' });
+      oy += 13;
+
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
+      pdf.text(lines, marginX, oy);
+      oy += lines.length * 11 + 6;
+
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(marginX, oy, pageW - marginX, oy);
+      oy += 14;
+    });
+  }
+
+  // ---- Final Declaration, Scope and Limitations page ----
+  pdf.addPage('a4', 'portrait');
+  pageW = pdf.internal.pageSize.getWidth();
+  pageH = pdf.internal.pageSize.getHeight();
+  let dy = 40;
+  function dEnsure(needed) {
+    if (dy + needed > pageH - 40) {
+      pdf.addPage('a4', 'portrait');
+      pageW = pdf.internal.pageSize.getWidth();
+      pageH = pdf.internal.pageSize.getHeight();
+      dy = 40;
+    }
+  }
+
+  const declSections = [
+    { type: 'title', text: 'Final Declaration, Scope and Limitations' },
+    { type: 'heading', text: 'Declaration' },
+    { type: 'para', text: 'The inspection and functional testing documented within this report was undertaken to assess the observed condition and functional response of the machinery isolation and safety devices identified within the report schedules.' },
+    { type: 'para', text: 'The inspection and testing included, where applicable and specifically identified within the schedules:' },
+    { type: 'bullets', items: [
+      'control-panel isolators and supply-disconnecting devices',
+      'local motor isolators',
+      'emergency-stop buttons, pull cords and other emergency-stop actuators',
+      'guard switches and machine interlocking devices',
+      'associated stop, reset and restart functions',
+      'measures intended to prevent unexpected or automatic restart'
+    ]},
+    { type: 'para', text: 'The person or persons responsible for the inspection and testing have exercised reasonable skill and care in undertaking the work and recording the results. The information contained within this report, including its observations and attached schedules, is considered to provide an accurate record of the condition and functional response of the devices tested at the time of inspection, taking account of the stated scope, extent, operating conditions and limitations.' },
+
+    { type: 'heading', text: 'Basis of the Inspection and Testing Procedure' },
+    { type: 'para', text: 'The inspection and testing procedure was developed with regard to:' },
+    { type: 'bullets', items: [
+      'the Provision and Use of Work Equipment Regulations 1998, as amended',
+      'relevant Health and Safety Executive guidance',
+      'the machinery manufacturer\u2019s instructions and available technical documentation',
+      'the machine-specific risk assessment, where made available',
+      'the intended operating functions of the machinery',
+      'relevant principles contained within applicable machinery-safety and electrical-equipment standards identified in the report'
+    ]},
+    { type: 'para', text: 'Where applicable to the equipment and functions tested, guidance may include relevant principles contained within:' },
+    { type: 'bullets', items: [
+      'BS EN 60204-1 \u2014 Electrical equipment of machines',
+      'BS EN ISO 13850 \u2014 Emergency-stop function',
+      'BS EN ISO 14119 \u2014 Interlocking devices associated with guards',
+      'BS EN ISO 14118 \u2014 Prevention of unexpected start-up',
+      'BS EN ISO 13849 \u2014 Safety-related parts of control systems'
+    ]},
+    { type: 'para', text: 'References to legislation, guidance documents and technical standards indicate the basis upon which the inspection and testing procedure was prepared. They do not imply that every provision of those documents has been assessed or that a complete machinery conformity assessment has been undertaken.' },
+
+    { type: 'heading', text: 'Meaning of a Satisfactory Functional Test' },
+    { type: 'para', text: 'Where a device is recorded as satisfactory, this means that it operated in accordance with its identified or reasonably understood intended function during the inspection and tests performed.' },
+    { type: 'para', text: 'A satisfactory functional test does not, in isolation, confirm:' },
+    { type: 'bullets', items: [
+      'the adequacy of the original machinery or safety-system design',
+      'achievement of a required Performance Level or Safety Integrity Level',
+      'compliance with all applicable machinery-supply legislation',
+      'the absence of concealed defects, intermittent faults or fault masking',
+      'the suitability of stopping times or safety distances',
+      'the integrity of components that could not be inspected or tested',
+      'isolation from every electrical, pneumatic, hydraulic, mechanical, thermal or stored-energy source',
+      'that the machinery is safe for every possible use, operating condition or foreseeable misuse'
+    ]},
+
+    { type: 'heading', text: 'Limitations' },
+    { type: 'para', text: 'The findings of this report apply only to the machinery, devices and functions specifically identified within the report schedules.' },
+    { type: 'para', text: 'The report records the condition and operation observed at the time of inspection. It cannot guarantee continued operation after the inspection date and does not remove the duty of the person responsible for the equipment to maintain it in a safe condition, act upon identified defects and establish an appropriate ongoing inspection and testing regime.' },
+    { type: 'para', text: 'Unless expressly stated otherwise, this report does not constitute:' },
+    { type: 'bullets', items: [
+      'an Electrical Installation Condition Report',
+      'a complete machinery risk assessment',
+      'a CE or UKCA conformity assessment',
+      'validation of a safety-related control system',
+      'verification of a Performance Level or Safety Integrity Level',
+      'an assessment of compliance with all requirements of PUWER',
+      'a detailed examination of the machinery\u2019s mechanical integrity',
+      'confirmation that all sources of hazardous or stored energy have been identified'
+    ]},
+
+    { type: 'heading', text: 'Overall Statement' },
+    { type: 'para', text: 'Subject to the observations, defects, limitations and recommendations recorded within this report, the devices identified as satisfactory operated in accordance with their identified intended functions during the inspection and tests performed.' }
+  ];
+
+  // Measure first, then pick the largest text size that guarantees this fits
+  // on a single page - rather than guessing spacing and hoping.
+  const declAvailableH = pageH - 80; // dy starts at 40, footer sits near pageH-30
+  const fullW0 = pageW - marginX * 2;
+
+  function measureDeclHeight(bodySize) {
+    const lineH = bodySize * 1.18;
+    const titleSize = Math.round(bodySize * 1.55);
+    const headingSize = Math.round((bodySize + 1.3) * 10) / 10;
+    let h = 0;
+    declSections.forEach(sec => {
+      if (sec.type === 'title') {
+        h += 10 + 16;
+      } else if (sec.type === 'heading') {
+        h += headingSize * 1.5 + 4;
+      } else if (sec.type === 'para') {
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(bodySize);
+        const lines = pdf.splitTextToSize(sec.text, fullW0);
+        h += lines.length * lineH + 5;
+      } else if (sec.type === 'bullets') {
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(bodySize);
+        sec.items.forEach(item => {
+          const lines = pdf.splitTextToSize('\u2022  ' + item, fullW0 - 10);
+          h += lines.length * lineH + 1.5;
+        });
+        h += 5;
+      }
+    });
+    return h;
+  }
+
+  const sizeOptions = [9, 8.5, 8, 7.5, 7, 6.5, 6];
+  let bodySize = sizeOptions[sizeOptions.length - 1];
+  for (const s of sizeOptions) {
+    if (measureDeclHeight(s) <= declAvailableH) { bodySize = s; break; }
+  }
+  const titleSize = Math.round(bodySize * 1.55);
+  const headingSize = Math.round((bodySize + 1.3) * 10) / 10;
+  const lineH = bodySize * 1.18;
+
+  declSections.forEach(sec => {
+    const fullW = pageW - marginX * 2;
+    if (sec.type === 'title') {
+      dEnsure(26);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(titleSize); pdf.setTextColor(26, 26, 26);
+      pdf.text(sec.text, marginX, dy);
+      dy += 10;
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(marginX, dy, pageW - marginX, dy);
+      dy += 16;
+    } else if (sec.type === 'heading') {
+      dEnsure(headingSize * 1.5 + 4);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(headingSize); pdf.setTextColor(208, 34, 42);
+      pdf.text(sec.text.toUpperCase(), marginX, dy);
+      dy += headingSize * 1.5 + 4;
+    } else if (sec.type === 'para') {
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(bodySize); pdf.setTextColor(50, 50, 50);
+      const lines = pdf.splitTextToSize(sec.text, fullW);
+      dEnsure(lines.length * lineH + 5);
+      pdf.text(lines, marginX, dy);
+      dy += lines.length * lineH + 5;
+    } else if (sec.type === 'bullets') {
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(bodySize); pdf.setTextColor(50, 50, 50);
+      sec.items.forEach(item => {
+        const lines = pdf.splitTextToSize('\u2022  ' + item, fullW - 10);
+        dEnsure(lines.length * lineH + 1.5);
+        pdf.text(lines, marginX + 8, dy);
+        dy += lines.length * lineH + 1.5;
+      });
+      dy += 5;
+    }
+  });
+
+  if (anyFail) {
+    pdf.setPage(assessmentPageNum);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5);
+    pdf.setTextColor(192, 39, 45);
+    pdf.text(observationsPageNum
+      ? 'See the Observations section, page ' + observationsPageNum + ', for details of failed items.'
+      : 'See the Observations section for details of failed items.', pageRefX, pageRefY);
+  }
+
+  const totalPages = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    pdf.setDrawColor(230, 230, 230);
+    pdf.line(marginX, ph - 30, pw - marginX, ph - 30);
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Simpson & Wood · Isolator/Interlock Report · ' + reportRef, marginX, ph - 18);
+    pdf.text('Page ' + i + ' of ' + totalPages, pw - marginX, ph - 18, { align: 'right' });
+  }
+
+  const filename = 'Isolator-Interlock-Report-' + siteRef + '-' + new Date().toISOString().slice(0,10) + '.pdf';
+  pdf.save(filename);
+
+  banner.className = 'banner ok';
+  banner.textContent = 'Report generated: ' + filename;
+  banner.style.display = 'block';
+});
+</script>
+
+</body>
+</html>

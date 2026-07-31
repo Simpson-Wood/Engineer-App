@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isolator / Interlock Test — Simpson & Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
+    --line:#e2e2e2; --bg:#f6f5f4; --card:#ffffff; --pass:#1f8a3d; --fail:#c0272d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);padding-bottom:40px;}
+  header{background:var(--ink);padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  header .brand{display:flex;align-items:center;gap:12px;}
+  header img{height:32px;display:block;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
+  header .title-block p{margin:2px 0 0;font-size:11.5px;color:#8f8f8f;}
+  header .who{text-align:right;}
+  header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
+  header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
+
+  .site-bar{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;}
+  .site-bar-inner{max-width:640px;margin:0 auto;}
+  .site-bar label{font-size:12px;font-weight:600;margin-bottom:5px;display:block;}
+  .site-bar select{width:100%;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-family:'Barlow',sans-serif;}
+  .site-status{font-size:11.5px;color:var(--grey);margin-top:5px;}
+
+  .tab-bar{display:flex;max-width:640px;margin:0 auto;background:#fff;border-bottom:1px solid var(--line);}
+  .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:14px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
+  .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
+
+  main{max-width:640px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
+  .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--ink);}
+  label .req{color:var(--red);}
+  label .hint{display:block;font-weight:400;color:var(--grey);font-size:11.5px;margin-top:2px;}
+  input[type=text], input[type=date], select, textarea, input[type=file]{
+    width:100%;padding:10px 11px;font-family:'Barlow',sans-serif;font-size:15px;
+    border:1.5px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);margin-bottom:14px;
+  }
+  textarea{resize:vertical;min-height:60px;}
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%236b6b6b' d='M5 7l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
+  select:disabled option:disabled{color:#ccc;}
+  .field-error{border-color:var(--red) !important;}
+  .error-msg{color:var(--red);font-size:12px;margin:-10px 0 12px;display:none;}
+  .radio-row{display:flex;gap:6px;margin:0;flex-shrink:0;}
+  .radio-opt{border:1.5px solid var(--line);border-radius:6px;padding:6px 11px;text-align:center;font-weight:600;font-size:12px;cursor:pointer;user-select:none;color:var(--grey);min-width:50px;}
+  .radio-opt input{display:none;}
+  .radio-opt.pass-sel{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
+  .radio-opt.fail-sel{border-color:var(--fail);background:#fbe9e9;color:var(--fail);}
+  .radio-opt.na-sel{border-color:var(--grey);background:#f0f0f0;color:var(--grey);}
+
+  .id-preview{background:#f2f2f2;border:1.5px dashed var(--line);border-radius:7px;padding:10px 11px;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;min-height:20px;letter-spacing:.02em;}
+  .id-preview.pending{color:var(--grey);font-weight:400;font-style:italic;font-size:13px;}
+  .id-note{font-size:11px;color:var(--grey);margin:0 0 14px;}
+  .id-note.retest{color:var(--red);font-weight:600;}
+
+  .check-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:9px 0;flex-wrap:wrap;}
+  .check-item:first-child{border-top:none;padding-top:0;}
+  .check-item .check-label{flex:1;min-width:160px;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .check-item .error-msg{width:100%;margin:2px 0 0;}
+
+  .entry{border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+  .entry.saved{opacity:.6;}
+  .entry-head{background:var(--ink);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .entry-head .tag{background:var(--red);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;padding:3px 9px;border-radius:4px;text-transform:uppercase;flex-shrink:0;}
+  .entry-head .eq-id{font-weight:600;font-size:13px;flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .entry-head button{background:none;border:none;color:#e2b0b3;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;}
+  .entry-body{padding:14px;}
+
+  .add-btn{width:100%;padding:13px;background:#fff;border:2px dashed var(--red);color:var(--red);border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-bottom:6px;}
+  .empty-note{text-align:center;color:var(--grey);font-size:13.5px;padding:18px 0;}
+
+  .save-entry-btn{width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-top:6px;}
+  .save-entry-btn:disabled{background:#c9a3a5;cursor:not-allowed;}
+
+  .banner{display:none;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
+  .banner.ok{background:#eaf7ee;color:var(--pass);border:1px solid #b9e2c4;}
+  .banner.bad{background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;}
+
+  .today-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);}
+  .today-item:first-child{border-top:none;}
+  .today-item .id{font-weight:700;font-size:13.5px;}
+  .today-item .cat{font-size:11px;color:var(--grey);}
+
+  #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
+  #signinScreen img{height:44px;margin-bottom:28px;}
+  #signinScreen h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:20px;margin:0 0 8px;}
+  #signinScreen p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 26px;}
+  .ms-btn{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
+  .ms-btn:active{background:#000;}
+  #signinScreen .err{color:var(--fail);font-size:13px;margin-top:16px;max-width:320px;}
+  #appRoot{display:none;}
+
+  .reg-subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .reg-subtabs button{border:1.5px solid var(--line);background:#fff;color:var(--grey);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:20px;cursor:pointer;}
+  .reg-subtabs button.active{border-color:var(--red);background:var(--red);color:#fff;}
+
+  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .reg-item.overdue{border-color:var(--fail);background:#fff8f8;}
+  .reg-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .reg-item .eq{font-weight:700;font-size:14.5px;}
+  .reg-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+  .reg-item .meta{font-size:11.5px;color:var(--grey);margin-top:4px;}
+  .reg-item .meta.overdue-text{color:var(--fail);font-weight:700;}
+  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .chip.pass{background:#eaf7ee;color:var(--pass);}
+  .chip.fail{background:#fbe9e9;color:var(--fail);}
+  .chip.overdue{background:var(--fail);color:#fff;}
+  .reg-item-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;}
+  .expand-btn{background:none;border:none;color:var(--grey);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;}
+  .retest-btn{background:#fff;border:1.5px solid var(--red);color:var(--red);font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .hist-list{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;}
+  .hist-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-date{font-size:12.5px;font-weight:600;display:flex;align-items:center;}
+  .hist-meta{font-size:11px;color:var(--grey);margin-top:1px;}
+  .del-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
+  .history-empty{color:var(--grey);font-size:13px;text-align:center;padding:16px 0;}
+  .loading-note{color:var(--grey);font-size:13px;text-align:center;padding:6px 0;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>Isolator / Interlock Test</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to log or review tests.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <div class="brand">
+      <img src="sw-logo.png" alt="Simpson & Wood">
+      <div class="title-block">
+        <h1>Isolator / Interlock Test</h1>
+        <p id="versionLabel">v13.0</p>
+      </div>
+    </div>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="site-bar">
+    <div class="site-bar-inner">
+      <label>Site <span class="req">*</span></label>
+      <select id="site" required>
+        <option value="" disabled selected>Loading site list…</option>
+      </select>
+      <p class="site-status" id="siteStatus"></p>
+      <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete — no new tests can be logged until a manager takes it out of Complete status.</div>
+      <button type="button" id="readyForQsBtn" style="display:none;width:100%;margin-top:10px;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Mark ready for QS</button>
+      <button type="button" id="toggleAddSiteBtn" style="width:100%;margin-top:10px;padding:9px;background:#fff;border:1.5px dashed var(--line);color:var(--grey);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add a new site</button>
+      <div id="addSiteForm" style="display:none;margin-top:12px;">
+        <label>Site reference <span class="hint">(suggested automatically — edit if you need something different, can't be changed later)</span></label>
+        <input type="text" id="newSiteRef">
+        <label>Customer / site name</label>
+        <input type="text" id="newSiteName">
+        <label>Address line</label>
+        <input type="text" id="newSiteAddressLine">
+        <label>Postcode</label>
+        <input type="text" id="newSitePostcode" style="max-width:160px;text-transform:uppercase;">
+        <label>Agreed limitations <span class="hint">(what's out of scope, and why)</span></label>
+        <textarea id="newSiteLimitations" style="min-height:60px;"></textarea>
+        <label>Agreed with</label>
+        <input type="text" id="newSiteAgreedWith">
+        <button type="button" id="addSiteBtn" style="width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Add site</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button id="tabLogBtn" class="active">Log Test</button>
+    <button id="tabRegBtn">Site Register</button>
+  </div>
+
+  <main>
+
+    <div id="banner" class="banner"></div>
+
+    <!-- LOG TEST TAB -->
+    <div id="logTab">
+      <div class="card">
+        <p class="section-label">Visit details</p>
+        <label>Date <span class="req">*</span></label>
+        <input type="date" id="visitDate" required>
+      </div>
+
+      <div class="card" id="todayCard" style="display:none;">
+        <p class="section-label">Tests completed today</p>
+        <div id="todayList"></div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Log an isolator / interlock</p>
+        <div id="entries"></div>
+        <div class="empty-note" id="emptyNote">No entry in progress</div>
+        <button type="button" class="add-btn" id="addEntryBtn">+ Add Isolator / Interlock</button>
+      </div>
+    </div>
+
+    <!-- REGISTER TAB -->
+    <div id="regTab" style="display:none;">
+      <div class="card">
+        <p class="section-label">Site register</p>
+        <input type="text" id="regSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <div class="reg-subtabs" id="regSubtabs"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <select id="regLocFilter" style="flex:1;min-width:140px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;"><option value="">All locations</option></select>
+          <select id="regPassFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">Pass or Fail</option>
+            <option value="pass">Pass only</option>
+            <option value="fail">Fail only</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        </div>
+        <div id="regList"><div class="loading-note">Select a site to view its register.</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<datalist id="dl-panelName"></datalist>
+<datalist id="dl-millLocation"></datalist>
+<datalist id="dl-equipmentName"></datalist>
+<datalist id="dl-physicalLocation"></datalist>
+<datalist id="dl-relayLocation"></datalist>
+<datalist id="dl-equipmentAffected"></datalist>
+<datalist id="dl-manufacturer"></datalist>
+<datalist id="dl-model"></datalist>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, collection, addDoc, getDocs, doc, updateDoc, getDoc, setDoc,
+  query, where, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v13.0";
+document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
+console.log('Isolator/Interlock tool', VERSION);
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+const ALERT_FLOW_URL = "REPLACE_WITH_ALERT_FLOW_URL";
+const QS_NOTIFY_FLOW_URL = "REPLACE_WITH_QS_NOTIFY_FLOW_URL";
+function reportSubmissionFailure(err, context) {
+  console.error('Submission failed:', err, context);
+  if (!navigator.onLine) return;
+  if (ALERT_FLOW_URL.startsWith("REPLACE")) return;
+  fetch(ALERT_FLOW_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tool: 'isolator-interlock-test', errorCode: err.code || '', errorMessage: err.message || String(err),
+      site: context.siteName || '', engineer: context.engineer || '', equipmentId: context.equipmentId || '',
+      timestamp: new Date().toISOString()
+    })
+  }).catch(() => {});
+}
+
+// ---------------------------------------------------------------
+// Category definitions
+// ---------------------------------------------------------------
+const CATEGORIES = {
+  'Panel Isolator': {
+    fields: [
+      { key: 'millLocation', label: 'Mill Location', hint: 'E.g. Press line 1, Blending, Intake', dl: 'millLocation' },
+      { key: 'panelName', label: 'Panel Name', hint: 'E.g. Routing panel, Main panel', dl: 'panelName' }
+    ],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'PI', hasIsolatorSpecs: true,
+    checks: [
+      { key: 'operation', label: 'Operation' },
+      { key: 'guards', label: 'All guards & shields in place' },
+      { key: 'handle', label: 'Handle' },
+      { key: 'interlock', label: 'Interlock working' },
+      { key: 'heat', label: 'No signs of heat on any connections' },
+      { key: 'connectionsSecure', label: 'Connections secure' }
+    ]
+  },
+  'Motor Isolator': {
+    fields: [
+      { key: 'millLocation', label: 'Mill Location', hint: 'E.g. Press line 1, Blending, Intake', dl: 'millLocation' },
+      { key: 'equipmentName', label: 'Equipment Name', hint: 'E.g. C12, C16, M1 — becomes part of the short ID', dl: 'equipmentName' }
+    ],
+    locationKey: 'millLocation', idMode: 'tag', tagField: 'equipmentName', suffix: 'MI', hasIsolatorSpecs: true,
+    checks: [
+      { key: 'operation', label: 'Operation' },
+      { key: 'handleCondition', label: 'Handle in good condition' },
+      { key: 'interlock', label: 'Interlock working' },
+      { key: 'heat', label: 'No signs of heat on any connections' },
+      { key: 'enclosure', label: 'Enclosure in satisfactory condition' },
+      { key: 'auxContacts', label: 'Aux contacts working' },
+      { key: 'labelled', label: 'Correctly labelled with relevant equipment name (e.g. C16)' },
+      { key: 'connectionsSecure', label: 'Connections secure' },
+      { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  },
+  'Emergency Stop': {
+    fields: [
+      { key: 'millLocation', label: 'Mill Location', hint: 'E.g. Press line 1, Blending, Intake', dl: 'millLocation' },
+      { key: 'physicalLocation', label: 'Physical Location', hint: 'E.g. Press line 1 press deck, Press line 1 main panel', dl: 'physicalLocation' },
+      { key: 'relayLocation', label: 'Location of Safety Relay', hint: 'E.g. Press line 1 press panel, Press line 1 routing panel', dl: 'relayLocation' },
+      { key: 'equipmentAffected', label: 'Equipment Affected When Pressed', hint: 'E.g. Press only, All press routing', dl: 'equipmentAffected' }
+    ],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'ES',
+    checks: [
+      { key: 'buttonOperation', label: 'Button operation' },
+      { key: 'shroudLabel', label: 'Shroud and/or label in correct position' },
+      { key: 'terminalBlocks', label: 'Terminal blocks secure on rear' },
+      { key: 'relayOperates', label: 'E-stop relay operates' },
+      { key: 'channelsDisconnect', label: 'Do both channels disconnect' },
+      { key: 'machineryStops', label: 'All required machinery stops immediately' },
+      { key: 'resetOperational', label: 'E-stop relay reset button operational' },
+      { key: 'restartWhilePressed', label: 'Can the machinery be restarted when button is pressed?' },
+      { key: 'connectionsSecure', label: 'Connections secure' },
+      { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  },
+  'Safety Interlock': {
+    fields: [
+      { key: 'millLocation', label: 'Mill Location', hint: 'E.g. Press line 1, Blending, Intake', dl: 'millLocation' },
+      { key: 'physicalLocation', label: 'Physical Location', hint: 'E.g. Press line 1 press door, Press line 1 conditioner 1', dl: 'physicalLocation' },
+      { key: 'equipmentAffected', label: 'Equipment Affected', hint: 'E.g. Press only, All press routing', dl: 'equipmentAffected' }
+    ],
+    locationKey: 'millLocation', idMode: 'letter', suffix: 'SI',
+    checks: [
+      { key: 'mounted', label: 'Interlock correctly mounted and secure' },
+      { key: 'channelsDisconnect', label: 'Do both safety channels disconnect' },
+      { key: 'machineryStops', label: 'All required machinery stops immediately' },
+      { key: 'resetOperational', label: 'E-stop relay reset button operational' },
+      { key: 'restartWhileOpen', label: 'Can the machinery be restarted when interlock is open' },
+      { key: 'lockEngaged', label: 'Lock engaged fully when machine is running' },
+      { key: 'cantOpenUntilStopped', label: "Can't be opened until machine has stopped" },
+      { key: 'latchCondition', label: 'Latching mechanism is not bent or worn out' },
+      { key: 'tamperInspection', label: 'Inspect the switch and surrounding area for signs of tampering' },
+      { key: 'connectionsSecure', label: 'Connections secure' },
+      { key: 'cablesGlandsWiring', label: 'Cables, glands, wiring and mounting secure' }
+    ]
+  }
+};
+const CATEGORY_NAMES = Object.keys(CATEGORIES);
+const DUE_DAYS = 365;
+const AUX_OPTIONS = ['No', '1 N/O', '1 N/O & 1 N/C', '1 N/C'];
+
+const LOCATION_CODES = {
+  'Press line 1': 'PL1', 'Press line 2': 'PL2', 'Press line 3': 'PL3', 'Press line 4': 'PL4',
+  'Intake': 'INT', 'Front outloading': 'FOL', 'Rear outloading': 'ROL', 'Blending': 'BLD',
+  'Routing': 'RTG', 'Mixing': 'MIX', 'Mixer 1': 'MX1', 'Mixer 2': 'MX2', 'Packing': 'PKG',
+  'Weigher 1': 'WG1', 'Weigher 2': 'WG2', 'Weigher 3': 'WG3', 'Weigher 4': 'WG4', 'Weigher 5': 'WG5',
+  'Weigher 6': 'WG6', 'Weigher 7': 'WG7', 'Weigher 8': 'WG8', 'Weigher 9': 'WG9',
+  'Grinder 1': 'GR1', 'Grinder 2': 'GR2', 'Grinder 3': 'GR3',
+  'Mixing shed mixer 1': 'MSM1', 'Mixing shed mixer 2': 'MSM2'
+};
+
+function locationCode(name) {
+  if (!name) return '';
+  const trimmed = name.trim();
+  if (LOCATION_CODES[trimmed]) return LOCATION_CODES[trimmed];
+  const words = trimmed.split(/\s+/);
+  let code = words.length === 1 ? words[0].slice(0, 4) : words.map(w => w[0]).join('').slice(0, 4);
+  return code.toUpperCase();
+}
+
+function letterFromIndex(i) {
+  let s = ''; i++;
+  while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+  return s;
+}
+
+function computeLetterId(category, locCode) {
+  const def = CATEGORIES[category];
+  const escaped = locCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('^' + escaped + '-([A-Z]+)-' + def.suffix + '$');
+  const used = new Set();
+  siteHistoryCache.forEach(d => {
+    if (d.category === category && d.equipmentId) {
+      const m = d.equipmentId.match(re);
+      if (m) used.add(m[1]);
+    }
+  });
+  let idx = 0;
+  while (used.has(letterFromIndex(idx))) idx++;
+  return locCode + '-' + letterFromIndex(idx) + '-' + def.suffix;
+}
+
+function computeTagId(category, locCode, tag) {
+  const def = CATEGORIES[category];
+  if (!tag) return '';
+  return locCode + '-' + tag.trim().toUpperCase().replace(/\s+/g, '') + '-' + def.suffix;
+}
+
+function computeEquipmentId(category, values) {
+  const def = CATEGORIES[category];
+  if (!def) return '';
+  const locName = values[def.locationKey];
+  if (!locName) return '';
+  const locCode = locationCode(locName);
+  if (def.idMode === 'tag') {
+    const tag = values[def.tagField];
+    return tag ? computeTagId(category, locCode, tag) : '';
+  }
+  return computeLetterId(category, locCode);
+}
+
+let currentUser = null;
+let entryCounter = 0;
+const entries = {};
+let siteHistoryCache = [];
+let todaysTests = []; // { equipmentId, category } - this session only
+
+// ---- Sign-in ----
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if (user) {
+    document.getElementById('signinScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    document.getElementById('whoName').textContent = user.displayName || user.email;
+    boot();
+  } else {
+    document.getElementById('signinScreen').style.display = 'flex';
+    document.getElementById('appRoot').style.display = 'none';
+  }
+});
+
+function boot() {
+  document.getElementById('visitDate').valueAsDate = new Date();
+  loadSites();
+  if (document.querySelectorAll('.entry').length === 0) addEntry();
+  buildRegSubtabs();
+}
+
+// ---- Tabs ----
+document.getElementById('tabLogBtn').addEventListener('click', () => switchTab('log'));
+document.getElementById('tabRegBtn').addEventListener('click', () => switchTab('reg'));
+function switchTab(which) {
+  document.getElementById('logTab').style.display = which === 'log' ? 'block' : 'none';
+  document.getElementById('regTab').style.display = which === 'reg' ? 'block' : 'none';
+  document.getElementById('tabLogBtn').classList.toggle('active', which === 'log');
+  document.getElementById('tabRegBtn').classList.toggle('active', which === 'reg');
+  if (which === 'reg') renderRegister();
+}
+
+// ---- Site list ----
+async function loadSites() {
+  const siteSelect = document.getElementById('site');
+  const status = document.getElementById('siteStatus');
+  siteSelect.innerHTML = '<option value="" disabled selected>Loading…</option>';
+  try {
+    const q = query(collection(db, 'jobs'), where('status', '==', 'Active'));
+    const snap = await getDocs(q);
+    siteSelect.innerHTML = '<option value="" disabled selected>Select site</option>';
+    if (snap.empty) {
+      status.textContent = 'No active sites found — add one to the "jobs" collection in Firestore.';
+    } else {
+      status.textContent = '';
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const opt = document.createElement('option');
+        opt.value = docSnap.id; opt.textContent = d.name || docSnap.id;
+        siteSelect.appendChild(opt);
+      });
+    }
+  } catch (e) {
+    status.textContent = 'Could not load site list — ' + (e.message || e.code || 'unknown error');
+  }
+}
+document.getElementById('site').addEventListener('change', () => {
+  todaysTests = [];
+  renderTodayList();
+  loadSiteData();
+});
+
+let currentJobStatus = '';
+
+async function loadSiteData() {
+  const siteRef = document.getElementById('site').value;
+  siteHistoryCache = [];
+  currentJobStatus = '';
+  if (!siteRef) { updateJobStatusUI(); return; }
+  try {
+    const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
+    const snap = await getDocs(q);
+    snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
+    rebuildSuggestions();
+
+    const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    currentJobStatus = jobSnap.exists() ? (jobSnap.data().jobStatus || 'In Progress') : 'In Progress';
+    updateJobStatusUI();
+  } catch (e) {
+    console.error('Site data load failed:', e);
+  }
+}
+
+function updateJobStatusUI() {
+  const completeBanner = document.getElementById('completeBanner');
+  const readyBtn = document.getElementById('readyForQsBtn');
+  completeBanner.style.display = currentJobStatus === 'Complete' ? 'block' : 'none';
+  readyBtn.style.display = currentJobStatus === 'In Progress' ? 'block' : 'none';
+}
+
+document.getElementById('readyForQsBtn').addEventListener('click', async () => {
+  const siteRef = document.getElementById('site').value;
+  const siteSelect = document.getElementById('site');
+  const siteName = siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '';
+  if (!siteRef) return;
+  if (!confirm('Mark this site ready for QS review? The QS team will be emailed.')) return;
+  try {
+    await updateDoc(doc(db, 'jobs', siteRef), { jobStatus: 'Ready for QS' });
+    currentJobStatus = 'Ready for QS';
+    updateJobStatusUI();
+
+    const staffSnap = await getDocs(query(collection(db, 'staff'), where('position', '==', 'QS')));
+    const recipients = [];
+    staffSnap.forEach(d => { if (d.data().email || d.id) recipients.push(d.id); });
+
+    if (!QS_NOTIFY_FLOW_URL.startsWith('REPLACE')) {
+      fetch(QS_NOTIFY_FLOW_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteRef, siteName, recipients, notifiedBy: currentUser.displayName || currentUser.email, timestamp: new Date().toISOString() })
+      }).catch(() => {});
+    }
+    const banner = document.getElementById('banner');
+    banner.className = 'banner ok'; banner.textContent = 'Marked ready for QS.'; banner.style.display = 'block';
+  } catch (e) {
+    alert('Could not update status — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+async function suggestNextSiteRef() {
+  try {
+    const snap = await getDocs(collection(db, 'jobs'));
+    let maxN = 0;
+    snap.forEach(d => {
+      const m = d.id.match(/^SW-ISO-(\d+)$/);
+      if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+    });
+    return 'SW-ISO-' + String(maxN + 1).padStart(2, '0');
+  } catch (e) {
+    return '';
+  }
+}
+
+document.getElementById('toggleAddSiteBtn').addEventListener('click', async () => {
+  const form = document.getElementById('addSiteForm');
+  const opening = form.style.display === 'none';
+  form.style.display = opening ? 'block' : 'none';
+  if (opening) {
+    const refInput = document.getElementById('newSiteRef');
+    if (!refInput.value.trim()) refInput.value = await suggestNextSiteRef();
+  }
+});
+document.getElementById('addSiteBtn').addEventListener('click', async () => {
+  const ref = document.getElementById('newSiteRef').value.trim();
+  const name = document.getElementById('newSiteName').value.trim();
+  if (!ref || !name) { alert('Site reference and name are both required.'); return; }
+  try {
+    await setDoc(doc(db, 'jobs', ref), {
+      name, status: 'Active', jobStatus: 'In Progress', createdAt: serverTimestamp(),
+      addressLine: document.getElementById('newSiteAddressLine').value.trim(),
+      postcode: document.getElementById('newSitePostcode').value.trim(),
+      agreedLimitations: document.getElementById('newSiteLimitations').value.trim(),
+      agreedWith: document.getElementById('newSiteAgreedWith').value.trim()
+    });
+    ['newSiteRef','newSiteName','newSiteAddressLine','newSitePostcode','newSiteLimitations','newSiteAgreedWith'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('addSiteForm').style.display = 'none';
+    await loadSites();
+    const banner = document.getElementById('banner');
+    banner.className = 'banner ok'; banner.textContent = 'Site added: ' + ref; banner.style.display = 'block';
+  } catch (e) {
+    alert('Could not add site — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+const SEED_SUGGESTIONS = {
+  millLocation: [
+    'Press line 1', 'Press line 2', 'Press line 3', 'Press line 4',
+    'Intake', 'Front outloading', 'Rear outloading', 'Blending', 'Routing', 'Mixing',
+    'Mixer 1', 'Mixer 2', 'Packing',
+    'Weigher 1', 'Weigher 2', 'Weigher 3', 'Weigher 4', 'Weigher 5',
+    'Weigher 6', 'Weigher 7', 'Weigher 8', 'Weigher 9',
+    'Grinder 1', 'Grinder 2', 'Grinder 3',
+    'Mixing shed mixer 1', 'Mixing shed mixer 2'
+  ]
+};
+
+function rebuildSuggestions() {
+  const pools = { panelName:new Set(), millLocation:new Set(), equipmentName:new Set(),
+    physicalLocation:new Set(), relayLocation:new Set(), equipmentAffected:new Set(),
+    manufacturer:new Set(), model:new Set() };
+  Object.keys(SEED_SUGGESTIONS).forEach(k => { SEED_SUGGESTIONS[k].forEach(v => pools[k].add(v)); });
+  siteHistoryCache.forEach(d => {
+    Object.keys(pools).forEach(k => { if (d[k]) pools[k].add(d[k]); });
+  });
+  Object.keys(pools).forEach(k => {
+    const dl = document.getElementById('dl-' + k);
+    if (dl) dl.innerHTML = Array.from(pools[k]).sort().map(v => `<option value="${v.replace(/"/g,'&quot;')}">`).join('');
+  });
+}
+
+function overallPassOf(record) {
+  if (record.checks && Object.keys(record.checks).length) return !Object.values(record.checks).some(v => v === 'Fail');
+  return true;
+}
+
+// ---- Today's tests list ----
+function renderTodayList() {
+  const card = document.getElementById('todayCard');
+  const list = document.getElementById('todayList');
+  if (todaysTests.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = todaysTests.map(t => `
+    <div class="today-item"><span class="id">${t.equipmentId}</span><span class="cat">${t.category}</span></div>
+  `).join('');
+}
+
+// ---- Register ----
+function buildRegSubtabs() {
+  const wrap = document.getElementById('regSubtabs');
+  const tabs = ['All', ...CATEGORY_NAMES];
+  wrap.innerHTML = tabs.map(t => `<button data-tab="${t}" class="${t === 'All' ? 'active' : ''}">${t}</button>`).join('');
+  wrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      renderRegister(btn.dataset.tab);
+    });
+  });
+}
+
+let expandedEquip = new Set();
+
+function locationOf(record) {
+  const def = CATEGORIES[record.category];
+  if (!def) return '';
+  return record[def.locationKey] || '';
+}
+
+function buildRegLocFilterOptions(activeTab) {
+  const sel = document.getElementById('regLocFilter');
+  const byEquip = {};
+  siteHistoryCache.forEach(d => { if (!byEquip[d.equipmentId]) byEquip[d.equipmentId] = []; byEquip[d.equipmentId].push(d); });
+  let latestList = Object.values(byEquip).map(hist => hist.filter(h => !h.deletedFlag)).filter(a => a.length).map(a => a[a.length - 1]);
+  if (activeTab && activeTab !== 'All') latestList = latestList.filter(r => r.category === activeTab);
+  const locs = Array.from(new Set(latestList.map(r => locationOf(r)).filter(Boolean))).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option ${l === current ? 'selected' : ''}>${l}</option>`).join('');
+  if (!locs.includes(current)) sel.value = '';
+}
+
+function matchesSearch(latest, eq, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (eq.toLowerCase().includes(q)) return true;
+  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber'];
+  return fields.some(f => latest[f] && String(latest[f]).toLowerCase().includes(q));
+}
+
+['regSearch','regLocFilter','regPassFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const activeBtn = document.querySelector('#regSubtabs button.active');
+    renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
+  });
+});
+['regOverdueOnly','regLimitedOnly'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    const activeBtn = document.querySelector('#regSubtabs button.active');
+    renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
+  });
+});
+
+function renderRegister(activeTab) {
+  activeTab = activeTab || 'All';
+  buildRegLocFilterOptions(activeTab);
+  const list = document.getElementById('regList');
+  const siteRef = document.getElementById('site').value;
+  if (!siteRef) { list.innerHTML = '<div class="loading-note">Select a site to view its register.</div>'; return; }
+  if (siteHistoryCache.length === 0) { list.innerHTML = '<div class="history-empty">Nothing logged for this site yet.</div>'; return; }
+
+  const byEquip = {};
+  siteHistoryCache.forEach(d => {
+    if (!byEquip[d.equipmentId]) byEquip[d.equipmentId] = [];
+    byEquip[d.equipmentId].push(d);
+  });
+
+  const today = new Date();
+  let groups = Object.keys(byEquip).map(eq => {
+    const hist = byEquip[eq];
+    const active = hist.filter(h => !h.deletedFlag);
+    const latest = active.length ? active[active.length - 1] : null;
+    let daysSince = null, overdue = false;
+    if (latest && latest.date) {
+      daysSince = Math.floor((today - new Date(latest.date)) / 86400000);
+      overdue = daysSince > DUE_DAYS;
+    }
+    return { eq, hist, active, latest, daysSince, overdue };
+  }).filter(g => g.latest || g.hist.some(h => h.deletedFlag));
+
+  if (activeTab !== 'All') groups = groups.filter(g => (g.latest ? g.latest.category : g.hist[g.hist.length-1].category) === activeTab);
+
+  const locFilter = document.getElementById('regLocFilter').value;
+  if (locFilter) groups = groups.filter(g => g.latest && locationOf(g.latest) === locFilter);
+
+  const passFilter = document.getElementById('regPassFilter').value;
+  if (passFilter) groups = groups.filter(g => g.latest && (passFilter === 'pass' ? overallPassOf(g.latest) : !overallPassOf(g.latest)));
+
+  if (document.getElementById('regOverdueOnly').checked) groups = groups.filter(g => g.overdue);
+  if (document.getElementById('regLimitedOnly').checked) groups = groups.filter(g => g.latest && g.latest.testingStatus === 'Limited');
+
+  const searchQuery = document.getElementById('regSearch').value.trim();
+  if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
+
+  groups.sort((a, b) => a.eq.localeCompare(b.eq));
+
+  if (groups.length === 0) { list.innerHTML = '<div class="history-empty">Nothing matches the current filters.</div>'; return; }
+
+  list.innerHTML = groups.map(g => {
+    const latest = g.latest;
+    const isExpanded = expandedEquip.has(g.eq);
+    const displayCat = latest ? latest.category : g.hist[g.hist.length - 1].category;
+    const historyRows = [...g.hist].reverse().map(h => {
+      if (h.deletedFlag) {
+        return `
+          <div class="hist-row">
+            <div>
+              <div class="hist-date" style="text-decoration:line-through;color:var(--grey);">${h.date || '—'}</div>
+              <div class="hist-meta">Flagged for deletion by ${h.deletedBy || '—'} · pending manager review</div>
+            </div>
+            <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="restore">Restore</button>
+          </div>
+        `;
+      }
+      const hPass = overallPassOf(h);
+      return `
+        <div class="hist-row">
+          <div>
+            <div class="hist-date">${h.date || '—'} <span class="chip ${hPass ? 'pass' : 'fail'}" style="margin-left:6px;">${hPass ? 'Pass' : 'Fail'}</span></div>
+            <div class="hist-meta">by ${h.engineer || '—'}</div>
+          </div>
+          <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>
+        </div>
+      `;
+    }).join('');
+
+    if (!latest) {
+      return `
+        <div class="reg-item">
+          <div class="reg-item-top">
+            <div><div class="cat">${displayCat || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
+            <span class="chip" style="background:#eee;color:var(--grey);">Pending review</span>
+          </div>
+          <div class="meta">All tests for this item are flagged for deletion — awaiting manager review.</div>
+          <div class="reg-item-bottom">
+            <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
+            <span></span>
+          </div>
+          ${isExpanded ? `<div class="hist-list">${historyRows}</div>` : ''}
+        </div>
+      `;
+    }
+
+    const overallPass = overallPassOf(latest);
+    const daysSince = g.daysSince, overdue = g.overdue;
+    return `
+      <div class="reg-item ${overdue ? 'overdue' : ''}">
+        <div class="reg-item-top">
+          <div>
+            <div class="cat">${latest.category || 'Uncategorised'}</div>
+            <div class="eq">${g.eq}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="chip ${overallPass ? 'pass' : 'fail'}">${overallPass ? 'Pass' : 'Fail'}</span>
+            ${overdue ? '<span class="chip overdue">Overdue</span>' : ''}
+          </div>
+        </div>
+        <div class="meta ${overdue ? 'overdue-text' : ''}">
+          Last tested ${latest.date || '—'} by ${latest.engineer || '—'}
+          ${daysSince !== null ? ` · ${daysSince} days ago` : ''}
+        </div>
+        <div class="reg-item-bottom">
+          <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
+          <button type="button" class="retest-btn" data-eq="${g.eq}">Retest</button>
+        </div>
+        ${isExpanded ? `<div class="hist-list">${historyRows}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const eq = btn.dataset.eq;
+      if (expandedEquip.has(eq)) expandedEquip.delete(eq); else expandedEquip.add(eq);
+      renderRegister(activeTab);
+    });
+  });
+  list.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try {
+        if (btn.dataset.action === 'restore') {
+          await updateDoc(doc(db, 'isolatorTests', btn.dataset.docId), { deletedFlag: false });
+        } else {
+          if (!confirm('Flag this test as incorrect / for deletion? It stays on record but is hidden from the active register until a manager confirms removal.')) return;
+          await updateDoc(doc(db, 'isolatorTests', btn.dataset.docId), {
+            deletedFlag: true, deletedBy: currentUser.displayName || currentUser.email, deletedAt: serverTimestamp()
+          });
+        }
+        await loadSiteData();
+        renderRegister(activeTab);
+      } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
+    });
+  });
+  list.querySelectorAll('.retest-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const eq = btn.dataset.eq;
+      const group = groups.find(g => g.eq === eq);
+      const latest = group ? group.latest : null;
+      if (!latest) return;
+      addEntry(latest);
+      switchTab('log');
+      window.scrollTo({ top: document.getElementById('entries').offsetTop - 20, behavior: 'smooth' });
+    });
+  });
+}
+
+// ---- Equipment ID preview ----
+function refreshIdPreview(wrap) {
+  const category = wrap.querySelector('[data-field="category"]').value;
+  const def = CATEGORIES[category];
+  const preview = wrap.querySelector('[data-role="idPreview"]');
+  const label = wrap.querySelector('[data-role="eqlabel"]');
+  const note = wrap.querySelector('[data-role="idNote"]');
+  const lockedId = wrap.dataset.lockedId;
+
+  if (lockedId) {
+    preview.textContent = lockedId; preview.classList.remove('pending');
+    label.textContent = lockedId;
+    note.textContent = 'Retest — ID kept the same as the original.';
+    note.classList.add('retest');
+    return lockedId;
+  }
+  note.textContent = ''; note.classList.remove('retest');
+
+  if (!def) {
+    preview.textContent = 'Select a category and fill in the fields above'; preview.classList.add('pending');
+    label.textContent = 'New entry';
+    return '';
+  }
+  const values = {};
+  def.fields.forEach(f => { values[f.key] = (wrap.querySelector(`[data-field="${f.key}"]`) || {}).value || ''; });
+  const id = computeEquipmentId(category, values);
+  if (id) {
+    preview.textContent = id; preview.classList.remove('pending');
+    label.textContent = id;
+    if (def.idMode === 'letter') note.textContent = 'Auto-assigned — next available at this location.';
+  } else {
+    preview.textContent = 'Fill in the fields above to generate the Equipment ID'; preview.classList.add('pending');
+    label.textContent = 'New entry';
+  }
+  return id;
+}
+
+// ---- Entry rendering ----
+function renderCategoryFields(wrap, category, prefill) {
+  const fieldsContainer = wrap.querySelector('[data-role="catFields"]');
+  const checksContainer = wrap.querySelector('[data-role="catChecks"]');
+  const specsContainer = wrap.querySelector('[data-role="isolatorSpecs"]');
+  const def = CATEGORIES[category];
+  if (!def) { fieldsContainer.innerHTML = ''; checksContainer.innerHTML = ''; specsContainer.innerHTML = ''; refreshIdPreview(wrap); return; }
+
+  fieldsContainer.innerHTML = def.fields.map(f => `
+    <label>${f.label} <span class="req">*</span><span class="hint">${f.hint}</span></label>
+    <input type="text" data-field="${f.key}" list="dl-${f.dl}" value="${prefill && prefill[f.key] ? prefill[f.key] : ''}">
+    <div class="error-msg">${f.label} is required</div>
+  `).join('');
+
+  fieldsContainer.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => refreshIdPreview(wrap));
+  });
+
+  if (def.hasIsolatorSpecs) {
+    specsContainer.innerHTML = `
+      <label>Current rating <span class="req">*</span><span class="hint">E.g. 32A</span></label>
+      <input type="text" data-field="currentRating" value="${prefill && prefill.currentRating ? prefill.currentRating : ''}">
+      <div class="error-msg">Current rating is required</div>
+
+      <label>Number of poles <span class="req">*</span></label>
+      <select data-field="poles">
+        <option value="" disabled ${!prefill || !prefill.poles ? 'selected' : ''}>Select</option>
+        ${[1,2,3,4,5,6,7,8].map(n => `<option ${prefill && String(prefill.poles) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}
+      </select>
+      <div class="error-msg">Number of poles is required</div>
+
+      <label>Auxiliary <span class="req">*</span></label>
+      <select data-field="auxiliary">
+        <option value="" disabled ${!prefill || !prefill.auxiliary ? 'selected' : ''}>Select</option>
+        ${AUX_OPTIONS.map(a => `<option ${prefill && prefill.auxiliary === a ? 'selected' : ''}>${a}</option>`).join('')}
+      </select>
+      <div class="error-msg">Auxiliary is required</div>
+    `;
+  } else {
+    specsContainer.innerHTML = '';
+  }
+
+  checksContainer.innerHTML = def.checks.map(c => `
+    <div class="check-item">
+      <div class="check-label">${c.label} <span class="req">*</span></div>
+      <div class="radio-row" data-check="${c.key}">
+        <div class="radio-opt" data-value="Pass"><input type="radio">Pass</div>
+        <div class="radio-opt" data-value="Fail"><input type="radio">Fail</div>
+        <div class="radio-opt na-option" data-value="N/A" style="display:none;"><input type="radio">N/A</div>
+      </div>
+      <div class="error-msg" data-error-for="check-${c.key}">Required</div>
+    </div>
+  `).join('');
+
+  checksContainer.querySelectorAll('[data-check]').forEach(group => {
+    group.querySelectorAll('.radio-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        group.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('pass-sel','fail-sel','na-sel'));
+        const val = opt.getAttribute('data-value');
+        opt.classList.add(val === 'Pass' ? 'pass-sel' : val === 'Fail' ? 'fail-sel' : 'na-sel');
+        group.setAttribute('data-value-selected', val);
+        updateActionConstraint(wrap);
+      });
+    });
+  });
+
+  applyTestingStatusToChecks(wrap);
+  refreshIdPreview(wrap);
+}
+
+function applyTestingStatusToChecks(wrap) {
+  const isLimited = wrap.dataset.testingStatus === 'Limited';
+  wrap.querySelectorAll('.na-option').forEach(el => { el.style.display = isLimited ? '' : 'none'; });
+  if (!isLimited) {
+    wrap.querySelectorAll('[data-check]').forEach(group => {
+      if (group.getAttribute('data-value-selected') === 'N/A') {
+        group.removeAttribute('data-value-selected');
+        group.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('pass-sel','fail-sel','na-sel'));
+      }
+    });
+  }
+}
+
+function updateActionConstraint(wrap) {
+  const anyFail = Array.from(wrap.querySelectorAll('[data-check]'))
+    .some(g => g.getAttribute('data-value-selected') === 'Fail');
+  const actionSelect = wrap.querySelector('[data-field="action"]');
+  const noOption = actionSelect.querySelector('option[value="No"]');
+  noOption.disabled = anyFail;
+  if (anyFail && actionSelect.value === 'No') actionSelect.value = '';
+  wrap.querySelector('[data-role="actionHint"]').style.display = anyFail ? 'block' : 'none';
+  wrap.querySelector('[data-role="internalsReq"]').style.display = anyFail ? 'inline' : 'none';
+  wrap.querySelector('[data-role="obsReq"]').style.display = anyFail ? 'inline' : 'none';
+}
+
+const PHOTO_TARGET_BYTES = 200000;
+function compressImage(file, targetBytes) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let maxDim = 1280, quality = 0.75;
+      function render() {
+        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL('image/jpeg', quality);
+      }
+      let dataUrl = render(), attempts = 0;
+      while (dataUrl.length * 0.75 > targetBytes && attempts < 6) {
+        if (quality > 0.4) quality -= 0.15; else maxDim = Math.round(maxDim * 0.8);
+        dataUrl = render(); attempts++;
+      }
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+    img.src = url;
+  });
+}
+
+function addEntry(prefill) {
+  entryCounter++;
+  const id = 'e' + entryCounter;
+  entries[id] = {};
+
+  const wrap = document.createElement('div');
+  wrap.className = 'entry';
+  wrap.id = id;
+  if (prefill && prefill.equipmentId) wrap.dataset.lockedId = prefill.equipmentId;
+  wrap.innerHTML = `
+    <div class="entry-head">
+      <span class="tag">${prefill ? 'Retest' : 'New'}</span>
+      <span class="eq-id" data-role="eqlabel">${prefill ? prefill.equipmentId : 'New entry'}</span>
+      <button type="button" data-role="remove">Cancel</button>
+    </div>
+    <div class="entry-body">
+
+      <label>Category <span class="req">*</span></label>
+      <select data-field="category" ${prefill ? 'disabled' : ''}>
+        <option value="" ${!prefill ? 'disabled selected' : ''}>Select category</option>
+        ${CATEGORY_NAMES.map(c => `<option ${prefill && prefill.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+      </select>
+      <div class="error-msg">Category is required</div>
+
+      <div data-role="catFields"></div>
+
+      <label>Equipment ID <span class="hint" style="display:inline;">(generated automatically)</span></label>
+      <div class="id-preview pending" data-role="idPreview">Select a category and fill in the fields above</div>
+      <p class="id-note" data-role="idNote"></p>
+
+      <label>Was the item fully accessible and tested? <span class="req">*</span><span class="hint">Select "Limitation" where any part of the inspection or test could not be completed due to an agreed limitation.</span></label>
+      <div class="radio-row" data-testing-status style="margin-bottom:14px;">
+        <div class="radio-opt" data-value="Full">Yes — fully tested</div>
+        <div class="radio-opt" data-value="Limited">No — limitation</div>
+      </div>
+      <div class="error-msg" data-error-for="testingStatus">Required</div>
+
+      <div data-role="limitationFields" style="display:none;">
+        <label>Reason for limitation <span class="req">*</span><span class="hint">E.g. couldn't isolate — machine in use, access refused</span></label>
+        <textarea data-field="limitationReason"></textarea>
+        <div class="error-msg">Reason is required for a limited test</div>
+        <label>Agreed with <span class="req">*</span><span class="hint">Who on site agreed this was acceptable</span></label>
+        <input type="text" data-field="limitationAgreedWith">
+        <div class="error-msg">Required for a limited test</div>
+      </div>
+
+      <div data-role="isolatorSpecs"></div>
+
+      <div data-role="catChecks"></div>
+
+      <label style="margin-top:14px;">Further action required <span class="req">*</span></label>
+      <select data-field="action">
+        <option value="" disabled selected>Select</option>
+        <option value="No">No</option>
+        <option value="Requires Replacement">Requires Replacement</option>
+        <option value="Requires Remedial Works">Requires Remedial Works</option>
+      </select>
+      <div class="hint" data-role="actionHint" style="display:none;margin:-10px 0 12px;color:var(--fail);">A Fail above means this can't be left as "No"</div>
+      <div class="error-msg" data-error-for="action">Required — and can't be "No" if any check above failed</div>
+
+      <label>Manufacturer <span class="req">*</span><span class="hint">E.g. Eaton, Guardmaster, Schneider</span></label>
+      <input type="text" data-field="manufacturer" list="dl-manufacturer" value="${prefill && prefill.manufacturer ? prefill.manufacturer : ''}">
+      <div class="error-msg">Manufacturer is required</div>
+
+      <label>Model <span class="req">*</span><span class="hint">E.g. rotary isolator, Trojan 5</span></label>
+      <input type="text" data-field="model" list="dl-model" value="${prefill && prefill.model ? prefill.model : ''}">
+      <div class="error-msg">Model is required</div>
+
+      <label>Part number <span class="req">*</span></label>
+      <input type="text" data-field="partNumber" value="${prefill && prefill.partNumber ? prefill.partNumber : ''}">
+      <div class="error-msg">Part number is required</div>
+
+      <label>Observations <span class="req" data-role="obsReq" style="display:none;">*</span><span class="hint">Required if anything above failed</span></label>
+      <textarea data-field="observations"></textarea>
+      <div class="error-msg" data-error-for="observations">An observation is required when a check has failed</div>
+
+      <label>General photo of equipment <span class="req">*</span></label>
+      <input type="file" accept="image/*" capture="environment" data-field="photo">
+      <div class="error-msg" data-error-for="photo">A photo is required</div>
+
+      <label>Photo of internals <span class="req" data-role="internalsReq" style="display:none;">*</span><span class="hint">E.g. main switch body, E-stop contacts — makes sourcing a replacement part easier without a second visit. Required if further action is needed.</span></label>
+      <input type="file" accept="image/*" capture="environment" data-field="photoInternals">
+      <div class="error-msg" data-error-for="photoInternals">A photo of the internals is required when further action is needed</div>
+
+      <button type="button" class="save-entry-btn" data-role="saveEntry">Save this test</button>
+    </div>
+  `;
+
+  document.getElementById('entries').appendChild(wrap);
+  document.getElementById('emptyNote').style.display = 'none';
+
+  renderCategoryFields(wrap, prefill ? prefill.category : '', prefill);
+
+  const statusGroup = wrap.querySelector('[data-testing-status]');
+  const limitationBox = wrap.querySelector('[data-role="limitationFields"]');
+  if (prefill && prefill.testingStatus) {
+    wrap.dataset.testingStatus = prefill.testingStatus;
+    statusGroup.querySelectorAll('.radio-opt').forEach(o => {
+      o.classList.toggle('pass-sel', o.dataset.value === prefill.testingStatus);
+    });
+    limitationBox.style.display = prefill.testingStatus === 'Limited' ? 'block' : 'none';
+    if (prefill.testingStatus === 'Limited') {
+      wrap.querySelector('[data-field="limitationReason"]').value = prefill.limitationReason || '';
+      wrap.querySelector('[data-field="limitationAgreedWith"]').value = prefill.limitationAgreedWith || '';
+    }
+    applyTestingStatusToChecks(wrap);
+  }
+  statusGroup.querySelectorAll('.radio-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      statusGroup.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('pass-sel'));
+      opt.classList.add('pass-sel');
+      const val = opt.getAttribute('data-value');
+      wrap.dataset.testingStatus = val;
+      statusGroup.setAttribute('data-value-selected', val);
+      limitationBox.style.display = val === 'Limited' ? 'block' : 'none';
+      applyTestingStatusToChecks(wrap);
+    });
+  });
+
+  wrap.querySelector('[data-role="remove"]').addEventListener('click', () => {
+    wrap.remove(); delete entries[id];
+    if (document.querySelectorAll('.entry').length === 0) document.getElementById('emptyNote').style.display = 'block';
+  });
+
+  if (!prefill) {
+    wrap.querySelector('[data-field="category"]').addEventListener('change', (e) => {
+      renderCategoryFields(wrap, e.target.value);
+    });
+  }
+
+  wrap.querySelector('[data-field="photo"]').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const statusEl = wrap.querySelector('[data-error-for="photo"]');
+    try {
+      entries[id].photoBase64 = await compressImage(file, PHOTO_TARGET_BYTES);
+      entries[id].photoName = file.name;
+    } catch (err) {
+      if (statusEl) { statusEl.textContent = 'Could not process that photo — try again.'; statusEl.style.display = 'block'; }
+    }
+  });
+
+  wrap.querySelector('[data-field="photoInternals"]').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const statusEl = wrap.querySelector('[data-error-for="photoInternals"]');
+    try {
+      entries[id].photoInternalsBase64 = await compressImage(file, PHOTO_TARGET_BYTES);
+      entries[id].photoInternalsName = file.name;
+    } catch (err) {
+      if (statusEl) { statusEl.textContent = 'Could not process that photo — try again.'; statusEl.style.display = 'block'; }
+    }
+  });
+
+  wrap.querySelector('[data-role="saveEntry"]').addEventListener('click', () => saveEntry(wrap, id));
+}
+document.getElementById('addEntryBtn').addEventListener('click', () => addEntry());
+
+// ---- Validation for a single entry ----
+function validateEntry(wrap, id) {
+  let valid = true;
+  const get = sel => wrap.querySelector(sel);
+  const val = f => { const el = get(`[data-field="${f}"]`); return el ? el.value.trim() : ''; };
+  const mark = (el, ok) => {
+    const errEl = el.nextElementSibling && el.nextElementSibling.classList.contains('error-msg') ? el.nextElementSibling : null;
+    el.classList.toggle('field-error', !ok);
+    if (errEl) errEl.style.display = ok ? 'none' : 'block';
+    if (!ok) valid = false;
+  };
+
+  const category = val('category');
+  const def = CATEGORIES[category];
+  const testingStatus = wrap.dataset.testingStatus || '';
+  const record = { category, testingStatus, action: val('action'), manufacturer: val('manufacturer'), model: val('model'),
+    partNumber: val('partNumber'), observations: val('observations'), checks: {} };
+
+  mark(get('[data-field="category"]'), !!category);
+
+  const statusErrEl = wrap.querySelector('[data-error-for="testingStatus"]');
+  const statusOk = !!testingStatus;
+  if (statusErrEl) statusErrEl.style.display = statusOk ? 'none' : 'block';
+  if (!statusOk) valid = false;
+
+  if (testingStatus === 'Limited') {
+    record.limitationReason = val('limitationReason');
+    record.limitationAgreedWith = val('limitationAgreedWith');
+    mark(get('[data-field="limitationReason"]'), !!record.limitationReason);
+    mark(get('[data-field="limitationAgreedWith"]'), !!record.limitationAgreedWith);
+  }
+
+  mark(get('[data-field="manufacturer"]'), !!record.manufacturer);
+  mark(get('[data-field="model"]'), !!record.model);
+  mark(get('[data-field="partNumber"]'), !!record.partNumber);
+
+  if (def && def.hasIsolatorSpecs) {
+    record.currentRating = val('currentRating'); record.poles = val('poles'); record.auxiliary = val('auxiliary');
+    mark(get('[data-field="currentRating"]'), !!record.currentRating);
+    mark(get('[data-field="poles"]'), !!record.poles);
+    mark(get('[data-field="auxiliary"]'), !!record.auxiliary);
+  }
+
+  const fieldValues = {};
+  (def ? def.fields : []).forEach(f => {
+    const v = val(f.key);
+    fieldValues[f.key] = v;
+    const el = get(`[data-field="${f.key}"]`);
+    if (el) mark(el, !!v);
+  });
+  record.equipmentId = wrap.dataset.lockedId || computeEquipmentId(category, fieldValues);
+  Object.assign(record, fieldValues);
+  if (def && !record.equipmentId) valid = false;
+
+  let anyFail = false;
+  (def ? def.checks : []).forEach(c => {
+    const group = wrap.querySelector(`[data-check="${c.key}"]`);
+    const v = group ? group.getAttribute('data-value-selected') : '';
+    record.checks[c.key] = v || '';
+    const errEl = wrap.querySelector(`[data-error-for="check-${c.key}"]`);
+    const ok = !!v;
+    if (errEl) errEl.style.display = ok ? 'none' : 'block';
+    if (!ok) valid = false;
+    if (v === 'Fail') anyFail = true;
+  });
+
+  const actionOk = record.action && !(anyFail && record.action === 'No');
+  const actionErrEl = wrap.querySelector('[data-error-for="action"]');
+  get('[data-field="action"]').classList.toggle('field-error', !actionOk);
+  if (actionErrEl) actionErrEl.style.display = actionOk ? 'none' : 'block';
+  if (!actionOk) valid = false;
+
+  const obsErrEl = wrap.querySelector('[data-error-for="observations"]');
+  const obsOk = !anyFail || !!record.observations;
+  get('[data-field="observations"]').classList.toggle('field-error', !obsOk);
+  if (obsErrEl) obsErrEl.style.display = obsOk ? 'none' : 'block';
+  if (!obsOk) valid = false;
+
+  record.photoBase64 = entries[id] ? (entries[id].photoBase64 || null) : null;
+  const photoErrEl = wrap.querySelector('[data-error-for="photo"]');
+  const photoOk = !!record.photoBase64;
+  if (photoErrEl) { photoErrEl.textContent = 'A photo is required'; photoErrEl.style.display = photoOk ? 'none' : 'block'; }
+  if (!photoOk) valid = false;
+  if (record.photoBase64 && record.photoBase64.length > 400000) {
+    record.photoBase64 = null;
+    if (photoErrEl) { photoErrEl.textContent = 'Photo file is too large even after compression — try a different photo'; photoErrEl.style.display = 'block'; }
+    valid = false;
+  }
+
+  record.photoInternalsBase64 = entries[id] ? (entries[id].photoInternalsBase64 || null) : null;
+  const photoIntErrEl = wrap.querySelector('[data-error-for="photoInternals"]');
+  if (anyFail) {
+    const photoIntOk = !!record.photoInternalsBase64;
+    if (photoIntErrEl) { photoIntErrEl.textContent = 'A photo of the internals is required when further action is needed'; photoIntErrEl.style.display = photoIntOk ? 'none' : 'block'; }
+    if (!photoIntOk) valid = false;
+  } else if (photoIntErrEl) { photoIntErrEl.style.display = 'none'; }
+  if (record.photoInternalsBase64 && record.photoInternalsBase64.length > 400000) {
+    record.photoInternalsBase64 = null;
+    if (photoIntErrEl) { photoIntErrEl.textContent = 'Photo file is too large even after compression — try a different photo'; photoIntErrEl.style.display = 'block'; }
+    valid = false;
+  }
+
+  return { valid, record };
+}
+
+// ---- Save a single entry immediately ----
+async function saveEntry(wrap, id) {
+  const banner = document.getElementById('banner');
+  banner.style.display = 'none';
+
+  const date = document.getElementById('visitDate').value;
+  const siteSelect = document.getElementById('site');
+  const siteRef = siteSelect.value;
+  const siteName = siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '';
+
+  if (!date || !siteRef) {
+    banner.className = 'banner bad'; banner.textContent = 'Date and site are both required.';
+    banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
+  }
+  if (currentJobStatus === 'Complete') {
+    banner.className = 'banner bad'; banner.textContent = 'This site is marked Complete — a manager needs to take it out of Complete status before new tests can be logged.';
+    banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
+  }
+
+  const { valid, record } = validateEntry(wrap, id);
+  if (!valid) {
+    banner.className = 'banner bad'; banner.textContent = 'Please fill in all required fields, highlighted below.';
+    banner.style.display = 'block'; return;
+  }
+
+  const saveBtn = wrap.querySelector('[data-role="saveEntry"]');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  const engineer = currentUser.displayName || currentUser.email;
+  const payload = {
+    siteRef, siteName, date, engineer, engineerEmail: currentUser.email,
+    ...record, createdAt: serverTimestamp()
+  };
+
+  try {
+    await addDoc(collection(db, 'isolatorTests'), payload);
+
+    todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
+    renderTodayList();
+
+    banner.className = 'banner ok';
+    banner.textContent = `${record.equipmentId} saved${!navigator.onLine ? ' — queued, will sync once you\'re back online' : ''}.`;
+    banner.style.display = 'block';
+    window.scrollTo({top:0, behavior:'smooth'});
+
+    wrap.remove();
+    delete entries[id];
+    document.getElementById('emptyNote').style.display = 'block';
+
+    await loadSiteData();
+    addEntry();
+  } catch (err) {
+    reportSubmissionFailure(err, { siteName, engineer, equipmentId: record.equipmentId });
+    saveBtn.disabled = false; saveBtn.textContent = 'Save this test';
+    if (navigator.onLine) {
+      banner.className = 'banner bad';
+      banner.textContent = `${record.equipmentId} failed to save (${err.code || err.message}). The office has been notified — try again.`;
+      banner.style.display = 'block';
+    } else {
+      todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
+      renderTodayList();
+      banner.className = 'banner ok';
+      banner.textContent = `${record.equipmentId} queued — will sync once you're back online.`;
+      banner.style.display = 'block';
+      wrap.remove(); delete entries[id];
+      document.getElementById('emptyNote').style.display = 'block';
+      addEntry();
+    }
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seed Bulk Sample Data — Isolator/Interlock</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Barlow',sans-serif;background:#f6f5f4;color:#1a1a1a;max-width:480px;margin:60px auto;padding:0 20px;}
+  h1{font-size:18px;}
+  select,button,input{width:100%;padding:11px;font-size:15px;border-radius:7px;border:1.5px solid #ddd;margin-bottom:12px;font-family:'Barlow',sans-serif;box-sizing:border-box;}
+  button{background:#D0222A;color:#fff;border:none;font-weight:700;cursor:pointer;}
+  button:disabled{background:#e0a8ab;}
+  .ms-btn{background:#1a1a1a;}
+  #status{font-size:13px;color:#555;white-space:pre-line;margin-top:14px;}
+  #signinScreen{display:block;}
+  #appRoot{display:none;}
+  p.note{font-size:12px;color:#888;}
+  label{font-size:12px;font-weight:600;display:block;margin:0 0 4px;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <h1>Seed bulk sample data</h1>
+  <p class="note">One-off testing tool. Not meant to be linked to from anywhere permanent.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div id="status"></div>
+</div>
+
+<div id="appRoot">
+  <h1>Seed bulk sample data</h1>
+  <select id="site"><option value="" disabled selected>Loading sites…</option></select>
+  <label>How many test records to generate</label>
+  <input type="text" id="countInput" value="45">
+  <button id="seedBtn">Generate sample data</button>
+  <div id="status"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+let currentUser = null;
+
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked') signInWithRedirect(auth, msProvider);
+    else document.querySelector('#signinScreen #status').textContent = 'Sign-in failed — ' + (err.code || err.message);
+  });
+});
+getRedirectResult(auth).catch(() => {});
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  document.getElementById('signinScreen').style.display = user ? 'none' : 'block';
+  document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+  if (user) loadSites();
+});
+
+async function loadSites() {
+  const sel = document.getElementById('site');
+  const q = query(collection(db, 'jobs'), where('status', '==', 'Active'));
+  const snap = await getDocs(q);
+  sel.innerHTML = '<option value="" disabled selected>Select site</option>';
+  snap.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id; opt.textContent = d.data().name || d.id;
+    sel.appendChild(opt);
+  });
+  if (snap.empty) sel.innerHTML = '<option value="">No active sites — add one on the Sites tab first</option>';
+}
+
+// ---- Matches the schema in isolator-interlock-test.html ----
+const LOCATION_CODES = {
+  'Press line 1': 'PL1', 'Press line 2': 'PL2', 'Press line 3': 'PL3', 'Press line 4': 'PL4',
+  'Intake': 'INT', 'Front outloading': 'FOL', 'Rear outloading': 'ROL', 'Blending': 'BLD',
+  'Routing': 'RTG', 'Mixing': 'MIX', 'Mixer 1': 'MX1', 'Mixer 2': 'MX2', 'Packing': 'PKG',
+  'Weigher 1': 'WG1', 'Weigher 2': 'WG2', 'Weigher 3': 'WG3', 'Weigher 4': 'WG4', 'Weigher 5': 'WG5',
+  'Grinder 1': 'GR1', 'Grinder 2': 'GR2', 'Grinder 3': 'GR3',
+  'Mixing shed mixer 1': 'MSM1', 'Mixing shed mixer 2': 'MSM2'
+};
+const LOCATIONS = Object.keys(LOCATION_CODES);
+
+const CATEGORY_DEFS = {
+  'Panel Isolator': { suffix: 'PI', idMode: 'letter', hasSpecs: true,
+    checks: ['operation','guards','handle','interlock','heat','connectionsSecure'] },
+  'Motor Isolator': { suffix: 'MI', idMode: 'tag', hasSpecs: true,
+    checks: ['operation','handleCondition','interlock','heat','enclosure','auxContacts','labelled','connectionsSecure','cablesGlandsWiring'] },
+  'Emergency Stop': { suffix: 'ES', idMode: 'letter',
+    checks: ['buttonOperation','shroudLabel','terminalBlocks','relayOperates','channelsDisconnect','machineryStops','resetOperational','restartWhilePressed','connectionsSecure','cablesGlandsWiring'] },
+  'Safety Interlock': { suffix: 'SI', idMode: 'letter',
+    checks: ['mounted','channelsDisconnect','machineryStops','resetOperational','restartWhileOpen','lockEngaged','cantOpenUntilStopped','latchCondition','tamperInspection','connectionsSecure','cablesGlandsWiring'] }
+};
+const CATEGORY_NAMES = Object.keys(CATEGORY_DEFS);
+
+const MANUFACTURERS = ['Eaton', 'Schneider', 'Guardmaster', 'ABB', 'Siemens', 'Allen-Bradley'];
+const MODELS = ['Rotary isolator', 'Panel isolator switch', 'XCR', 'Trojan 5', 'Safety interlock switch', 'Compact isolator'];
+const AUX_OPTIONS = ['No', '1 N/O', '1 N/O & 1 N/C', '1 N/C'];
+const OBSERVATIONS_POOL = [
+  '', '', '', '',
+  'Slight wear noted, monitor at next visit.',
+  'Terminal re-tightened during test.',
+  'Label faded, needs replacing.',
+  'No issues found, functioning as expected.',
+  'Minor discolouration on connector, not yet requiring action.',
+  'Long observation for wrapping check — this note is deliberately verbose so we can confirm the Observations page in the generated PDF handles multi-line text cleanly, wraps within the page margins, and paginates correctly once several of these appear in sequence without overlapping the next entry.'
+];
+const ENGINEERS = ['Rob Rose', 'Owen Bassett', 'John Gomersall'];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
+function letterFromIndex(i) { let s = ''; i++; while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); } return s; }
+
+const LIMITATION_REASONS = [
+  'Machine in continuous production run — could not isolate for testing',
+  'Access refused by site operations manager on the day',
+  'Panel locked, keyholder not available during visit',
+  'Guard could not be safely opened without stopping a live process'
+];
+const AGREED_WITH_NAMES = ['Paul Harris', 'Site Manager (Thompsons)', 'Dave Whitfield', 'Shift Supervisor'];
+
+function buildRecords(siteRef, siteName, count) {
+  const letterCounters = {};
+  const tagCounters = { 'Motor Isolator': 1 };
+  const records = [];
+  const perCategory = Math.ceil(count / CATEGORY_NAMES.length);
+
+  CATEGORY_NAMES.forEach(cat => {
+    const def = CATEGORY_DEFS[cat];
+    for (let i = 0; i < perCategory && records.length < count; i++) {
+      const location = pick(LOCATIONS);
+      const locCode = LOCATION_CODES[location];
+      let equipmentId;
+      if (def.idMode === 'tag') {
+        const tag = 'C' + (tagCounters['Motor Isolator']++);
+        equipmentId = locCode + '-' + tag + '-' + def.suffix;
+      } else {
+        const key = cat + '|' + locCode;
+        const idx = letterCounters[key] || 0;
+        letterCounters[key] = idx + 1;
+        equipmentId = locCode + '-' + letterFromIndex(idx) + '-' + def.suffix;
+      }
+
+      const testingStatus = Math.random() < 0.15 ? 'Limited' : 'Full';
+      const naCount = testingStatus === 'Limited' ? 1 + Math.floor(Math.random() * 2) : 0;
+      const naKeys = new Set();
+      if (naCount) {
+        const shuffled = [...def.checks].sort(() => Math.random() - 0.5);
+        shuffled.slice(0, Math.min(naCount, def.checks.length - 1)).forEach(k => naKeys.add(k));
+      }
+
+      const anyFail = Math.random() < 0.15;
+      const checks = {};
+      let failedOne = false;
+      def.checks.forEach((k, ci) => {
+        if (naKeys.has(k)) { checks[k] = 'N/A'; return; }
+        if (anyFail && !failedOne && ci === def.checks.length - 1) { checks[k] = 'Fail'; failedOne = true; }
+        else if (anyFail && Math.random() < 0.12 && !failedOne) { checks[k] = 'Fail'; failedOne = true; }
+        else checks[k] = 'Pass';
+      });
+
+      const record = {
+        siteRef, siteName,
+        date: daysAgo(Math.random() < 0.1 ? 380 + Math.floor(Math.random() * 60) : Math.floor(Math.random() * 300)),
+        category: cat,
+        equipmentId,
+        millLocation: location,
+        manufacturer: pick(MANUFACTURERS),
+        model: pick(MODELS),
+        partNumber: locCode + '-' + Math.floor(1000 + Math.random() * 8999),
+        observations: pick(OBSERVATIONS_POOL),
+        action: failedOne ? pick(['Requires Replacement', 'Requires Remedial Works']) : 'No',
+        checks,
+        testingStatus,
+        engineer: pick(ENGINEERS),
+        engineerEmail: currentUser.email,
+        qsed: Math.random() < 0.3,
+        createdAt: serverTimestamp()
+      };
+      if (testingStatus === 'Limited') {
+        record.limitationReason = pick(LIMITATION_REASONS);
+        record.limitationAgreedWith = pick(AGREED_WITH_NAMES);
+      }
+      if (cat === 'Panel Isolator') record.panelName = pick(['Routing panel', 'Main panel', 'Local panel']);
+      if (cat === 'Motor Isolator') record.equipmentName = record.equipmentId.split('-')[1];
+      if (cat === 'Emergency Stop') {
+        record.physicalLocation = location + ' press deck';
+        record.relayLocation = location + ' press panel';
+        record.equipmentAffected = pick(['Press only', 'All press routing', 'Conveyor and press']);
+      }
+      if (cat === 'Safety Interlock') {
+        record.physicalLocation = location + ' guard door';
+        record.equipmentAffected = pick(['Press only', 'All press routing', 'Conveyor and press']);
+      }
+      if (def.hasSpecs) {
+        record.currentRating = pick(['16A', '25A', '32A', '40A', '63A']);
+        record.poles = String(pick([1,2,3,4]));
+        record.auxiliary = pick(AUX_OPTIONS);
+      }
+      records.push(record);
+    }
+  });
+
+  // A few flagged-for-deletion, to test the pending-deletion review path too.
+  for (let i = 0; i < Math.min(3, records.length); i++) {
+    records[i] = { ...records[i], deletedFlag: true, deletedBy: pick(ENGINEERS), deletedAt: serverTimestamp() };
+  }
+
+  return records;
+}
+
+document.getElementById('seedBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('site');
+  const status = document.getElementById('appRoot').querySelector('#status');
+  const siteRef = sel.value;
+  const siteName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+  const count = Math.max(1, Math.min(300, parseInt(document.getElementById('countInput').value, 10) || 45));
+  if (!siteRef) { status.textContent = 'Select a site first.'; return; }
+
+  const btn = document.getElementById('seedBtn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+  status.textContent = '';
+
+  const records = buildRecords(siteRef, siteName, count);
+  let done = 0;
+  for (const rec of records) {
+    try {
+      await addDoc(collection(db, 'isolatorTests'), rec);
+      done++;
+      status.textContent = `Added ${done}/${records.length}…`;
+    } catch (e) {
+      status.textContent = `Failed on record ${done + 1}: ` + (e.message || e.code);
+      btn.disabled = false; btn.textContent = 'Generate sample data';
+      return;
+    }
+  }
+  status.textContent = `Done — ${done} test records added to ${siteName}, spread across all 4 categories and ${LOCATIONS.length} locations. Includes some overdue items, some pre-QSed, ~15% marked Limited (with N/A checks, a reason and agreed-with), and 3 pre-flagged for deletion.`;
+  btn.disabled = false; btn.textContent = 'Generate sample data';
+});
+</script>
+
+</body>
+</html>
