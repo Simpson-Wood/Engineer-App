@@ -123,10 +123,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, where, orderBy, limit
+  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.1";
+const VERSION = "v2.2";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -223,27 +223,11 @@ function renderTools(tools, isManager){
     el.href = entry.reportHref;
     el.className = 'tile';
     el.innerHTML =
-      '<span class="icon-wrap"><i class="ti ' + tool.icon + '" aria-hidden="true"></i><i class="ti ti-circle-check-filled badge-check" aria-hidden="true"></i>' +
+      '<span class="icon-wrap"><i class="ti ' + tool.icon + '" aria-hidden="true"></i><i class="ti ti-circle-check badge-check" aria-hidden="true"></i>' +
       '<span class="badge-count" data-count-id="' + tool.id + '" hidden>0</span></span>' +
       '<span>' + tool.name + ' reports</span>';
     nav.appendChild(el);
   });
-
-  loadPendingCounts(reportEntries);
-}
-
-async function loadPendingCounts(reportEntries){
-  await Promise.all(reportEntries.map(async ({ tool }) => {
-    try {
-      const q = query(collection(db, tool.id + 'Tests'), where('qsed', '==', false));
-      const snap = await getDocs(q);
-      const count = snap.size;
-      const badge = document.querySelector('[data-count-id="' + tool.id + '"]');
-      if (badge && count > 0){ badge.textContent = count > 99 ? '99+' : String(count); badge.hidden = false; }
-    } catch (e) {
-      console.error('Could not load pending count for ' + tool.id, e);
-    }
-  }));
 }
 
 async function renderActivityFeed(reportEntries){
@@ -278,6 +262,18 @@ async function renderActivityFeed(reportEntries){
 
   const pending = allRecords.filter(r => !r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const recent = allRecords.filter(r => r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // Badge counts come from this same fetch, not a separate query — a
+  // Firestore query for qsed == false would silently miss any record where
+  // qsed was never set at all (missing != false in a query), while "pending"
+  // here already treats missing the same as false. Same source, so the
+  // sidebar badge and the "Ready for QS" list can never disagree.
+  const countsByTool = {};
+  pending.forEach(r => { countsByTool[r.tool.id] = (countsByTool[r.tool.id] || 0) + 1; });
+  Object.keys(countsByTool).forEach(id => {
+    const badge = document.querySelector('[data-count-id="' + id + '"]');
+    if (badge){ badge.textContent = countsByTool[id] > 99 ? '99+' : String(countsByTool[id]); badge.hidden = false; }
+  });
 
   if (pending.length === 0 && recent.length === 0){
     pane.innerHTML = 'No recent activity yet.';
