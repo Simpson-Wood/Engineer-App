@@ -51,8 +51,8 @@
   .tile.disabled .soon{display:block; font-size:10.5px; color:var(--grey); margin-top:-4px;}
   .content-pane{display:none;}
   .icon-wrap{position:relative; display:inline-flex; align-items:center; justify-content:center;}
-  .badge-check{position:absolute; bottom:-3px; right:-4px; font-size:10px; background:var(--card); border-radius:50%; color:#2e8b57;}
-  .badge-count{position:absolute; top:-6px; right:-8px; background:var(--red); color:#fff; font-size:9.5px; font-weight:600; min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; font-family:'Barlow',sans-serif;}
+  .tile .icon-wrap .badge-check{position:absolute; bottom:-3px; right:-4px; font-size:10px !important; background:var(--card); border-radius:50%; color:#2e8b57 !important;}
+  .tile .icon-wrap .badge-count{position:absolute; top:-6px; right:-8px; background:var(--red); color:#fff !important; font-size:9.5px !important; font-weight:600; min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; font-family:'Barlow',sans-serif; line-height:1;}
   .activity-list{width:100%; max-width:640px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(100vh - 130px); padding:4px 2px;}
   .activity-item{display:flex; align-items:center; gap:12px; background:var(--card); border:0.5px solid var(--line); border-radius:10px; padding:12px 14px; text-decoration:none; color:var(--ink);}
   .activity-item:hover{border-color:var(--red);}
@@ -126,7 +126,7 @@ import {
   initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, where, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.0";
+const VERSION = "v2.1";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
