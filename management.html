@@ -96,7 +96,7 @@
 <div id="appRoot">
   <header>
     <a class="brand" href="index.html">
-      <img src="sw-logo.png" alt="Simpson &amp; Wood">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div class="title-block">
         <h1>Management</h1>
         <p id="versionLabel">v1.0</p>
@@ -109,10 +109,20 @@
   </header>
 
   <div class="wrap">
-    <div class="card">
+    <div class="card" id="liveAppsCard" hidden>
       <h2>Live apps</h2>
-      <p class="sub">Switch a tool on once it's ready — engineers see it on the homepage immediately, no redeploy needed.</p>
+      <p class="sub">Switch a tool on once it's ready and set the exact file it should link to — engineers see the change on the homepage immediately, no redeploy needed. Only visible to you.</p>
       <div id="statusList"></div>
+    </div>
+
+    <div class="card">
+      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Managers</p>
+      <p class="sub">Anyone here can sign in to this page and add or remove other managers — there's no console step anymore. QS is treated as management by default since QS already reviews and signs off jobs.</p>
+      <div id="managersList"><div class="empty-note">Loading…</div></div>
+      <div class="add-row" style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="newManagerEmail" placeholder="name@simpsonandwood.co.uk" style="flex:1;">
+        <button type="button" class="save-meta-btn" id="addManagerBtn" style="width:auto; padding:9px 16px;">Add manager</button>
+      </div>
     </div>
 
     <div class="card">
@@ -134,20 +144,21 @@
             <option>Electrical improver</option>
             <option>Electrician</option>
             <option>QS</option>
+            <option>Office</option>
             <option>Manager</option>
             <option>Director</option>
           </select>
         </div>
       </div>
+      <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:400; margin-bottom:14px;">
+        <input type="checkbox" id="newStaffIsManager" style="width:auto;"> Also give this person management access
+      </label>
       <button type="button" class="save-meta-btn" id="addStaffBtn">Add staff member</button>
     </div>
 
     <div class="card">
       <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
       <div id="staffList"><div class="empty-note">Loading…</div></div>
-      <div class="note">
-        Manager access itself isn't editable here — the <code>managers</code> list is kept console-only by design, so it stays trustworthy as the permission source. Ask whoever holds the Firebase console to add or remove a manager. The "Manager" position above is just a label for display and notifications — it doesn't grant this page's access on its own.
-      </div>
     </div>
   </div>
 </div>
@@ -182,18 +193,22 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
+// Only this account sees the Live apps panel. Update here (and only here)
+// if this responsibility ever moves to someone else.
+const OWNER_EMAIL = 'rob.rose@simpsonandwood.co.uk';
+
 const TOOL_PAIRS = [
   { id: "isolator", name: "Isolator testing", icon: "ti-bolt" },
   { id: "pat", name: "PAT testing", icon: "ti-plug" },
-  { id: "aov", name: "AOV testing", icon: "ti-gauge" },
+  { id: "aov", name: "AOV testing", icon: "ti-window" },
   { id: "gate", name: "Gate service", icon: "ti-fence" },
   { id: "cctv", name: "CCTV service", icon: "ti-video" },
-  { id: "pfc", name: "Power factor correction", icon: "ti-activity" },
+  { id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor" },
   { id: "holiday", name: "Holiday request", icon: "ti-calendar-event" },
   { id: "vancheck", name: "Van check", icon: "ti-truck" },
   { id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs" },
   { id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit" },
-  { id: "harness", name: "Harness inspection", icon: "ti-vest" }
+  { id: "harness", name: "Harness inspection", icon: "ti-fall" }
 ];
 
 function showToast(msg){
@@ -205,31 +220,41 @@ function showToast(msg){
 
 async function renderStatusList(){
   const list = document.getElementById('statusList');
-  let statuses = {};
+  let tools = {};
   try {
     const snap = await getDoc(doc(db, 'config', 'homepage'));
-    if (snap.exists()) statuses = snap.data().statuses || {};
+    if (snap.exists()) tools = snap.data().tools || {};
   } catch (e) {
-    console.error('Could not load statuses', e);
+    console.error('Could not load tool config', e);
   }
 
   list.innerHTML = '';
   TOOL_PAIRS.forEach(tool => {
+    const entry = tools[tool.id] || {};
     const row = document.createElement('div');
     row.className = 'status-row';
-    const checked = !!statuses[tool.id];
+    row.style.flexWrap = 'wrap';
     row.innerHTML =
       '<div class="name"><i class="ti ' + tool.icon + '" aria-hidden="true"></i>' + tool.name + '</div>' +
-      '<label class="switch"><input type="checkbox" data-id="' + tool.id + '" ' + (checked ? 'checked' : '') + '><span class="track"></span></label>';
+      '<div style="display:flex; align-items:center; gap:10px;">' +
+      '<input type="text" data-href-id="' + tool.id + '" placeholder="' + tool.id + '-test.html" value="' + (entry.href || '') + '" style="width:200px; padding:6px 8px; font-size:12.5px;">' +
+      '<label class="switch"><input type="checkbox" data-live-id="' + tool.id + '" ' + (entry.live ? 'checked' : '') + '><span class="track"></span></label>' +
+      '</div>';
     list.appendChild(row);
   });
 
+  async function saveTool(id){
+    const href = list.querySelector('[data-href-id="' + id + '"]').value.trim();
+    const live = list.querySelector('[data-live-id="' + id + '"]').checked;
+    const field = 'tools.' + id;
+    await setDoc(doc(db, 'config', 'homepage'), { [field]: { live, href } }, { merge: true });
+  }
+
   list.querySelectorAll('input[type=checkbox]').forEach(cb => {
     cb.addEventListener('change', async (e) => {
-      const id = e.target.dataset.id;
-      const field = 'statuses.' + id;
+      const id = e.target.dataset.liveId;
       try {
-        await setDoc(doc(db, 'config', 'homepage'), { [field]: e.target.checked }, { merge: true });
+        await saveTool(id);
         showToast(TOOL_PAIRS.find(t => t.id === id).name + (e.target.checked ? ' is now live' : ' switched back to coming soon'));
       } catch (err) {
         console.error(err);
@@ -238,7 +263,70 @@ async function renderStatusList(){
       }
     });
   });
+  list.querySelectorAll('input[type=text]').forEach(inp => {
+    inp.addEventListener('change', async (e) => {
+      const id = e.target.dataset.hrefId;
+      try {
+        await saveTool(id);
+        showToast('Link updated for ' + TOOL_PAIRS.find(t => t.id === id).name);
+      } catch (err) {
+        console.error(err);
+        showToast("Couldn't save — try again");
+      }
+    });
+  });
 }
+
+async function isCurrentlyManager(email){
+  try {
+    const snap = await getDoc(doc(db, 'managers', email));
+    return snap.exists();
+  } catch (e) { return false; }
+}
+
+async function renderManagersList(){
+  const list = document.getElementById('managersList');
+  try {
+    const snap = await getDocs(collection(db, 'managers'));
+    if (snap.empty) { list.innerHTML = '<div class="empty-note">No managers set — add one below.</div>'; return; }
+    const emails = [];
+    snap.forEach(d => emails.push(d.id));
+    emails.sort();
+    list.innerHTML = emails.map(email => `
+      <div class="staff-item">
+        <div class="name">${email}</div>
+        <button type="button" class="remove-btn" data-email="${email}">Remove</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (btn.dataset.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+          showToast("Can't remove the account this page is locked to");
+          return;
+        }
+        if (!confirm('Remove ' + btn.dataset.email + ' from managers?')) return;
+        try { await deleteDoc(doc(db, 'managers', btn.dataset.email)); await renderManagersList(); await renderStaffList(); }
+        catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+      });
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  }
+}
+
+document.getElementById('addManagerBtn').addEventListener('click', async () => {
+  const email = document.getElementById('newManagerEmail').value.trim();
+  if (!email) { showToast('Enter an email first'); return; }
+  try {
+    await setDoc(doc(db, 'managers', email), {});
+    document.getElementById('newManagerEmail').value = '';
+    await renderManagersList();
+    await renderStaffList();
+    showToast('Manager access granted to ' + email);
+  } catch (e) {
+    showToast('Could not add manager — ' + (e.message || e.code || 'unknown error'));
+  }
+});
 
 async function renderStaffList() {
   const list = document.getElementById('staffList');
@@ -248,15 +336,34 @@ async function renderStaffList() {
     const rows = [];
     snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
     rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    list.innerHTML = rows.map(r => `
+    const managerFlags = await Promise.all(rows.map(r => isCurrentlyManager(r.id)));
+    list.innerHTML = rows.map((r, i) => `
       <div class="staff-item">
         <div>
           <div class="name">${r.name || r.id}</div>
           <div class="meta">${r.id} · ${r.position || 'No position set'}</div>
         </div>
-        <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--grey); font-weight:600; text-transform:uppercase;">
+            <input type="checkbox" class="mgr-toggle" data-email="${r.id}" ${managerFlags[i] ? 'checked' : ''} style="width:auto;"> Manager
+          </label>
+          <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+        </div>
       </div>
     `).join('');
+    list.querySelectorAll('.mgr-toggle').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const email = e.target.dataset.email;
+        try {
+          if (e.target.checked) await setDoc(doc(db, 'managers', email), {});
+          else await deleteDoc(doc(db, 'managers', email));
+          showToast((e.target.checked ? 'Manager access granted to ' : 'Manager access removed from ') + email);
+        } catch (err) {
+          showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
+          e.target.checked = !e.target.checked;
+        }
+      });
+    });
     list.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
@@ -269,15 +376,24 @@ async function renderStaffList() {
   }
 }
 
+document.getElementById('newStaffPosition').addEventListener('change', (e) => {
+  const box = document.getElementById('newStaffIsManager');
+  box.checked = (e.target.value === 'QS' || e.target.value === 'Manager');
+});
+
 document.getElementById('addStaffBtn').addEventListener('click', async () => {
   const name = document.getElementById('newStaffName').value.trim();
   const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
   const position = document.getElementById('newStaffPosition').value.trim();
+  const makeManager = document.getElementById('newStaffIsManager').checked;
   if (!name || !email) { showToast('Name and email are both required.'); return; }
   try {
     await setDoc(doc(db, 'staff', email), { name, position });
+    if (makeManager) await setDoc(doc(db, 'managers', email), {});
     ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('newStaffIsManager').checked = false;
     await renderStaffList();
+    await renderManagersList();
     showToast('Staff member added: ' + name);
   } catch (e) {
     showToast('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
@@ -327,7 +443,9 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('whoName').textContent = user.displayName || user.email;
-  renderStatusList();
+  document.getElementById('liveAppsCard').hidden = (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase());
+  if (!document.getElementById('liveAppsCard').hidden) renderStatusList();
+  renderManagersList();
   renderStaffList();
 });
 </script>

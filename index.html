@@ -82,7 +82,7 @@
 <div id="appRoot" class="screen" hidden>
   <header class="topbar">
     <div class="topbar-brand">
-      <img src="sw-logo.png" alt="Simpson &amp; Wood" class="topbar-logo">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood" class="topbar-logo">
       <p id="versionLabel">v1.0</p>
     </div>
     <div class="topbar-right">
@@ -134,15 +134,15 @@ const TOOLS = [
   { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet-v2.1.html", alwaysLive: true },
   { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
   { section: "Customer reports", id: "pat", name: "PAT testing", icon: "ti-plug", href: "pat-test.html", pairKey: "pat" },
-  { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-gauge", href: "aov-test.html", pairKey: "aov" },
+  { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-window", href: "aov-test.html", pairKey: "aov" },
   { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
   { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
-  { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-activity", href: "pfc-service.html", pairKey: "pfc" },
+  { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor", href: "pfc-service.html", pairKey: "pfc" },
   { section: "Admin & compliance", id: "holiday", name: "Holiday request", icon: "ti-calendar-event", href: "holiday-request.html", pairKey: "holiday" },
   { section: "Admin & compliance", id: "vancheck", name: "Van check", icon: "ti-truck", href: "van-check.html", pairKey: "vancheck" },
   { section: "Admin & compliance", id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs", href: "ladder-check.html", pairKey: "laddercheck" },
   { section: "Admin & compliance", id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit", href: "first-aid-check.html", pairKey: "firstaid" },
-  { section: "Admin & compliance", id: "harness", name: "Harness inspection", icon: "ti-vest", href: "harness-check.html", pairKey: "harness" }
+  { section: "Admin & compliance", id: "harness", name: "Harness inspection", icon: "ti-fall", href: "harness-check.html", pairKey: "harness" }
 ];
 
 function showToast(msg){
@@ -152,7 +152,7 @@ function showToast(msg){
   setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-function renderTools(statuses){
+function renderTools(tools){
   const nav = document.getElementById('tool-nav');
   nav.innerHTML = '';
   let lastSection = null;
@@ -164,11 +164,13 @@ function renderTools(statuses){
       nav.appendChild(label);
       lastSection = tool.section;
     }
-    const isLive = tool.alwaysLive || !!(statuses && statuses[tool.pairKey]);
+    const entry = (tools && tools[tool.pairKey]) || {};
+    const isLive = tool.alwaysLive || !!entry.live;
+    const href = entry.href || tool.href;
     let el;
     if (isLive){
       el = document.createElement('a');
-      el.href = tool.href;
+      el.href = href;
       el.className = 'tile';
     } else {
       el = document.createElement('div');
@@ -181,15 +183,15 @@ function renderTools(statuses){
   });
 }
 
-async function loadStatuses(){
+async function loadTools(){
   try {
     const snap = await getDoc(doc(db, 'config', 'homepage'));
-    if (snap.exists()) return snap.data().statuses || {};
+    if (snap.exists()) return snap.data().tools || {};
   } catch (e) {
-    console.error('Could not load app status config, falling back to defaults', e);
+    console.error('Could not load app config, falling back to defaults', e);
   }
   // Fallback if Firestore is unreachable or the doc doesn't exist yet
-  return { isolator: true, pat: true };
+  return { isolator: { live: true }, pat: { live: true } };
 }
 
 function describeAuthError(err) {
@@ -231,7 +233,7 @@ onAuthStateChanged(auth, async (user) => {
     console.error('Manager check failed:', e);
   }
 
-  renderTools(await loadStatuses());
+  renderTools(await loadTools());
 });
 
 document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
