@@ -160,10 +160,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, deleteDoc
+  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.0";
+const VERSION = "v2.1";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -237,7 +237,19 @@ async function renderStatusList(){
     const reportHref = list.querySelector('[data-report-href-id="' + id + '"]').value.trim();
     const live = list.querySelector('[data-live-id="' + id + '"]').checked;
     const field = 'tools.' + id;
-    await setDoc(doc(db, 'config', 'homepage'), { [field]: { live, href, reportHref } }, { merge: true });
+    // updateDoc treats a dotted key as a real nested path (tools.isolator, not
+    // a literal field named "tools.isolator") — setDoc+merge does NOT do this,
+    // it was writing a flat field with a dot in its name that nothing ever
+    // read. updateDoc throws if the doc doesn't exist yet, hence the fallback.
+    try {
+      await updateDoc(doc(db, 'config', 'homepage'), { [field]: { live, href, reportHref } });
+    } catch (err) {
+      if (err.code === 'not-found') {
+        await setDoc(doc(db, 'config', 'homepage'), { tools: { [id]: { live, href, reportHref } } }, { merge: true });
+      } else {
+        throw err;
+      }
+    }
   }
 
   list.querySelectorAll('input[type=checkbox]').forEach(cb => {
