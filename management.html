@@ -111,18 +111,8 @@
   <div class="wrap">
     <div class="card" id="liveAppsCard" hidden>
       <h2>Live apps</h2>
-      <p class="sub">Switch a tool on once it's ready and set the exact file it should link to — engineers see the change on the homepage immediately, no redeploy needed. Only visible to you.</p>
+      <p class="sub">Switch a tool on once it's ready, and set the engineer file and the report file it should link to — engineers see the change on the homepage immediately, no redeploy needed. Only visible to you.</p>
       <div id="statusList"></div>
-    </div>
-
-    <div class="card">
-      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Managers</p>
-      <p class="sub">Anyone here can sign in to this page and add or remove other managers — there's no console step anymore. QS is treated as management by default since QS already reviews and signs off jobs.</p>
-      <div id="managersList"><div class="empty-note">Loading…</div></div>
-      <div class="add-row" style="display:flex; gap:8px; margin-top:12px;">
-        <input type="text" id="newManagerEmail" placeholder="name@simpsonandwood.co.uk" style="flex:1;">
-        <button type="button" class="save-meta-btn" id="addManagerBtn" style="width:auto; padding:9px 16px;">Add manager</button>
-      </div>
     </div>
 
     <div class="card">
@@ -236,8 +226,9 @@ async function renderStatusList(){
     row.style.flexWrap = 'wrap';
     row.innerHTML =
       '<div class="name"><i class="ti ' + tool.icon + '" aria-hidden="true"></i>' + tool.name + '</div>' +
-      '<div style="display:flex; align-items:center; gap:10px;">' +
-      '<input type="text" data-href-id="' + tool.id + '" placeholder="' + tool.id + '-test.html" value="' + (entry.href || '') + '" style="width:200px; padding:6px 8px; font-size:12.5px;">' +
+      '<div style="display:flex; align-items:center; gap:8px;">' +
+      '<input type="text" data-href-id="' + tool.id + '" placeholder="engineer file" value="' + (entry.href || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
+      '<input type="text" data-report-href-id="' + tool.id + '" placeholder="report file" value="' + (entry.reportHref || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
       '<label class="switch"><input type="checkbox" data-live-id="' + tool.id + '" ' + (entry.live ? 'checked' : '') + '><span class="track"></span></label>' +
       '</div>';
     list.appendChild(row);
@@ -245,9 +236,10 @@ async function renderStatusList(){
 
   async function saveTool(id){
     const href = list.querySelector('[data-href-id="' + id + '"]').value.trim();
+    const reportHref = list.querySelector('[data-report-href-id="' + id + '"]').value.trim();
     const live = list.querySelector('[data-live-id="' + id + '"]').checked;
     const field = 'tools.' + id;
-    await setDoc(doc(db, 'config', 'homepage'), { [field]: { live, href } }, { merge: true });
+    await setDoc(doc(db, 'config', 'homepage'), { [field]: { live, href, reportHref } }, { merge: true });
   }
 
   list.querySelectorAll('input[type=checkbox]').forEach(cb => {
@@ -265,7 +257,7 @@ async function renderStatusList(){
   });
   list.querySelectorAll('input[type=text]').forEach(inp => {
     inp.addEventListener('change', async (e) => {
-      const id = e.target.dataset.hrefId;
+      const id = e.target.dataset.hrefId || e.target.dataset.reportHrefId;
       try {
         await saveTool(id);
         showToast('Link updated for ' + TOOL_PAIRS.find(t => t.id === id).name);
@@ -283,50 +275,6 @@ async function isCurrentlyManager(email){
     return snap.exists();
   } catch (e) { return false; }
 }
-
-async function renderManagersList(){
-  const list = document.getElementById('managersList');
-  try {
-    const snap = await getDocs(collection(db, 'managers'));
-    if (snap.empty) { list.innerHTML = '<div class="empty-note">No managers set — add one below.</div>'; return; }
-    const emails = [];
-    snap.forEach(d => emails.push(d.id));
-    emails.sort();
-    list.innerHTML = emails.map(email => `
-      <div class="staff-item">
-        <div class="name">${email}</div>
-        <button type="button" class="remove-btn" data-email="${email}">Remove</button>
-      </div>
-    `).join('');
-    list.querySelectorAll('.remove-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (btn.dataset.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
-          showToast("Can't remove the account this page is locked to");
-          return;
-        }
-        if (!confirm('Remove ' + btn.dataset.email + ' from managers?')) return;
-        try { await deleteDoc(doc(db, 'managers', btn.dataset.email)); await renderManagersList(); await renderStaffList(); }
-        catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
-      });
-    });
-  } catch (e) {
-    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
-  }
-}
-
-document.getElementById('addManagerBtn').addEventListener('click', async () => {
-  const email = document.getElementById('newManagerEmail').value.trim();
-  if (!email) { showToast('Enter an email first'); return; }
-  try {
-    await setDoc(doc(db, 'managers', email), {});
-    document.getElementById('newManagerEmail').value = '';
-    await renderManagersList();
-    await renderStaffList();
-    showToast('Manager access granted to ' + email);
-  } catch (e) {
-    showToast('Could not add manager — ' + (e.message || e.code || 'unknown error'));
-  }
-});
 
 async function renderStaffList() {
   const list = document.getElementById('staffList');
@@ -367,7 +315,11 @@ async function renderStaffList() {
     list.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
-        try { await deleteDoc(doc(db, 'staff', btn.dataset.email)); await renderStaffList(); }
+        try {
+          await deleteDoc(doc(db, 'staff', btn.dataset.email));
+          await deleteDoc(doc(db, 'managers', btn.dataset.email)).catch(() => {});
+          await renderStaffList();
+        }
         catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
       });
     });
@@ -393,7 +345,6 @@ document.getElementById('addStaffBtn').addEventListener('click', async () => {
     ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('newStaffIsManager').checked = false;
     await renderStaffList();
-    await renderManagersList();
     showToast('Staff member added: ' + name);
   } catch (e) {
     showToast('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
@@ -445,7 +396,6 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('whoName').textContent = user.displayName || user.email;
   document.getElementById('liveAppsCard').hidden = (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase());
   if (!document.getElementById('liveAppsCard').hidden) renderStatusList();
-  renderManagersList();
   renderStaffList();
 });
 </script>

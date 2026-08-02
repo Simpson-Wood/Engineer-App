@@ -613,11 +613,23 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function boot() {
-  loadSites();
+  loadSites().then(() => applyDeepLink());
   buildCatPills();
   renderSitesList();
   renderStaffList();
   suggestNextSiteRef();
+}
+
+function applyDeepLink() {
+  const params = new URLSearchParams(location.search);
+  const site = params.get('site');
+  if (!site) return;
+  const sel = document.getElementById('site');
+  const hasOption = Array.from(sel.options).some(o => o.value === site);
+  if (!hasOption) return;
+  sel.value = site;
+  loadSiteData();
+  switchTab('front');
 }
 
 async function suggestNextSiteRef() {
