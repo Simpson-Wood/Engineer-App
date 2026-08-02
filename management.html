@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simpson &amp; Wood — Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a; --grey:#6b6b6b;
+    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink);}
+  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  .screen{min-height:100vh;}
+  [hidden]{display:none !important;}
+
+  #signinScreen{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:var(--bg);}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  .ms-btn:active{background:#000;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  #notAuthorised{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:var(--bg);}
+  #notAuthorised h2{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:19px; color:var(--red); margin:0 0 10px;}
+  #notAuthorised p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 20px;}
+
+  #appRoot{display:none;}
+  header{background:var(--ink); padding:16px 18px calc(14px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none; cursor:pointer;}
+  header img{height:32px; display:block;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header .title-block p{margin:2px 0 0; font-size:11px; color:#8f8f8f;}
+  header .who{text-align:right; display:flex; align-items:center; gap:14px;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600;}
+  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+
+  .wrap{max-width:900px; margin:0 auto; padding:24px 20px 60px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:20px;}
+  .card h2{margin:0 0 4px; font-size:18px; font-weight:700;}
+  .card .sub{color:var(--grey); font-size:12.5px; margin:0 0 16px;}
+
+  .status-row{display:flex; align-items:center; justify-content:space-between; padding:10px 2px; border-bottom:1px solid var(--line);}
+  .status-row:last-child{border-bottom:none;}
+  .status-row .name{display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600;}
+  .status-row .name i{color:var(--red); font-size:17px; width:18px;}
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .track{position:absolute; inset:0; background:#d6d4cd; border-radius:24px; cursor:pointer; transition:0.15s;}
+  .switch .track::before{content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.15s;}
+  .switch input:checked + .track{background:var(--red);}
+  .switch input:checked + .track::before{transform:translateX(18px);}
+
+  .staff-item{display:flex; justify-content:space-between; align-items:center; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+  .staff-item .name{font-weight:700; font-size:13.5px;}
+  .staff-item .meta{font-size:11.5px; color:var(--grey); margin-top:2px;}
+  .remove-btn{background:none; border:1.5px solid var(--red); color:var(--red); font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:6px; cursor:pointer;}
+  .empty-note{color:var(--grey); font-size:13px; text-align:center; padding:16px 0;}
+
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;}
+  .form-grid > div{display:flex; flex-direction:column;}
+  label{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); margin-bottom:4px;}
+  input[type=text], select{padding:9px 10px; font-size:14px; border:1.5px solid var(--line); border-radius:7px; font-family:'Barlow',sans-serif;}
+  .save-meta-btn{width:100%; background:var(--red); color:#fff; border:none; padding:11px 16px; border-radius:7px; font-weight:700; font-size:13.5px; cursor:pointer;}
+
+  .note{background:var(--bg); border-radius:8px; padding:12px 14px; font-size:12.5px; color:var(--grey); margin-top:16px; line-height:1.5;}
+  .note code{background:#e8e6e0; padding:1px 5px; border-radius:4px;}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
+  .toast.show{opacity:1;}
+
+  @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Management</h2>
+  <p>Management sign-in required.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="notAuthorised">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood" style="height:40px; margin-bottom:24px;">
+  <h2>Access restricted</h2>
+  <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span> — if this should have access, contact whoever manages the Firebase project.</p>
+  <button class="ms-btn" id="signOutBtn2">Sign out</button>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html">
+      <img src="sw-logo.png" alt="Simpson &amp; Wood">
+      <div class="title-block">
+        <h1>Management</h1>
+        <p id="versionLabel">v1.0</p>
+      </div>
+    </a>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <h2>Live apps</h2>
+      <p class="sub">Switch a tool on once it's ready — engineers see it on the homepage immediately, no redeploy needed.</p>
+      <div id="statusList"></div>
+    </div>
+
+    <div class="card">
+      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Add staff member</p>
+      <div class="form-grid">
+        <div>
+          <label>Name</label>
+          <input type="text" id="newStaffName">
+        </div>
+        <div>
+          <label>Email <span style="font-weight:400;text-transform:none;">(must match their Microsoft sign-in email)</span></label>
+          <input type="text" id="newStaffEmail">
+        </div>
+        <div>
+          <label>Position <span style="font-weight:400;text-transform:none;">(used to identify who the QS is, for notifications)</span></label>
+          <select id="newStaffPosition">
+            <option value="" disabled selected>Select</option>
+            <option>Apprentice electrician</option>
+            <option>Electrical improver</option>
+            <option>Electrician</option>
+            <option>QS</option>
+            <option>Manager</option>
+            <option>Director</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="save-meta-btn" id="addStaffBtn">Add staff member</button>
+    </div>
+
+    <div class="card">
+      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
+      <div id="staffList"><div class="empty-note">Loading…</div></div>
+      <div class="note">
+        Manager access itself isn't editable here — the <code>managers</code> list is kept console-only by design, so it stays trustworthy as the permission source. Ask whoever holds the Firebase console to add or remove a manager. The "Manager" position above is just a label for display and notifications — it doesn't grant this page's access on its own.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+const TOOL_PAIRS = [
+  { id: "isolator", name: "Isolator testing", icon: "ti-bolt" },
+  { id: "pat", name: "PAT testing", icon: "ti-plug" },
+  { id: "aov", name: "AOV testing", icon: "ti-gauge" },
+  { id: "gate", name: "Gate service", icon: "ti-fence" },
+  { id: "cctv", name: "CCTV service", icon: "ti-video" },
+  { id: "pfc", name: "Power factor correction", icon: "ti-activity" },
+  { id: "holiday", name: "Holiday request", icon: "ti-calendar-event" },
+  { id: "vancheck", name: "Van check", icon: "ti-truck" },
+  { id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs" },
+  { id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit" },
+  { id: "harness", name: "Harness inspection", icon: "ti-vest" }
+];
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+async function renderStatusList(){
+  const list = document.getElementById('statusList');
+  let statuses = {};
+  try {
+    const snap = await getDoc(doc(db, 'config', 'homepage'));
+    if (snap.exists()) statuses = snap.data().statuses || {};
+  } catch (e) {
+    console.error('Could not load statuses', e);
+  }
+
+  list.innerHTML = '';
+  TOOL_PAIRS.forEach(tool => {
+    const row = document.createElement('div');
+    row.className = 'status-row';
+    const checked = !!statuses[tool.id];
+    row.innerHTML =
+      '<div class="name"><i class="ti ' + tool.icon + '" aria-hidden="true"></i>' + tool.name + '</div>' +
+      '<label class="switch"><input type="checkbox" data-id="' + tool.id + '" ' + (checked ? 'checked' : '') + '><span class="track"></span></label>';
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', async (e) => {
+      const id = e.target.dataset.id;
+      const field = 'statuses.' + id;
+      try {
+        await setDoc(doc(db, 'config', 'homepage'), { [field]: e.target.checked }, { merge: true });
+        showToast(TOOL_PAIRS.find(t => t.id === id).name + (e.target.checked ? ' is now live' : ' switched back to coming soon'));
+      } catch (err) {
+        console.error(err);
+        showToast("Couldn't save — try again");
+        e.target.checked = !e.target.checked;
+      }
+    });
+  });
+}
+
+async function renderStaffList() {
+  const list = document.getElementById('staffList');
+  try {
+    const snap = await getDocs(collection(db, 'staff'));
+    if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
+    const rows = [];
+    snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    list.innerHTML = rows.map(r => `
+      <div class="staff-item">
+        <div>
+          <div class="name">${r.name || r.id}</div>
+          <div class="meta">${r.id} · ${r.position || 'No position set'}</div>
+        </div>
+        <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
+        try { await deleteDoc(doc(db, 'staff', btn.dataset.email)); await renderStaffList(); }
+        catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+      });
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  }
+}
+
+document.getElementById('addStaffBtn').addEventListener('click', async () => {
+  const name = document.getElementById('newStaffName').value.trim();
+  const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
+  const position = document.getElementById('newStaffPosition').value.trim();
+  if (!name || !email) { showToast('Name and email are both required.'); return; }
+  try {
+    await setDoc(doc(db, 'staff', email), { name, position });
+    ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
+    await renderStaffList();
+    showToast('Staff member added: ' + name);
+  } catch (e) {
+    showToast('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+document.getElementById('signOutBtn2').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('signinScreen').style.display = 'none';
+  document.getElementById('notAuthorised').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'none';
+  if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
+
+  let isManager = false;
+  try {
+    const snap = await getDoc(doc(db, 'managers', user.email));
+    isManager = snap.exists();
+  } catch (e) { console.error('Manager check failed:', e); }
+
+  if (!isManager) {
+    document.getElementById('notAuthEmail').textContent = user.email;
+    document.getElementById('notAuthorised').style.display = 'flex';
+    return;
+  }
+
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('whoName').textContent = user.displayName || user.email;
+  renderStatusList();
+  renderStaffList();
+});
+</script>
+</body>
+</html>

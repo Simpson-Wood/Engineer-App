@@ -3,110 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simpson & Wood — Engineer Apps</title>
+<title>Simpson &amp; Wood — Engineer Apps</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 <style>
   :root{
-    --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
-    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff;
+    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a;
+    --bg:#f4f3f0; --card:#ffffff; --line:#e2e0da;
+    --grey:#6b6b68; --radius:10px;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);}
-  header{background:var(--ink);padding:16px 18px calc(14px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img{height:32px;display:block;}
-  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
-  header .title-block p{margin:2px 0 0;font-size:11px;color:#8f8f8f;}
-  header .who{text-align:right;}
-  header .who .name{color:#fff;font-size:12px;font-weight:600;}
-  header .who button{background:none;border:none;color:#e2b0b3;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink);}
+  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  .screen{min-height:100vh;}
+  [hidden]{display:none !important;}
 
-  main{max-width:520px;margin:0 auto;padding:28px 20px 40px;}
+  /* ---- sign-in ---- */
+  #signin-screen{display:flex; align-items:center; justify-content:center; padding:24px; background:var(--ink);}
+  .signin-card{background:var(--card); border-radius:16px; padding:40px 32px; max-width:380px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,0.35);}
+  .signin-logo{width:100%; max-width:260px; margin:0 auto 20px;}
+  .signin-tagline{color:var(--grey); font-size:15px; margin:0 0 28px;}
+  .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:8px; padding:13px 16px; font-size:15px; font-family:'Barlow',sans-serif; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn-primary:hover{background:var(--red-dark);}
+  .error-text{color:var(--red); font-size:13px; margin-top:14px;}
 
-  .group-label{
-    font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-    color:var(--grey);margin:0 0 14px 2px;
+  /* ---- topbar ---- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; background:var(--ink); padding:10px 20px; height:56px;}
+  .topbar-brand{display:flex; align-items:center; gap:10px;}
+  .topbar-logo{height:28px;}
+  #versionLabel{color:#8a8a86; font-size:11px; margin:0;}
+  .topbar-right{display:flex; align-items:center; gap:6px;}
+  .user-name{color:#cfcfcf; font-size:13px; margin-right:8px;}
+  .icon-btn{background:none; border:none; color:#cfcfcf; width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
+  .icon-btn:hover{background:rgba(255,255,255,0.1); color:#fff;}
+
+  /* ---- layout / tiles (mobile-first grid) ---- */
+  .layout{display:block;}
+  .tool-nav{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:12px; padding:20px;}
+  .tool-section-label{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; grid-column:1/-1; margin:8px 0 -4px;}
+  .tool-section-label:first-child{margin-top:0;}
+  .tile{background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:16px 8px; text-align:center; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;}
+  .tile i{font-size:24px; color:var(--red);}
+  .tile span{font-size:12.5px; line-height:1.25;}
+  .tile.disabled{opacity:0.45; cursor:default;}
+  .tile.disabled i{color:var(--grey);}
+  .tile.disabled .soon{display:block; font-size:10.5px; color:var(--grey); margin-top:-4px;}
+  .content-pane{display:none;}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
+  .toast.show{opacity:1;}
+
+  @media (min-width:900px){
+    .layout{display:flex; min-height:calc(100vh - 56px);}
+    .tool-nav{display:flex; flex-direction:column; width:230px; background:var(--ink); padding:20px 14px; gap:2px; flex-shrink:0; grid-template-columns:none;}
+    .tool-section-label{color:#8a8a86; margin:14px 0 2px; padding:0 10px;}
+    .tool-section-label:first-child{margin-top:0;}
+    .tile{flex-direction:row; justify-content:flex-start; text-align:left; background:none; border:none; border-radius:8px; padding:9px 10px; gap:10px;}
+    .tile:hover{background:rgba(255,255,255,0.06);}
+    .tile i{font-size:17px; width:20px;}
+    .tile span{font-size:13.5px; color:#e4e4e2;}
+    .tile.disabled .soon{display:inline; margin:0 0 0 6px; font-size:10.5px;}
+    .tile.disabled span{display:flex; align-items:center;}
+    .content-pane{display:flex; flex:1; align-items:center; justify-content:center; color:var(--grey); font-size:15px; padding:40px;}
   }
-  .group-label:not(:first-child){margin-top:32px;}
-
-  .app-icon-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(84px, 1fr));gap:22px 14px;}
-  .app-tile{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--ink);}
-  .app-icon{
-    width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .1s ease;
-  }
-  .app-icon svg{width:28px;height:28px;}
-  .app-icon.red{background:linear-gradient(160deg,#e4383f,var(--red-dark));}
-  .app-icon.dark{background:linear-gradient(160deg,#3a3a3a,var(--ink));}
-  .app-tile:active .app-icon{transform:scale(.9);}
-  .app-label{margin-top:8px;font-size:12px;font-weight:600;text-align:center;line-height:1.25;}
-
-  .empty-note{color:var(--grey);font-size:12.5px;text-align:center;padding:20px 0;}
-
-  #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
-  #signinScreen img{height:44px;margin-bottom:28px;}
-  #signinScreen h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:20px;margin:0 0 8px;}
-  #signinScreen p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 26px;}
-  .ms-btn{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
-  .ms-btn:active{background:#000;}
-  #signinScreen .err{color:var(--red);font-size:13px;margin-top:16px;max-width:320px;}
-  #appRoot{display:none;}
 </style>
 </head>
 <body>
 
-<div id="signinScreen">
-  <img src="sw-logo.png" alt="Simpson & Wood">
-  <h2>Engineer Apps</h2>
-  <p>Sign in with your Simpson &amp; Wood Microsoft account to see what's available to you.</p>
-  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
-  <div class="err" id="signinErr"></div>
+<div id="signinScreen" class="screen">
+  <div class="signin-card">
+    <img src="sw-logo.png" alt="Simpson &amp; Wood" class="signin-logo">
+    <p class="signin-tagline">Sign in with your Simpson &amp; Wood Microsoft account to get to your tools.</p>
+    <button id="msSignInBtn" class="btn-primary"><i class="ti ti-brand-windows" aria-hidden="true"></i>Sign in with Microsoft</button>
+    <p id="signinErr" class="error-text"></p>
+  </div>
 </div>
 
-<div id="appRoot">
-  <header>
-    <div class="brand">
-      <img src="sw-logo.png" alt="Simpson & Wood">
-      <div class="title-block">
-        <h1>Engineer Apps</h1>
-        <p>One login, everything in one place</p>
-      </div>
+<div id="appRoot" class="screen" hidden>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="sw-logo.png" alt="Simpson &amp; Wood" class="topbar-logo">
+      <p id="versionLabel">v1.0</p>
     </div>
-    <div class="who">
-      <div class="name" id="whoName">—</div>
-      <button id="signOutBtn">Sign out</button>
+    <div class="topbar-right">
+      <span id="whoName" class="user-name"></span>
+      <button id="mgmtBtn" class="icon-btn" hidden title="Management"><i class="ti ti-settings" aria-hidden="true"></i></button>
+      <button id="signOutBtn" class="icon-btn" title="Sign out"><i class="ti ti-logout" aria-hidden="true"></i></button>
     </div>
   </header>
-
-  <main>
-    <p class="group-label">Isolator / Interlock</p>
-    <div class="app-icon-grid">
-      <a class="app-tile" href="isolator-interlock-test.html">
-        <div class="app-icon red">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="3" width="14" height="18" rx="2"></rect>
-            <rect x="9" y="1.5" width="6" height="3" rx="1"></rect>
-            <polyline points="8.5 12.5 11 15 16 9.5"></polyline>
-          </svg>
-        </div>
-        <div class="app-label">Log a Test</div>
-      </a>
-      <a class="app-tile" href="isolator-interlock-report.html" id="reportsTile" style="display:none;">
-        <div class="app-icon dark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-            <line x1="8" y1="8" x2="16" y2="8"></line>
-            <line x1="8" y1="12" x2="16" y2="12"></line>
-            <line x1="8" y1="16" x2="13" y2="16"></line>
-          </svg>
-        </div>
-        <div class="app-label">Reports</div>
-      </a>
-    </div>
-    <div class="empty-note" id="noAppsNote" style="display:none;">Nothing else available to you yet.</div>
-  </main>
+  <div class="layout">
+    <nav class="tool-nav" id="tool-nav"></nav>
+    <div class="content-pane" id="content-pane">Select a tool from the menu.</div>
+  </div>
 </div>
+
+<div id="toast" class="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -117,6 +108,9 @@ import {
 import {
   initializeFirestore, persistentLocalCache, doc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -132,6 +126,71 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// Tool catalogue. "pairKey" maps to the live/coming-later flag stored in
+// Firestore at config/homepage -> statuses.{pairKey}. Tools without a
+// pairKey (timesheet) are not remotely toggled.
+const TOOLS = [
+  { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet-v2.1.html", alwaysLive: true },
+  { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
+  { section: "Customer reports", id: "pat", name: "PAT testing", icon: "ti-plug", href: "pat-test.html", pairKey: "pat" },
+  { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-gauge", href: "aov-test.html", pairKey: "aov" },
+  { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
+  { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
+  { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-activity", href: "pfc-service.html", pairKey: "pfc" },
+  { section: "Admin & compliance", id: "holiday", name: "Holiday request", icon: "ti-calendar-event", href: "holiday-request.html", pairKey: "holiday" },
+  { section: "Admin & compliance", id: "vancheck", name: "Van check", icon: "ti-truck", href: "van-check.html", pairKey: "vancheck" },
+  { section: "Admin & compliance", id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs", href: "ladder-check.html", pairKey: "laddercheck" },
+  { section: "Admin & compliance", id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit", href: "first-aid-check.html", pairKey: "firstaid" },
+  { section: "Admin & compliance", id: "harness", name: "Harness inspection", icon: "ti-vest", href: "harness-check.html", pairKey: "harness" }
+];
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function renderTools(statuses){
+  const nav = document.getElementById('tool-nav');
+  nav.innerHTML = '';
+  let lastSection = null;
+  TOOLS.forEach(tool => {
+    if (tool.section !== lastSection){
+      const label = document.createElement('div');
+      label.className = 'tool-section-label';
+      label.textContent = tool.section;
+      nav.appendChild(label);
+      lastSection = tool.section;
+    }
+    const isLive = tool.alwaysLive || !!(statuses && statuses[tool.pairKey]);
+    let el;
+    if (isLive){
+      el = document.createElement('a');
+      el.href = tool.href;
+      el.className = 'tile';
+    } else {
+      el = document.createElement('div');
+      el.className = 'tile disabled';
+      el.addEventListener('click', () => showToast(tool.name + ' is coming soon'));
+    }
+    el.innerHTML = '<i class="ti ' + tool.icon + '" aria-hidden="true"></i><span>' + tool.name +
+      (isLive ? '' : '<span class="soon">Coming soon</span>') + '</span>';
+    nav.appendChild(el);
+  });
+}
+
+async function loadStatuses(){
+  try {
+    const snap = await getDoc(doc(db, 'config', 'homepage'));
+    if (snap.exists()) return snap.data().statuses || {};
+  } catch (e) {
+    console.error('Could not load app status config, falling back to defaults', e);
+  }
+  // Fallback if Firestore is unreachable or the doc doesn't exist yet
+  return { isolator: true, pat: true };
+}
 
 function describeAuthError(err) {
   if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
@@ -157,22 +216,25 @@ getRedirectResult(auth).catch(err => {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    document.getElementById('signinScreen').style.display = 'flex';
-    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('signinScreen').hidden = false;
+    document.getElementById('appRoot').hidden = true;
     return;
   }
-  document.getElementById('signinScreen').style.display = 'none';
-  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('signinScreen').hidden = true;
+  document.getElementById('appRoot').hidden = false;
   document.getElementById('whoName').textContent = user.displayName || user.email;
 
   try {
     const snap = await getDoc(doc(db, 'managers', user.email));
-    if (snap.exists()) document.getElementById('reportsTile').style.display = 'flex';
+    document.getElementById('mgmtBtn').hidden = !snap.exists();
   } catch (e) {
     console.error('Manager check failed:', e);
   }
-});
-</script>
 
+  renderTools(await loadStatuses());
+});
+
+document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
+</script>
 </body>
 </html>
