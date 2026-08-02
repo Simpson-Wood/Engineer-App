@@ -143,7 +143,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v12.0 · Management</p>
+        <p id="versionLabel">v13.0 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -588,6 +588,24 @@ getRedirectResult(auth).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
 
+// Matches index.html / management.html's manager check: a manager is either
+// in the console-only /managers failsafe list, or a staff record whose
+// position is Manager or QS (self-service, granted from management.html).
+async function checkManager(email){
+  try {
+    const mgrSnap = await getDoc(doc(db, 'managers', email));
+    if (mgrSnap.exists()) return true;
+  } catch (e) { console.error('managers check failed', e); }
+  try {
+    const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
+    if (staffSnap.exists()){
+      const pos = staffSnap.data().position;
+      if (pos === 'Manager' || pos === 'QS') return true;
+    }
+  } catch (e) { console.error('staff check failed', e); }
+  return false;
+}
+
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   document.getElementById('signinScreen').style.display = 'none';
@@ -595,11 +613,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  let isManager = false;
-  try {
-    const snap = await getDoc(doc(db, 'managers', user.email));
-    isManager = snap.exists();
-  } catch (e) { console.error('Manager check failed:', e); }
+  const isManager = await checkManager(user.email);
 
   if (!isManager) {
     document.getElementById('notAuthEmail').textContent = user.email;

@@ -126,7 +126,7 @@ import {
   initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, where, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v1.1";
+const VERSION = "v2.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -317,6 +317,29 @@ async function loadTools(){
   return { isolator: { live: true }, pat: { live: true } };
 }
 
+// A manager is either in the console-only /managers failsafe list, or a
+// staff record whose position is Manager or QS — position alone is now the
+// normal way to grant/revoke management access, self-service from
+// management.html's Staff list. Office is a separate, narrower tier: it
+// only unlocks the activity feed below, never the QS & Reporting tiles or
+// management.html itself.
+async function getAccessLevel(email){
+  let isManager = false, isOffice = false;
+  try {
+    const mgrSnap = await getDoc(doc(db, 'managers', email));
+    if (mgrSnap.exists()) isManager = true;
+  } catch (e) { console.error('managers check failed', e); }
+  try {
+    const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
+    if (staffSnap.exists()){
+      const pos = staffSnap.data().position;
+      if (pos === 'Manager' || pos === 'QS') isManager = true;
+      if (pos === 'Office') isOffice = true;
+    }
+  } catch (e) { console.error('staff check failed', e); }
+  return { isManager, isOffice };
+}
+
 function describeAuthError(err) {
   if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
   if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
@@ -349,19 +372,18 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').hidden = false;
   document.getElementById('whoName').textContent = user.displayName || user.email;
 
-  let isManager = false;
+  let isManager = false, isOffice = false;
   try {
-    const snap = await getDoc(doc(db, 'managers', user.email));
-    isManager = snap.exists();
+    ({ isManager, isOffice } = await getAccessLevel(user.email));
     document.getElementById('mgmtBtn').hidden = !isManager;
   } catch (e) {
-    console.error('Manager check failed:', e);
+    console.error('Access check failed:', e);
   }
 
   const tools = await loadTools();
   renderTools(tools, isManager);
 
-  if (isManager){
+  if (isManager || isOffice){
     const reportEntries = REPORT_TOOLS
       .map(t => ({ tool: t, entry: (tools && tools[t.pairKey]) || {} }))
       .filter(x => x.entry.live && x.entry.reportHref);

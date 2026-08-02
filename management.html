@@ -127,7 +127,7 @@
           <input type="text" id="newStaffEmail">
         </div>
         <div>
-          <label>Position <span style="font-weight:400;text-transform:none;">(used to identify who the QS is, for notifications)</span></label>
+          <label>Position <span style="font-weight:400;text-transform:none;">(Manager and QS get management access automatically — no separate step)</span></label>
           <select id="newStaffPosition">
             <option value="" disabled selected>Select</option>
             <option>Apprentice electrician</option>
@@ -140,14 +140,12 @@
           </select>
         </div>
       </div>
-      <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:400; margin-bottom:14px;">
-        <input type="checkbox" id="newStaffIsManager" style="width:auto;"> Also give this person management access
-      </label>
       <button type="button" class="save-meta-btn" id="addStaffBtn">Add staff member</button>
     </div>
 
     <div class="card">
       <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
+      <p class="sub">Changing someone's position to Manager or QS grants management access immediately; changing it away removes it. Office sees the homepage activity feed but nothing else management-related.</p>
       <div id="staffList"><div class="empty-note">Loading…</div></div>
     </div>
   </div>
@@ -165,7 +163,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v1.0";
+const VERSION = "v2.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -269,46 +267,56 @@ async function renderStatusList(){
   });
 }
 
-async function isCurrentlyManager(email){
+// Matches index.html's getAccessLevel(): a manager is either in the
+// console-only /managers failsafe list, or a staff record whose position
+// is Manager or QS.
+async function checkManager(email){
   try {
-    const snap = await getDoc(doc(db, 'managers', email));
-    return snap.exists();
-  } catch (e) { return false; }
+    const mgrSnap = await getDoc(doc(db, 'managers', email));
+    if (mgrSnap.exists()) return true;
+  } catch (e) { console.error('managers check failed', e); }
+  try {
+    const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
+    if (staffSnap.exists()){
+      const pos = staffSnap.data().position;
+      if (pos === 'Manager' || pos === 'QS') return true;
+    }
+  } catch (e) { console.error('staff check failed', e); }
+  return false;
 }
 
 async function renderStaffList() {
   const list = document.getElementById('staffList');
+  const POSITIONS = ['Apprentice electrician', 'Electrical improver', 'Electrician', 'QS', 'Office', 'Manager', 'Director'];
   try {
     const snap = await getDocs(collection(db, 'staff'));
     if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
     const rows = [];
     snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
     rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    const managerFlags = await Promise.all(rows.map(r => isCurrentlyManager(r.id)));
-    list.innerHTML = rows.map((r, i) => `
+    list.innerHTML = rows.map(r => `
       <div class="staff-item">
         <div>
           <div class="name">${r.name || r.id}</div>
-          <div class="meta">${r.id} · ${r.position || 'No position set'}</div>
+          <div class="meta">${r.id}</div>
         </div>
         <div style="display:flex; align-items:center; gap:14px;">
-          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--grey); font-weight:600; text-transform:uppercase;">
-            <input type="checkbox" class="mgr-toggle" data-email="${r.id}" ${managerFlags[i] ? 'checked' : ''} style="width:auto;"> Manager
-          </label>
+          <select class="position-select" data-email="${r.id}" style="font-size:12.5px; padding:6px 8px;">
+            ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
           <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
         </div>
       </div>
     `).join('');
-    list.querySelectorAll('.mgr-toggle').forEach(cb => {
-      cb.addEventListener('change', async (e) => {
+    list.querySelectorAll('.position-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
         const email = e.target.dataset.email;
+        const newPosition = e.target.value;
         try {
-          if (e.target.checked) await setDoc(doc(db, 'managers', email), {});
-          else await deleteDoc(doc(db, 'managers', email));
-          showToast((e.target.checked ? 'Manager access granted to ' : 'Manager access removed from ') + email);
+          await setDoc(doc(db, 'staff', email), { position: newPosition }, { merge: true });
+          showToast(email + ' is now ' + newPosition);
         } catch (err) {
           showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
-          e.target.checked = !e.target.checked;
         }
       });
     });
@@ -317,7 +325,6 @@ async function renderStaffList() {
         if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
         try {
           await deleteDoc(doc(db, 'staff', btn.dataset.email));
-          await deleteDoc(doc(db, 'managers', btn.dataset.email)).catch(() => {});
           await renderStaffList();
         }
         catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
@@ -328,22 +335,14 @@ async function renderStaffList() {
   }
 }
 
-document.getElementById('newStaffPosition').addEventListener('change', (e) => {
-  const box = document.getElementById('newStaffIsManager');
-  box.checked = (e.target.value === 'QS' || e.target.value === 'Manager');
-});
-
 document.getElementById('addStaffBtn').addEventListener('click', async () => {
   const name = document.getElementById('newStaffName').value.trim();
   const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
   const position = document.getElementById('newStaffPosition').value.trim();
-  const makeManager = document.getElementById('newStaffIsManager').checked;
   if (!name || !email) { showToast('Name and email are both required.'); return; }
   try {
     await setDoc(doc(db, 'staff', email), { name, position });
-    if (makeManager) await setDoc(doc(db, 'managers', email), {});
     ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('newStaffIsManager').checked = false;
     await renderStaffList();
     showToast('Staff member added: ' + name);
   } catch (e) {
@@ -380,11 +379,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  let isManager = false;
-  try {
-    const snap = await getDoc(doc(db, 'managers', user.email));
-    isManager = snap.exists();
-  } catch (e) { console.error('Manager check failed:', e); }
+  const isManager = await checkManager(user.email);
 
   if (!isManager) {
     document.getElementById('notAuthEmail').textContent = user.email;
