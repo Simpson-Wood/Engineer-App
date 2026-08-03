@@ -142,7 +142,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v14.1</p>
+        <p id="versionLabel">v14.2</p>
       </div>
     </a>
     <div class="who">
@@ -252,10 +252,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, collection, addDoc, getDocs, doc, updateDoc, getDoc, setDoc,
-  query, where, orderBy, serverTimestamp, waitForPendingWrites
+  query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v14.1";
+const VERSION = "v14.2";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -278,7 +278,6 @@ const ALERT_FLOW_URL = "REPLACE_WITH_ALERT_FLOW_URL";
 const QS_NOTIFY_FLOW_URL = "REPLACE_WITH_QS_NOTIFY_FLOW_URL";
 function reportSubmissionFailure(err, context) {
   console.error('Submission failed:', err, context);
-  if (!navigator.onLine) return;
   if (ALERT_FLOW_URL.startsWith("REPLACE")) return;
   fetch(ALERT_FLOW_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -526,36 +525,57 @@ document.getElementById('site').addEventListener('change', () => {
 let currentJobStatus = '';
 
 // ---- Sync tracking ----
-// Firestore's addDoc() promise resolves once a write is accepted into the
-// LOCAL queue, whether the device is online or not - it does not mean the
-// write has actually reached the server. That distinction is exactly what
-// caused real data loss on a tablet where someone refreshed the page
-// believing everything had already sent. waitForPendingWrites() only
-// resolves once Firestore confirms the backend has genuinely acknowledged
-// everything currently queued, so it's the honest signal to track here,
-// not the addDoc promise itself.
-let pendingWrites = 0;
+// Firestore's addDoc() promise does NOT resolve just because a write was
+// accepted into the local offline queue - it waits for the server to
+// actually acknowledge the write. That's exactly what caused the "Saving…"
+// button to sit there frozen with no feedback while offline, only
+// completing once reconnected: the whole save flow was awaiting that
+// promise before showing anything to the engineer.
+//
+// The fix: never block the UI on this promise. The local persistent cache
+// has already safely got the data the instant addDoc() is called,
+// regardless of connectivity - so the UI treats the entry as saved
+// immediately, and uses the promise only in the background, to know once
+// it's genuinely synced (resolves) or has genuinely failed for a real
+// reason (rejects - offline alone never causes a rejection, only an actual
+// error does).
+let pendingWrites = [];   // equipment IDs still waiting on their write's promise
+let failedWrites = [];    // equipment IDs whose write genuinely rejected
+
 function updateSyncIndicator() {
   const el = document.getElementById('syncIndicator');
   if (!el) return;
-  if (pendingWrites > 0) {
+  if (failedWrites.length > 0) {
     el.style.display = 'block';
-    el.textContent = '⏳ ' + pendingWrites + (pendingWrites === 1 ? ' test' : ' tests') +
+    el.style.background = '#fbe9e9'; el.style.color = 'var(--fail)'; el.style.borderColor = '#f0bcbe';
+    el.textContent = '⚠ ' + failedWrites.join(', ') + ' failed to save — the office has been notified. Please log ' +
+      (failedWrites.length === 1 ? 'this test' : 'these tests') + ' again when you can.';
+  } else if (pendingWrites.length > 0) {
+    el.style.display = 'block';
+    el.style.background = '#fff3cd'; el.style.color = '#8a6d1a'; el.style.borderColor = '#f0dc9a';
+    el.textContent = '⏳ ' + pendingWrites.length + (pendingWrites.length === 1 ? ' test' : ' tests') +
       ' still syncing to the office — stay connected and keep this page open until this clears.';
   } else {
     el.style.display = 'none';
   }
 }
-function trackPendingWrite() {
-  pendingWrites++;
+
+function trackWrite(writePromise, equipmentId, context) {
+  pendingWrites.push(equipmentId);
   updateSyncIndicator();
-  waitForPendingWrites(db).finally(() => {
-    pendingWrites = Math.max(0, pendingWrites - 1);
+  writePromise.then(() => {
+    pendingWrites = pendingWrites.filter(e => e !== equipmentId);
     updateSyncIndicator();
+  }).catch((err) => {
+    pendingWrites = pendingWrites.filter(e => e !== equipmentId);
+    failedWrites.push(equipmentId);
+    updateSyncIndicator();
+    reportSubmissionFailure(err, context);
   });
 }
+
 window.addEventListener('beforeunload', (e) => {
-  if (pendingWrites > 0) {
+  if (pendingWrites.length > 0) {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -1337,7 +1357,14 @@ function validateEntry(wrap, id) {
 }
 
 // ---- Save a single entry immediately ----
-async function saveEntry(wrap, id) {
+// Deliberately NOT async-awaiting the write itself - see the Sync tracking
+// comment above. This function fires the write, then immediately treats the
+// entry as saved for UI purposes (the local offline cache already has it
+// safely, regardless of connectivity), and hands the actual promise to
+// trackWrite() to confirm success or surface a genuine failure later, in
+// the background - never blocking the button, the banner, or the next
+// entry on a network round-trip that might not happen for hours.
+function saveEntry(wrap, id) {
   const banner = document.getElementById('banner');
   banner.style.display = 'none';
 
@@ -1361,52 +1388,37 @@ async function saveEntry(wrap, id) {
     banner.style.display = 'block'; return;
   }
 
-  const saveBtn = wrap.querySelector('[data-role="saveEntry"]');
-  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
-
   const engineer = currentUser.displayName || currentUser.email;
+  const equipmentId = record.equipmentId;
   const payload = {
     siteRef, siteName, date, engineer, engineerEmail: currentUser.email,
     ...record, createdAt: serverTimestamp()
   };
 
-  try {
-    await addDoc(collection(db, 'isolatorTests'), payload);
-    trackPendingWrite();
+  // Fire the write and immediately hand it to the background tracker -
+  // deliberately not awaited here.
+  const writePromise = addDoc(collection(db, 'isolatorTests'), payload);
+  trackWrite(writePromise, equipmentId, { siteName, engineer, equipmentId });
 
-    todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
-    renderTodayList();
+  // Proceed with the "saved" UI straight away, regardless of connectivity.
+  todaysTests.unshift({ equipmentId, category: record.category });
+  renderTodayList();
 
-    banner.className = 'banner ok';
-    banner.textContent = `${record.equipmentId} saved${!navigator.onLine ? ' — queued, will sync once you\'re back online' : ''}.`;
-    banner.style.display = 'block';
-    window.scrollTo({top:0, behavior:'smooth'});
+  banner.className = 'banner ok';
+  banner.textContent = navigator.onLine
+    ? `${equipmentId} saved.`
+    : `${equipmentId} saved on this device — queued, will sync once you're back online.`;
+  banner.style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
 
-    wrap.remove();
-    delete entries[id];
-    document.getElementById('emptyNote').style.display = 'block';
+  wrap.remove();
+  delete entries[id];
+  document.getElementById('emptyNote').style.display = 'block';
 
-    await loadSiteData();
-    addEntry();
-  } catch (err) {
-    reportSubmissionFailure(err, { siteName, engineer, equipmentId: record.equipmentId });
-    saveBtn.disabled = false; saveBtn.textContent = 'Save this test';
-    if (navigator.onLine) {
-      banner.className = 'banner bad';
-      banner.textContent = `${record.equipmentId} failed to save (${err.code || err.message}). The office has been notified — try again.`;
-      banner.style.display = 'block';
-    } else {
-      trackPendingWrite();
-      todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
-      renderTodayList();
-      banner.className = 'banner ok';
-      banner.textContent = `${record.equipmentId} queued — will sync once you're back online.`;
-      banner.style.display = 'block';
-      wrap.remove(); delete entries[id];
-      document.getElementById('emptyNote').style.display = 'block';
-      addEntry();
-    }
+  if (navigator.onLine) {
+    loadSiteData();   // refresh the register in the background - no reason to block on this either
   }
+  addEntry();
 }
 </script>
 
