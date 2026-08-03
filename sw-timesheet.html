@@ -489,7 +489,7 @@
     <span id="whoName"></span>
     <button id="signOutBtn">Sign Out</button>
   </div>
-  <span style="font-family:var(--font-condensed);font-size:0.75rem;font-weight:600;color:var(--grey-mid);letter-spacing:0.05em;">v3.0</span>
+  <span style="font-family:var(--font-condensed);font-size:0.75rem;font-weight:600;color:var(--grey-mid);letter-spacing:0.05em;">v3.1</span>
 </header>
 
 <div class="container">
@@ -1366,7 +1366,7 @@ function buildPDF(data, calcResult, isOfficeCopy) {
   doc.setDrawColor(...LGREY);
   doc.line(margin, footerY - 6, pageW - margin, footerY - 6);
   setFont('normal', 7, GREY);
-  doc.text('Simpson & Wood Electrical Contractors — York  |  v3.0', margin, footerY);
+  doc.text('Simpson & Wood Electrical Contractors — York  |  v3.1', margin, footerY);
   doc.text(`Submitted: ${new Date().toLocaleString('en-GB')}`, pageW - margin, footerY, { align: 'right' });
 
   return doc.output('datauristring').split(',')[1]; // base64 only
