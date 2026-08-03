@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simpson & Wood — Daily Timesheet v3.0</title>
+<title>Simpson & Wood — Daily Timesheet v3.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -934,7 +934,6 @@ function collectData() {
   document.querySelectorAll('.job-card').forEach((card, i) => {
     const id = card.id.replace('job-', '');
     const customer = document.getElementById(`job-${id}-customer`)?.value || '';
-    if (!customer.trim()) return; // skip blank jobs
     jobs.push({
       customer,
       start:    getTimeValue(`job-${id}-start`),
@@ -1049,15 +1048,17 @@ function validate(data) {
   if (!data.dayStart) errors.push('Please enter a day start time.');
   if (!data.dayEnd)   errors.push('Please enter a day end time.');
   if (data.jobs.length === 0) {
-    errors.push('Please fill in at least one job (Customer name required).');
+    errors.push('Please add at least one job.');
     return errors;
   }
 
-  // Each job must have start, end, dinner, and test cert explicitly set
+  // Every field on every job is required except Gear from Stores
   data.jobs.forEach((job, i) => {
-    const label = `Job ${i + 1} (${job.customer})`;
+    const label = job.customer.trim() ? `Job ${i + 1} (${job.customer})` : `Job ${i + 1}`;
+    if (!job.customer.trim()) errors.push(`${label}: please enter a customer name, or remove this job.`);
     if (!job.start)   errors.push(`${label}: please set a start time.`);
     if (!job.end)     errors.push(`${label}: please set a finish time.`);
+    if (!job.details || !job.details.trim()) errors.push(`${label}: please enter job details.`);
     if (!job.dinner)  errors.push(`${label}: please confirm whether dinner was taken.`);
     if (!job.testcert) errors.push(`${label}: please confirm whether a test cert is required.`);
     if (!job.jobStatus) errors.push(`${label}: please set the job status (Completed or Requires Return Visit).`);
@@ -1068,8 +1069,8 @@ function validate(data) {
     errors.push(`Job 1 start time (${data.jobs[0].start}) must match the day start time (${data.dayStart}).`);
   }
 
-  // Last job end must match day end — check the last job card in the DOM
-  // (collectData skips blank-customer jobs, so data.jobs may not be the last card)
+  // Last job end must match day end — check the last job card in the DOM directly
+  // (belt-and-braces: keeps this correct even if collectData's job order ever changes)
   const allCards = document.querySelectorAll('.job-card');
   const lastCard = allCards[allCards.length - 1];
   const lastCardId = lastCard?.id.replace('job-', '');
@@ -1207,61 +1208,76 @@ function buildPDF(data, calcResult, isOfficeCopy) {
   }
 
   // ── JOBS TABLE ──
-  // Fixed columns (header row)
-  const fixedCols = [
-    { label: 'Customer',   x: margin,       w: 50 },
-    { label: 'Started',    x: margin + 50,  w: 20 },
-    { label: 'Completed',  x: margin + 70,  w: 22 },
-    { label: 'Call Out',   x: margin + 92,  w: 18 },
-    { label: 'Dinner',     x: margin + 110, w: 16 },
-    { label: 'Test Cert',  x: margin + 126, w: colW - 126 },
-  ];
+  // Each job renders as a bordered card with a red accent stripe down the left
+  // edge, so jobs are visually distinct even when scanning quickly.
+  const stripeW = 3;
+  const innerX = margin + stripeW + 2;
+  const innerW = colW - stripeW - 2;
 
-  const truncate = (str, maxW) => {
-    if (!str) return '';
-    const charW = 1.85;
-    const maxChars = Math.floor(maxW / charW);
-    return str.length > maxChars ? str.substring(0, maxChars - 1) + '…' : str;
-  };
+  const fixedCols = [
+    { label: 'Customer',   x: innerX,       w: 48 },
+    { label: 'Started',    x: innerX + 48,  w: 20 },
+    { label: 'Completed',  x: innerX + 68,  w: 22 },
+    { label: 'Call Out',   x: innerX + 90,  w: 18 },
+    { label: 'Dinner',     x: innerX + 108, w: 16 },
+    { label: 'Test Cert',  x: innerX + 124, w: innerW - 124 },
+  ];
 
   // QTY column width for stores
   const QTY_W = 22;
-  const DESC_X = margin + QTY_W;
-  const DESC_W = colW - QTY_W - 3;
+  const DESC_X = innerX + QTY_W;
+  const DESC_W = innerW - QTY_W - 3;
 
-  // Job rows — each job gets its own black header bar
   const FC = fixedCols;
 
   data.jobs.forEach((job, i) => {
 
-    // ── Black job header bar ──
-    // Left section: red accent + JOB N label; right section: column headers
-    const jobLabelW = 22; // reserved width for "JOB N"
+    const cardStartY = y;
+
+    // ── Title row: "JOB N" + return-visit pill (Office copy only) ──
+    const titleH = 8;
+    setFont('bold', 10, BLACK);
+    doc.text(`JOB ${i + 1}`, innerX, y + 5.5);
+
+    if (isOfficeCopy && job.jobStatus === 'Requires Return Visit') {
+      const pillText = 'REQUIRES RETURN VISIT';
+      setFont('bold', 7, [121, 31, 31]);
+      const pillTextW = doc.getTextWidth(pillText);
+      const pillW = pillTextW + 6;
+      const pillX = margin + colW - pillW;
+      doc.setFillColor(252, 235, 235);
+      doc.roundedRect(pillX, y + 1.3, pillW, 5, 1, 1, 'F');
+      doc.text(pillText, pillX + 3, y + 4.8);
+    }
+    y += titleH;
+
+    doc.setDrawColor(...LGREY);
+    doc.line(innerX, y, margin + colW - 1, y);
+    y += 2;
+
+    // ── Column header bar ──
+    const headerBarH = 6;
     doc.setFillColor(...BLACK);
-    doc.rect(margin, y, colW, 7, 'F');
-    // Red left accent block for job number
-    doc.setFillColor(...RED);
-    doc.rect(margin, y, jobLabelW, 7, 'F');
-    setFont('bold', 7.5, WHITE);
-    doc.text(`JOB ${i + 1}`, margin + 2, y + 4.8);
-    // Column headers — skip Customer label since it starts under the accent block;
-    // shift it to start after the accent, rest stay at their natural positions
-    const adjustedCols = fixedCols.map((col, ci) =>
-      ci === 0 ? { ...col, x: margin + jobLabelW } : col
-    );
+    doc.rect(innerX, y, innerW, headerBarH, 'F');
     setFont('bold', 7, WHITE);
-    adjustedCols.forEach(col => {
-      doc.text(col.label.toUpperCase(), col.x + 2, y + 4.8);
+    fixedCols.forEach(col => {
+      doc.text(col.label.toUpperCase(), col.x + 2, y + 4.2);
     });
-    y += 7;
+    y += headerBarH;
 
     // ── Data row: fixed columns ──
-    const fixedH = 9;
+    // Customer name wraps rather than truncating, so long names stay readable.
+    setFont('normal', 8, BLACK);
+    const custLineH = 4.2;
+    const custLines = doc.splitTextToSize(job.customer || '—', FC[0].w - 3);
+    const fixedH = Math.max(9, custLines.length * custLineH + 5);
     doc.setFillColor(255, 255, 255);
-    doc.rect(margin, y, colW, fixedH, 'F');
+    doc.rect(innerX, y, innerW, fixedH, 'F');
 
     setFont('normal', 8, BLACK);
-    doc.text(truncate(job.customer, FC[0].w - 3), FC[0].x + 2, y + 6);
+    custLines.forEach((line, li) => {
+      doc.text(line, FC[0].x + 2, y + 6 + li * custLineH);
+    });
     doc.text(job.start || '—',  FC[1].x + 2, y + 6);
     doc.text(job.end   || '—',  FC[2].x + 2, y + 6);
 
@@ -1277,16 +1293,6 @@ function buildPDF(data, calcResult, isOfficeCopy) {
 
     y += fixedH;
 
-    // ── Return-visit flag — Office copy only, keeps the Engineer copy clean ──
-    if (isOfficeCopy && job.jobStatus === 'Requires Return Visit') {
-      const flagH = 6;
-      doc.setFillColor(...RED);
-      doc.rect(margin, y, colW, flagH, 'F');
-      setFont('bold', 7.5, WHITE);
-      doc.text('⚠ REQUIRES RETURN VISIT', margin + 3, y + 4.2);
-      y += flagH;
-    }
-
     // ── Details row — full width ──
     // Details/description text is sized up from the rest of the table (9.5pt vs
     // 8pt elsewhere) since this is the field most often read back later.
@@ -1295,15 +1301,15 @@ function buildPDF(data, calcResult, isOfficeCopy) {
     const detailPad = 3;
     setFont('normal', 9.5, BLACK);
     const detailLines = detailsText
-      ? doc.splitTextToSize(detailsText, colW - 6)
+      ? doc.splitTextToSize(detailsText, innerW - 6)
       : [];
 
     if (detailLines.length > 0) {
       const detailH = detailLines.length * lineH + detailPad * 2;
       doc.setFillColor(250, 250, 250);
-      doc.rect(margin, y, colW, detailH, 'F');
+      doc.rect(innerX, y, innerW, detailH, 'F');
       detailLines.forEach((line, li) => {
-        doc.text(line, margin + 3, y + detailPad + li * lineH + 4);
+        doc.text(line, innerX + 3, y + detailPad + li * lineH + 4);
       });
       y += detailH;
     }
@@ -1312,24 +1318,25 @@ function buildPDF(data, calcResult, isOfficeCopy) {
 
     // ── Gear stores rows ──
     if (job.gearItems && job.gearItems.length > 0) {
-      // Red header with QTY | DESCRIPTION — no "STORES" label, starts at margin
+      // Grey header, not red — keeps this read as nested detail rather than
+      // competing with the job card's own red accent stripe.
       const gearHdrH = 6;
-      doc.setFillColor(...RED);
-      doc.rect(margin, y, colW, gearHdrH, 'F');
-      setFont('bold', 7, WHITE);
-      doc.text('QTY', margin + 2, y + 4.2);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(innerX, y, innerW, gearHdrH, 'F');
+      setFont('bold', 7, [90, 90, 90]);
+      doc.text('QTY', innerX + 2, y + 4.2);
       doc.text('DESCRIPTION', DESC_X + 2, y + 4.2);
       y += gearHdrH;
 
       job.gearItems.forEach((gi, gIdx) => {
-        const bg = gIdx % 2 === 0 ? [255, 248, 248] : [250, 243, 243];
+        const bg = gIdx % 2 === 0 ? [250, 250, 250] : [245, 245, 245];
         setFont('normal', 9, BLACK);
         const descLines = doc.splitTextToSize(gi.desc || '', DESC_W);
         const gRowH = Math.max(8, descLines.length * lineH + 4);
         doc.setFillColor(...bg);
-        doc.rect(margin, y, colW, gRowH, 'F');
+        doc.rect(innerX, y, innerW, gRowH, 'F');
         setFont('bold', 9, BLACK);
-        doc.text(gi.qty || '', margin + 2, y + 5.5);
+        doc.text(gi.qty || '', innerX + 2, y + 5.5);
         setFont('normal', 9, BLACK);
         descLines.forEach((dl, dli) => {
           doc.text(dl, DESC_X + 2, y + 5.5 + dli * lineH);
@@ -1339,8 +1346,15 @@ function buildPDF(data, calcResult, isOfficeCopy) {
       });
     }
 
+    // ── Card border + left accent stripe, drawn last so they frame everything above ──
+    const cardEndY = y;
+    doc.setDrawColor(...LGREY);
+    doc.rect(margin, cardStartY, colW, cardEndY - cardStartY);
+    doc.setFillColor(...RED);
+    doc.rect(margin, cardStartY, stripeW, cardEndY - cardStartY, 'F');
+
     // gap between jobs
-    y += 4;
+    y += 6;
     if (y > 265) { doc.addPage(); y = 20; }
   });
 
