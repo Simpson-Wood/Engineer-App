@@ -75,6 +75,8 @@
 
   @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
 
@@ -163,7 +165,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.1";
+const VERSION = "v2.2";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -405,6 +407,13 @@ onAuthStateChanged(auth, async (user) => {
   if (!document.getElementById('liveAppsCard').hidden) renderStatusList();
   renderStaffList();
 });
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
 </script>
 </body>
 </html>

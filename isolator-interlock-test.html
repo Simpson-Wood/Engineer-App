@@ -123,6 +123,8 @@
   .history-empty{color:var(--grey);font-size:13px;text-align:center;padding:16px 0;}
   .loading-note{color:var(--grey);font-size:13px;text-align:center;padding:6px 0;}
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
 
@@ -140,7 +142,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v14.0</p>
+        <p id="versionLabel">v14.1</p>
       </div>
     </a>
     <div class="who">
@@ -157,6 +159,7 @@
       </select>
       <p class="site-status" id="siteStatus"></p>
       <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete — no new tests can be logged until a manager takes it out of Complete status.</div>
+      <div id="syncIndicator" style="display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;"></div>
       <button type="button" id="readyForQsBtn" style="display:none;width:100%;margin-top:10px;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Mark ready for QS</button>
       <button type="button" id="toggleAddSiteBtn" style="width:100%;margin-top:10px;padding:9px;background:#fff;border:1.5px dashed var(--line);color:var(--grey);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add a new site</button>
       <div id="addSiteForm" style="display:none;margin-top:12px;">
@@ -249,10 +252,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, collection, addDoc, getDocs, doc, updateDoc, getDoc, setDoc,
-  query, where, orderBy, serverTimestamp
+  query, where, orderBy, serverTimestamp, waitForPendingWrites
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v14.0";
+const VERSION = "v14.1";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -521,6 +524,43 @@ document.getElementById('site').addEventListener('change', () => {
 });
 
 let currentJobStatus = '';
+
+// ---- Sync tracking ----
+// Firestore's addDoc() promise resolves once a write is accepted into the
+// LOCAL queue, whether the device is online or not - it does not mean the
+// write has actually reached the server. That distinction is exactly what
+// caused real data loss on a tablet where someone refreshed the page
+// believing everything had already sent. waitForPendingWrites() only
+// resolves once Firestore confirms the backend has genuinely acknowledged
+// everything currently queued, so it's the honest signal to track here,
+// not the addDoc promise itself.
+let pendingWrites = 0;
+function updateSyncIndicator() {
+  const el = document.getElementById('syncIndicator');
+  if (!el) return;
+  if (pendingWrites > 0) {
+    el.style.display = 'block';
+    el.textContent = '⏳ ' + pendingWrites + (pendingWrites === 1 ? ' test' : ' tests') +
+      ' still syncing to the office — stay connected and keep this page open until this clears.';
+  } else {
+    el.style.display = 'none';
+  }
+}
+function trackPendingWrite() {
+  pendingWrites++;
+  updateSyncIndicator();
+  waitForPendingWrites(db).finally(() => {
+    pendingWrites = Math.max(0, pendingWrites - 1);
+    updateSyncIndicator();
+  });
+}
+window.addEventListener('beforeunload', (e) => {
+  if (pendingWrites > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 
 async function loadSiteData() {
   const siteRef = document.getElementById('site').value;
@@ -1332,6 +1372,7 @@ async function saveEntry(wrap, id) {
 
   try {
     await addDoc(collection(db, 'isolatorTests'), payload);
+    trackPendingWrite();
 
     todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
     renderTodayList();
@@ -1355,6 +1396,7 @@ async function saveEntry(wrap, id) {
       banner.textContent = `${record.equipmentId} failed to save (${err.code || err.message}). The office has been notified — try again.`;
       banner.style.display = 'block';
     } else {
+      trackPendingWrite();
       todaysTests.unshift({ equipmentId: record.equipmentId, category: record.category });
       renderTodayList();
       banner.className = 'banner ok';
@@ -1368,5 +1410,12 @@ async function saveEntry(wrap, id) {
 }
 </script>
 
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
 </body>
 </html>

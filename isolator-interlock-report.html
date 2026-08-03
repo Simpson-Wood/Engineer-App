@@ -119,6 +119,8 @@
   #notAuthorised h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;color:var(--fail);margin:0 0 10px;}
   #notAuthorised p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 20px;}
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
 
@@ -143,7 +145,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v13.0 · Management</p>
+        <p id="versionLabel">v13.1 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -2050,5 +2052,12 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
 });
 </script>
 
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
 </body>
 </html>

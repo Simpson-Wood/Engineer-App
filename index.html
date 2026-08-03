@@ -84,6 +84,8 @@
     .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
   }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
 
@@ -126,7 +128,7 @@ import {
   initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.2";
+const VERSION = "v2.3";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -388,6 +390,13 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
 </script>
 </body>
 </html>

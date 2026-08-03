@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simpson & Wood — Daily Timesheet v3.1</title>
+<title>Simpson & Wood — Daily Timesheet v3.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -466,6 +466,8 @@
   }
   #signOutBtn:hover { border-color: var(--red); color: var(--red); }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
 
@@ -489,7 +491,7 @@
     <span id="whoName"></span>
     <button id="signOutBtn">Sign Out</button>
   </div>
-  <span style="font-family:var(--font-condensed);font-size:0.75rem;font-weight:600;color:var(--grey-mid);letter-spacing:0.05em;">v3.1</span>
+  <span style="font-family:var(--font-condensed);font-size:0.75rem;font-weight:600;color:var(--grey-mid);letter-spacing:0.05em;">v3.2</span>
 </header>
 
 <div class="container">
@@ -1366,7 +1368,7 @@ function buildPDF(data, calcResult, isOfficeCopy) {
   doc.setDrawColor(...LGREY);
   doc.line(margin, footerY - 6, pageW - margin, footerY - 6);
   setFont('normal', 7, GREY);
-  doc.text('Simpson & Wood Electrical Contractors — York  |  v3.1', margin, footerY);
+  doc.text('Simpson & Wood Electrical Contractors — York  |  v3.2', margin, footerY);
   doc.text(`Submitted: ${new Date().toLocaleString('en-GB')}`, pageW - margin, footerY, { align: 'right' });
 
   return doc.output('datauristring').split(',')[1]; // base64 only
@@ -1507,6 +1509,13 @@ function onEngineerReady() {
 
   // Add first job
   addJob();
+}
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
 }
 </script>
 </body>
