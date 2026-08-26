@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simpson &amp; Wood — Engineer Apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a;
+    --bg:#f4f3f0; --card:#ffffff; --line:#e2e0da;
+    --grey:#6b6b68; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink);}
+  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  .screen{min-height:100vh;}
+  [hidden]{display:none !important;}
+
+  /* ---- sign-in ---- */
+  #signin-screen{display:flex; align-items:center; justify-content:center; padding:24px; background:var(--ink);}
+  .signin-card{background:var(--card); border-radius:16px; padding:40px 32px; max-width:380px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,0.35);}
+  .signin-logo{width:100%; max-width:260px; margin:0 auto 20px;}
+  .signin-tagline{color:var(--grey); font-size:15px; margin:0 0 28px;}
+  .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:8px; padding:13px 16px; font-size:15px; font-family:'Barlow',sans-serif; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn-primary:hover{background:var(--red-dark);}
+  .error-text{color:var(--red); font-size:13px; margin-top:14px;}
+
+  /* ---- topbar ---- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; background:var(--ink); padding:10px 20px; height:56px;}
+  .topbar-brand{display:flex; align-items:center; gap:10px;}
+  .topbar-logo{height:28px;}
+  #versionLabel{color:#8a8a86; font-size:11px; margin:0;}
+  .topbar-right{display:flex; align-items:center; gap:6px;}
+  .user-name{color:#cfcfcf; font-size:13px; margin-right:8px;}
+  .icon-btn{background:none; border:none; color:#cfcfcf; width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
+  .icon-btn:hover{background:rgba(255,255,255,0.1); color:#fff;}
+
+  /* ---- layout / tiles (mobile-first grid) ---- */
+  .layout{display:block;}
+  .tool-nav{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:12px; padding:20px;}
+  .tool-section-label{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; grid-column:1/-1; margin:8px 0 -4px;}
+  .tool-section-label:first-child{margin-top:0;}
+  .tile{background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:16px 8px; text-align:center; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;}
+  .tile i{font-size:24px; color:var(--red);}
+  .tile span{font-size:12.5px; line-height:1.25;}
+  .tile.disabled{opacity:0.45; cursor:default;}
+  .tile.disabled i{color:var(--grey);}
+  .tile.disabled .soon{display:block; font-size:10.5px; color:var(--grey); margin-top:-4px;}
+  .content-pane{display:none;}
+  .icon-wrap{position:relative; display:inline-flex; align-items:center; justify-content:center;}
+  .tile .icon-wrap .badge-check{position:absolute; bottom:-3px; right:-4px; font-size:10px !important; background:var(--card); border-radius:50%; color:#2e8b57 !important;}
+  .tile .icon-wrap .badge-count{position:absolute; top:-6px; right:-8px; background:var(--red); color:#fff !important; font-size:9.5px !important; font-weight:600; min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; font-family:'Barlow',sans-serif; line-height:1;}
+  .activity-list{width:100%; max-width:640px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(100vh - 130px); padding:4px 2px;}
+  .activity-item{display:flex; align-items:center; gap:12px; background:var(--card); border:0.5px solid var(--line); border-radius:10px; padding:12px 14px; text-decoration:none; color:var(--ink);}
+  .activity-item:hover{border-color:var(--red);}
+  .activity-item.pending{border-left:3px solid var(--red);}
+  .activity-item i{font-size:18px; color:var(--red); flex-shrink:0;}
+  .activity-item .main{flex:1; min-width:0;}
+  .activity-item .title{font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .activity-item .meta{font-size:11.5px; color:var(--grey); margin-top:1px;}
+  .activity-pill{font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap;}
+  .activity-pill.pending{background:#fbe9e9; color:#a32d2d;}
+  .activity-pill.done{background:#eaf3de; color:#3b6d11;}
+  .activity-heading{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; margin:14px 0 2px; width:100%; max-width:640px;}
+  .activity-heading:first-child{margin-top:0;}
+  .content-pane-inner{width:100%; max-width:640px; display:flex; flex-direction:column; align-items:flex-start;}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
+  .toast.show{opacity:1;}
+
+  @media (min-width:900px){
+    .layout{display:flex; min-height:calc(100vh - 56px);}
+    .tool-nav{display:flex; flex-direction:column; width:230px; background:var(--ink); padding:20px 14px; gap:2px; flex-shrink:0; grid-template-columns:none;}
+    .tool-section-label{color:#8a8a86; margin:14px 0 2px; padding:0 10px;}
+    .tool-section-label:first-child{margin-top:0;}
+    .tile{flex-direction:row; justify-content:flex-start; text-align:left; background:none; border:none; border-radius:8px; padding:9px 10px; gap:10px;}
+    .tile:hover{background:rgba(255,255,255,0.06);}
+    .tile i{font-size:17px; width:20px;}
+    .tile span{font-size:13.5px; color:#e4e4e2;}
+    .tile.disabled .soon{display:inline; margin:0 0 0 6px; font-size:10.5px;}
+    .tile.disabled span{display:flex; align-items:center;}
+    .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
+  }
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c9820a">
+</head>
+<body>
+<div style="background:#c9820a;color:#fff;text-align:center;padding:8px 12px;font-family:sans-serif;font-weight:700;font-size:13px;letter-spacing:.02em;position:sticky;top:0;z-index:9999;">⚠ BETA TEST ENVIRONMENT — do not use for real customer data</div>
+
+<div id="signinScreen" class="screen">
+  <div class="signin-card">
+    <img src="sw-logo.png" alt="Simpson &amp; Wood" class="signin-logo">
+    <p class="signin-tagline">Sign in with your Simpson &amp; Wood Microsoft account to get to your tools.</p>
+    <button id="msSignInBtn" class="btn-primary"><i class="ti ti-brand-windows" aria-hidden="true"></i>Sign in with Microsoft</button>
+    <p id="signinErr" class="error-text"></p>
+  </div>
+</div>
+
+<div id="appRoot" class="screen" hidden>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood" class="topbar-logo">
+      <p id="versionLabel">v1.0</p>
+    </div>
+    <div class="topbar-right">
+      <span id="whoName" class="user-name"></span>
+      <button id="mgmtBtn" class="icon-btn" hidden title="Management"><i class="ti ti-settings" aria-hidden="true"></i></button>
+      <button id="signOutBtn" class="icon-btn" title="Sign out"><i class="ti ti-logout" aria-hidden="true"></i></button>
+    </div>
+  </header>
+  <div class="layout">
+    <nav class="tool-nav" id="tool-nav"></nav>
+    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner">Select a tool from the menu.</div></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v2.3";
+document.getElementById('versionLabel').textContent = VERSION;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// Tool catalogue. "pairKey" maps to the live/coming-later flag stored in
+// Firestore at config/homepage -> statuses.{pairKey}. Tools without a
+// pairKey (timesheet) are not remotely toggled.
+const TOOLS = [
+  { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet.html", alwaysLive: true },
+  { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
+  { section: "Customer reports", id: "pat", name: "PAT testing", icon: "ti-plug", href: "pat-test.html", pairKey: "pat" },
+  { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-window", href: "aov-test.html", pairKey: "aov" },
+  { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
+  { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
+  { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor", href: "pfc-service.html", pairKey: "pfc" },
+  { section: "Admin & compliance", id: "holiday", name: "Holiday request", icon: "ti-calendar-event", href: "holiday-request.html", pairKey: "holiday" },
+  { section: "Admin & compliance", id: "vancheck", name: "Van check", icon: "ti-truck", href: "van-check.html", pairKey: "vancheck" },
+  { section: "Admin & compliance", id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs", href: "ladder-check.html", pairKey: "laddercheck" },
+  { section: "Admin & compliance", id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit", href: "first-aid-check.html", pairKey: "firstaid" },
+  { section: "Admin & compliance", id: "harness", name: "Harness inspection", icon: "ti-fall", href: "harness-check.html", pairKey: "harness" }
+];
+
+// Customer-report tools double up as "QS & Reporting" entries for managers —
+// same icon as the matching test tool (with a checkmark badge added in CSS),
+// pointing at that tool's report file instead of its engineer file. Each
+// app's un-QSed count comes from querying "{id}Tests" for qsed == false,
+// per the qsed convention agreed for every customer-report app.
+const REPORT_TOOLS = TOOLS.filter(t => t.section === "Customer reports");
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function renderTools(tools, isManager){
+  const nav = document.getElementById('tool-nav');
+  nav.innerHTML = '';
+  let lastSection = null;
+  TOOLS.forEach(tool => {
+    if (tool.section !== lastSection){
+      const label = document.createElement('div');
+      label.className = 'tool-section-label';
+      label.textContent = tool.section;
+      nav.appendChild(label);
+      lastSection = tool.section;
+    }
+    const entry = (tools && tools[tool.pairKey]) || {};
+    const isLive = tool.alwaysLive || !!entry.live;
+    const href = entry.href || tool.href;
+    let el;
+    if (isLive){
+      el = document.createElement('a');
+      el.href = href;
+      el.className = 'tile';
+    } else {
+      el = document.createElement('div');
+      el.className = 'tile disabled';
+      el.addEventListener('click', () => showToast(tool.name + ' is coming soon'));
+    }
+    el.innerHTML = '<i class="ti ' + tool.icon + '" aria-hidden="true"></i><span>' + tool.name +
+      (isLive ? '' : '<span class="soon">Coming soon</span>') + '</span>';
+    nav.appendChild(el);
+  });
+
+  if (!isManager) return;
+
+  const reportEntries = REPORT_TOOLS
+    .map(t => ({ tool: t, entry: (tools && tools[t.pairKey]) || {} }))
+    .filter(x => x.entry.live && x.entry.reportHref);
+  if (reportEntries.length === 0) return;
+
+  const label = document.createElement('div');
+  label.className = 'tool-section-label';
+  label.textContent = 'QS & Reporting';
+  nav.appendChild(label);
+
+  reportEntries.forEach(({ tool, entry }) => {
+    const el = document.createElement('a');
+    el.href = entry.reportHref;
+    el.className = 'tile';
+    el.innerHTML =
+      '<span class="icon-wrap"><i class="ti ' + tool.icon + '" aria-hidden="true"></i><i class="ti ti-circle-check badge-check" aria-hidden="true"></i>' +
+      '<span class="badge-count" data-count-id="' + tool.id + '" hidden>0</span></span>' +
+      '<span>' + tool.name + ' reports</span>';
+    nav.appendChild(el);
+  });
+}
+
+async function renderActivityFeed(reportEntries){
+  const pane = document.getElementById('content-pane-inner');
+  if (reportEntries.length === 0){
+    pane.innerHTML = 'Select a tool from the menu.';
+    return;
+  }
+  pane.innerHTML = 'Loading recent activity…';
+
+  let allRecords = [];
+  await Promise.all(reportEntries.map(async ({ tool, entry }) => {
+    try {
+      const q = query(collection(db, tool.id + 'Tests'), orderBy('date', 'desc'), limit(30));
+      const snap = await getDocs(q);
+      snap.forEach(d => {
+        const r = d.data();
+        if (r.deletedFlag) return;
+        allRecords.push({
+          tool, entry,
+          title: r.equipmentId || r.category || tool.name,
+          site: r.siteName || r.siteRef || '',
+          date: r.date || '',
+          qsed: !!r.qsed,
+          siteRef: r.siteRef || ''
+        });
+      });
+    } catch (e) {
+      console.error('Could not load recent activity for ' + tool.id, e);
+    }
+  }));
+
+  const pending = allRecords.filter(r => !r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const recent = allRecords.filter(r => r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // Badge counts come from this same fetch, not a separate query — a
+  // Firestore query for qsed == false would silently miss any record where
+  // qsed was never set at all (missing != false in a query), while "pending"
+  // here already treats missing the same as false. Same source, so the
+  // sidebar badge and the "Ready for QS" list can never disagree.
+  const countsByTool = {};
+  pending.forEach(r => { countsByTool[r.tool.id] = (countsByTool[r.tool.id] || 0) + 1; });
+  Object.keys(countsByTool).forEach(id => {
+    const badge = document.querySelector('[data-count-id="' + id + '"]');
+    if (badge){ badge.textContent = countsByTool[id] > 99 ? '99+' : String(countsByTool[id]); badge.hidden = false; }
+  });
+
+  if (pending.length === 0 && recent.length === 0){
+    pane.innerHTML = 'No recent activity yet.';
+    return;
+  }
+
+  function renderItem(r){
+    const href = r.entry.reportHref + (r.siteRef ? ('?site=' + encodeURIComponent(r.siteRef)) : '');
+    return '<a class="activity-item' + (r.qsed ? '' : ' pending') + '" href="' + href + '">' +
+      '<i class="ti ' + r.tool.icon + '" aria-hidden="true"></i>' +
+      '<div class="main"><div class="title">' + r.title + '</div><div class="meta">' + r.site + ' · ' + r.date + '</div></div>' +
+      '<span class="activity-pill ' + (r.qsed ? 'done' : 'pending') + '">' + (r.qsed ? 'QSed' : 'Ready for QS') + '</span>' +
+      '</a>';
+  }
+
+  let html = '<div class="activity-list">';
+  if (pending.length){
+    html += '<div class="activity-heading">Ready for QS</div>';
+    html += pending.map(renderItem).join('');
+  }
+  if (recent.length){
+    html += '<div class="activity-heading">Recent submissions</div>';
+    html += recent.map(renderItem).join('');
+  }
+  html += '</div>';
+  pane.innerHTML = html;
+}
+
+async function loadTools(){
+  try {
+    const snap = await getDoc(doc(db, 'config', 'homepage'));
+    if (snap.exists()) return snap.data().tools || {};
+  } catch (e) {
+    console.error('Could not load app config, falling back to defaults', e);
+  }
+  // Fallback if Firestore is unreachable or the doc doesn't exist yet
+  return { isolator: { live: true }, pat: { live: true } };
+}
+
+// A manager is either in the console-only /managers failsafe list, or a
+// staff record whose position is Manager or QS — position alone is now the
+// normal way to grant/revoke management access, self-service from
+// management.html's Staff list. Office is a separate, narrower tier: it
+// only unlocks the activity feed below, never the QS & Reporting tiles or
+// management.html itself.
+async function getAccessLevel(email){
+  let isManager = false, isOffice = false;
+  try {
+    const mgrSnap = await getDoc(doc(db, 'managers', email));
+    if (mgrSnap.exists()) isManager = true;
+  } catch (e) { console.error('managers check failed', e); }
+  try {
+    const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
+    if (staffSnap.exists()){
+      const pos = staffSnap.data().position;
+      if (pos === 'Manager' || pos === 'QS') isManager = true;
+      if (pos === 'Office') isOffice = true;
+    }
+  } catch (e) { console.error('staff check failed', e); }
+  return { isManager, isOffice };
+}
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    document.getElementById('signinScreen').hidden = false;
+    document.getElementById('appRoot').hidden = true;
+    return;
+  }
+  document.getElementById('signinScreen').hidden = true;
+  document.getElementById('appRoot').hidden = false;
+  document.getElementById('whoName').textContent = user.displayName || user.email;
+
+  let isManager = false, isOffice = false;
+  try {
+    ({ isManager, isOffice } = await getAccessLevel(user.email));
+    document.getElementById('mgmtBtn').hidden = !isManager;
+  } catch (e) {
+    console.error('Access check failed:', e);
+  }
+
+  const tools = await loadTools();
+  renderTools(tools, isManager);
+
+  if (isManager || isOffice){
+    const reportEntries = REPORT_TOOLS
+      .map(t => ({ tool: t, entry: (tools && tools[t.pairKey]) || {} }))
+      .filter(x => x.entry.live && x.entry.reportHref);
+    renderActivityFeed(reportEntries);
+  }
+});
+
+document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>
