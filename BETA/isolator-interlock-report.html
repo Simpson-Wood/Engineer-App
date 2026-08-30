@@ -160,7 +160,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v14.0 · Management</p>
+        <p id="versionLabel">v14.1 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -971,7 +971,9 @@ async function loadSites() {
 }
 document.getElementById('site').addEventListener('change', loadSiteData);
 
+let siteLoadToken = 0;
 async function loadSiteData() {
+  const myToken = ++siteLoadToken;
   const siteSelect = document.getElementById('site');
   const siteRef = siteSelect.value;
   siteHistoryCache = [];
@@ -984,8 +986,10 @@ async function loadSiteData() {
   try {
     const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
     const snap = await getDocs(q);
+    if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    if (myToken !== siteLoadToken) return;
     siteMeta = jobSnap.exists() ? jobSnap.data() : {};
     renderPending();
     renderLimitedList();
@@ -995,9 +999,9 @@ async function loadSiteData() {
     if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
     if (document.getElementById('frontTab').style.display !== 'none') renderFront();
   } catch (e) {
-    pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+    if (myToken === siteLoadToken) pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
   } finally {
-    spinner.style.display = 'none';
+    if (myToken === siteLoadToken) spinner.style.display = 'none';
   }
 }
 
@@ -1308,6 +1312,13 @@ function renderPreview() {
         newChecks[group.dataset.editcheck] = group.dataset.valueSelected || '';
       });
       update.checks = newChecks;
+
+      const anyFail = Object.values(newChecks).some(v => v === 'Fail');
+      if (anyFail && update.action === 'No') {
+        alert('One or more checks are marked Fail, so Further Action can\'t be left as "No". Please update it before saving.');
+        return;
+      }
+
       const checklistChanged = record ? JSON.stringify(record.checks || {}) !== JSON.stringify(newChecks) : false;
 
       Object.keys(replacementPhotos).forEach(fieldKey => { update[fieldKey] = replacementPhotos[fieldKey]; });

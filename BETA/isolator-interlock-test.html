@@ -58,6 +58,7 @@
   .edit-panel input, .edit-panel select, .edit-panel textarea{width:100%;padding:8px 9px;font-size:13.5px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
   .edit-panel .check-item{padding:6px 0;}
   .id-locked-note{font-size:11px;color:var(--grey);margin:0 0 12px;font-style:italic;}
+  .edited-marker{font-size:10.5px;font-weight:700;color:#8a6d1a;background:#fff3cd;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
   .btn-edit-own{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
   .btn-save-edit{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
   .btn-cancel-edit{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
@@ -175,6 +176,7 @@
       <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete — no new tests can be logged until a manager takes it out of Complete status.</div>
       <div id="syncIndicator" style="display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;"></div>
       <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
+      <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
       <button type="button" id="readyForQsBtn" style="display:none;width:100%;margin-top:10px;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Mark ready for QS</button>
       <button type="button" id="toggleAddSiteBtn" style="width:100%;margin-top:10px;padding:9px;background:#fff;border:1.5px dashed var(--line);color:var(--grey);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add a new site</button>
       <div id="addSiteForm" style="display:none;margin-top:12px;">
@@ -278,7 +280,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v15.0";
+const VERSION = "v15.1";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -544,6 +546,10 @@ document.getElementById('site').addEventListener('change', () => {
   renderTodayList();
   loadSiteData();
 });
+document.getElementById('refreshSiteBtn').addEventListener('click', async () => {
+  await loadSiteData();
+  if (document.getElementById('regTab').style.display !== 'none') renderRegister(currentRegTab);
+});
 
 let currentJobStatus = '';
 
@@ -605,7 +611,9 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 
+let siteLoadToken = 0;
 async function loadSiteData() {
+  const myToken = ++siteLoadToken;
   const siteRef = document.getElementById('site').value;
   siteHistoryCache = [];
   currentJobStatus = '';
@@ -615,16 +623,18 @@ async function loadSiteData() {
   try {
     const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
     const snap = await getDocs(q);
+    if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
     rebuildSuggestions();
 
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    if (myToken !== siteLoadToken) return;
     currentJobStatus = jobSnap.exists() ? ((jobSnap.data().isolator && jobSnap.data().isolator.jobStatus) || 'In Progress') : 'In Progress';
     updateJobStatusUI();
   } catch (e) {
     console.error('Site data load failed:', e);
   } finally {
-    spinner.style.display = 'none';
+    if (myToken === siteLoadToken) spinner.style.display = 'none';
   }
 }
 
@@ -837,17 +847,31 @@ function buildEditPanel(record) {
 }
 
 async function saveOwnEdit(record) {
+  console.log('[DEBUG] saveOwnEdit called for record._id =', record._id);
   const panel = document.querySelector(`[data-edit-doc-id="${record._id}"]`);
-  if (!panel) return;
+  console.log('[DEBUG] panel element found:', panel);
+  if (!panel) { console.log('[DEBUG] ABORTED - no panel matched that selector'); return; }
 
   const update = {};
   panel.querySelectorAll('[data-editfield]').forEach(el => { update[el.dataset.editfield] = el.value.trim(); });
+  console.log('[DEBUG] descriptive field update object:', update);
+
+  const checkGroups = panel.querySelectorAll('[data-editcheck]');
+  console.log('[DEBUG] number of [data-editcheck] groups found inside panel:', checkGroups.length);
 
   const newChecks = {};
-  panel.querySelectorAll('[data-editcheck]').forEach(group => {
+  checkGroups.forEach(group => {
+    console.log('[DEBUG] check key =', group.dataset.editcheck, '| valueSelected =', group.dataset.valueSelected, '| raw attribute =', group.getAttribute('data-value-selected'));
     newChecks[group.dataset.editcheck] = group.dataset.valueSelected || '';
   });
   update.checks = newChecks;
+  console.log('[DEBUG] final newChecks object about to be saved:', JSON.stringify(newChecks));
+
+  const anyFail = Object.values(newChecks).some(v => v === 'Fail');
+  if (anyFail && update.action === 'No') {
+    alert('One or more checks are marked Fail, so Further Action can\'t be left as "No". Please update it before saving.');
+    return;
+  }
 
   const checklistChanged = JSON.stringify(record.checks || {}) !== JSON.stringify(newChecks);
   const logEntry = {
@@ -1019,11 +1043,13 @@ function renderRegister(activeTab) {
 
     const overallPass = overallPassOf(latest);
     const daysSince = g.daysSince, overdue = g.overdue;
+    const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
+    const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
     return `
       <div class="reg-item ${overdue ? 'overdue' : ''}">
         <div class="reg-item-top">
           <div>
-            <div class="cat">${latest.category || 'Uncategorised'}</div>
+            <div class="cat">${latest.category || 'Uncategorised'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
             <div class="eq">${g.eq}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -1034,6 +1060,7 @@ function renderRegister(activeTab) {
         <div class="meta ${overdue ? 'overdue-text' : ''}">
           Last tested ${latest.date || '—'} by ${latest.engineer || '—'}
           ${daysSince !== null ? ` · ${daysSince} days ago` : ''}
+          ${checklistWasEdited && lastEdit ? `<br>Checklist last edited by ${lastEdit.by} · ${lastEdit.at.slice(0,10)}` : ''}
         </div>
         <div class="reg-item-bottom">
           <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
