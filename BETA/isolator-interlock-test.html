@@ -280,7 +280,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v15.1";
+const VERSION = "v15.2";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -847,25 +847,17 @@ function buildEditPanel(record) {
 }
 
 async function saveOwnEdit(record) {
-  console.log('[DEBUG] saveOwnEdit called for record._id =', record._id);
-  const panel = document.querySelector(`[data-edit-doc-id="${record._id}"]`);
-  console.log('[DEBUG] panel element found:', panel);
-  if (!panel) { console.log('[DEBUG] ABORTED - no panel matched that selector'); return; }
+  const panel = document.querySelector(`.edit-panel[data-edit-doc-id="${record._id}"]`);
+  if (!panel) return;
 
   const update = {};
   panel.querySelectorAll('[data-editfield]').forEach(el => { update[el.dataset.editfield] = el.value.trim(); });
-  console.log('[DEBUG] descriptive field update object:', update);
-
-  const checkGroups = panel.querySelectorAll('[data-editcheck]');
-  console.log('[DEBUG] number of [data-editcheck] groups found inside panel:', checkGroups.length);
 
   const newChecks = {};
-  checkGroups.forEach(group => {
-    console.log('[DEBUG] check key =', group.dataset.editcheck, '| valueSelected =', group.dataset.valueSelected, '| raw attribute =', group.getAttribute('data-value-selected'));
+  panel.querySelectorAll('[data-editcheck]').forEach(group => {
     newChecks[group.dataset.editcheck] = group.dataset.valueSelected || '';
   });
   update.checks = newChecks;
-  console.log('[DEBUG] final newChecks object about to be saved:', JSON.stringify(newChecks));
 
   const anyFail = Object.values(newChecks).some(v => v === 'Fail');
   if (anyFail && update.action === 'No') {
@@ -1014,7 +1006,7 @@ function renderRegister(activeTab) {
               <div class="hist-meta">by ${h.engineer || '—'}${h.qsed ? ' · QSed' : ''}</div>
             </div>
             <div style="display:flex;gap:6px;">
-              ${canEdit ? `<button type="button" class="btn-edit-own" data-edit-doc-id="${h._id}">${isEditingThis ? 'Close' : 'Edit'}</button>` : ''}
+              ${canEdit ? `<button type="button" class="btn-edit-own" data-toggle-doc-id="${h._id}">${isEditingThis ? 'Close' : 'Edit'}</button>` : ''}
               <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>
             </div>
           </div>
@@ -1073,7 +1065,7 @@ function renderRegister(activeTab) {
 
   list.querySelectorAll('.btn-edit-own').forEach(btn => {
     btn.addEventListener('click', () => {
-      const docId = btn.dataset.editDocId;
+      const docId = btn.dataset.toggleDocId;
       if (editingDocIds.has(docId)) editingDocIds.delete(docId); else editingDocIds.add(docId);
       renderRegister(activeTab);
     });
