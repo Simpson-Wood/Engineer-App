@@ -53,6 +53,20 @@
   .radio-opt.pass-sel{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
   .radio-opt.fail-sel{border-color:var(--fail);background:#fbe9e9;color:var(--fail);}
   .radio-opt.na-sel{border-color:var(--grey);background:#f0f0f0;color:var(--grey);}
+  .edit-panel{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+  .edit-panel label{font-size:12px;font-weight:600;margin:0 0 4px;}
+  .edit-panel input, .edit-panel select, .edit-panel textarea{width:100%;padding:8px 9px;font-size:13.5px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
+  .edit-panel .check-item{padding:6px 0;}
+  .id-locked-note{font-size:11px;color:var(--grey);margin:0 0 12px;font-style:italic;}
+  .edited-marker{font-size:10.5px;font-weight:700;color:#8a6d1a;background:#fff3cd;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
+  .btn-edit-own{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
+  .btn-save-edit{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .btn-cancel-edit{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .reference-photo{max-width:160px;border-radius:6px;margin:6px 8px 6px 0;border:1px solid var(--line);}
+  .loading-spinner{display:flex;align-items:center;gap:8px;color:var(--grey);font-size:13px;padding:14px 0;}
+  .loading-spinner .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite ease-in-out;}
+  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
 
   .id-preview{background:#f2f2f2;border:1.5px dashed var(--line);border-radius:7px;padding:10px 11px;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;min-height:20px;letter-spacing:.02em;}
   .id-preview.pending{color:var(--grey);font-weight:400;font-style:italic;font-size:13px;}
@@ -142,7 +156,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v14.2</p>
+        <p id="versionLabel">v15.0</p>
       </div>
     </a>
     <div class="who">
@@ -160,6 +174,8 @@
       <p class="site-status" id="siteStatus"></p>
       <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete — no new tests can be logged until a manager takes it out of Complete status.</div>
       <div id="syncIndicator" style="display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;"></div>
+      <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
+      <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
       <button type="button" id="readyForQsBtn" style="display:none;width:100%;margin-top:10px;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Mark ready for QS</button>
       <button type="button" id="toggleAddSiteBtn" style="width:100%;margin-top:10px;padding:9px;background:#fff;border:1.5px dashed var(--line);color:var(--grey);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add a new site</button>
       <div id="addSiteForm" style="display:none;margin-top:12px;">
@@ -224,6 +240,14 @@
             <option value="fail">Fail only</option>
           </select>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="margin-bottom:4px;">Sort by</label>
+          <select id="regSortOrder" style="padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="equipmentId">Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
+            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          </select>
+        </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
@@ -255,7 +279,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v14.2";
+const VERSION = "v15.2";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -521,6 +545,10 @@ document.getElementById('site').addEventListener('change', () => {
   renderTodayList();
   loadSiteData();
 });
+document.getElementById('refreshSiteBtn').addEventListener('click', async () => {
+  await loadSiteData();
+  if (document.getElementById('regTab').style.display !== 'none') renderRegister(currentRegTab);
+});
 
 let currentJobStatus = '';
 
@@ -582,22 +610,30 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 
+let siteLoadToken = 0;
 async function loadSiteData() {
+  const myToken = ++siteLoadToken;
   const siteRef = document.getElementById('site').value;
   siteHistoryCache = [];
   currentJobStatus = '';
   if (!siteRef) { updateJobStatusUI(); return; }
+  const spinner = document.getElementById('siteLoadingIndicator');
+  spinner.style.display = 'flex';
   try {
     const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
     const snap = await getDocs(q);
+    if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
     rebuildSuggestions();
 
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    if (myToken !== siteLoadToken) return;
     currentJobStatus = jobSnap.exists() ? ((jobSnap.data().isolator && jobSnap.data().isolator.jobStatus) || 'In Progress') : 'In Progress';
     updateJobStatusUI();
   } catch (e) {
     console.error('Site data load failed:', e);
+  } finally {
+    if (myToken === siteLoadToken) spinner.style.display = 'none';
   }
 }
 
@@ -740,6 +776,112 @@ function buildRegSubtabs() {
 }
 
 let expandedEquip = new Set();
+let editingDocIds = new Set();
+let regSortOrder = 'equipmentId';
+
+function buildEditPanel(record) {
+  const def = CATEGORIES[record.category];
+  const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+
+  const descFieldsHtml = (def ? def.fields : []).map(f => `
+    <label>${f.label}</label>
+    <input type="text" data-editfield="${f.key}" value="${esc(record[f.key])}">
+  `).join('');
+
+  const specsHtml = def && def.hasIsolatorSpecs ? `
+    <label>Current rating</label>
+    <input type="text" data-editfield="currentRating" value="${esc(record.currentRating)}">
+    <label>Number of poles</label>
+    <select data-editfield="poles">${[1,2,3,4,5,6,7,8].map(n => `<option ${String(record.poles) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}</select>
+    <label>Auxiliary</label>
+    <select data-editfield="auxiliary">${AUX_OPTIONS.map(a => `<option ${record.auxiliary === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
+  ` : '';
+
+  const isLimited = record.testingStatus === 'Limited';
+  const checksHtml = (def ? def.checks : []).map(c => {
+    const v = record.checks ? record.checks[c.key] : '';
+    return `
+      <div class="check-item">
+        <div class="check-label">${c.label}</div>
+        <div class="radio-row" data-editcheck="${c.key}" data-value-selected="${v || ''}">
+          <div class="radio-opt ${v === 'Pass' ? 'pass-sel' : ''}" data-value="Pass">Pass</div>
+          <div class="radio-opt ${v === 'Fail' ? 'fail-sel' : ''}" data-value="Fail">Fail</div>
+          <div class="radio-opt na-option ${v === 'N/A' ? 'na-sel' : ''}" data-value="N/A" style="${isLimited ? '' : 'display:none;'}">N/A</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const limitationHtml = isLimited ? `
+    <label>Reason for limitation</label>
+    <textarea data-editfield="limitationReason">${record.limitationReason || ''}</textarea>
+    <label>Agreed with</label>
+    <input type="text" data-editfield="limitationAgreedWith" value="${esc(record.limitationAgreedWith)}">
+  ` : '';
+
+  return `
+    <div class="edit-panel" data-edit-doc-id="${record._id}">
+      <p class="id-locked-note">Equipment ID stays fixed on an edit: ${record.equipmentId}</p>
+      ${descFieldsHtml}
+      ${specsHtml}
+      ${checksHtml}
+      ${limitationHtml}
+      <label>Further action</label>
+      <select data-editfield="action">
+        <option value="No" ${record.action === 'No' ? 'selected' : ''}>No</option>
+        <option value="Requires Replacement" ${record.action === 'Requires Replacement' ? 'selected' : ''}>Requires Replacement</option>
+        <option value="Requires Remedial Works" ${record.action === 'Requires Remedial Works' ? 'selected' : ''}>Requires Remedial Works</option>
+      </select>
+      <label>Manufacturer</label><input type="text" data-editfield="manufacturer" value="${esc(record.manufacturer)}">
+      <label>Model</label><input type="text" data-editfield="model" value="${esc(record.model)}">
+      <label>Part number</label><input type="text" data-editfield="partNumber" value="${esc(record.partNumber)}">
+      <label>Observations</label>
+      <textarea data-editfield="observations">${record.observations || ''}</textarea>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button type="button" class="btn-cancel-edit" data-role="cancelEdit" data-doc-id="${record._id}">Cancel</button>
+        <button type="button" class="btn-save-edit" data-role="saveEdit" data-doc-id="${record._id}">Save changes</button>
+      </div>
+    </div>
+  `;
+}
+
+async function saveOwnEdit(record) {
+  const panel = document.querySelector(`.edit-panel[data-edit-doc-id="${record._id}"]`);
+  if (!panel) return;
+
+  const update = {};
+  panel.querySelectorAll('[data-editfield]').forEach(el => { update[el.dataset.editfield] = el.value.trim(); });
+
+  const newChecks = {};
+  panel.querySelectorAll('[data-editcheck]').forEach(group => {
+    newChecks[group.dataset.editcheck] = group.dataset.valueSelected || '';
+  });
+  update.checks = newChecks;
+
+  const anyFail = Object.values(newChecks).some(v => v === 'Fail');
+  if (anyFail && update.action === 'No') {
+    alert('One or more checks are marked Fail, so Further Action can\'t be left as "No". Please update it before saving.');
+    return;
+  }
+
+  const checklistChanged = JSON.stringify(record.checks || {}) !== JSON.stringify(newChecks);
+  const logEntry = {
+    by: currentUser.displayName || currentUser.email, byEmail: currentUser.email,
+    at: new Date().toISOString(), checklistChanged
+  };
+
+  try {
+    await updateDoc(doc(db, 'isolatorTests', record._id), {
+      ...update, editLog: [...(record.editLog || []), logEntry]
+    });
+    editingDocIds.delete(record._id);
+    await loadSiteData();
+    renderRegister(currentRegTab);
+  } catch (e) {
+    alert('Could not save — ' + (e.message || e.code || 'unknown error'));
+  }
+}
+
 
 function locationOf(record) {
   const def = CATEGORIES[record.category];
@@ -779,9 +921,16 @@ function matchesSearch(latest, eq, query) {
     renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
   });
 });
+document.getElementById('regSortOrder').addEventListener('change', (e) => {
+  regSortOrder = e.target.value;
+  const activeBtn = document.querySelector('#regSubtabs button.active');
+  renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
+});
 
+let currentRegTab = 'All';
 function renderRegister(activeTab) {
   activeTab = activeTab || 'All';
+  currentRegTab = activeTab;
   buildRegLocFilterOptions(activeTab);
   const list = document.getElementById('regList');
   const siteRef = document.getElementById('site').value;
@@ -821,7 +970,11 @@ function renderRegister(activeTab) {
   const searchQuery = document.getElementById('regSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
 
-  groups.sort((a, b) => a.eq.localeCompare(b.eq));
+  groups.sort((a, b) => {
+    if (regSortOrder === 'lastTestedOldest') return (a.latest && a.latest.date || '').localeCompare(b.latest && b.latest.date || '');
+    if (regSortOrder === 'lastTestedNewest') return (b.latest && b.latest.date || '').localeCompare(a.latest && a.latest.date || '');
+    return a.eq.localeCompare(b.eq);
+  });
 
   if (groups.length === 0) { list.innerHTML = '<div class="history-empty">Nothing matches the current filters.</div>'; return; }
 
@@ -842,13 +995,22 @@ function renderRegister(activeTab) {
         `;
       }
       const hPass = overallPassOf(h);
+      const canEdit = h.engineerEmail === currentUser.email && !h.qsed;
+      const isEditingThis = editingDocIds.has(h._id);
       return `
-        <div class="hist-row">
-          <div>
-            <div class="hist-date">${h.date || '—'} <span class="chip ${hPass ? 'pass' : 'fail'}" style="margin-left:6px;">${hPass ? 'Pass' : 'Fail'}</span></div>
-            <div class="hist-meta">by ${h.engineer || '—'}</div>
+        <div class="hist-row" style="${isEditingThis ? 'display:block;' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+            <div>
+              <div class="hist-date">${h.date || '—'} <span class="chip ${hPass ? 'pass' : 'fail'}" style="margin-left:6px;">${hPass ? 'Pass' : 'Fail'}</span></div>
+              <div class="hist-meta">by ${h.engineer || '—'}${h.qsed ? ' · QSed' : ''}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              ${canEdit ? `<button type="button" class="btn-edit-own" data-toggle-doc-id="${h._id}">${isEditingThis ? 'Close' : 'Edit'}</button>` : ''}
+              <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>
+            </div>
           </div>
-          <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>
+          ${!canEdit && h.engineerEmail === currentUser.email && h.qsed ? '<div class="id-locked-note">This has been QSed — ask QS to un-tick it before you can edit.</div>' : ''}
+          ${isEditingThis ? buildEditPanel(h) : ''}
         </div>
       `;
     }).join('');
@@ -872,11 +1034,13 @@ function renderRegister(activeTab) {
 
     const overallPass = overallPassOf(latest);
     const daysSince = g.daysSince, overdue = g.overdue;
+    const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
+    const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
     return `
       <div class="reg-item ${overdue ? 'overdue' : ''}">
         <div class="reg-item-top">
           <div>
-            <div class="cat">${latest.category || 'Uncategorised'}</div>
+            <div class="cat">${latest.category || 'Uncategorised'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
             <div class="eq">${g.eq}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -887,6 +1051,7 @@ function renderRegister(activeTab) {
         <div class="meta ${overdue ? 'overdue-text' : ''}">
           Last tested ${latest.date || '—'} by ${latest.engineer || '—'}
           ${daysSince !== null ? ` · ${daysSince} days ago` : ''}
+          ${checklistWasEdited && lastEdit ? `<br>Checklist last edited by ${lastEdit.by} · ${lastEdit.at.slice(0,10)}` : ''}
         </div>
         <div class="reg-item-bottom">
           <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
@@ -897,6 +1062,36 @@ function renderRegister(activeTab) {
     `;
   }).join('');
 
+  list.querySelectorAll('.btn-edit-own').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const docId = btn.dataset.toggleDocId;
+      if (editingDocIds.has(docId)) editingDocIds.delete(docId); else editingDocIds.add(docId);
+      renderRegister(activeTab);
+    });
+  });
+  list.querySelectorAll('[data-editcheck]').forEach(group => {
+    group.querySelectorAll('.radio-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        group.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('pass-sel','fail-sel','na-sel'));
+        const val = opt.getAttribute('data-value');
+        opt.classList.add(val === 'Pass' ? 'pass-sel' : val === 'Fail' ? 'fail-sel' : 'na-sel');
+        group.dataset.valueSelected = val;
+      });
+    });
+  });
+  list.querySelectorAll('.btn-cancel-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingDocIds.delete(btn.dataset.docId);
+      renderRegister(activeTab);
+    });
+  });
+  list.querySelectorAll('.btn-save-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const docId = btn.dataset.docId;
+      const record = siteHistoryCache.find(h => h._id === docId);
+      if (record) saveOwnEdit(record);
+    });
+  });
   list.querySelectorAll('.expand-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const eq = btn.dataset.eq;
@@ -1170,11 +1365,21 @@ function addEntry(prefill) {
       <div class="error-msg" data-error-for="observations">An observation is required when a check has failed</div>
 
       <label>General photo of equipment <span class="req">*</span></label>
-      <input type="file" accept="image/*" capture="environment" data-field="photo">
+      ${prefill && prefill.photoBase64 ? `
+        <div style="margin-bottom:10px;">
+          <p class="id-locked-note" style="font-style:normal;">Photo from last visit (${prefill.date || 'previous test'}) — reference only, take a fresh one below</p>
+          <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoBase64}">
+        </div>` : ''}
+      <input type="file" accept="image/*" data-field="photo">
       <div class="error-msg" data-error-for="photo">A photo is required</div>
 
       <label>Photo of internals <span class="req" data-role="internalsReq" style="display:none;">*</span><span class="hint">E.g. main switch body, E-stop contacts — makes sourcing a replacement part easier without a second visit. Required if further action is needed.</span></label>
-      <input type="file" accept="image/*" capture="environment" data-field="photoInternals">
+      ${prefill && prefill.photoInternalsBase64 ? `
+        <div style="margin-bottom:10px;">
+          <p class="id-locked-note" style="font-style:normal;">Internals photo from last visit (${prefill.date || 'previous test'}) — reference only, take a fresh one below</p>
+          <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoInternalsBase64}">
+        </div>` : ''}
+      <input type="file" accept="image/*" data-field="photoInternals">
       <div class="error-msg" data-error-for="photoInternals">A photo of the internals is required when further action is needed</div>
 
       <button type="button" class="save-entry-btn" data-role="saveEntry">Save this test</button>

@@ -73,6 +73,20 @@
   .preview-edit .btns{display:flex;gap:8px;}
   .btn-save{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
   .btn-cancel{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .loading-spinner{display:flex;align-items:center;gap:8px;color:var(--grey);font-size:13px;padding:10px 0 0;}
+  .loading-spinner .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite ease-in-out;}
+  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+  .check-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:9px 0;flex-wrap:wrap;}
+  .check-item:first-child{border-top:none;padding-top:0;}
+  .check-item .check-label{flex:1;min-width:160px;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .radio-row{display:flex;gap:6px;margin:0;flex-shrink:0;}
+  .radio-opt{border:1.5px solid var(--line);border-radius:6px;padding:6px 11px;text-align:center;font-weight:600;font-size:12px;cursor:pointer;user-select:none;color:var(--grey);min-width:50px;}
+  .radio-opt.pass-sel{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
+  .radio-opt.fail-sel{border-color:var(--fail);background:#fbe9e9;color:var(--fail);}
+  .radio-opt.na-sel{border-color:var(--grey);background:#f0f0f0;color:var(--grey);}
+  .edit-warning{background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:6px;padding:8px 10px;font-size:11.5px;margin-bottom:10px;}
+  .edited-marker{font-size:10.5px;font-weight:700;color:#8a6d1a;background:#fff3cd;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
 
   .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
   .pill{font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--grey);cursor:pointer;font-weight:600;}
@@ -145,7 +159,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v13.1 · Management</p>
+        <p id="versionLabel">v14.2 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -157,10 +171,12 @@
 
   <div class="site-bar">
     <div class="site-bar-inner">
-      <select id="site" style="display:none;"></select>
-      <label style="margin-bottom:4px;">Currently working on</label>
-      <div id="currentSiteDisplay" style="font-weight:700;font-size:15px;">No site selected — pick one from the Sites tab</div>
+      <label style="margin-bottom:4px;">Site</label>
+      <select id="site" style="width:100%;max-width:420px;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;">
+        <option value="" disabled selected>Loading site list…</option>
+      </select>
       <p class="site-status" id="siteStatus"></p>
+      <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
       <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
     </div>
   </div>
@@ -283,6 +299,12 @@
             <option value="">Pass or Fail</option>
             <option value="pass">Pass only</option>
             <option value="fail">Fail only</option>
+          </select>
+          <select id="scheduleSortOrder" style="padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="location">Location, then Equipment ID</option>
+            <option value="equipmentId">Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
+            <option value="lastTestedNewest">Last Tested (Newest First)</option>
           </select>
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
@@ -533,6 +555,34 @@ let editingId = null;
 let activeCatFilter = 'All';
 let activeLocFilter = '';
 
+const PHOTO_TARGET_BYTES = 200000;
+function compressImage(file, targetBytes) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let maxDim = 1280, quality = 0.75;
+      function render() {
+        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL('image/jpeg', quality);
+      }
+      let dataUrl = render(), attempts = 0;
+      while (dataUrl.length * 0.75 > targetBytes && attempts < 6) {
+        if (quality > 0.4) quality -= 0.15; else maxDim = Math.round(maxDim * 0.8);
+        dataUrl = render(); attempts++;
+      }
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+    img.src = url;
+  });
+}
+
 function overallPassOf(record) {
   if (record.checks && Object.keys(record.checks).length) return !Object.values(record.checks).some(v => v === 'Fail');
   return true;
@@ -720,6 +770,8 @@ async function renderSitesList() {
           <select data-status-for="${r.id}" style="width:auto;padding:6px 8px;font-size:12.5px;border:1.5px solid var(--line);border-radius:6px;">
             ${['In Progress','Ready for QS','In QS','Complete','Sent to Client'].map(s => `<option ${((r.isolator && r.isolator.jobStatus) || 'In Progress') === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
+          <button type="button" class="edit-btn" data-export-csv="${r.id}">Export CSV</button>
+          <button type="button" class="edit-btn" data-export-json="${r.id}">Export JSON</button>
           <button type="button" class="edit-btn" data-select-site="${r.id}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
         </div>
       </div>
@@ -742,6 +794,30 @@ async function renderSitesList() {
         } catch (e) { alert('Could not update status — ' + (e.message || e.code || 'unknown error')); }
       });
     });
+    list.querySelectorAll('[data-export-csv]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ref = btn.dataset.exportCsv;
+        const original = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Exporting…';
+        try {
+          const records = await fetchSiteTestRecords(ref);
+          downloadBlob(ref + '-export-' + new Date().toISOString().slice(0,10) + '.csv', recordsToCSV(records), 'text/csv');
+        } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
+        btn.disabled = false; btn.textContent = original;
+      });
+    });
+    list.querySelectorAll('[data-export-json]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ref = btn.dataset.exportJson;
+        const original = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Exporting…';
+        try {
+          const records = await fetchSiteTestRecords(ref);
+          downloadBlob(ref + '-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(records, null, 2), 'application/json');
+        } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
+        btn.disabled = false; btn.textContent = original;
+      });
+    });
     list.querySelectorAll('[data-delete-site]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const ref = btn.dataset.deleteSite;
@@ -752,7 +828,6 @@ async function renderSitesList() {
           await deleteDoc(doc(db, 'jobs', ref));
           if (document.getElementById('site').value === ref) {
             document.getElementById('site').value = '';
-            document.getElementById('currentSiteDisplay').textContent = 'No site selected — pick one from the Sites tab';
           }
           await loadSites();
           renderSitesList();
@@ -762,6 +837,41 @@ async function renderSitesList() {
   } catch (e) {
     list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
   }
+}
+
+async function fetchSiteTestRecords(siteRef) {
+  const snap = await getDocs(query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef)));
+  const records = [];
+  snap.forEach(d => records.push({ _id: d.id, ...d.data() }));
+  return records;
+}
+
+function downloadBlob(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// CSV deliberately excludes photo data (base64 images are useless in a
+// spreadsheet and would make the file enormous) - use the JSON export for a
+// genuine full backup including photos.
+function recordsToCSV(records) {
+  const cols = ['equipmentId','category','date','engineer','siteRef','siteName','millLocation','panelName',
+    'equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','partNumber',
+    'currentRating','poles','auxiliary','testingStatus','limitationReason','limitationAgreedWith','action',
+    'observations','qsed'];
+  const esc = (v) => {
+    if (v === undefined || v === null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const checksSummary = (r) => r.checks ? Object.entries(r.checks).map(([k, v]) => k + ':' + v).join('; ') : '';
+  const header = [...cols, 'checks'].join(',');
+  const rows = records.map(r => [...cols.map(c => esc(r[c])), esc(checksSummary(r))].join(','));
+  return [header, ...rows].join('\r\n');
 }
 
 document.getElementById('addSiteBtn').addEventListener('click', async () => {
@@ -860,21 +970,25 @@ async function loadSites() {
 }
 document.getElementById('site').addEventListener('change', loadSiteData);
 
+let siteLoadToken = 0;
 async function loadSiteData() {
+  const myToken = ++siteLoadToken;
   const siteSelect = document.getElementById('site');
   const siteRef = siteSelect.value;
-  const display = document.getElementById('currentSiteDisplay');
-  display.textContent = siteRef && siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : 'No site selected — pick one from the Sites tab';
   siteHistoryCache = [];
   siteMeta = {};
   const pendingList = document.getElementById('pendingList');
   if (!siteRef) { pendingList.innerHTML = '<div class="empty-note">Select a site to review.</div>'; return; }
   pendingList.innerHTML = '<div class="empty-note">Loading…</div>';
+  const spinner = document.getElementById('siteLoadingIndicator');
+  spinner.style.display = 'flex';
   try {
     const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
     const snap = await getDocs(q);
+    if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
+    if (myToken !== siteLoadToken) return;
     siteMeta = jobSnap.exists() ? jobSnap.data() : {};
     renderPending();
     renderLimitedList();
@@ -884,7 +998,9 @@ async function loadSiteData() {
     if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
     if (document.getElementById('frontTab').style.display !== 'none') renderFront();
   } catch (e) {
-    pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+    if (myToken === siteLoadToken) pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+  } finally {
+    if (myToken === siteLoadToken) spinner.style.display = 'none';
   }
 }
 
@@ -1006,16 +1122,19 @@ function renderPreview() {
 
     if (!isEditing) {
       const isPass = overallPassOf(latest);
+      const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
+      const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
       return `
         <div class="preview-item ${isQsed ? 'qsed' : ''}">
           <div class="top">
             <div style="display:flex;gap:8px;align-items:flex-start;">
               <input type="checkbox" class="bulk-select" data-bulk-id="${latest._id}" style="margin-top:4px;">
               <div>
-                <div class="cat">${latest.category || 'Uncategorised'} · ${latest.date || '—'}</div>
+                <div class="cat">${latest.category || 'Uncategorised'} · ${latest.date || '—'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
                 <div class="eq">${g.eq}</div>
                 ${detailLine ? `<div class="detail-line">${detailLine}</div>` : ''}
                 ${latest.manufacturer || latest.model ? `<div class="detail-line">${[latest.manufacturer, latest.model].filter(Boolean).join(', ')}</div>` : ''}
+                ${checklistWasEdited && lastEdit ? `<div class="detail-line" style="color:#8a6d1a;">Checklist last edited by ${lastEdit.by} · ${formatDateDMY(lastEdit.at.slice(0,10))}</div>` : ''}
               </div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
@@ -1034,29 +1153,36 @@ function renderPreview() {
       <input type="text" data-edit-field="${f.key}" value="${(latest[f.key] || '').replace(/"/g,'&quot;')}">
     `).join('');
 
-    const checksSummary = def ? def.checks.map(c => {
+    const isLimited = latest.testingStatus === 'Limited';
+    const checksEditable = def ? def.checks.map(c => {
       const v = latest.checks ? latest.checks[c.key] : '';
-      const color = v === 'Pass' ? 'var(--pass)' : v === 'Fail' ? 'var(--fail)' : 'var(--grey)';
-      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px;"><span>${c.label}</span><span style="font-weight:700;color:${color};">${v || '—'}</span></div>`;
+      return `
+        <div class="check-item">
+          <div class="check-label">${c.label}</div>
+          <div class="radio-row" data-editcheck="${c.key}" data-value-selected="${v || ''}">
+            <div class="radio-opt ${v === 'Pass' ? 'pass-sel' : ''}" data-value="Pass">Pass</div>
+            <div class="radio-opt ${v === 'Fail' ? 'fail-sel' : ''}" data-value="Fail">Fail</div>
+            <div class="radio-opt na-option ${v === 'N/A' ? 'na-sel' : ''}" data-value="N/A" style="${isLimited ? '' : 'display:none;'}">N/A</div>
+          </div>
+        </div>
+      `;
     }).join('') : '';
 
-    const photosHtml =
-      (latest.photoBase64 ? `<div style="margin-bottom:10px;"><p class="hint" style="margin:0 0 4px;font-weight:600;">General photo</p><img src="data:image/jpeg;base64,${latest.photoBase64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;" data-full-photo="${latest.photoBase64}"></div>` : '') +
-      (latest.photoInternalsBase64 ? `<div style="margin-bottom:10px;"><p class="hint" style="margin:0 0 4px;font-weight:600;">Internals photo</p><img src="data:image/jpeg;base64,${latest.photoInternalsBase64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;" data-full-photo="${latest.photoInternalsBase64}"></div>` : '') +
-      (!latest.photoBase64 && !latest.photoInternalsBase64 ? '<p class="hint">No photos on this test.</p>' : '');
+    function photoBlock(label, base64, fieldKey) {
+      return `
+        <div style="margin-bottom:14px;">
+          <p class="hint" style="margin:0 0 4px;font-weight:600;">${label}</p>
+          ${base64 ? `<img src="data:image/jpeg;base64,${base64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;display:block;margin-bottom:6px;" data-full-photo="${base64}">` : '<p class="hint">No photo currently on record.</p>'}
+          <input type="file" accept="image/*" data-photo-replace="${fieldKey}">
+          <p class="edit-warning" data-photo-warning="${fieldKey}" style="display:none;">Uploading a new photo here will permanently replace the current one — this can't be undone.</p>
+        </div>
+      `;
+    }
 
     return `
       <div class="preview-item">
         <div class="top">
           <div><div class="cat">${latest.category || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
-        </div>
-        <div style="border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:10px 0;margin-bottom:10px;">
-          <p class="hint" style="font-weight:600;margin:0 0 6px;">Checklist result (read-only)</p>
-          ${checksSummary || '<p class="hint">No checklist recorded.</p>'}
-        </div>
-        <div style="margin-bottom:10px;">
-          <p class="hint" style="font-weight:600;margin:0 0 6px;">Photos <span style="font-weight:400;">(click to view full size)</span></p>
-          ${photosHtml}
         </div>
         <div class="preview-edit" data-doc-id="${latest._id}" data-category="${latest.category}">
           ${fieldInputs}
@@ -1070,6 +1196,14 @@ function renderPreview() {
           <input type="text" data-edit-field="partNumber" value="${(latest.partNumber || '').replace(/"/g,'&quot;')}">
           <label>Observations</label>
           <textarea data-edit-field="observations">${latest.observations || ''}</textarea>
+
+          <p class="hint" style="font-weight:600;margin:10px 0 6px;">Checklist result</p>
+          ${checksEditable || '<p class="hint">No checklist recorded.</p>'}
+
+          <p class="hint" style="font-weight:600;margin:14px 0 6px;">Photos <span style="font-weight:400;">(click an existing photo to view full size)</span></p>
+          ${photoBlock('General photo', latest.photoBase64, 'photoBase64')}
+          ${photoBlock('Internals photo', latest.photoInternalsBase64, 'photoInternalsBase64')}
+
           <div class="btns">
             <button type="button" class="btn-cancel" data-role="cancel">Cancel</button>
             <button type="button" class="btn-save" data-role="save">Save changes</button>
@@ -1116,6 +1250,9 @@ function renderPreview() {
     const category = editBox.dataset.category;
     const def = CATEGORIES[category];
     const idLive = editBox.querySelector('[data-role="idLive"]');
+    const docId = editBox.dataset.docId;
+    const record = siteHistoryCache.find(h => h._id === docId);
+    const replacementPhotos = {}; // fieldKey -> new base64, only populated if actually replaced
 
     function refreshIdLive() {
       const values = {};
@@ -1126,11 +1263,40 @@ function renderPreview() {
       if (def && def.fields.some(f => f.key === inp.dataset.editField)) inp.addEventListener('input', refreshIdLive);
     });
 
+    editBox.querySelectorAll('[data-editcheck]').forEach(group => {
+      group.querySelectorAll('.radio-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+          group.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('pass-sel','fail-sel','na-sel'));
+          const val = opt.getAttribute('data-value');
+          opt.classList.add(val === 'Pass' ? 'pass-sel' : val === 'Fail' ? 'fail-sel' : 'na-sel');
+          group.dataset.valueSelected = val;
+        });
+      });
+    });
+
+    editBox.querySelectorAll('[data-photo-replace]').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const fieldKey = input.dataset.photoReplace;
+        const warningEl = editBox.querySelector(`[data-photo-warning="${fieldKey}"]`);
+        try {
+          replacementPhotos[fieldKey] = await compressImage(file, PHOTO_TARGET_BYTES);
+          if (warningEl) warningEl.style.display = 'block';
+        } catch (err) {
+          alert('Could not process that photo — try again.');
+        }
+      });
+    });
+
     editBox.querySelector('[data-role="cancel"]').addEventListener('click', () => { editingId = null; renderPreview(); });
 
     editBox.querySelector('[data-role="save"]').addEventListener('click', async () => {
       if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
-      const docId = editBox.dataset.docId;
+      if (Object.keys(replacementPhotos).length > 0) {
+        if (!confirm('This will permanently replace the current photo(s) shown. Continue?')) return;
+      }
+
       const update = {};
       const values = {};
       editBox.querySelectorAll('[data-edit-field]').forEach(inp => {
@@ -1139,6 +1305,29 @@ function renderPreview() {
       });
       const newId = def ? computeEquipmentId(category, values) : null;
       if (newId) update.equipmentId = newId;
+
+      const newChecks = {};
+      editBox.querySelectorAll('[data-editcheck]').forEach(group => {
+        newChecks[group.dataset.editcheck] = group.dataset.valueSelected || '';
+      });
+      update.checks = newChecks;
+
+      const anyFail = Object.values(newChecks).some(v => v === 'Fail');
+      if (anyFail && update.action === 'No') {
+        alert('One or more checks are marked Fail, so Further Action can\'t be left as "No". Please update it before saving.');
+        return;
+      }
+
+      const checklistChanged = record ? JSON.stringify(record.checks || {}) !== JSON.stringify(newChecks) : false;
+
+      Object.keys(replacementPhotos).forEach(fieldKey => { update[fieldKey] = replacementPhotos[fieldKey]; });
+
+      const logEntry = {
+        by: currentUser.displayName || currentUser.email, byEmail: currentUser.email,
+        at: new Date().toISOString(), checklistChanged
+      };
+      update.editLog = [...((record && record.editLog) || []), logEntry];
+
       try {
         await updateDoc(doc(db, 'isolatorTests', docId), update);
         editingId = null;
@@ -1176,6 +1365,7 @@ document.getElementById('scheduleSearch').addEventListener('input', renderSchedu
 document.getElementById('schedulePassFilter').addEventListener('change', renderSchedule);
 document.getElementById('scheduleOverdueOnly').addEventListener('change', renderSchedule);
 document.getElementById('scheduleLimitedOnly').addEventListener('change', renderSchedule);
+document.getElementById('scheduleSortOrder').addEventListener('change', renderSchedule);
 
 function renderSchedule() {
   const content = document.getElementById('scheduleContent');
@@ -1204,7 +1394,13 @@ function renderSchedule() {
     let rows = groups.filter(g => g.latest.category === cat);
     if (activeLocFilter) rows = rows.filter(g => locationOf(g.latest) === activeLocFilter);
     if (rows.length === 0) return;
-    rows.sort((a, b) => locationOf(a.latest).localeCompare(locationOf(b.latest)) || a.eq.localeCompare(b.eq));
+    const sortOrder = document.getElementById('scheduleSortOrder').value;
+    rows.sort((a, b) => {
+      if (sortOrder === 'equipmentId') return a.eq.localeCompare(b.eq);
+      if (sortOrder === 'lastTestedOldest') return (a.latest.date || '').localeCompare(b.latest.date || '');
+      if (sortOrder === 'lastTestedNewest') return (b.latest.date || '').localeCompare(a.latest.date || '');
+      return locationOf(a.latest).localeCompare(locationOf(b.latest)) || a.eq.localeCompare(b.eq);
+    });
 
     const checkCodes = def.checks.map((c, i) => 'T' + (i + 1));
     html += `<p class="schedule-cat-label">${cat}</p>`;
