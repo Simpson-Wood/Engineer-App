@@ -43,7 +43,7 @@
   .postcode-ok{color:var(--pass);}
   .postcode-bad{color:var(--fail);}
 
-  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
   #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
   #limitedList .pending-item{margin-bottom:0;}
   #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
@@ -56,7 +56,7 @@
   .site-item .name, .staff-item .name{font-weight:700;font-size:13.5px;}
   .site-item .meta, .staff-item .meta{font-size:11.5px;color:var(--grey);margin-top:2px;}
   .remove-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
-  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;}
+  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;word-break:break-word;overflow-wrap:anywhere;}
   .pending-item .cat, .preview-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
   .pending-item .meta, .preview-item .meta{font-size:12px;color:var(--grey);margin-top:4px;}
   .pending-item .btns{display:flex;gap:8px;margin-top:10px;}
@@ -72,6 +72,8 @@
   .chip-fail{background:#fbe9e9;color:var(--fail);}
   .preview-item .detail-line{font-size:12.5px;color:var(--ink);margin-top:3px;}
   .qsed-check{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--grey);white-space:nowrap;}
+  .qsed-btn{border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+  .qsed-btn.is-qsed{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
   .edit-btn{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
   .preview-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
   .preview-edit label{font-size:11.5px;}
@@ -164,7 +166,7 @@
 
 <div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
     <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
     <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
   </div>
@@ -176,7 +178,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v15.1 · Management</p>
+        <p id="versionLabel">v15.2 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -751,6 +753,7 @@ async function checkChangelog() {
     const prefSnap = await getDoc(prefRef);
     const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorReportMajorSeen : undefined;
     if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
       document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
       document.getElementById('changelogModal').style.display = 'flex';
     }
@@ -1299,7 +1302,7 @@ function renderPreview() {
               <span class="chip ${isPass ? 'chip-pass' : 'chip-fail'}">${isPass ? 'Pass' : 'Fail'}</span>
               <button type="button" class="edit-btn" data-id="${latest._id}">Edit</button>
               <button type="button" class="remove-btn" data-single-delete="${latest._id}">Delete</button>
-              <label class="qsed-check"><input type="checkbox" data-qsed-id="${latest._id}" ${isQsed ? 'checked' : ''}> QSed</label>
+              <button type="button" class="qsed-btn ${isQsed ? 'is-qsed' : ''}" data-qsed-id="${latest._id}">${isQsed ? '✓ QS\'d' : 'Mark as QS\'d'}</button>
             </div>
           </div>
         </div>
@@ -1371,11 +1374,12 @@ function renderPreview() {
     `;
   }).join('');
 
-  previewList.querySelectorAll('[data-qsed-id]').forEach(cb => {
-    cb.addEventListener('change', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); cb.checked = !cb.checked; return; }
+  previewList.querySelectorAll('[data-qsed-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      const newState = !btn.classList.contains('is-qsed');
       try {
-        await updateDoc(doc(db, 'isolatorTests', cb.dataset.qsedId), { qsed: cb.checked });
+        await updateDoc(doc(db, 'isolatorTests', btn.dataset.qsedId), { qsed: newState });
         await loadSiteData();
       } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
     });

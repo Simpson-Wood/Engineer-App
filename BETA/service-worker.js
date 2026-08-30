@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-BETA-shell-v8';
+const CACHE_NAME = 'sw-engineer-apps-BETA-shell-v9';
 
 const APP_SHELL = [
   './',

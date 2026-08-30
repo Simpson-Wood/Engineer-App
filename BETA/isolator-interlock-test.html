@@ -118,10 +118,10 @@
   .reg-subtabs button{border:1.5px solid var(--line);background:#fff;color:var(--grey);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:20px;cursor:pointer;}
   .reg-subtabs button.active{border-color:var(--red);background:var(--red);color:#fff;}
 
-  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
   .reg-item.overdue{border-color:var(--fail);background:#fff8f8;}
   .reg-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
-  .reg-item .eq{font-weight:700;font-size:14.5px;}
+  .reg-item .eq{font-weight:700;font-size:14.5px;word-break:break-word;overflow-wrap:anywhere;}
   .reg-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
   .reg-item .meta{font-size:11.5px;color:var(--grey);margin-top:4px;}
   .reg-item .meta.overdue-text{color:var(--fail);font-weight:700;}
@@ -157,7 +157,7 @@
 
 <div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
     <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
     <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
   </div>
@@ -292,7 +292,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v16.1";
+const VERSION = "v16.2";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -535,6 +535,7 @@ async function checkChangelog() {
     const prefSnap = await getDoc(prefRef);
     const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorTestMajorSeen : undefined;
     if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
       document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
       document.getElementById('changelogModal').style.display = 'flex';
     }
