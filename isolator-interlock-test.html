@@ -32,7 +32,11 @@
   .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:14px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
   .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
 
-  main{max-width:640px;margin:0 auto;padding:16px;}
+  main{max-width:1200px;margin:0 auto;padding:16px;}
+  #logTab{max-width:640px;margin:0 auto;}
+  #regList{display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:10px;align-items:start;}
+  #regList .reg-item{margin-bottom:0;}
+  #regList .reg-item.editing-full{grid-column:1 / -1;}
   .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
   .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
   label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--ink);}
@@ -114,10 +118,10 @@
   .reg-subtabs button{border:1.5px solid var(--line);background:#fff;color:var(--grey);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:20px;cursor:pointer;}
   .reg-subtabs button.active{border-color:var(--red);background:var(--red);color:#fff;}
 
-  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
   .reg-item.overdue{border-color:var(--fail);background:#fff8f8;}
   .reg-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
-  .reg-item .eq{font-weight:700;font-size:14.5px;}
+  .reg-item .eq{font-weight:700;font-size:14.5px;word-break:break-word;overflow-wrap:anywhere;}
   .reg-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
   .reg-item .meta{font-size:11.5px;color:var(--grey);margin-top:4px;}
   .reg-item .meta.overdue-text{color:var(--fail);font-weight:700;}
@@ -148,6 +152,14 @@
   <p>Sign in with your Simpson &amp; Wood Microsoft account to log or review tests.</p>
   <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
   <div class="err" id="signinErr"></div>
+</div>
+
+<div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
+    <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
+    <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
+  </div>
 </div>
 
 <div id="appRoot">
@@ -279,7 +291,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v15.2";
+const VERSION = "v16.2";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -492,10 +504,49 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById('appRoot').style.display = 'block';
     document.getElementById('whoName').textContent = user.displayName || user.email;
     boot();
+    checkChangelog();
   } else {
     document.getElementById('signinScreen').style.display = 'flex';
     document.getElementById('appRoot').style.display = 'none';
   }
+});
+
+// ---- What's new / changelog ----
+// Shows on any sign-in where the current major version hasn't been
+// recorded as seen yet - including a brand new user's very first login,
+// deliberately: a one-time "here's what to keep an eye on" is a reasonable
+// welcome, and it never repeats once recorded. Only fires again on a
+// genuine future major bump - never on minor/decimal releases.
+const CHANGELOG_MAJOR = 16;
+const CHANGELOG_ITEMS = [
+  "You can now edit your own test entries directly from the Site Register — any field, including the checklist — right up until it's been QSed.",
+  "Fixed a real bug in that self-edit feature that could silently save an empty checklist — checklist edits now save correctly.",
+  "Saving a test no longer waits on a signal — it saves instantly and finishes syncing in the background, with an on-screen indicator while anything's still pending.",
+  "This can now be installed properly to your home screen, and opens even with no signal at all.",
+  "Retesting an item now shows the previous photos as a reference, so it's easier to confirm you're looking at the right physical item.",
+  "The Site Register can now be searched, filtered, and sorted — including by how overdue something is.",
+  "This 'what's new' message is itself new — you'll see one again whenever a significant update ships."
+];
+async function checkChangelog() {
+  if (!currentUser) return;
+  try {
+    const prefRef = doc(db, 'userPrefs', currentUser.email);
+    const prefSnap = await getDoc(prefRef);
+    const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorTestMajorSeen : undefined;
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
+      document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
+      document.getElementById('changelogModal').style.display = 'flex';
+    }
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      await setDoc(prefRef, { isolatorTestMajorSeen: CHANGELOG_MAJOR }, { merge: true });
+    }
+  } catch (e) {
+    console.error('Changelog check failed:', e);
+  }
+}
+document.getElementById('changelogCloseBtn').addEventListener('click', () => {
+  document.getElementById('changelogModal').style.display = 'none';
 });
 
 function boot() {
@@ -1017,7 +1068,7 @@ function renderRegister(activeTab) {
 
     if (!latest) {
       return `
-        <div class="reg-item">
+        <div class="reg-item ${isExpanded ? 'editing-full' : ''}">
           <div class="reg-item-top">
             <div><div class="cat">${displayCat || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
             <span class="chip" style="background:#eee;color:var(--grey);">Pending review</span>
@@ -1037,7 +1088,7 @@ function renderRegister(activeTab) {
     const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
     const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
     return `
-      <div class="reg-item ${overdue ? 'overdue' : ''}">
+      <div class="reg-item ${overdue ? 'overdue' : ''} ${isExpanded ? 'editing-full' : ''}">
         <div class="reg-item-top">
           <div>
             <div class="cat">${latest.category || 'Uncategorised'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>

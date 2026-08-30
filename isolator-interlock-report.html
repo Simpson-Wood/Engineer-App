@@ -43,12 +43,20 @@
   .postcode-ok{color:var(--pass);}
   .postcode-bad{color:var(--fail);}
 
-  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
+  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
+  #limitedList .pending-item{margin-bottom:0;}
+  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
+  #previewList .preview-item{margin-bottom:0;}
+  #previewList .preview-item.editing-full{grid-column:1 / -1;}
+  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
+  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
+  #previewList .preview-item.editing-full{grid-column:1 / -1;}
   .site-item, .staff-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
   .site-item .name, .staff-item .name{font-weight:700;font-size:13.5px;}
   .site-item .meta, .staff-item .meta{font-size:11.5px;color:var(--grey);margin-top:2px;}
   .remove-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
-  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;}
+  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;word-break:break-word;overflow-wrap:anywhere;}
   .pending-item .cat, .preview-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
   .pending-item .meta, .preview-item .meta{font-size:12px;color:var(--grey);margin-top:4px;}
   .pending-item .btns{display:flex;gap:8px;margin-top:10px;}
@@ -64,6 +72,8 @@
   .chip-fail{background:#fbe9e9;color:var(--fail);}
   .preview-item .detail-line{font-size:12.5px;color:var(--ink);margin-top:3px;}
   .qsed-check{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--grey);white-space:nowrap;}
+  .qsed-btn{border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+  .qsed-btn.is-qsed{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
   .edit-btn{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
   .preview-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
   .preview-edit label{font-size:11.5px;}
@@ -153,13 +163,21 @@
   <button class="ms-btn" id="signOutBtn2">Sign out</button>
 </div>
 
+<div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
+    <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
+    <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
+  </div>
+</div>
+
 <div id="appRoot">
   <header>
     <a class="brand" href="index.html" style="text-decoration:none;">
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v14.2 · Management</p>
+        <p id="versionLabel">v15.2 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -272,14 +290,43 @@
         <div id="pendingList"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
-        <p class="section-label">Limitations / not fully tested</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Items agreed as limited on site — chase access before the next visit.</p>
-        <div id="limitedList"><div class="empty-note">Select a site to review.</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <p class="section-label" style="margin:0;">Limitations / not fully tested <span id="limitedCount" style="color:var(--grey);font-weight:400;text-transform:none;letter-spacing:normal;"></span></p>
+          <button type="button" id="limitedToggle" class="edit-btn">Show</button>
+        </div>
+        <p class="hint" style="display:block;margin:6px 0 14px;">Items agreed as limited on site — chase access before the next visit.</p>
+        <div id="limitedList" style="display:none;"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
         <p class="section-label">Report preview</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Newest tests first. Tick QSed once you've checked an item — it drops to the bottom, out of the way. Test results aren't editable here, only wording.</p>
+        <p class="hint" style="display:block;margin-bottom:14px;">Tick QSed once you've checked an item. Test results aren't editable here, only wording.</p>
         <input type="text" id="previewSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <div class="pill-row" id="previewCatPills"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <select id="previewLocFilter" style="flex:1;min-width:140px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;"><option value="">All locations</option></select>
+          <select id="previewPassFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">Pass or Fail</option>
+            <option value="pass">Pass only</option>
+            <option value="fail">Fail only</option>
+          </select>
+          <select id="previewQsedFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">QSed or not</option>
+            <option value="qsed">QSed only</option>
+            <option value="notqsed">Not QSed only</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="margin-bottom:4px;font-size:12.5px;font-weight:600;display:block;">Sort by</label>
+          <select id="previewSortOrder" style="padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="equipmentId">Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
+            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-bottom:10px;"><input type="checkbox" id="selectAllBox" style="width:auto;margin:0;">Select all visible</label>
         <div id="bulkDeleteBar" style="display:none;margin-bottom:12px;">
           <button type="button" class="remove-btn" id="bulkDeleteBtn" style="width:100%;padding:9px;">Delete selected (<span id="bulkDeleteCount">0</span>)</button>
@@ -554,6 +601,8 @@ let siteMeta = {};
 let editingId = null;
 let activeCatFilter = 'All';
 let activeLocFilter = '';
+let activePreviewCatFilter = 'All';
+let activePreviewLocFilter = '';
 
 const PHOTO_TARGET_BYTES = 200000;
 function compressImage(file, targetBytes) {
@@ -676,11 +725,52 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('whoName').textContent = user.displayName || user.email;
   boot();
+  checkChangelog();
+});
+
+// ---- What's new / changelog ----
+// Shows on any sign-in where the current major version hasn't been
+// recorded as seen yet - including a brand new user's very first login,
+// deliberately: a one-time "here's what to keep an eye on" is a reasonable
+// welcome, and it never repeats once recorded. Only fires again on a
+// genuine future major bump - never on minor/decimal releases.
+const CHANGELOG_MAJOR = 15;
+const CHANGELOG_ITEMS = [
+  "You can now edit the checklist result itself, not just wording — plus replace a photo, with a clear warning before it overwrites the current one.",
+  "Any edit that changes the checklist now leaves a visible \"Edited\" marker with who and when, right on the item.",
+  "The site picker is back as a real dropdown at the top of every tab, rather than only selectable from the Sites list.",
+  "Fixed a real bug where switching sites while a slower request was still loading could leave you looking at - or editing - the wrong site's data.",
+  "Limitations and Report Preview are now a proper multi-column layout instead of one long column, and Limitations collapses by default with a Show/Hide button.",
+  "Report Preview now has the same search, category, location, Pass/Fail, sort, and overdue/limitation filters as the Site Register - plus a new QSed filter, so a big site doesn't just dump everything in one list.",
+  "New: export a site's records to CSV or a full JSON backup, from the Sites list.",
+  "This \"what's new\" message is itself new — you'll see one again whenever a significant update ships."
+];
+async function checkChangelog() {
+  if (!currentUser) return;
+  try {
+    const prefRef = doc(db, 'userPrefs', currentUser.email);
+    const prefSnap = await getDoc(prefRef);
+    const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorReportMajorSeen : undefined;
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
+      document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
+      document.getElementById('changelogModal').style.display = 'flex';
+    }
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      await setDoc(prefRef, { isolatorReportMajorSeen: CHANGELOG_MAJOR }, { merge: true });
+    }
+  } catch (e) {
+    console.error('Changelog check failed:', e);
+  }
+}
+document.getElementById('changelogCloseBtn').addEventListener('click', () => {
+  document.getElementById('changelogModal').style.display = 'none';
 });
 
 function boot() {
   loadSites().then(() => applyDeepLink());
   buildCatPills();
+  buildPreviewCatPills();
   renderSitesList();
   renderStaffList();
   suggestNextSiteRef();
@@ -993,6 +1083,7 @@ async function loadSiteData() {
     renderPending();
     renderLimitedList();
     renderStatsBar();
+    buildPreviewLocFilterOptions();
     renderPreview();
     buildLocFilterOptions();
     if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
@@ -1081,20 +1172,63 @@ document.getElementById('selectAllBox').addEventListener('change', (e) => {
 function renderLimitedList() {
   const list = document.getElementById('limitedList');
   const groups = getReportGroups().filter(g => isLimitedRecord(g.latest));
+  document.getElementById('limitedCount').textContent = groups.length ? `(${groups.length})` : '';
   if (groups.length === 0) { list.innerHTML = '<div class="empty-note">Nothing limited on this site right now.</div>'; return; }
   groups.sort((a, b) => a.eq.localeCompare(b.eq));
   list.innerHTML = groups.map(g => {
     const latest = g.latest;
     return `
-      <div class="pending-item">
-        <div class="cat">${latest.category || 'Uncategorised'}</div>
-        <div class="eq">${g.eq}</div>
-        <div class="meta">${latest.limitationReason || 'No reason recorded'}</div>
-        <div class="meta">Agreed with: ${latest.limitationAgreedWith || '—'} · ${latest.date || '—'}</div>
+      <div class="pending-item" style="padding:9px 12px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <div>
+            <span class="cat" style="margin-right:8px;">${latest.category || 'Uncategorised'}</span>
+            <span class="eq">${g.eq}</span>
+          </div>
+          <div class="meta" style="margin:0;white-space:nowrap;">${latest.limitationAgreedWith || '—'} · ${latest.date || '—'}</div>
+        </div>
+        <div class="meta" style="margin-top:2px;">${latest.limitationReason || 'No reason recorded'}</div>
       </div>
     `;
   }).join('');
 }
+
+document.getElementById('limitedToggle').addEventListener('click', () => {
+  const list = document.getElementById('limitedList');
+  const btn = document.getElementById('limitedToggle');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'grid';
+  btn.textContent = isOpen ? 'Show' : 'Hide';
+});
+
+function buildPreviewCatPills() {
+  const wrap = document.getElementById('previewCatPills');
+  const tabsArr = ['All', ...CATEGORY_NAMES];
+  wrap.innerHTML = tabsArr.map(t => `<button type="button" class="pill ${t === activePreviewCatFilter ? 'active' : ''}" data-cat="${t}">${t}</button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activePreviewCatFilter = btn.dataset.cat;
+      wrap.querySelectorAll('.pill').forEach(b => b.classList.toggle('active', b === btn));
+      buildPreviewLocFilterOptions();
+      renderPreview();
+    });
+  });
+}
+
+function buildPreviewLocFilterOptions() {
+  const sel = document.getElementById('previewLocFilter');
+  const groups = getReportGroups().filter(g => activePreviewCatFilter === 'All' || g.latest.category === activePreviewCatFilter);
+  const locs = Array.from(new Set(groups.map(g => locationOf(g.latest)).filter(Boolean))).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option ${l === current ? 'selected' : ''}>${l}</option>`).join('');
+  if (!locs.includes(current)) { activePreviewLocFilter = ''; sel.value = ''; }
+}
+
+document.getElementById('previewLocFilter').addEventListener('change', (e) => { activePreviewLocFilter = e.target.value; renderPreview(); });
+document.getElementById('previewPassFilter').addEventListener('change', renderPreview);
+document.getElementById('previewQsedFilter').addEventListener('change', renderPreview);
+document.getElementById('previewSortOrder').addEventListener('change', renderPreview);
+document.getElementById('previewOverdueOnly').addEventListener('change', renderPreview);
+document.getElementById('previewLimitedOnly').addEventListener('change', renderPreview);
 
 document.getElementById('previewSearch').addEventListener('input', renderPreview);
 
@@ -1103,14 +1237,40 @@ function renderPreview() {
   let groups = getReportGroups();
   if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing active to report for this site.</div>'; return; }
 
+  const today = new Date();
+  groups = groups.map(g => {
+    let overdue = false;
+    if (g.latest && g.latest.date) overdue = Math.floor((today - new Date(g.latest.date)) / 86400000) > 365;
+    return { ...g, overdue };
+  });
+
+  if (activePreviewCatFilter !== 'All') groups = groups.filter(g => g.latest.category === activePreviewCatFilter);
+  if (activePreviewLocFilter) groups = groups.filter(g => locationOf(g.latest) === activePreviewLocFilter);
+
+  const passFilter = document.getElementById('previewPassFilter').value;
+  if (passFilter) groups = groups.filter(g => passFilter === 'pass' ? overallPassOf(g.latest) : !overallPassOf(g.latest));
+
+  const qsedFilter = document.getElementById('previewQsedFilter').value;
+  if (qsedFilter === 'qsed') groups = groups.filter(g => !!g.latest.qsed);
+  if (qsedFilter === 'notqsed') groups = groups.filter(g => !g.latest.qsed);
+
+  if (document.getElementById('previewOverdueOnly').checked) groups = groups.filter(g => g.overdue);
+  if (document.getElementById('previewLimitedOnly').checked) groups = groups.filter(g => isLimitedRecord(g.latest));
+
   const searchQuery = document.getElementById('previewSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
-  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing matches that search.</div>'; return; }
+  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing matches the current filters.</div>'; return; }
 
+  const sortOrder = document.getElementById('previewSortOrder').value;
+  function withinGroupSort(a, b) {
+    if (sortOrder === 'lastTestedOldest') return (a.latest.date || '').localeCompare(b.latest.date || '');
+    if (sortOrder === 'lastTestedNewest') return (b.latest.date || '').localeCompare(a.latest.date || '');
+    return a.eq.localeCompare(b.eq);
+  }
   groups.sort((a, b) => {
     const aQ = !!a.latest.qsed, bQ = !!b.latest.qsed;
     if (aQ !== bQ) return aQ ? 1 : -1;
-    return (b.latest.date || '').localeCompare(a.latest.date || '');
+    return withinGroupSort(a, b);
   });
 
   previewList.innerHTML = groups.map(g => {
@@ -1141,7 +1301,7 @@ function renderPreview() {
               <span class="chip ${isPass ? 'chip-pass' : 'chip-fail'}">${isPass ? 'Pass' : 'Fail'}</span>
               <button type="button" class="edit-btn" data-id="${latest._id}">Edit</button>
               <button type="button" class="remove-btn" data-single-delete="${latest._id}">Delete</button>
-              <label class="qsed-check"><input type="checkbox" data-qsed-id="${latest._id}" ${isQsed ? 'checked' : ''}> QSed</label>
+              <button type="button" class="qsed-btn ${isQsed ? 'is-qsed' : ''}" data-qsed-id="${latest._id}">${isQsed ? '✓ QS\'d' : 'Mark as QS\'d'}</button>
             </div>
           </div>
         </div>
@@ -1180,7 +1340,7 @@ function renderPreview() {
     }
 
     return `
-      <div class="preview-item">
+      <div class="preview-item editing-full">
         <div class="top">
           <div><div class="cat">${latest.category || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
         </div>
@@ -1213,11 +1373,12 @@ function renderPreview() {
     `;
   }).join('');
 
-  previewList.querySelectorAll('[data-qsed-id]').forEach(cb => {
-    cb.addEventListener('change', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); cb.checked = !cb.checked; return; }
+  previewList.querySelectorAll('[data-qsed-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      const newState = !btn.classList.contains('is-qsed');
       try {
-        await updateDoc(doc(db, 'isolatorTests', cb.dataset.qsedId), { qsed: cb.checked });
+        await updateDoc(doc(db, 'isolatorTests', btn.dataset.qsedId), { qsed: newState });
         await loadSiteData();
       } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
     });
