@@ -162,13 +162,21 @@
   <button class="ms-btn" id="signOutBtn2">Sign out</button>
 </div>
 
+<div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new</p>
+    <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
+    <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
+  </div>
+</div>
+
 <div id="appRoot">
   <header>
     <a class="brand" href="index.html" style="text-decoration:none;">
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v14.4 · Management</p>
+        <p id="versionLabel">v15.1 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -281,17 +289,43 @@
         <div id="pendingList"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="limitedToggle">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
           <p class="section-label" style="margin:0;">Limitations / not fully tested <span id="limitedCount" style="color:var(--grey);font-weight:400;text-transform:none;letter-spacing:normal;"></span></p>
-          <span id="limitedChevron" style="font-size:12px;color:var(--grey);">▸</span>
+          <button type="button" id="limitedToggle" class="edit-btn">Show</button>
         </div>
         <p class="hint" style="display:block;margin:6px 0 14px;">Items agreed as limited on site — chase access before the next visit.</p>
         <div id="limitedList" style="display:none;"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
         <p class="section-label">Report preview</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Newest tests first. Tick QSed once you've checked an item — it drops to the bottom, out of the way. Test results aren't editable here, only wording.</p>
+        <p class="hint" style="display:block;margin-bottom:14px;">Tick QSed once you've checked an item. Test results aren't editable here, only wording.</p>
         <input type="text" id="previewSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <div class="pill-row" id="previewCatPills"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <select id="previewLocFilter" style="flex:1;min-width:140px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;"><option value="">All locations</option></select>
+          <select id="previewPassFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">Pass or Fail</option>
+            <option value="pass">Pass only</option>
+            <option value="fail">Fail only</option>
+          </select>
+          <select id="previewQsedFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">QSed or not</option>
+            <option value="qsed">QSed only</option>
+            <option value="notqsed">Not QSed only</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="margin-bottom:4px;font-size:12.5px;font-weight:600;display:block;">Sort by</label>
+          <select id="previewSortOrder" style="padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="equipmentId">Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
+            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-bottom:10px;"><input type="checkbox" id="selectAllBox" style="width:auto;margin:0;">Select all visible</label>
         <div id="bulkDeleteBar" style="display:none;margin-bottom:12px;">
           <button type="button" class="remove-btn" id="bulkDeleteBtn" style="width:100%;padding:9px;">Delete selected (<span id="bulkDeleteCount">0</span>)</button>
@@ -566,6 +600,8 @@ let siteMeta = {};
 let editingId = null;
 let activeCatFilter = 'All';
 let activeLocFilter = '';
+let activePreviewCatFilter = 'All';
+let activePreviewLocFilter = '';
 
 const PHOTO_TARGET_BYTES = 200000;
 function compressImage(file, targetBytes) {
@@ -688,11 +724,51 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('whoName').textContent = user.displayName || user.email;
   boot();
+  checkChangelog();
+});
+
+// ---- What's new / changelog ----
+// Shows on any sign-in where the current major version hasn't been
+// recorded as seen yet - including a brand new user's very first login,
+// deliberately: a one-time "here's what to keep an eye on" is a reasonable
+// welcome, and it never repeats once recorded. Only fires again on a
+// genuine future major bump - never on minor/decimal releases.
+const CHANGELOG_MAJOR = 15;
+const CHANGELOG_ITEMS = [
+  "You can now edit the checklist result itself, not just wording — plus replace a photo, with a clear warning before it overwrites the current one.",
+  "Any edit that changes the checklist now leaves a visible \"Edited\" marker with who and when, right on the item.",
+  "The site picker is back as a real dropdown at the top of every tab, rather than only selectable from the Sites list.",
+  "Fixed a real bug where switching sites while a slower request was still loading could leave you looking at - or editing - the wrong site's data.",
+  "Limitations and Report Preview are now a proper multi-column layout instead of one long column, and Limitations collapses by default with a Show/Hide button.",
+  "Report Preview now has the same search, category, location, Pass/Fail, sort, and overdue/limitation filters as the Site Register - plus a new QSed filter, so a big site doesn't just dump everything in one list.",
+  "New: export a site's records to CSV or a full JSON backup, from the Sites list.",
+  "This \"what's new\" message is itself new — you'll see one again whenever a significant update ships."
+];
+async function checkChangelog() {
+  if (!currentUser) return;
+  try {
+    const prefRef = doc(db, 'userPrefs', currentUser.email);
+    const prefSnap = await getDoc(prefRef);
+    const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorReportMajorSeen : undefined;
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
+      document.getElementById('changelogModal').style.display = 'flex';
+    }
+    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
+      await setDoc(prefRef, { isolatorReportMajorSeen: CHANGELOG_MAJOR }, { merge: true });
+    }
+  } catch (e) {
+    console.error('Changelog check failed:', e);
+  }
+}
+document.getElementById('changelogCloseBtn').addEventListener('click', () => {
+  document.getElementById('changelogModal').style.display = 'none';
 });
 
 function boot() {
   loadSites().then(() => applyDeepLink());
   buildCatPills();
+  buildPreviewCatPills();
   renderSitesList();
   renderStaffList();
   suggestNextSiteRef();
@@ -1005,6 +1081,7 @@ async function loadSiteData() {
     renderPending();
     renderLimitedList();
     renderStatsBar();
+    buildPreviewLocFilterOptions();
     renderPreview();
     buildLocFilterOptions();
     if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
@@ -1115,11 +1192,41 @@ function renderLimitedList() {
 
 document.getElementById('limitedToggle').addEventListener('click', () => {
   const list = document.getElementById('limitedList');
-  const chevron = document.getElementById('limitedChevron');
+  const btn = document.getElementById('limitedToggle');
   const isOpen = list.style.display !== 'none';
   list.style.display = isOpen ? 'none' : 'grid';
-  chevron.textContent = isOpen ? '▸' : '▾';
+  btn.textContent = isOpen ? 'Show' : 'Hide';
 });
+
+function buildPreviewCatPills() {
+  const wrap = document.getElementById('previewCatPills');
+  const tabsArr = ['All', ...CATEGORY_NAMES];
+  wrap.innerHTML = tabsArr.map(t => `<button type="button" class="pill ${t === activePreviewCatFilter ? 'active' : ''}" data-cat="${t}">${t}</button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activePreviewCatFilter = btn.dataset.cat;
+      wrap.querySelectorAll('.pill').forEach(b => b.classList.toggle('active', b === btn));
+      buildPreviewLocFilterOptions();
+      renderPreview();
+    });
+  });
+}
+
+function buildPreviewLocFilterOptions() {
+  const sel = document.getElementById('previewLocFilter');
+  const groups = getReportGroups().filter(g => activePreviewCatFilter === 'All' || g.latest.category === activePreviewCatFilter);
+  const locs = Array.from(new Set(groups.map(g => locationOf(g.latest)).filter(Boolean))).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option ${l === current ? 'selected' : ''}>${l}</option>`).join('');
+  if (!locs.includes(current)) { activePreviewLocFilter = ''; sel.value = ''; }
+}
+
+document.getElementById('previewLocFilter').addEventListener('change', (e) => { activePreviewLocFilter = e.target.value; renderPreview(); });
+document.getElementById('previewPassFilter').addEventListener('change', renderPreview);
+document.getElementById('previewQsedFilter').addEventListener('change', renderPreview);
+document.getElementById('previewSortOrder').addEventListener('change', renderPreview);
+document.getElementById('previewOverdueOnly').addEventListener('change', renderPreview);
+document.getElementById('previewLimitedOnly').addEventListener('change', renderPreview);
 
 document.getElementById('previewSearch').addEventListener('input', renderPreview);
 
@@ -1128,14 +1235,40 @@ function renderPreview() {
   let groups = getReportGroups();
   if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing active to report for this site.</div>'; return; }
 
+  const today = new Date();
+  groups = groups.map(g => {
+    let overdue = false;
+    if (g.latest && g.latest.date) overdue = Math.floor((today - new Date(g.latest.date)) / 86400000) > 365;
+    return { ...g, overdue };
+  });
+
+  if (activePreviewCatFilter !== 'All') groups = groups.filter(g => g.latest.category === activePreviewCatFilter);
+  if (activePreviewLocFilter) groups = groups.filter(g => locationOf(g.latest) === activePreviewLocFilter);
+
+  const passFilter = document.getElementById('previewPassFilter').value;
+  if (passFilter) groups = groups.filter(g => passFilter === 'pass' ? overallPassOf(g.latest) : !overallPassOf(g.latest));
+
+  const qsedFilter = document.getElementById('previewQsedFilter').value;
+  if (qsedFilter === 'qsed') groups = groups.filter(g => !!g.latest.qsed);
+  if (qsedFilter === 'notqsed') groups = groups.filter(g => !g.latest.qsed);
+
+  if (document.getElementById('previewOverdueOnly').checked) groups = groups.filter(g => g.overdue);
+  if (document.getElementById('previewLimitedOnly').checked) groups = groups.filter(g => isLimitedRecord(g.latest));
+
   const searchQuery = document.getElementById('previewSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
-  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing matches that search.</div>'; return; }
+  if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing matches the current filters.</div>'; return; }
 
+  const sortOrder = document.getElementById('previewSortOrder').value;
+  function withinGroupSort(a, b) {
+    if (sortOrder === 'lastTestedOldest') return (a.latest.date || '').localeCompare(b.latest.date || '');
+    if (sortOrder === 'lastTestedNewest') return (b.latest.date || '').localeCompare(a.latest.date || '');
+    return a.eq.localeCompare(b.eq);
+  }
   groups.sort((a, b) => {
     const aQ = !!a.latest.qsed, bQ = !!b.latest.qsed;
     if (aQ !== bQ) return aQ ? 1 : -1;
-    return (b.latest.date || '').localeCompare(a.latest.date || '');
+    return withinGroupSort(a, b);
   });
 
   previewList.innerHTML = groups.map(g => {
