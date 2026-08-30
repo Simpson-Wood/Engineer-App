@@ -44,6 +44,14 @@
   .postcode-bad{color:var(--fail);}
 
   .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
+  #limitedList .pending-item{margin-bottom:0;}
+  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
+  #previewList .preview-item{margin-bottom:0;}
+  #previewList .preview-item.editing-full{grid-column:1 / -1;}
+  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
+  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
+  #previewList .preview-item.editing-full{grid-column:1 / -1;}
   .site-item, .staff-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
   .site-item .name, .staff-item .name{font-weight:700;font-size:13.5px;}
   .site-item .meta, .staff-item .meta{font-size:11.5px;color:var(--grey);margin-top:2px;}
@@ -160,7 +168,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v14.2 · Management</p>
+        <p id="versionLabel">v14.4 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -273,9 +281,12 @@
         <div id="pendingList"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
-        <p class="section-label">Limitations / not fully tested</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Items agreed as limited on site — chase access before the next visit.</p>
-        <div id="limitedList"><div class="empty-note">Select a site to review.</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="limitedToggle">
+          <p class="section-label" style="margin:0;">Limitations / not fully tested <span id="limitedCount" style="color:var(--grey);font-weight:400;text-transform:none;letter-spacing:normal;"></span></p>
+          <span id="limitedChevron" style="font-size:12px;color:var(--grey);">▸</span>
+        </div>
+        <p class="hint" style="display:block;margin:6px 0 14px;">Items agreed as limited on site — chase access before the next visit.</p>
+        <div id="limitedList" style="display:none;"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
         <p class="section-label">Report preview</p>
@@ -1082,20 +1093,33 @@ document.getElementById('selectAllBox').addEventListener('change', (e) => {
 function renderLimitedList() {
   const list = document.getElementById('limitedList');
   const groups = getReportGroups().filter(g => isLimitedRecord(g.latest));
+  document.getElementById('limitedCount').textContent = groups.length ? `(${groups.length})` : '';
   if (groups.length === 0) { list.innerHTML = '<div class="empty-note">Nothing limited on this site right now.</div>'; return; }
   groups.sort((a, b) => a.eq.localeCompare(b.eq));
   list.innerHTML = groups.map(g => {
     const latest = g.latest;
     return `
-      <div class="pending-item">
-        <div class="cat">${latest.category || 'Uncategorised'}</div>
-        <div class="eq">${g.eq}</div>
-        <div class="meta">${latest.limitationReason || 'No reason recorded'}</div>
-        <div class="meta">Agreed with: ${latest.limitationAgreedWith || '—'} · ${latest.date || '—'}</div>
+      <div class="pending-item" style="padding:9px 12px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <div>
+            <span class="cat" style="margin-right:8px;">${latest.category || 'Uncategorised'}</span>
+            <span class="eq">${g.eq}</span>
+          </div>
+          <div class="meta" style="margin:0;white-space:nowrap;">${latest.limitationAgreedWith || '—'} · ${latest.date || '—'}</div>
+        </div>
+        <div class="meta" style="margin-top:2px;">${latest.limitationReason || 'No reason recorded'}</div>
       </div>
     `;
   }).join('');
 }
+
+document.getElementById('limitedToggle').addEventListener('click', () => {
+  const list = document.getElementById('limitedList');
+  const chevron = document.getElementById('limitedChevron');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'grid';
+  chevron.textContent = isOpen ? '▸' : '▾';
+});
 
 document.getElementById('previewSearch').addEventListener('input', renderPreview);
 
@@ -1181,7 +1205,7 @@ function renderPreview() {
     }
 
     return `
-      <div class="preview-item">
+      <div class="preview-item editing-full">
         <div class="top">
           <div><div class="cat">${latest.category || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
         </div>

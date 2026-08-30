@@ -32,7 +32,11 @@
   .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:14px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
   .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
 
-  main{max-width:640px;margin:0 auto;padding:16px;}
+  main{max-width:1200px;margin:0 auto;padding:16px;}
+  #logTab{max-width:640px;margin:0 auto;}
+  #regList{display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:10px;align-items:start;}
+  #regList .reg-item{margin-bottom:0;}
+  #regList .reg-item.editing-full{grid-column:1 / -1;}
   .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
   .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
   label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--ink);}
@@ -280,7 +284,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v15.2";
+const VERSION = "v15.3";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -1018,7 +1022,7 @@ function renderRegister(activeTab) {
 
     if (!latest) {
       return `
-        <div class="reg-item">
+        <div class="reg-item ${isExpanded ? 'editing-full' : ''}">
           <div class="reg-item-top">
             <div><div class="cat">${displayCat || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
             <span class="chip" style="background:#eee;color:var(--grey);">Pending review</span>
@@ -1038,7 +1042,7 @@ function renderRegister(activeTab) {
     const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
     const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
     return `
-      <div class="reg-item ${overdue ? 'overdue' : ''}">
+      <div class="reg-item ${overdue ? 'overdue' : ''} ${isExpanded ? 'editing-full' : ''}">
         <div class="reg-item-top">
           <div>
             <div class="cat">${latest.category || 'Uncategorised'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
