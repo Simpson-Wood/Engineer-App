@@ -15,12 +15,13 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v12';
+const CACHE_NAME = 'sw-engineer-apps-shell-v13';
 
 const APP_SHELL = [
   './',
   'index.html',
   'management.html',
+  'fire-toolkit.html',
   'isolator-interlock-test.html',
   'isolator-interlock-report.html',
   'sw-timesheet.html',

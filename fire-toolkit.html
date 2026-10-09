@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simpson &amp; Wood — Fire toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a; --grey:#6b6b6b;
+    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff; --amber:#8a5a00; --amber-bg:#fff4dd;
+    --green:#1e6b34; --green-bg:#e9f5ec;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
+  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  [hidden]{display:none !important;}
+  a{color:var(--red-dark);}
+
+  #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  #appRoot{display:none;}
+  header{background:var(--ink); padding:calc(12px + env(safe-area-inset-top)) 16px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; position:sticky; top:0; z-index:20;}
+  header .brand{display:flex; align-items:center; gap:10px; text-decoration:none;}
+  header img{height:28px; display:block;}
+  header h1{font-weight:700; font-size:17px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
+  header .who{text-align:right;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+
+  .tabs{display:flex; gap:4px; overflow-x:auto; background:var(--card); border-bottom:1px solid var(--line); padding:6px 8px; position:sticky; top:52px; z-index:19; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:1 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:6px 8px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; min-width:64px;}
+  .tab i{font-size:20px;}
+  .tab.active{background:#fbe9ea; color:var(--red);}
+
+  .wrap{max-width:640px; margin:0 auto; padding:14px 14px 80px;}
+  .disclaimer{background:var(--amber-bg); color:var(--amber); border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.4; margin-bottom:12px;}
+  .disclaimer button{background:none; border:none; color:var(--amber); text-decoration:underline; font-size:12.5px; padding:0; cursor:pointer;}
+  .offline{background:#e8e6e0; color:var(--grey); border-radius:8px; padding:7px 12px; font-size:12px; margin-bottom:12px;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:12px;}
+  .card h2{margin:0 0 6px; font-size:19px; font-weight:700;}
+  .card h3{margin:14px 0 6px; font-size:15px; font-weight:700; text-transform:uppercase; color:var(--grey);}
+  .sec-label{font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:18px 2px 8px;}
+  .search{width:100%; padding:11px 12px 11px 36px; font-size:15px; border:1.5px solid var(--line); border-radius:9px; font-family:'Barlow',sans-serif; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b6b6b' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") no-repeat 12px center; margin-bottom:10px;}
+
+  .list{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:12px;}
+  .item{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); text-decoration:none; color:var(--ink); cursor:pointer;}
+  .item:last-child{border-bottom:none;}
+  .item:active{background:#f7f6f3;}
+  .item .code{font-family:'Barlow Condensed',sans-serif; font-weight:700; color:var(--red); min-width:38px;}
+  .item .t{flex:1; font-size:14.5px; font-weight:600;}
+  .item .s{display:block; font-size:12px; color:var(--grey); font-weight:400; margin-top:1px;}
+  .item > i{color:#b5b3ad;}
+
+  .chip{display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:2px 7px; border-radius:5px; background:#eeece7; color:var(--grey); vertical-align:middle;}
+  .chip.ok{background:var(--green-bg); color:var(--green);}
+  .chip.warn{background:var(--amber-bg); color:var(--amber);}
+  .chip.red{background:#fbe9ea; color:var(--red-dark);}
+
+  .back{display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--grey); font-size:13.5px; font-weight:600; padding:4px 0 10px; cursor:pointer;}
+  ol.steps{margin:6px 0 4px; padding:0; list-style:none; counter-reset:s;}
+  ol.steps li{counter-increment:s; position:relative; padding:9px 0 9px 36px; border-bottom:1px solid var(--line); font-size:14.5px; line-height:1.45;}
+  ol.steps li:last-child{border-bottom:none;}
+  ol.steps li::before{content:counter(s); position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:var(--ink); color:#fff; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center;}
+  .ref{display:inline-block; background:#fbe9ea; color:var(--red-dark); font-weight:700; font-size:12.5px; padding:0 5px; border-radius:4px; text-decoration:none; font-family:'Barlow Condensed',sans-serif;}
+
+  .md{font-size:14px; line-height:1.5;}
+  .md p{margin:0 0 10px;}
+  .md ul, .md ol{margin:0 0 10px; padding-left:20px;}
+  .md li{margin-bottom:4px;}
+  .md pre{background:#f4f3ef; border-radius:7px; padding:10px; overflow-x:auto; font-size:13px;}
+  .md code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:12.5px;}
+  .md pre code{background:none; padding:0;}
+  .tbl{overflow-x:auto; margin:0 0 12px; -webkit-overflow-scrolling:touch;}
+  .tbl table{border-collapse:collapse; width:100%; font-size:12.5px; min-width:420px;}
+  .tbl th{background:#f4f3ef; text-align:left; padding:7px 8px; font-weight:700; border-bottom:1px solid var(--line);}
+  .tbl td{padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+
+  details.about{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:12px;}
+  details.about summary{cursor:pointer; font-weight:600; font-size:13.5px; color:var(--grey);}
+  details.about[open] summary{margin-bottom:8px;}
+
+  .escalate{background:var(--ink); color:#fff; border-radius:10px; padding:14px 16px; margin-bottom:12px;}
+  .escalate h3{margin:0 0 6px; color:#fff; font-size:16px; text-transform:uppercase;}
+  .escalate p{margin:0 0 10px; font-size:13px; color:#cfcfcf;}
+  .btn{display:inline-flex; align-items:center; gap:6px; background:var(--red); color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:700; font-size:14px; text-decoration:none; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .btn.ghost{background:none; border:1.5px solid currentColor; color:inherit;}
+  .btn.dark{background:var(--ink);}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .codeval{font-family:ui-monospace,Consolas,monospace; font-size:17px; font-weight:700; letter-spacing:.03em;}
+  .pc{padding:12px 14px; border-bottom:1px solid var(--line);}
+  .pc:last-child{border-bottom:none;}
+  .pc .top{display:flex; justify-content:space-between; gap:10px; align-items:baseline;}
+  .pc .man{font-weight:700; font-size:14.5px;}
+  .pc .meta{font-size:12px; color:var(--grey); margin-top:3px;}
+
+  .contact{padding:12px 14px; border-bottom:1px solid var(--line);}
+  .contact:last-child{border-bottom:none;}
+  .contact .name{font-weight:700; font-size:15px;}
+  .contact .purpose{font-size:12.5px; color:var(--grey); margin:2px 0 8px;}
+  .contact .ev{font-size:11.5px; color:var(--grey); margin-top:6px;}
+
+  .suggest{display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--grey); font-size:12px; text-decoration:underline; padding:6px 0 0; cursor:pointer;}
+
+  .subtabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .subtab{background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink);}
+  .subtab.active{border-color:var(--red); color:var(--red); background:#fbe9ea;}
+  .f{display:flex; flex-direction:column; margin-bottom:10px;}
+  .f label{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); margin-bottom:4px;}
+  .f input, .f select, .f textarea{padding:10px; font-size:15px; border:1.5px solid var(--line); border-radius:8px; font-family:'Barlow',sans-serif; background:#fff; width:100%;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .unit{display:flex; gap:6px;}
+  .unit select{width:auto; flex:0 0 74px;}
+  .result{background:var(--bg); border-radius:9px; padding:12px 14px; margin-top:6px; font-size:14px; line-height:1.55;}
+  .result .big{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700;}
+  .result.err{background:#fbe9ea; color:var(--red-dark);}
+  .calc-line{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #d8d6cf; padding:4px 0;}
+  .calc-line:last-child{border-bottom:none;}
+
+  .switches{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;}
+  .sw{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:var(--grey);}
+  .sw button{width:34px; height:56px; border-radius:6px; border:1.5px solid #bdbbb4; background:#f4f3ef; position:relative; cursor:pointer;}
+  .sw button::after{content:''; position:absolute; left:4px; right:4px; height:22px; border-radius:4px; background:#bdbbb4; bottom:4px; transition:.12s;}
+  .sw button.on{border-color:var(--red);}
+  .sw button.on::after{background:var(--red); bottom:28px;}
+
+  .bands{display:flex; height:46px; border-radius:23px; overflow:hidden; border:1.5px solid #bdbbb4; margin:10px 0; background:#e9dcc3;}
+  .bands span{flex:1;}
+  .bands span.band{flex:0 0 18px; margin:0 6px;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center; z-index:50;}
+  .modal{background:#fff; width:100%; max-width:560px; border-radius:14px 14px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom));}
+  .modal h3{margin:0 0 4px; font-size:18px;}
+  .modal p{margin:0 0 10px; font-size:13px; color:var(--grey);}
+  .empty{color:var(--grey); font-size:13.5px; text-align:center; padding:24px 10px;}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60; max-width:90%; text-align:center;}
+  .toast.show{opacity:1;}
+  @media (min-width:700px){ .modal-bg{align-items:center;} .modal{border-radius:14px;} }
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Fire toolkit</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
+      <div>
+        <h1>Fire toolkit</h1>
+        <p id="versionLabel">v1.0</p>
+      </div>
+    </a>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main class="wrap">
+    <div class="disclaimer" id="disclaimer"></div>
+    <div class="offline" id="offlineNote" hidden>Offline — showing the copy saved on this device.</div>
+    <div id="view"><div class="empty">Loading the toolkit…</div></div>
+  </main>
+</div>
+
+<div id="modalHost"></div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// All content comes from the fireToolkit collection (loaded via the import
+// panel in management.html from Docs/fire-toolkit-content.md). Nothing
+// private is in this file — it's on the public site; the data is behind
+// sign-in in Firestore. Standards §2 / §14.3.
+
+const TABS = [
+  { id: 'troubleshoot', label: 'Troubleshoot', icon: 'ti-route' },
+  { id: 'faults',       label: 'Fault codes',  icon: 'ti-alert-triangle' },
+  { id: 'codes',        label: 'Panel codes',  icon: 'ti-key' },
+  { id: 'calc',         label: 'Calculators',  icon: 'ti-calculator' },
+  { id: 'standards',    label: 'Standards',    icon: 'ti-book' },
+  { id: 'contacts',     label: 'Contacts',     icon: 'ti-phone' }
+];
+
+let DATA = { byId: new Map(), byKind: {} };
+let currentUser = null;
+
+// ---------- helpers -------------------------------------------------------
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+const kind = k => DATA.byKind[k] || [];
+const get = id => DATA.byId.get(id);
+
+// FT01 / T3 references become links to that entry (only if it exists).
+function linkRefs(html) {
+  return html.replace(/\b(FT\d{2}|T\d{1,2})\b/g, (m) => {
+    const e = get(m);
+    if (!e) return m;
+    const route = e.kind === 'faultType' ? 'faults/' + m : 'troubleshoot/' + m;
+    return '<a class="ref" href="#' + route + '">' + m + '</a>';
+  });
+}
+
+// Inline markdown: **bold**, *italic*, `code`, [text](https://…), FT/T refs.
+function inline(raw) {
+  const codes = [];
+  let s = String(raw).replace(/\\\*/g, '\u0001');
+  s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return '\u0002' + (codes.length - 1) + '\u0002'; });
+  const links = [];
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_, t, u) => { links.push([t, u]); return '\u0003' + (links.length - 1) + '\u0003'; });
+  s = esc(s);
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>');
+  s = linkRefs(s);
+  s = s.replace(/\u0003(\d+)\u0003/g, (_, i) => '<a href="' + esc(links[i][1]) + '" target="_blank" rel="noopener">' + esc(links[i][0]) + '</a>');
+  s = s.replace(/\u0002(\d+)\u0002/g, (_, i) => '<code>' + esc(codes[i]) + '</code>');
+  return s.replace(/\u0001/g, '*');
+}
+
+// Block markdown: paragraphs, lists, tables, ``` fences. Enough for the
+// toolkit document — not a general-purpose renderer.
+function md(text) {
+  if (!text) return '';
+  const lines = String(text).split('\n');
+  let out = '', i = 0;
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (!ln.trim()) { i++; continue; }
+    if (ln.startsWith('```')) {
+      const buf = []; i++;
+      while (i < lines.length && !lines[i].startsWith('```')) buf.push(lines[i++]);
+      i++; out += '<pre><code>' + esc(buf.join('\n')) + '</code></pre>'; continue;
+    }
+    if (ln.startsWith('|')) {
+      const rows = [];
+      while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
+      const cells = r => r.trim().split(/(?<!\\)\|/).slice(1, -1).map(c => c.trim());
+      const body = rows.filter(r => !/^\|[\s\-|]+\|$/.test(r.trim()));
+      const [head, ...rest] = body;
+      out += '<div class="tbl"><table><thead><tr>' + cells(head).map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>' +
+        rest.map(r => '<tr>' + cells(r).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+      continue;
+    }
+    if (/^\d+\.\s/.test(ln)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) items.push(lines[i++].replace(/^\d+\.\s+/, ''));
+      out += '<ol>' + items.map(t => '<li>' + inline(t) + '</li>').join('') + '</ol>'; continue;
+    }
+    if (/^- /.test(ln)) {
+      const items = [];
+      while (i < lines.length && /^- /.test(lines[i])) items.push(lines[i++].slice(2));
+      out += '<ul>' + items.map(t => '<li>' + inline(t) + '</li>').join('') + '</ul>'; continue;
+    }
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !/^(```|\||\d+\.\s|- )/.test(lines[i])) buf.push(lines[i++]);
+    out += '<p>' + inline(buf.join(' ')) + '</p>';
+  }
+  return '<div class="md">' + out + '</div>';
+}
+
+function steps(list) {
+  return '<ol class="steps">' + (list || []).map(s => '<li>' + inline(s) + '</li>').join('') + '</ol>';
+}
+function evidenceChip(text) {
+  if (!text) return '';
+  const t = text.toLowerCase();
+  const cls = t.startsWith('unverified') ? 'warn' : (t.includes('manual supported') || t.includes('bs checked') || t.includes('published') || t.includes('s&w') ? 'ok' : '');
+  return '<span class="chip ' + cls + '">' + esc(text.split(/[—;]/)[0].trim()) + '</span>';
+}
+function about(id, label) {
+  const e = get(id);
+  if (!e) return '';
+  return '<details class="about"><summary>' + esc(label || e.title) + '</summary>' + md(e.body) + '</details>';
+}
+function suggestBtn(e) {
+  return '<button class="suggest" data-suggest="' + esc(e.id) + '"><i class="ti ti-message-report"></i>Suggest a correction</button>';
+}
+function escalate() {
+  const tfs = kind('contact').find(c => c.internal);
+  return '<div class="escalate"><h3>Still stuck?</h3><p>Check the panel manual for the exact model, then escalate rather than guess.</p><div class="btn-row">' +
+    (tfs ? '<a class="btn" href="tel:' + esc(tfs.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>Call ' + esc(tfs.title.split('—').pop().trim()) + ' (TFS)</a>' : '') +
+    '<a class="btn ghost" href="#contacts"><i class="ti ti-building-factory"></i>Manufacturer support</a></div></div>';
+}
+function backBtn(route, label) {
+  return '<button class="back" data-go="' + route + '"><i class="ti ti-chevron-left"></i>' + esc(label) + '</button>';
+}
+function listItem(route, code, title, sub) {
+  return '<a class="item" href="#' + route + '">' + (code ? '<span class="code">' + esc(code) + '</span>' : '') +
+    '<span class="t">' + esc(title) + (sub ? '<span class="s">' + sub + '</span>' : '') + '</span><i class="ti ti-chevron-right"></i></a>';
+}
+function matches(e, q) {
+  if (!q) return true;
+  return JSON.stringify(e).toLowerCase().includes(q.toLowerCase());
+}
+
+// ---------- views ---------------------------------------------------------
+const VIEWS = {
+  troubleshoot(id) {
+    if (id) {
+      const t = get(id);
+      if (!t || t.kind !== 'troubleshootingTree') return notFound('troubleshoot');
+      return backBtn('troubleshoot', 'All troubleshooting') +
+        '<div class="card"><h2><span class="code" style="color:var(--red)">' + esc(t.code) + '</span> ' + esc(t.title) + '</h2>' +
+        '<p style="font-size:12.5px;color:var(--grey);margin:0 0 6px;">Apply the <a href="#troubleshoot/procedure-common">common procedure</a> first.</p>' +
+        steps(t.steps) + md(t.body) +
+        (t.links && t.links.length ? '<h3>Fault guides used here</h3><div class="btn-row">' + t.links.map(l => get(l) ? '<a class="ref" href="#' + (get(l).kind === 'faultType' ? 'faults/' : 'troubleshoot/') + l + '">' + l + ' · ' + esc(get(l).title) + '</a>' : '').join(' ') + '</div>' : '') +
+        suggestBtn(t) + '</div>' + escalate();
+    }
+    const p = get('procedure-common');
+    return '<div class="sec-label">What\'s happening?</div><div class="list">' +
+      kind('troubleshootingTree').map(t => listItem('troubleshoot/' + t.id, t.code, t.title)).join('') + '</div>' +
+      (p ? '<div class="list">' + listItem('troubleshoot/procedure-common', '', p.title, 'Before and after every fault — read this first') + '</div>' : '') +
+      about('notice-troubleshooting') + escalate();
+  },
+
+  procedure() {
+    const p = get('procedure-common');
+    if (!p) return notFound('troubleshoot');
+    return backBtn('troubleshoot', 'Troubleshoot') + '<div class="card"><h2>' + esc(p.title) + '</h2>' + steps(p.steps) + md(p.body) + suggestBtn(p) + '</div>';
+  },
+
+  faults(id) {
+    if (id) {
+      const f = get(id);
+      if (!f) return notFound('faults');
+      if (f.kind === 'manufacturerMapping') {
+        return backBtn('faults', 'All fault codes') + '<div class="card"><h2>' + esc(f.title) + '</h2>' +
+          (f.verified ? '' : '<p><span class="chip warn">Unverified — reference only</span></p>') + md(f.body) + suggestBtn(f) + '</div>' + escalate();
+      }
+      if (f.kind !== 'faultType') return notFound('faults');
+      return backBtn('faults', 'All fault codes') + '<div class="card"><h2><span style="color:var(--red)">' + esc(f.code) + '</span> ' + esc(f.title) + '</h2>' +
+        '<p style="margin:0 0 4px;">' + evidenceChip(f.evidence) + '</p>' +
+        '<p style="font-size:12.5px;color:var(--grey);margin:4px 0;">Apply the <a href="#troubleshoot/procedure-common">common procedure</a> before and after.</p>' +
+        steps(f.steps) + md(f.body) + suggestBtn(f) + '</div>' + escalate();
+    }
+    return '<input class="search" id="q" placeholder="Search fault codes, messages, manufacturers…" autocomplete="off">' +
+      '<div id="results"></div>' + about('notice-fault-types') + about('notice-manufacturer-mappings');
+  },
+  faultsResults(q) {
+    const fts = kind('faultType').filter(e => matches(e, q));
+    const maps = kind('manufacturerMapping').filter(e => matches(e, q));
+    if (!fts.length && !maps.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
+    return (fts.length ? '<div class="sec-label">Fault types</div><div class="list">' + fts.map(f => listItem('faults/' + f.id, f.code, f.title)).join('') + '</div>' : '') +
+      (maps.length ? '<div class="sec-label">By manufacturer</div><div class="list">' + maps.map(m => listItem('faults/' + m.id, '', m.title, m.verified ? '' : 'Unverified — reference only')).join('') + '</div>' : '');
+  },
+
+  codes() {
+    const n = get('notice-panel-codes');
+    const appNotice = n ? (n.body.match(/\*\*App notice:\*\*\s*“?([^”\n]+)”?/) || [])[1] : '';
+    return '<div class="disclaimer" style="background:#fbe9ea;color:var(--red-dark);">' + esc(appNotice || 'Use only for authorised work.') + '</div>' +
+      '<p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;"><b>*</b> = unverified historical code or key. Not confirmed as a factory default. <span class="chip ok">Manual supported</span> = checked against the named manual.</p>' +
+      '<input class="search" id="q" placeholder="Search manufacturer, panel or code…" autocomplete="off">' +
+      '<div id="results"></div>' + about('notice-panel-codes', 'About these codes');
+  },
+  codesResults(q) {
+    const rows = kind('panelCode').filter(e => matches(e, q));
+    if (!rows.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
+    return '<div class="list">' + rows.map(c =>
+      '<div class="pc"><div class="top"><div><div class="man">' + esc(c.manufacturer) + (c.panel ? ' <span style="font-weight:500;color:var(--grey)">' + esc(c.panel) + '</span>' : '') + '</div>' +
+      (c.remarks ? '<div class="meta">' + esc(c.remarks) + '</div>' : '') + '</div>' +
+      '<div class="codeval">' + esc(c.code) + (c.verified ? '' : ' <span style="color:var(--amber)">*</span>') + '</div></div>' +
+      '<div class="meta">' + (c.verified ? '<span class="chip ok">Manual supported</span> ' : '') + (c.keyNo ? 'Key: <b>' + esc(c.keyNo) + '</b>' + (c.verified ? '' : ' *') + ' · ' : '') + esc(c.evidence) + '</div>' +
+      suggestBtn(c) + '</div>').join('') + '</div>';
+  },
+
+  contacts() {
+    return '<input class="search" id="q" placeholder="Search manufacturer or supplier…" autocomplete="off"><div id="results"></div>' + about('notice-contacts');
+  },
+  contactsResults(q) {
+    const all = kind('contact').filter(e => matches(e, q));
+    const internal = all.filter(c => c.internal), rest = all.filter(c => !c.internal);
+    const card = c => '<div class="contact"><div class="name">' + esc(c.title) + '</div><div class="purpose">' + esc(c.purpose) + '</div>' +
+      '<div class="btn-row"><a class="btn dark" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>' + esc(c.phone) + '</a>' +
+      (c.websites || []).map(w => '<a class="btn ghost" style="color:var(--ink)" href="' + esc(w.url) + '" target="_blank" rel="noopener"><i class="ti ti-world"></i>' + esc(w.label) + '</a>').join('') + '</div>' +
+      '<div class="ev">' + (c.verified ? '' : '<span class="chip warn">Unverified</span> ') + esc(c.evidence) + '</div>' + suggestBtn(c) + '</div>';
+    if (!all.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
+    return (internal.length ? '<div class="sec-label">S&amp;W escalation</div><div class="list">' + internal.map(card).join('') + '</div>' : '') +
+      '<div class="sec-label">Manufacturers &amp; suppliers</div><div class="list">' + rest.map(card).join('') + '</div>';
+  },
+
+  standards(id) {
+    if (id) {
+      const s = get(id);
+      if (!s || s.kind !== 'standardsSection') return notFound('standards');
+      return backBtn('standards', 'All standards') + '<div class="card"><h2>' + esc(s.title) + '</h2>' +
+        (s.clauses ? '<p style="margin:0 0 8px;"><span class="chip">' + esc(s.clauses) + '</span></p>' : '') + md(s.body) + suggestBtn(s) + '</div>';
+    }
+    return '<input class="search" id="q" placeholder="Search standards (e.g. sounder, void, battery)…" autocomplete="off"><div id="results"></div>' +
+      about('notice-standards', 'About the BS 5839-1:2025 quick reference') + about('notice-sources');
+  },
+  standardsResults(q) {
+    const all = kind('standardsSection').filter(e => matches(e, q));
+    if (!all.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
+    const groups = [...new Set(all.map(s => s.group))];
+    return groups.map(g => '<div class="sec-label">' + esc(g) + '</div><div class="list">' +
+      all.filter(s => s.group === g).map(s => listItem('standards/' + s.id, '', s.title, s.clauses ? esc(s.clauses) : '')).join('') + '</div>').join('');
+  },
+
+  calc(id) {
+    const subs = [['battery', 'Battery'], ['dil', 'DIL address'], ['resistor', 'Resistor / EOL'], ['dater', 'Detector date']];
+    const cur = id || 'battery';
+    return '<div class="subtabs">' + subs.map(([k, l]) => '<a class="subtab' + (k === cur ? ' active' : '') + '" href="#calc/' + k + '" style="text-decoration:none">' + l + '</a>').join('') + '</div>' +
+      '<div id="calcBody">' + (CALCS[cur] ? CALCS[cur].html() : notFound('calc')) + '</div>';
+  }
+};
+
+function notFound(back) {
+  return backBtn(back, 'Back') + '<div class="empty">That entry isn\'t in the toolkit data.</div>';
+}
+
+// ---------- calculators ---------------------------------------------------
+function num(v) { const n = Number(String(v).trim()); return String(v).trim() === '' ? NaN : n; }
+function fmt(n, dp = 3) { return Number(n.toFixed(dp)).toLocaleString('en-GB', { maximumFractionDigits: dp }); }
+
+const CALCS = {
+  battery: {
+    html() {
+      const c = get('calc-battery') || {};
+      const profiles = c.standbyProfiles || [];
+      return '<div class="card"><h2>Battery calculator</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">BS 5839-1:2025 Annex E.1 (VRLA): <b>Cmin = 1.25 × (T1 × I1 + D × I2 × T2)</b></p>' +
+        '<div class="row2"><div class="f"><label>Standby current I1</label><div class="unit"><input id="bI1" inputmode="decimal" placeholder="e.g. 360"><select id="bI1u"><option value="mA">mA</option><option value="A">A</option></select></div></div>' +
+        '<div class="f"><label>Alarm current I2 (total)</label><div class="unit"><input id="bI2" inputmode="decimal" placeholder="e.g. 750"><select id="bI2u"><option value="mA">mA</option><option value="A">A</option></select></div></div></div>' +
+        '<div class="f"><label>Standby period T1</label><select id="bProfile">' +
+          profiles.map((p, i) => '<option value="' + i + '">' + esc(p.profile) + ' — ' + esc(p.standby) + '</option>').join('') +
+          '<option value="custom">Other / project requirement (enter hours)</option></select></div>' +
+        '<div class="row2"><div class="f"><label>T1 hours</label><input id="bT1" inputmode="decimal"></div>' +
+        '<div class="f"><label>Alarm period T2 (hours)</label><input id="bT2" inputmode="decimal" value="0.5"></div></div>' +
+        '<div class="f"><label>Derating factor D</label><select id="bDmode"><option value="default">1.75 (labelled default)</option><option value="auto">Automatic (Annex E.1.2 test)</option><option value="manual">Battery manufacturer\'s value</option></select></div>' +
+        '<div class="f" id="bDmanualWrap" hidden><label>Manufacturer derating factor</label><input id="bDmanual" inputmode="decimal"></div>' +
+        '<div id="bOut"></div>' + '</div>' + about('calc-battery', 'Full reference and rules for this calculator');
+    },
+    wire() {
+      const $ = id => document.getElementById(id);
+      const c = get('calc-battery') || {};
+      const profiles = c.standbyProfiles || [];
+      const setT1 = () => {
+        const v = $('bProfile').value;
+        if (v === 'custom') { $('bT1').readOnly = false; return; }
+        const p = profiles[+v]; const m = (p.standby || '').match(/^(\d+(?:\.\d+)?)\s*h$/);
+        if (m) { $('bT1').value = m[1]; $('bT1').readOnly = true; }
+        else { $('bT1').value = ''; $('bT1').readOnly = false; $('bT1').placeholder = 'Work out from: ' + p.standby; }
+      };
+      $('bProfile').addEventListener('change', () => { setT1(); calc(); });
+      $('bDmode').addEventListener('change', () => { $('bDmanualWrap').hidden = $('bDmode').value !== 'manual'; calc(); });
+      ['bI1', 'bI1u', 'bI2', 'bI2u', 'bT1', 'bT2', 'bDmanual'].forEach(id => $(id).addEventListener('input', calc));
+      setT1();
+      function calc() {
+        const out = $('bOut');
+        const toA = (v, u) => u === 'mA' ? v / 1000 : v;
+        const I1 = toA(num($('bI1').value), $('bI1u').value), I2 = toA(num($('bI2').value), $('bI2u').value);
+        const T1 = num($('bT1').value), T2 = num($('bT2').value);
+        const errs = [];
+        if (!isFinite(I1) || I1 < 0) errs.push('Enter the standby current I1 (zero or more).');
+        if (!isFinite(I2) || I2 < 0) errs.push('Enter the total alarm current I2 (zero or more).');
+        if (!isFinite(T1) || T1 <= 0) errs.push('Enter the standby period T1 in hours.');
+        if (!isFinite(T2) || T2 <= 0) errs.push('Enter the alarm period T2 in hours.');
+        let D, dNote;
+        const mode = $('bDmode').value;
+        if (mode === 'manual') { D = num($('bDmanual').value); if (!isFinite(D) || D <= 0) errs.push('Enter the manufacturer derating factor.'); dNote = 'battery manufacturer\'s value'; }
+        if (errs.length) { out.innerHTML = ($('bI1').value || $('bI2').value) ? '<div class="result err">' + errs.map(esc).join('<br>') + '</div>' : ''; return; }
+        if (mode === 'default') { D = c.defaultDerating || 1.75; dNote = 'labelled default — not universally required'; }
+        if (mode === 'auto') {
+          const c1 = 1.25 * (T1 * I1 + 1 * I2 * T2);
+          if (c1 / 20 >= I2) { D = 1; dNote = 'D = 1 permitted: Cmin/20 (' + fmt(c1 / 20) + ' A) ≥ I2'; }
+          else { D = 1.75; dNote = 'Cmin/20 < I2, so D = 1 not permitted; 1.75 used (use the manufacturer\'s factor if you have it)'; }
+        }
+        const sAh = T1 * I1, aAh = D * I2 * T2, sub = sAh + aAh, cmin = 1.25 * sub;
+        const caps = (c.capacitiesAh || []).slice().sort((a, b) => a - b);
+        const next = caps.find(x => x >= cmin);
+        const warns = [];
+        if (I1 === 0 || I2 === 0) warns.push('A zero current is unusual — check the load figures.');
+        if (T2 < (c.alarmMinHours || 0.5)) warns.push('Alarm period is below the 30 minutes all standby profiles require.');
+        (c.productLimits || []).forEach(p => { if (next && next > p.maxAh) warns.push(p.product + ' takes up to ' + p.maxAh + ' Ah [' + p.source + '] — check the panel can house and charge this.'); });
+        out.innerHTML = '<div class="result">' +
+          '<div class="calc-line"><span>Standby Ah (T1 × I1)</span><b>' + fmt(sAh, 4) + '</b></div>' +
+          '<div class="calc-line"><span>Alarm Ah (D × I2 × T2)</span><b>' + fmt(aAh, 4) + '</b></div>' +
+          '<div class="calc-line"><span>Subtotal</span><b>' + fmt(sub, 4) + '</b></div>' +
+          '<div class="calc-line"><span>Derating D used</span><b>' + fmt(D, 3) + '</b></div>' +
+          '<div style="font-size:12px;color:var(--grey);margin:2px 0 8px;">' + esc(dNote) + '</div>' +
+          'Minimum capacity <span class="big">' + fmt(cmin, 4) + ' Ah</span><br>' +
+          (next ? 'Next reference size: <b>' + next + ' Ah</b> — only if an <b>approved</b>, compatible battery of that size suits this panel, enclosure and charger.'
+                : '<b>Larger than every reference size.</b> Check the design / split supplies.') +
+          (warns.length ? '<div style="margin-top:8px;color:var(--amber)">' + warns.map(esc).join('<br>') + '</div>' : '') +
+          '<div style="margin-top:8px;font-size:12px;color:var(--grey)">Two 12 V batteries in series give 24 V at the <i>same</i> Ah. Check charger recovery (24.3.4) and calculate each separately backed-up PSU.</div></div>';
+      }
+    }
+  },
+
+  dil: {
+    html() {
+      return '<div class="card"><h2>DIL address — generic binary</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">Generic binary only: switch 1 = 1, switch 2 = 2, switch 3 = 4… <b>ON = 1</b>. Device profiles aren\'t enabled — check the device\'s own addressing instructions, which can exclude 0, reserve values or use switch 8 for something else.</p>' +
+        '<div class="row2"><div class="f"><label>Switches</label><select id="dBits"><option value="7">7-bit (0–127)</option><option value="8">8-bit (0–255)</option></select></div>' +
+        '<div class="f"><label>Address</label><input id="dAddr" inputmode="numeric" placeholder="e.g. 37"></div></div>' +
+        '<div class="switches" id="dSw"></div><div id="dOut"></div></div>' +
+        about('calc-dil', 'Apollo XPERT, Hochiki and other device profiles');
+    },
+    wire() {
+      const $ = id => document.getElementById(id);
+      let bits = 7, val = 0;
+      const draw = () => {
+        $('dSw').innerHTML = Array.from({ length: bits }, (_, i) =>
+          '<div class="sw"><span>' + (1 << i) + '</span><button data-bit="' + i + '" class="' + (val >> i & 1 ? 'on' : '') + '" aria-label="Switch ' + (i + 1) + '"></button><b>' + (i + 1) + '</b><span>' + (val >> i & 1 ? 'ON' : 'off') + '</span></div>').join('');
+        $('dSw').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { val ^= (1 << +b.dataset.bit); $('dAddr').value = val; draw(); show(); }));
+      };
+      const show = () => {
+        const on = Array.from({ length: bits }, (_, i) => val >> i & 1 ? i + 1 : null).filter(Boolean);
+        $('dOut').innerHTML = '<div class="result">Address <span class="big">' + val + '</span> · generic ' + bits + '-bit binary<br>Switches ON: <b>' + (on.length ? on.join(', ') : 'none') + '</b>' +
+          (val === 0 ? '<br><span style="color:var(--amber)">Many devices don\'t accept address 0 — check the device.</span>' : '') + '</div>';
+      };
+      $('dBits').addEventListener('change', () => { bits = +$('dBits').value; val = Math.min(val, (1 << bits) - 1); $('dAddr').value = val || ''; draw(); show(); });
+      $('dAddr').addEventListener('input', () => {
+        const s = $('dAddr').value.trim();
+        if (s === '') { val = 0; draw(); $('dOut').innerHTML = ''; return; }
+        const n = Number(s), max = (1 << bits) - 1;
+        if (!/^\d+$/.test(s) || n > max) { $('dOut').innerHTML = '<div class="result err">Enter a whole number from 0 to ' + max + ' for a ' + bits + '-bit setting.</div>'; return; }
+        val = n; draw(); show();
+      });
+      draw();
+    }
+  },
+
+  resistor: {
+    COLOURS: [['Black', '#111'], ['Brown', '#7a4a1e'], ['Red', '#d0222a'], ['Orange', '#ef7d17'], ['Yellow', '#f2d01a'], ['Green', '#2e8b3e'], ['Blue', '#2459c9'], ['Violet', '#7b3fb5'], ['Grey', '#8a8a8a'], ['White', '#f4f4f4']],
+    MULT: [['Silver', '#c0c0c0', -2], ['Gold', '#c9a227', -1], ['Black', '#111', 0], ['Brown', '#7a4a1e', 1], ['Red', '#d0222a', 2], ['Orange', '#ef7d17', 3], ['Yellow', '#f2d01a', 4], ['Green', '#2e8b3e', 5], ['Blue', '#2459c9', 6], ['Violet', '#7b3fb5', 7]],
+    TOL: [['Gold', '#c9a227', '±5%'], ['Silver', '#c0c0c0', '±10%'], ['Brown', '#7a4a1e', '±1%'], ['Red', '#d0222a', '±2%']],
+    html() {
+      const R = CALCS.resistor;
+      const opt = (arr, sel) => arr.map((c, i) => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + c[0] + '</option>').join('');
+      const c = get('calc-resistor') || {};
+      return '<div class="card"><h2>Resistor colour code — 4-band</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 6px;">Read with the tolerance band (gold/silver) on the right.</p>' +
+        '<div class="bands" id="rBands"></div>' +
+        '<div class="row2"><div class="f"><label>Band 1</label><select id="r1">' + opt(R.COLOURS, 1) + '</select></div><div class="f"><label>Band 2</label><select id="r2">' + opt(R.COLOURS, 0) + '</select></div></div>' +
+        '<div class="row2"><div class="f"><label>Multiplier</label><select id="r3">' + opt(R.MULT, 5) + '</select></div><div class="f"><label>Tolerance</label><select id="r4">' + opt(R.TOL, 0) + '</select></div></div>' +
+        '<div id="rOut"></div>' +
+        '<div class="f" style="margin-top:12px"><label>Or find the colours for a value (Ω)</label><input id="rVal" inputmode="decimal" placeholder="e.g. 6800"></div><div id="rRev"></div></div>' +
+        (c.eolReference ? '<div class="card"><h2>EOL by panel / circuit</h2><div class="tbl"><table><thead><tr><th>Application</th><th>Value / type</th><th>Evidence</th></tr></thead><tbody>' +
+          c.eolReference.map(r => '<tr><td>' + inline(r.application) + '</td><td>' + inline(r.value) + '</td><td>' + inline(r.evidence) + '</td></tr>').join('') +
+          '</tbody></table></div><p style="font-size:12.5px;color:var(--grey);margin:0">Select EOL by exact panel and circuit using the manual\'s component spec. Never convert a capacitor or active EOL into a "equivalent" resistor.</p></div>' : '') +
+        about('calc-resistor', 'Full reference for this calculator');
+    },
+    wire() {
+      const R = CALCS.resistor, $ = id => document.getElementById(id);
+      const fmtOhm = v => v >= 1e6 ? fmt(v / 1e6, 3) + ' MΩ' : v >= 1e3 ? fmt(v / 1e3, 3) + ' kΩ' : fmt(v, 3) + ' Ω';
+      const calc = () => {
+        const a = +$('r1').value, b = +$('r2').value, m = R.MULT[+$('r3').value], t = R.TOL[+$('r4').value];
+        $('rBands').innerHTML = '<span></span>' + [R.COLOURS[a][1], R.COLOURS[b][1], m[1], '#e9dcc3', t[1]].map((c, i) => i === 3 ? '<span></span>' : '<span class="band" style="background:' + c + '"></span>').join('') + '<span></span>';
+        if (a === 0) { $('rOut').innerHTML = '<div class="result err">A first band of black isn\'t a valid 4-band value.</div>'; return; }
+        const v = (a * 10 + b) * Math.pow(10, m[2]);
+        $('rOut').innerHTML = '<div class="result"><span class="big">' + fmtOhm(v) + '</span> ' + t[2] + '<br><span style="font-size:12.5px;color:var(--grey)">' + fmt(v, 2) + ' Ω</span></div>';
+      };
+      ['r1', 'r2', 'r3', 'r4'].forEach(id => $(id).addEventListener('change', calc));
+      $('rVal').addEventListener('input', () => {
+        const s = $('rVal').value.trim(), v = Number(s);
+        if (!s) { $('rRev').innerHTML = ''; return; }
+        if (!isFinite(v) || v <= 0) { $('rRev').innerHTML = '<div class="result err">Enter a value in ohms, e.g. 4700.</div>'; return; }
+        for (const m of R.MULT) {
+          const sig = v / Math.pow(10, m[2]);
+          if (Math.abs(sig - Math.round(sig)) < 1e-9 && sig >= 10 && sig <= 99) {
+            const d = Math.round(sig);
+            $('rRev').innerHTML = '<div class="result">' + fmtOhm(v) + ' = <b>' + R.COLOURS[Math.floor(d / 10)][0] + ' – ' + R.COLOURS[d % 10][0] + ' – ' + m[0] + '</b> – tolerance band</div>';
+            return;
+          }
+        }
+        $('rRev').innerHTML = '<div class="result err">' + esc(s) + ' Ω can\'t be shown with two significant figures on a 4-band resistor.</div>';
+      });
+      calc();
+    }
+  },
+
+  dater: {
+    html() {
+      const c = get('calc-detector-dater') || {};
+      const brands = c.brands || [];
+      return '<div class="card"><h2>Detector date</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">Only documented formats are decoded. Anything else shows “format not verified” — no guessed ages. Years before 1970 aren\'t offered.</p>' +
+        '<div class="f"><label>Brand</label><select id="dtBrand">' + brands.map((b, i) => '<option value="' + i + '">' + esc(b.brand) + (b.parserEnabled ? '' : ' — not verified') + '</option>').join('') + '</select></div>' +
+        '<div class="f" id="dtFmtWrap"><label>Label format</label><select id="dtFmt"></select></div>' +
+        '<div class="f"><label>Code from the label</label><input id="dtCode" autocomplete="off" autocapitalize="characters" placeholder="Type exactly as printed"></div>' +
+        '<div id="dtOut"></div><div id="dtGuide" class="md" style="margin-top:10px;font-size:12.5px;color:var(--grey)"></div>' +
+        '<p style="font-size:12.5px;margin:10px 0 0;"><b>' + esc(c.replacementGuidance || '') + '</b></p></div>' +
+        about('calc-detector-dater', 'Full reference for the detector dater');
+    },
+    FORMATS: {
+      Apollo: [
+        ['mmyy', 'MMYY then production suffix (e.g. 0402-25684)'],
+        ['yymmdd', 'YYMMDD (e.g. 020401), optionally followed by build standard'],
+        ['wwyy', 'WWYY at the start (sounder, e.g. 1502123)']
+      ],
+      Hochiki: [['ymmf', 'YMMF batch prefix / 9-digit YMMFxxxxx (historical AP093)']]
+    },
+    wire() {
+      const $ = id => document.getElementById(id), D = CALCS.dater;
+      const c = get('calc-detector-dater') || {};
+      const brands = c.brands || [];
+      const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const now = new Date(), thisYear = now.getFullYear(), thisMonth = now.getMonth() + 1;
+      const notFuture = (y, m) => y < thisYear || (y === thisYear && (m || 1) <= thisMonth);
+      // Two-digit year: both centuries that aren't in the future, never a silent pick.
+      // Years before 1970 aren't offered (no addressable detectors then); the page says so.
+      const yy = (n, m) => [1900 + n, 2000 + n].filter(y => y >= 1970 && notFuture(y, m));
+      // One-digit year (Hochiki Y): every decade from 1970 that isn't in the future.
+      const yDigit = (d, m) => { const out = []; for (let y = 1970 + d; y <= thisYear; y += 10) if (notFuture(y, m)) out.push(y); return out; };
+      const say = (lines, certain) => $('dtOut').innerHTML = '<div class="result">' + lines + (certain ? '' : '<br><span class="chip warn">Decade uncertain</span> <span style="font-size:12.5px">— confirm from the model, label or site records.</span>') + '</div>';
+      const fail = m => $('dtOut').innerHTML = '<div class="result err">' + m + '</div>';
+      const refresh = () => {
+        const b = brands[+$('dtBrand').value] || {};
+        const fmts = D.FORMATS[b.brand] && b.parserEnabled ? D.FORMATS[b.brand] : null;
+        $('dtFmtWrap').hidden = !fmts;
+        $('dtFmt').innerHTML = (fmts || []).map(f => '<option value="' + f[0] + '">' + esc(f[1]) + '</option>').join('');
+        $('dtGuide').innerHTML = '<b>' + esc(b.brand) + ':</b> ' + inline(b.guidance || '') + ' <span class="chip">' + esc(b.status || '') + '</span>';
+        decode();
+      };
+      const decode = () => {
+        const b = brands[+$('dtBrand').value] || {};
+        const code = $('dtCode').value.trim().toUpperCase();
+        if (!code) { $('dtOut').innerHTML = ''; return; }
+        if (!b.parserEnabled || !D.FORMATS[b.brand]) { fail('Format not verified — check model/label and manufacturer guidance.'); return; }
+        const f = $('dtFmt').value;
+        let m;
+        if (f === 'mmyy') {
+          if (!(m = code.match(/^(\d{2})(\d{2})(?:[-\s]?[0-9A-Z]+)?$/))) return fail('Expected MMYY followed by the production suffix, e.g. 0402-25684.');
+          const mo = +m[1], ys = yy(+m[2], mo);
+          if (mo < 1 || mo > 12) return fail('“' + esc(m[1]) + '” isn\'t a real month.');
+          if (!ys.length) return fail('That date would be in the future — check the format.');
+          return say('Manufactured <span class="big">' + ys.map(y => MONTHS[mo - 1] + ' ' + y).join(' or ') + '</span>', ys.length === 1);
+        }
+        if (f === 'yymmdd') {
+          if (!(m = code.match(/^(\d{2})(\d{2})(\d{2})(?:[-\s]?[0-9A-Z]+)?$/))) return fail('Expected six digits YYMMDD, e.g. 020401.');
+          const mo = +m[2], da = +m[3];
+          if (mo < 1 || mo > 12) return fail('“' + esc(m[2]) + '” isn\'t a real month.');
+          const ys = yy(+m[1], mo).filter(y => da >= 1 && da <= new Date(y, mo, 0).getDate());
+          if (!ys.length) return fail('That isn\'t a real (past) date — check the format.');
+          return say('Manufactured <span class="big">' + ys.map(y => da + ' ' + MONTHS[mo - 1] + ' ' + y).join(' or ') + '</span>', ys.length === 1);
+        }
+        if (f === 'wwyy') {
+          if (!(m = code.match(/^(\d{2})(\d{2})\d*$/))) return fail('Expected digits starting WWYY, e.g. 1502123.');
+          const wk = +m[1];
+          if (wk < 1 || wk > 53) return fail('Week “' + esc(m[1]) + '” isn\'t valid (1–53).');
+          const ys = yy(+m[2]);
+          if (!ys.length) return fail('That date would be in the future — check the format.');
+          return say('Manufactured <span class="big">week ' + wk + ' of ' + ys.join(' or ') + '</span><br><span style="font-size:12.5px">Week/year code — no exact day.</span>', ys.length === 1);
+        }
+        if (f === 'ymmf') {
+          if (!(m = code.match(/^(\d)(\d{2})(\d)(\d{5})?$/))) return fail('Expected the 4-digit YMMF prefix or the 9-digit YMMFxxxxx serial, e.g. 0124.');
+          const mo = +m[2];
+          if (mo < 1 || mo > 12) return fail('“' + esc(m[2]) + '” isn\'t a real month (YMMF: Y = year digit, MM = month).');
+          const ys = yDigit(+m[1], mo);
+          if (!ys.length) return fail('No past date matches — check the format.');
+          return say('Manufactured <span class="big">' + MONTHS[mo - 1] + '</span> of a year ending in ' + m[1] + ': <b>' + ys.join(', ') + '</b><br><span style="font-size:12.5px">Manufacturing location digit: ' + m[3] + '</span>', ys.length === 1);
+        }
+      };
+      $('dtBrand').addEventListener('change', refresh);
+      $('dtFmt').addEventListener('change', decode);
+      $('dtCode').addEventListener('input', decode);
+      refresh();
+    }
+  }
+};
+
+// ---------- suggestions ---------------------------------------------------
+function openSuggest(id) {
+  const e = get(id);
+  if (!e) return;
+  const host = document.getElementById('modalHost');
+  host.innerHTML = '<div class="modal-bg" id="mBg"><div class="modal" role="dialog" aria-modal="true">' +
+    '<h3>Suggest a correction</h3><p>For: <b>' + esc(e.code ? e.code + ' ' : '') + esc(e.title) + '</b>. A manager reviews every suggestion before anything changes.</p>' +
+    '<div class="f"><label>What\'s wrong, and what should it say?</label><textarea id="mText" rows="5" maxlength="2000" placeholder="e.g. The default code for this panel is now…"></textarea></div>' +
+    '<div class="btn-row"><button class="btn" id="mSend"><i class="ti ti-send"></i>Send</button><button class="btn ghost" style="color:var(--ink)" id="mCancel">Cancel</button></div></div></div>';
+  const close = () => host.innerHTML = '';
+  document.getElementById('mCancel').addEventListener('click', close);
+  document.getElementById('mBg').addEventListener('click', ev => { if (ev.target.id === 'mBg') close(); });
+  document.getElementById('mText').focus();
+  document.getElementById('mSend').addEventListener('click', () => {
+    const msg = document.getElementById('mText').value.trim();
+    if (!msg) { toast('Write what needs correcting first.'); return; }
+    // Fire-and-forget: Firestore queues it if offline and sends when back online.
+    addDoc(collection(db, 'fireToolkitSuggestions'), {
+      entryId: e.id, entryTitle: (e.code ? e.code + ' ' : '') + e.title, entryKind: e.kind,
+      message: msg, suggestedBy: currentUser.email, suggestedByName: currentUser.displayName || currentUser.email,
+      createdAt: serverTimestamp(), status: 'pending', appVersion: VERSION
+    }).catch(err => { console.error(err); toast('Couldn\'t send — ' + (err.code || err.message)); });
+    close();
+    toast(navigator.onLine ? 'Thanks — sent to the managers.' : 'Saved — it will send when you\'re back online.');
+  });
+}
+
+// ---------- routing -------------------------------------------------------
+function route() {
+  const [tab, id] = (location.hash.slice(1) || 'troubleshoot').split('/');
+  const t = TABS.find(x => x.id === tab) ? tab : 'troubleshoot';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  const view = document.getElementById('view');
+  view.innerHTML = (t === 'troubleshoot' && id === 'procedure-common') ? VIEWS.procedure() : VIEWS[t](id);
+  window.scrollTo(0, 0);
+
+  // live search for list tabs
+  const q = document.getElementById('q');
+  const resKey = { faults: 'faultsResults', codes: 'codesResults', contacts: 'contactsResults', standards: 'standardsResults' }[t];
+  if (q && resKey) {
+    const saved = sessionGet('q-' + t);
+    q.value = saved;
+    const run = () => { document.getElementById('results').innerHTML = VIEWS[resKey](q.value.trim()); sessionSet('q-' + t, q.value); };
+    q.addEventListener('input', run); run();
+  }
+  if (t === 'calc' && CALCS[id || 'battery']) CALCS[id || 'battery'].wire();
+}
+function sessionGet(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function sessionSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+
+document.addEventListener('click', ev => {
+  const s = ev.target.closest('[data-suggest]');
+  if (s) { openSuggest(s.dataset.suggest); return; }
+  const g = ev.target.closest('[data-go]');
+  if (g) { location.hash = g.dataset.go; }
+});
+window.addEventListener('hashchange', () => { if (DATA.byId.size) route(); });
+
+function buildTabs() {
+  document.getElementById('tabs').innerHTML = TABS.map(t =>
+    '<button class="tab" data-tab="' + t.id + '"><i class="ti ' + t.icon + '"></i>' + t.label + '</button>').join('');
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { location.hash = b.dataset.tab; }));
+}
+
+function buildDisclaimer() {
+  const ref = get('notice-reference'), purpose = get('notice-purpose'), legend = get('notice-evidence-legend');
+  const el = document.getElementById('disclaimer');
+  el.innerHTML = '<b>Guidance only.</b> Follow the manufacturer\'s instructions, the approved design/cause-and-effect and BS 5839-1. <button id="discMore">More</button>';
+  document.getElementById('discMore').addEventListener('click', () => {
+    el.innerHTML = '<b>Guidance only.</b> ' + inline(ref ? ref.body : '') + (purpose ? md(purpose.body) : '') + (legend ? md(legend.body) : '');
+  });
+}
+
+async function loadData() {
+  try {
+    const snap = await getDocs(collection(db, 'fireToolkit'));
+    const byId = new Map(), byKind = {};
+    snap.forEach(d => { const e = { id: d.id, ...d.data() }; byId.set(d.id, e); });
+    [...byId.values()].sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(e => (byKind[e.kind] = byKind[e.kind] || []).push(e));
+    DATA = { byId, byKind };
+    document.getElementById('offlineNote').hidden = !snap.metadata.fromCache;
+    if (!byId.size) {
+      document.getElementById('view').innerHTML = '<div class="empty">The toolkit data hasn\'t been loaded yet' + (snap.metadata.fromCache ? ' on this device — open it once with signal.' : '.') + '</div>';
+      return;
+    }
+    buildDisclaimer();
+    route();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('view').innerHTML = '<div class="empty">Couldn\'t load the toolkit — ' + esc(e.code || e.message) + '.<br>Check your signal and reopen.</div>';
+  }
+}
+
+// ---------- sign-in -------------------------------------------------------
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+let started = false;
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  document.getElementById('signinScreen').style.display = user ? 'none' : 'flex';
+  document.getElementById('appRoot').style.display = user ? 'block' : 'none';
+  if (!user) return;
+  document.getElementById('whoName').textContent = user.displayName || user.email;
+  if (!started) { started = true; buildTabs(); loadData(); }
+});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>

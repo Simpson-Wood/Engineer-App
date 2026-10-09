@@ -97,6 +97,15 @@
   .imp-tag.missing{background:#fbe9ea; color:var(--red-dark);}
   .imp-h{font-size:12px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:14px 0 6px;}
 
+  .sg{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px;}
+  .sg .what{font-weight:700; font-size:14px;}
+  .sg .who{font-size:11.5px; color:var(--grey); margin:2px 0 8px;}
+  .sg .msg{font-size:13.5px; white-space:pre-wrap; background:var(--bg); border-radius:6px; padding:8px 10px; margin-bottom:8px;}
+  .sg-btns{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .sg-btns input{flex:1; min-width:160px; padding:7px 9px; font-size:13px; border:1.5px solid var(--line); border-radius:6px;}
+  .sg-tabs{display:flex; gap:6px; margin-bottom:12px;}
+  .sg-tabs button{background:var(--bg); border:none; border-radius:16px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .sg-tabs button.active{background:var(--ink); color:#fff;}
   @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);} }
 </style>
 <link rel="manifest" href="manifest.json">
@@ -159,6 +168,17 @@
       <div id="impResult"></div>
     </div>
 
+    <div class="card" id="suggestCard">
+      <h2>Fire toolkit corrections</h2>
+      <p class="sub">Suggestions from staff using the fire toolkit. <b>Accept</b> means it should go into the content — it's added to <code>fire-toolkit-content.md</code> and re-imported at the next content update, then marked done. Nothing changes for engineers until then.</p>
+      <div class="sg-tabs" id="sgTabs">
+        <button data-st="pending" class="active">Pending</button>
+        <button data-st="accepted">Accepted — awaiting update</button>
+        <button data-st="dismissed">Dismissed</button>
+      </div>
+      <div id="sgList"><div class="empty-note">Loading…</div></div>
+    </div>
+
     <div class="card">
       <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Add staff member</p>
       <div class="form-grid">
@@ -204,10 +224,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp
+  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.3";
+const VERSION = "v2.4";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -230,8 +250,8 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 const OWNER_EMAIL = 'rob.rose@simpsonandwood.co.uk';
 
 const TOOL_PAIRS = [
+  { id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame" },
   { id: "isolator", name: "Isolator testing", icon: "ti-bolt" },
-  { id: "pat", name: "PAT testing", icon: "ti-plug" },
   { id: "aov", name: "AOV testing", icon: "ti-window" },
   { id: "gate", name: "Gate service", icon: "ti-fence" },
   { id: "cctv", name: "CCTV service", icon: "ti-video" },
@@ -645,6 +665,56 @@ async function runImportDelete(ids) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// FIRE TOOLKIT CORRECTIONS — staff suggest (fire-toolkit.html), managers review.
+// Accepting doesn't edit the data directly: Docs/fire-toolkit-content.md stays
+// the master copy, so accepted items are folded into it and re-imported.
+// ---------------------------------------------------------------------------
+let sgStatus = 'pending';
+async function renderSuggestions() {
+  const list = document.getElementById('sgList');
+  list.innerHTML = '<div class="empty-note">Loading…</div>';
+  try {
+    const snap = await getDocs(query(collection(db, 'fireToolkitSuggestions'), where('status', '==', sgStatus)));
+    const rows = [];
+    snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0));
+    if (sgStatus === 'pending') {
+      const btn = document.querySelector('#sgTabs [data-st="pending"]');
+      btn.textContent = 'Pending' + (rows.length ? ' (' + rows.length + ')' : '');
+    }
+    if (!rows.length) { list.innerHTML = '<div class="empty-note">Nothing here.</div>'; return; }
+    const when = t => t && t.toDate ? t.toDate().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    list.innerHTML = rows.map(r => `
+      <div class="sg">
+        <div class="what">${escapeHtml(r.entryTitle || r.entryId)} <span style="font-weight:400;color:var(--grey);font-size:12px;">(${escapeHtml(r.entryId)})</span></div>
+        <div class="who">${escapeHtml(r.suggestedByName || r.suggestedBy)} · ${when(r.createdAt)}${r.reviewedBy ? ' · reviewed by ' + escapeHtml(r.reviewedBy) : ''}</div>
+        <div class="msg">${escapeHtml(r.message)}</div>
+        ${r.reviewNote ? '<div class="who">Note: ' + escapeHtml(r.reviewNote) + '</div>' : ''}
+        <div class="sg-btns">
+          ${sgStatus === 'pending' ? `<input type="text" placeholder="Optional note" data-note="${r.id}">
+            <button class="save-meta-btn" style="width:auto;padding:8px 14px;" data-sg="${r.id}" data-to="accepted">Accept</button>
+            <button class="remove-btn" data-sg="${r.id}" data-to="dismissed">Dismiss</button>` : ''}
+          ${sgStatus === 'accepted' ? `<button class="save-meta-btn" style="width:auto;padding:8px 14px;" data-sg="${r.id}" data-to="done">Mark done (content updated)</button>` : ''}
+          ${sgStatus === 'dismissed' ? `<button class="remove-btn" data-sg="${r.id}" data-to="pending">Back to pending</button>` : ''}
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('[data-sg]').forEach(b => b.addEventListener('click', async () => {
+      const note = list.querySelector('[data-note="' + b.dataset.sg + '"]');
+      const upd = { status: b.dataset.to, reviewedBy: auth.currentUser.email, reviewedAt: serverTimestamp() };
+      if (note && note.value.trim()) upd.reviewNote = note.value.trim();
+      try { await updateDoc(doc(db, 'fireToolkitSuggestions', b.dataset.sg), upd); showToast('Marked ' + b.dataset.to); renderSuggestions(); }
+      catch (e) { showToast('Could not update — ' + (e.code || e.message)); }
+    }));
+  } catch (e) {
+    list.innerHTML = '<div class="empty-note">Could not load — ' + escapeHtml(e.code || e.message) + '</div>';
+  }
+}
+document.querySelectorAll('#sgTabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#sgTabs button').forEach(x => x.classList.toggle('active', x === b));
+  sgStatus = b.dataset.st; renderSuggestions();
+}));
+
 document.getElementById('addStaffBtn').addEventListener('click', async () => {
   const name = document.getElementById('newStaffName').value.trim();
   const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
@@ -704,6 +774,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('importCard').hidden = !isOwner;
   if (isOwner) { renderStatusList(); initImportPanel(); }
   renderStaffList();
+  renderSuggestions();
 });
 </script>
 <script>

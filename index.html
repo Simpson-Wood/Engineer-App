@@ -128,7 +128,7 @@ import {
   initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.3";
+const VERSION = "v2.4";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -151,8 +151,8 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 // pairKey (timesheet) are not remotely toggled.
 const TOOLS = [
   { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet.html", alwaysLive: true },
+  { section: "Reference", id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame", href: "fire-toolkit.html", pairKey: "firetoolkit" },
   { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
-  { section: "Customer reports", id: "pat", name: "PAT testing", icon: "ti-plug", href: "pat-test.html", pairKey: "pat" },
   { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-window", href: "aov-test.html", pairKey: "aov" },
   { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
   { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
@@ -312,7 +312,7 @@ async function loadTools(){
     console.error('Could not load app config, falling back to defaults', e);
   }
   // Fallback if Firestore is unreachable or the doc doesn't exist yet
-  return { isolator: { live: true }, pat: { live: true } };
+  return { isolator: { live: true } };
 }
 
 // A manager is either in the console-only /managers failsafe list, or a
