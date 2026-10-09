@@ -73,7 +73,31 @@
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
   .toast.show{opacity:1;}
 
-  @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+  /* Data import panel (owner only) */
+  .imp-row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;}
+  .imp-row > div{display:flex; flex-direction:column; flex:1; min-width:200px;}
+  .imp-row input[type=file]{font-size:13px; padding:7px 0;}
+  .btn-dark{background:var(--ink); color:#fff; border:none; padding:10px 16px; border-radius:7px; font-weight:700; font-size:13px; cursor:pointer;}
+  .btn-dark:disabled, .save-meta-btn:disabled{opacity:.45; cursor:not-allowed;}
+  .imp-msg{font-size:13px; padding:10px 12px; border-radius:7px; margin:10px 0; line-height:1.45;}
+  .imp-msg.err{background:#fbe9ea; color:var(--red-dark);}
+  .imp-msg.ok{background:#e9f5ec; color:#1e6b34;}
+  .imp-msg.info{background:var(--bg); color:var(--grey);}
+  .imp-summary{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0;}
+  .imp-summary div{background:var(--bg); border-radius:8px; padding:10px; text-align:center;}
+  .imp-summary b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:22px;}
+  .imp-summary span{font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--grey);}
+  .imp-list{max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-bottom:12px;}
+  .imp-list div{font-size:12.5px; padding:6px 10px; border-bottom:1px solid var(--line); display:flex; gap:8px; align-items:center;}
+  .imp-list div:last-child{border-bottom:none;}
+  .imp-list code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:11.5px;}
+  .imp-tag{font-size:10.5px; font-weight:700; text-transform:uppercase; padding:2px 6px; border-radius:4px; flex-shrink:0;}
+  .imp-tag.new{background:#e9f5ec; color:#1e6b34;}
+  .imp-tag.changed{background:#fff4dd; color:#8a5a00;}
+  .imp-tag.missing{background:#fbe9ea; color:var(--red-dark);}
+  .imp-h{font-size:12px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:14px 0 6px;}
+
+  @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);} }
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -115,6 +139,24 @@
       <h2>Live apps</h2>
       <p class="sub">Switch a tool on once it's ready, and set the engineer file and the report file it should link to — engineers see the change on the homepage immediately, no redeploy needed. Only visible to you.</p>
       <div id="statusList"></div>
+    </div>
+
+    <div class="card" id="importCard" hidden>
+      <h2>Data import</h2>
+      <p class="sub">Load a prepared data file into the database. You'll always see a preview first — nothing is written until you confirm, and nothing is ever deleted automatically. Only visible to you. Data files stay in OneDrive and never go on GitHub.</p>
+      <div class="imp-row">
+        <div>
+          <label for="impType">What are you importing?</label>
+          <select id="impType"></select>
+        </div>
+        <div>
+          <label for="impFile">Data file (.json)</label>
+          <input type="file" id="impFile" accept=".json,application/json">
+        </div>
+        <button type="button" class="btn-dark" id="impPreviewBtn">Preview</button>
+      </div>
+      <div id="impTypeNote" class="imp-msg info"></div>
+      <div id="impResult"></div>
     </div>
 
     <div class="card">
@@ -162,10 +204,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc
+  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.2";
+const VERSION = "v2.3";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -349,6 +391,260 @@ async function renderStaffList() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// DATA IMPORT PANEL (owner only) — see engineer-apps-standards.md §10.1
+//
+// The panel is hidden from everyone except OWNER_EMAIL, but that is only a
+// courtesy: the real lock is the Firestore rules, which only let accounts in
+// the console-only /managers list write to import-managed collections.
+//
+// Rules this panel follows:
+//  - A fixed list of import types (IMPORT_TYPES). Each knows its collection
+//    and checks every entry's shape before anything is written.
+//  - Always preview first: new / changed / unchanged / missing.
+//  - New + changed are written only after confirmation. Running the same
+//    file twice changes nothing.
+//  - Missing entries (in the database, not in the file) are NEVER deleted
+//    automatically — they're listed with tick-boxes to remove one by one.
+//  - Types flagged testRecords:true get testData:true on every entry.
+// ---------------------------------------------------------------------------
+
+// Fields the panel adds itself; ignored when comparing file vs database.
+const IMPORT_META_FIELDS = ['importedAt', 'importedBy', 'importSource', 'testData'];
+
+const FIRE_TOOLKIT_KINDS = [
+  'notice', 'policy', 'procedure', 'faultType', 'manufacturerMapping',
+  'troubleshootingTree', 'contact', 'panelCode', 'calculatorRef', 'standardsSection'
+];
+
+const IMPORT_TYPES = [
+  {
+    id: 'fireToolkit',
+    label: 'Fire toolkit reference data',
+    collection: 'fireToolkit',
+    testRecords: false,
+    note: 'Writes to the fireToolkit collection. Every entry needs an id, a kind (' + FIRE_TOOLKIT_KINDS.join(', ') + ') and a title. Readable by all staff once imported.',
+    validateEntry(e) {
+      const errs = [];
+      if (!FIRE_TOOLKIT_KINDS.includes(e.kind)) errs.push('kind "' + e.kind + '" is not one of: ' + FIRE_TOOLKIT_KINDS.join(', '));
+      if (typeof e.title !== 'string' || !e.title.trim()) errs.push('missing title');
+      return errs;
+    }
+  }
+  // Future import types are added here, one at a time, as a deliberate
+  // versioned change (e.g. isolator test data with testRecords: true).
+];
+
+let impState = null; // { type, fileName, source, entries, existing, diff }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// Key-order-independent JSON, so {a,b} and {b,a} compare equal.
+function stableStringify(v) {
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+  if (v && typeof v === 'object') {
+    return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+  }
+  return JSON.stringify(v);
+}
+
+function contentOf(obj) {
+  const out = {};
+  Object.keys(obj).forEach(k => { if (!IMPORT_META_FIELDS.includes(k)) out[k] = obj[k]; });
+  return out;
+}
+
+// Firestore can't store an array directly inside another array.
+function hasNestedArray(v, insideArray) {
+  if (Array.isArray(v)) {
+    if (insideArray) return true;
+    return v.some(x => hasNestedArray(x, true));
+  }
+  if (v && typeof v === 'object') return Object.values(v).some(x => hasNestedArray(x, false));
+  return false;
+}
+
+function validateFile(type, data) {
+  const errs = [];
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return ['The file is not a JSON object.'];
+  if (data.importType !== type.id) errs.push('This file says it is for "' + (data.importType || 'nothing') + '", but you picked "' + type.label + '". Pick the matching type or check the file.');
+  if (!Array.isArray(data.entries)) { errs.push('The file has no "entries" list.'); return errs; }
+  if (data.entries.length === 0) errs.push('The file has no entries in it.');
+  const seen = new Set();
+  data.entries.forEach((e, i) => {
+    const where = 'Entry ' + (i + 1) + (e && e.id ? ' (' + e.id + ')' : '');
+    if (!e || typeof e !== 'object' || Array.isArray(e)) { errs.push(where + ': not an object.'); return; }
+    if (typeof e.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(e.id)) errs.push(where + ': id must be 1–100 letters, numbers, - or _.');
+    else if (seen.has(e.id)) errs.push(where + ': duplicate id.');
+    else seen.add(e.id);
+    IMPORT_META_FIELDS.forEach(k => { if (k in e) errs.push(where + ': must not contain the reserved field "' + k + '".'); });
+    if (hasNestedArray(e, false)) errs.push(where + ': contains a list inside a list, which the database can\'t store.');
+    if (JSON.stringify(e).length > 900000) errs.push(where + ': too large for one database entry.');
+    type.validateEntry(e).forEach(m => errs.push(where + ': ' + m + '.'));
+  });
+  return errs;
+}
+
+let importPanelReady = false;
+function initImportPanel() {
+  if (importPanelReady) return;   // only wire up once, even if sign-in state fires again
+  importPanelReady = true;
+  const sel = document.getElementById('impType');
+  sel.innerHTML = IMPORT_TYPES.map(t => '<option value="' + t.id + '">' + escapeHtml(t.label) + '</option>').join('');
+  const showNote = () => {
+    const t = IMPORT_TYPES.find(x => x.id === sel.value);
+    document.getElementById('impTypeNote').textContent = t ? t.note : '';
+  };
+  sel.addEventListener('change', () => { showNote(); impState = null; document.getElementById('impResult').innerHTML = ''; });
+  document.getElementById('impFile').addEventListener('change', () => { impState = null; document.getElementById('impResult').innerHTML = ''; });
+  document.getElementById('impPreviewBtn').addEventListener('click', runImportPreview);
+  showNote();
+}
+
+function impMsg(kind, html) {
+  document.getElementById('impResult').innerHTML = '<div class="imp-msg ' + kind + '">' + html + '</div>';
+}
+
+async function runImportPreview() {
+  const type = IMPORT_TYPES.find(x => x.id === document.getElementById('impType').value);
+  const file = document.getElementById('impFile').files[0];
+  impState = null;
+  if (!file) { impMsg('err', 'Choose a data file first.'); return; }
+  if (!navigator.onLine) { impMsg('err', 'You appear to be offline. Imports need a live connection so the preview is accurate.'); return; }
+
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch (e) { impMsg('err', 'That file isn\'t valid JSON, so nothing can be read from it.<br><small>' + escapeHtml(e.message) + '</small>'); return; }
+
+  const errs = validateFile(type, data);
+  if (errs.length) {
+    impMsg('err', '<b>Nothing imported — the file has ' + errs.length + ' problem' + (errs.length === 1 ? '' : 's') + ':</b><br>' +
+      errs.slice(0, 30).map(escapeHtml).join('<br>') + (errs.length > 30 ? '<br>…and ' + (errs.length - 30) + ' more.' : ''));
+    return;
+  }
+
+  impMsg('info', 'Comparing with the database…');
+  let existing = new Map();
+  try {
+    const snap = await getDocsFromServer(collection(db, type.collection));
+    snap.forEach(d => existing.set(d.id, d.data()));
+  } catch (e) {
+    impMsg('err', 'Couldn\'t read the current data to compare against — ' + escapeHtml(e.code || e.message) +
+      (e.code === 'permission-denied' ? '<br>The Firestore rules for <code>' + type.collection + '</code> may not be published yet.' : ''));
+    return;
+  }
+
+  const diff = { added: [], changed: [], unchanged: [], missing: [] };
+  const fileIds = new Set();
+  data.entries.forEach(e => {
+    fileIds.add(e.id);
+    const { id, ...content } = e;
+    if (!existing.has(id)) diff.added.push(e);
+    else if (stableStringify(contentOf(existing.get(id))) !== stableStringify(content)) diff.changed.push(e);
+    else diff.unchanged.push(e);
+  });
+  existing.forEach((v, id) => { if (!fileIds.has(id)) diff.missing.push({ id, ...v }); });
+
+  impState = { type, fileName: file.name, source: typeof data.source === 'string' ? data.source : file.name, entries: data.entries, diff };
+  renderImportPreview();
+}
+
+function renderImportPreview() {
+  const { type, fileName, diff } = impState;
+  const toWrite = diff.added.length + diff.changed.length;
+  const row = (e, tag) => '<div><span class="imp-tag ' + tag + '">' + tag + '</span><code>' + escapeHtml(e.id) + '</code>' + escapeHtml(e.title || '') + '</div>';
+  let html =
+    '<div class="imp-msg info">File <b>' + escapeHtml(fileName) + '</b> → <code>' + type.collection + '</code>' +
+    (type.testRecords ? ' · every entry will be marked <b>testData</b>' : '') + '</div>' +
+    '<div class="imp-summary">' +
+      '<div><b>' + diff.added.length + '</b><span>New</span></div>' +
+      '<div><b>' + diff.changed.length + '</b><span>Changed</span></div>' +
+      '<div><b>' + diff.unchanged.length + '</b><span>Unchanged</span></div>' +
+      '<div><b>' + diff.missing.length + '</b><span>Not in file</span></div>' +
+    '</div>';
+  if (toWrite) {
+    html += '<div class="imp-h">Will be written</div><div class="imp-list">' +
+      diff.added.map(e => row(e, 'new')).join('') + diff.changed.map(e => row(e, 'changed')).join('') + '</div>' +
+      '<button type="button" class="save-meta-btn" id="impConfirmBtn">Import ' + toWrite + ' entr' + (toWrite === 1 ? 'y' : 'ies') + '</button>';
+  } else {
+    html += '<div class="imp-msg ok">Everything in this file is already in the database — nothing to import.</div>';
+  }
+  if (diff.missing.length) {
+    html += '<div class="imp-h">In the database but not in this file — left alone</div>' +
+      '<p class="sub" style="margin:0 0 6px;">These are never deleted automatically. Tick any you really want removed.</p>' +
+      '<div class="imp-list">' + diff.missing.map(e =>
+        '<div><input type="checkbox" class="imp-del" value="' + escapeHtml(e.id) + '"><span class="imp-tag missing">missing</span><code>' +
+        escapeHtml(e.id) + '</code>' + escapeHtml(e.title || '') + '</div>').join('') + '</div>' +
+      '<button type="button" class="remove-btn" id="impDeleteBtn" disabled>Delete ticked entries</button>';
+  }
+  document.getElementById('impResult').innerHTML = html;
+
+  const confirmBtn = document.getElementById('impConfirmBtn');
+  if (confirmBtn) confirmBtn.addEventListener('click', runImportWrite);
+  const delBtn = document.getElementById('impDeleteBtn');
+  if (delBtn) {
+    const boxes = [...document.querySelectorAll('.imp-del')];
+    boxes.forEach(b => b.addEventListener('change', () => {
+      const n = boxes.filter(x => x.checked).length;
+      delBtn.disabled = n === 0;
+      delBtn.textContent = n ? 'Delete ' + n + ' ticked entr' + (n === 1 ? 'y' : 'ies') : 'Delete ticked entries';
+    }));
+    delBtn.addEventListener('click', () => runImportDelete(boxes.filter(x => x.checked).map(x => x.value)));
+  }
+}
+
+async function commitInChunks(ops) {
+  // Firestore batches are limited to 500 writes; stay well under.
+  for (let i = 0; i < ops.length; i += 400) {
+    const batch = writeBatch(db);
+    ops.slice(i, i + 400).forEach(fn => fn(batch));
+    await batch.commit();
+  }
+}
+
+async function runImportWrite() {
+  if (!impState) return;
+  const { type, source, diff } = impState;
+  const list = [...diff.added, ...diff.changed];
+  const btn = document.getElementById('impConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  const who = auth.currentUser ? auth.currentUser.email : 'unknown';
+  try {
+    await commitInChunks(list.map(e => batch => {
+      const { id, ...content } = e;
+      const record = { ...content, importedAt: serverTimestamp(), importedBy: who, importSource: source };
+      if (type.testRecords) record.testData = true;
+      batch.set(doc(db, type.collection, id), record); // full replace: the file is the source of truth for imported entries
+    }));
+    impState = null;
+    document.getElementById('impFile').value = '';
+    impMsg('ok', '<b>Done.</b> ' + diff.added.length + ' new and ' + diff.changed.length + ' changed entr' + (list.length === 1 ? 'y' : 'ies') + ' written to <code>' + type.collection + '</code>.' +
+      (diff.missing.length ? ' ' + diff.missing.length + ' entr' + (diff.missing.length === 1 ? 'y' : 'ies') + ' not in the file were left alone.' : ''));
+    showToast('Import complete');
+  } catch (e) {
+    console.error(e);
+    btn.disabled = false; btn.textContent = 'Try again';
+    impMsg('err', '<b>Import failed — ' + escapeHtml(e.code || e.message) + '.</b>' +
+      (e.code === 'permission-denied' ? '<br>The database refused the write. Check the Firestore rules are published and your account is in the console-only <code>managers</code> list.' : '') +
+      '<br>Batches of up to 400 are all-or-nothing; if this was a very large file, run Preview again to see what did land.');
+  }
+}
+
+async function runImportDelete(ids) {
+  if (!impState || !ids.length) return;
+  const { type } = impState;
+  if (!confirm('Permanently delete ' + ids.length + ' entr' + (ids.length === 1 ? 'y' : 'ies') + ' from ' + type.collection + '?\n\n' + ids.slice(0, 15).join('\n') + (ids.length > 15 ? '\n…' : ''))) return;
+  try {
+    await commitInChunks(ids.map(id => batch => batch.delete(doc(db, type.collection, id))));
+    showToast('Deleted ' + ids.length);
+    await runImportPreview(); // refresh the comparison
+  } catch (e) {
+    impMsg('err', 'Delete failed — ' + escapeHtml(e.code || e.message) + '.');
+  }
+}
+
 document.getElementById('addStaffBtn').addEventListener('click', async () => {
   const name = document.getElementById('newStaffName').value.trim();
   const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
@@ -403,8 +699,10 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('whoName').textContent = user.displayName || user.email;
-  document.getElementById('liveAppsCard').hidden = (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase());
-  if (!document.getElementById('liveAppsCard').hidden) renderStatusList();
+  const isOwner = (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase());
+  document.getElementById('liveAppsCard').hidden = !isOwner;
+  document.getElementById('importCard').hidden = !isOwner;
+  if (isOwner) { renderStatusList(); initImportPanel(); }
   renderStaffList();
 });
 </script>
