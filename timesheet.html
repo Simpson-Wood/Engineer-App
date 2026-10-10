@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheet v4.1</title>
+<title>Simpson & Wood — Timesheet v4.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -244,7 +244,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheet</h1>
-        <p id="versionLabel">v4.1</p>
+        <p id="versionLabel">v4.2</p>
       </div>
     </a>
     <div class="who">
@@ -314,7 +314,6 @@
               <div class="kv"><span>Finished</span><b id="sumEnd">—</b></div>
               <div class="kv"><span>Jobs</span><b id="sumJobs">0</b></div>
               <div class="kv"><span>Dinner</span><b id="sumDinner">—</b></div>
-              <div class="sumnote" id="sumNote" hidden></div>
             </div>
             <div id="sumOff" hidden>
               <div class="big" style="font-size:30px">Not working</div>
@@ -416,7 +415,7 @@ const redirectDone = getRedirectResult(auth).then(r => { if (r) keepToken(r); })
 // ═══════════════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'v4.1';
+const VERSION = 'v4.2';
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -721,9 +720,7 @@ function renderDay() {
   if (d) {
     const t = dayType(d);
     note = `<b>${esc(longDate(d))}</b>`;
-    if (t === 'bh') note += ` · bank holiday (${esc(BANK_HOLIDAYS[d])}) <span class="pay">all hours 2×</span>`;
-    else if (t === 'sun') note += ` <span class="pay">Sunday · all hours 2×</span>`;
-    else if (t === 'sat') note += ` <span class="pay">Saturday · all hours 1.5×</span>`;
+    if (t === 'bh') note += ` · bank holiday (${esc(BANK_HOLIDAYS[d])})`;
   }
   $('dayNote').innerHTML = note;
   $('workPane').hidden = state.mode !== 'work';
@@ -789,14 +786,6 @@ function updateDerived() {
   $('sumEnd').textContent = c.end == null ? '—' : timeLabel(c.end % 1440) + (c.end > 1440 ? ' (next day)' : '');
   $('sumJobs').textContent = state.jobs.length;
   $('sumDinner').textContent = c.dinners ? 'Yes (30 min off)' : (state.jobs.some(j => j.dinner === 'No') ? 'No' : '—');
-  const notes = [];
-  const t = state.date ? dayType(state.date) : 'wk';
-  if (t === 'bh') notes.push('Bank holiday: all hours paid at 2×.');
-  else if (t === 'sun') notes.push('Sunday: all hours paid at 2×.');
-  else if (t === 'sat') notes.push('Saturday: all hours paid at 1.5×.');
-  if (c.end != null && c.end > 1440) notes.push('Runs past midnight: those hours are paid at the next day\'s rate.');
-  $('sumNote').hidden = !notes.length;
-  $('sumNote').textContent = notes.join(' ');
   if (state.tried) showErrors(validate());
   saveDraft();
 }
@@ -951,26 +940,36 @@ $('jobs').addEventListener('click', async e => {
 });
 
 // ---- suggestions (customers and materials) ----
-// Every word typed must appear somewhere in the name, so "2.5 t&e" finds "2.5mm T&E".
+// Matching ignores punctuation and spaces inside words, so "te", "t&e" and "T & E"
+// all find "2.5mm T&E", and "2.5" finds "2.5mm". Every word typed must match
+// the start of a word in the name; best matches come first, numbers in order.
+const squash = w => w.toLowerCase().replace(/[^a-z0-9]/g, '');
+function queryWords(q) {
+  return q.toLowerCase().replace(/\b([a-z])\s*[&+]\s*([a-z])\b/g, '$1$2').split(/\s+/).map(squash).filter(Boolean);
+}
+function nameWords(n) { return n.split(/[\s/(),-]+/).map(squash).filter(Boolean); }
 function matchNames(items, q) {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const words = queryWords(q);
   if (!words.length) return [];
-  const starts = [], rest = [];
+  const whole = squash(q);
+  const scored = [];
   for (const it of items) {
-    const l = it.name.toLowerCase();
-    if (l === q.toLowerCase()) continue;
-    if (!words.every(w => l.includes(w))) continue;
-    (l.startsWith(words[0]) ? starts : rest).push(it);
+    if (it.name.toLowerCase() === q.trim().toLowerCase()) continue;
+    const nw = it._w || (it._w = nameWords(it.name));
+    if (!words.every(w => nw.some(x => x.startsWith(w)))) continue;
+    scored.push([(squash(it.name).startsWith(whole) ? 0 : 100) + nw.length, it]);
   }
-  return starts.concat(rest).slice(0, 8);
+  scored.sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name, 'en', { numeric: true }));
+  return scored.slice(0, 12).map(x => x[1]);
 }
 function highlight(name, q) {
-  let out = esc(name);
-  q.split(/\s+/).filter(Boolean).sort((x, y) => y.length - x.length).forEach(w => {
-    const re = new RegExp('(' + esc(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'i');
-    out = out.replace(re, '<mark>$1</mark>');
-  });
-  return out;
+  try {
+    const words = queryWords(q);
+    return name.split(/(\s+)/).map(part => {
+      const sq = squash(part);
+      return sq && words.some(w => sq.startsWith(w)) ? '<mark>' + esc(part) + '</mark>' : esc(part);
+    }).join('');
+  } catch (e) { return esc(name); }
 }
 function showSuggestions(input) {
   const list = input.parentElement.querySelector('.ac-list');
@@ -1157,7 +1156,8 @@ function buildPDF(rec, office) {
   const dt = dayType(rec.date);
   const subBits = [];
   subBits.push(`Started ${t.dayStart}${t.startsNextDay ? ' (next day)' : ''}  ·  Finished ${t.dayEnd}${t.endsNextDay ? ' (next day)' : ''}  ·  ${rec.jobs.length} job${rec.jobs.length === 1 ? '' : 's'}`);
-  if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]}): all hours 2×`);
+  if (!office) { if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]})`); }
+  else if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]}): all hours 2×`);
   else if (dt === 'sun') subBits.push('Sunday: all hours 2×');
   else if (dt === 'sat') subBits.push('Saturday: all hours 1.5×');
   F('normal', 11, DARK);
