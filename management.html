@@ -227,7 +227,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.4";
+const VERSION = "v2.5";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -448,6 +448,20 @@ const IMPORT_TYPES = [
       const errs = [];
       if (!FIRE_TOOLKIT_KINDS.includes(e.kind)) errs.push('kind "' + e.kind + '" is not one of: ' + FIRE_TOOLKIT_KINDS.join(', '));
       if (typeof e.title !== 'string' || !e.title.trim()) errs.push('missing title');
+      return errs;
+    }
+  },
+  {
+    id: 'timesheetGear',
+    label: 'Timesheet materials list',
+    collection: 'timesheetGear',
+    testRecords: false,
+    note: 'Writes to the timesheetGear collection: the materials that pop up as engineers type on their timesheets. Every entry needs an id and a name (category is optional). Items engineers have added themselves show as "not in file"; leave them unticked to keep them.',
+    validateEntry(e) {
+      const errs = [];
+      if (typeof e.name !== 'string' || !e.name.trim()) errs.push('missing name');
+      else if (e.name.length > 120) errs.push('name is longer than 120 characters');
+      if ('category' in e && typeof e.category !== 'string') errs.push('category must be text');
       return errs;
     }
   }

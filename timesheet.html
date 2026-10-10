@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheet v4.0</title>
+<title>Simpson & Wood — Timesheet v4.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -160,6 +160,37 @@
     .trow{grid-template-columns:1fr; padding:12px;}
     .trow .acts{justify-content:flex-start;}
   }
+  .cal-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .cal-h h3{margin:0; font-size:24px; font-weight:700; min-width:190px; text-align:center;}
+  .cal-h button{background:#fff; border:1px solid var(--line); border-radius:8px; width:42px; height:40px; font-size:20px; cursor:pointer;}
+  .cal{display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:6px; margin-bottom:10px;}
+  .cal .dn{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--grey); text-align:center; text-transform:uppercase;}
+  .cal .c{position:relative; min-height:84px; border-radius:9px; border:1px solid var(--line); background:#fff; padding:6px 8px; text-align:left; cursor:pointer; display:flex; flex-direction:column; font-family:'Barlow',sans-serif;}
+  .cal .c .n{font-weight:700; font-size:15px;}
+  .cal .c .v{margin-top:auto; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:20px; line-height:1.05;}
+  .cal .c .s{font-size:12px; line-height:1.2;}
+  .cal .c.pad{visibility:hidden;}
+  .cal .c.wkend{background:#ecebe7; color:var(--grey);}
+  .cal .c.done{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
+  .cal .c.off{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
+  .cal .c.miss{background:var(--red-tint); border-color:#f1c4c6; color:var(--red-dark);}
+  .cal .c.today{box-shadow:0 0 0 2px var(--ink) inset;}
+  .cal .c.future{opacity:.65;}
+  .cal .c .dot{position:absolute; top:8px; right:8px; width:10px; height:10px; border-radius:50%; background:#e8a317;}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--grey); margin-bottom:18px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{display:inline-block; width:14px; height:14px; border-radius:4px; border:1px solid var(--line);}
+  .mlist-h{font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:0 0 8px;}
+  @media (max-width:640px){
+    .cal{gap:3px;}
+    .cal .c{min-height:58px; padding:4px 5px; border-radius:7px;}
+    .cal .c .n{font-size:13px;}
+    .cal .c .v{font-size:15px;}
+    .cal .c .s{display:none;}
+    .cal .c .dot{top:5px; right:5px; width:8px; height:8px;}
+    .cal-h h3{font-size:20px; min-width:0; flex:1;}
+  }
+  .ac-list .cat{color:var(--grey-2); font-size:12.5px; margin-left:6px;}
   .tag{display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); vertical-align:middle; white-space:nowrap; margin:2px 4px 2px 0;}
   .tag.ok{background:var(--green-bg); color:var(--green);}
   .tag.bad{background:var(--red-tint); color:var(--red-dark);}
@@ -213,7 +244,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheet</h1>
-        <p id="versionLabel">v4.0</p>
+        <p id="versionLabel">v4.1</p>
       </div>
     </a>
     <div class="who">
@@ -271,7 +302,6 @@
               <label class="lbl" for="offNote">Anything the office should know? (optional)</label>
               <textarea class="inp" id="offNote" placeholder="e.g. booked holiday, back Monday"></textarea>
             </div>
-            <p class="small">This sends a short email to the office. There's no PDF for a day off.</p>
           </div>
         </div>
 
@@ -292,14 +322,13 @@
             </div>
             <ul class="errs" id="errs" hidden></ul>
             <button type="button" class="btn-primary" id="sendBtn"><i class="ti ti-send"></i> <span id="sendLabel">Send timesheet</span></button>
-            <p class="small" id="sendSmall">Sends from your own email to the office, with the office and engineer PDFs attached. A copy stays in your Sent Items.</p>
+            <p class="small" id="sendSmall" hidden></p>
             <div id="sendStatus"></div>
           </div>
         </aside>
       </div>
       <div class="notes">
-        <h3>How hours are worked out</h3>
-        <p>Monday to Friday, 08:00 to 16:30 is paid at 1×; anything before 08:00 or after 16:30 is 1.5×. Saturday is 1.5× all day. Sunday and bank holidays are 2× all day. A dinner break takes 30 minutes off. If a job runs past midnight, the hours after midnight are paid at the next day's rate.</p>
+        <h3>Good to know</h3>
         <p>If you finish a job at an earlier time than you started it, the app takes it as finishing the next day (for call-outs past midnight).</p>
       </div>
     </section>
@@ -309,7 +338,7 @@
       <div class="tl-h">
         <div>
           <h2>My timesheets</h2>
-          <p>Everything you've sent. Edit one to correct it: the office gets an email marked AMENDED, and every version is kept.</p>
+          <p>Tap a day to open it.</p>
         </div>
       </div>
       <div id="mineList"></div>
@@ -387,7 +416,7 @@ const redirectDone = getRedirectResult(auth).then(r => { if (r) keepToken(r); })
 // ═══════════════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'v4.0';
+const VERSION = 'v4.1';
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -448,6 +477,7 @@ const fmtNum = mins => (Math.max(0, mins) / 60).toFixed(2);
 let ME = null;          // { email (lowercase), rawEmail, name, staff }
 let MINE = [];          // my saved timesheets
 let CUSTOMERS = [];     // shared customer list (names)
+let GEAR = [];          // materials list: [{ name, cat }]
 let LOGO = null;        // logo for PDFs
 let state = null;
 let lastStatus = null;  // what the send panel is showing
@@ -644,7 +674,7 @@ function timeBtn(i, which) {
 function gearHTML(i, k, g) {
   return `<div class="gear">
     <input class="inp" data-j="${i}" data-k="${k}" data-g="qty" value="${esc(g.qty)}" placeholder="Qty" aria-label="Quantity">
-    <input class="inp" data-j="${i}" data-k="${k}" data-g="desc" value="${esc(g.desc)}" placeholder="e.g. 5m 1.5mm T&amp;E" aria-label="Description">
+    <div class="ac"><input class="inp" data-j="${i}" data-k="${k}" data-g="desc" value="${esc(g.desc)}" placeholder="Start typing — e.g. 2.5 T&amp;E" aria-label="Description" autocomplete="off"><div class="ac-list" hidden></div></div>
     <button type="button" class="x2" data-delgear="${i}:${k}" aria-label="Remove item"><i class="ti ti-trash"></i></button></div>`;
 }
 function jobHTML(j, i) {
@@ -706,10 +736,8 @@ function renderDay() {
   const ed = state.editing;
   $('editingBar').innerHTML = ed ? `<div class="editing"><i class="ti ti-pencil"></i><div style="flex:1;min-width:200px"><b>Changing your timesheet for ${esc(shortDate(state.date))}</b> (sent as version ${ed.version}). When you send it, the office gets an email marked <b>AMENDED</b>. The old version is kept.</div><button type="button" class="mini" id="cancelEdit">Cancel changes</button></div>` : '';
   $('sendLabel').textContent = state.mode === 'off' ? (ed ? 'Send amended — not working' : 'Send — not working') : (ed ? 'Send amended timesheet' : 'Send timesheet');
-  $('sendSmall').textContent = state.mode === 'off'
-    ? 'Sends a short email from your own account to the office.'
-    : 'Sends from your own email to the office, with the office and engineer PDFs attached. A copy stays in your Sent Items.';
-  if (TEST) $('sendSmall').textContent = 'TEST MODE: the email comes to you, not the office.';
+  $('sendSmall').hidden = !TEST;
+  $('sendSmall').textContent = TEST ? 'Test mode: emails come to you, not the office.' : '';
 }
 function renderBanners() {
   const b = [];
@@ -879,7 +907,7 @@ document.addEventListener('click', async e => {
 });
 $('jobs').addEventListener('input', e => {
   const t = e.target, i = +t.dataset.j;
-  if (t.dataset.g) { state.jobs[i].materials[+t.dataset.k][t.dataset.g] = t.value; updateDerived(); return; }
+  if (t.dataset.g) { state.jobs[i].materials[+t.dataset.k][t.dataset.g] = t.value; if (t.dataset.g === 'desc') showSuggestions(t); updateDerived(); return; }
   if (t.dataset.f === 'customer') { state.jobs[i].customer = t.value; showSuggestions(t); updateDerived(); return; }
   if (t.dataset.f === 'details') { state.jobs[i].details = t.value; updateDerived(); return; }
 });
@@ -922,47 +950,64 @@ $('jobs').addEventListener('click', async e => {
   if (dg) { const [i, k] = dg.dataset.delgear.split(':').map(Number); state.jobs[i].materials.splice(k, 1); renderJobs(); }
 });
 
-// ---- customer suggestions ----
+// ---- suggestions (customers and materials) ----
+// Every word typed must appear somewhere in the name, so "2.5 t&e" finds "2.5mm T&E".
+function matchNames(items, q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const starts = [], rest = [];
+  for (const it of items) {
+    const l = it.name.toLowerCase();
+    if (l === q.toLowerCase()) continue;
+    if (!words.every(w => l.includes(w))) continue;
+    (l.startsWith(words[0]) ? starts : rest).push(it);
+  }
+  return starts.concat(rest).slice(0, 8);
+}
+function highlight(name, q) {
+  let out = esc(name);
+  q.split(/\s+/).filter(Boolean).sort((x, y) => y.length - x.length).forEach(w => {
+    const re = new RegExp('(' + esc(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'i');
+    out = out.replace(re, '<mark>$1</mark>');
+  });
+  return out;
+}
 function showSuggestions(input) {
   const list = input.parentElement.querySelector('.ac-list');
-  const q = input.value.trim().toLowerCase();
-  if (q.length < 1) { list.hidden = true; return; }
-  const starts = [], contains = [];
-  for (const n of CUSTOMERS) {
-    const l = n.toLowerCase();
-    if (l === q) continue;
-    if (l.startsWith(q)) starts.push(n); else if (l.includes(q)) contains.push(n);
-  }
-  const hits = starts.concat(contains).slice(0, 8);
+  const isGear = input.dataset.g === 'desc';
+  const items = isGear ? GEAR : CUSTOMERS.map(n => ({ name: n }));
+  const q = input.value.trim();
+  const hits = q ? matchNames(items, q) : [];
   if (!hits.length) { list.hidden = true; return; }
-  list.innerHTML = hits.map((n, k) => {
-    const at = n.toLowerCase().indexOf(q);
-    const shown = esc(n.slice(0, at)) + '<mark>' + esc(n.slice(at, at + q.length)) + '</mark>' + esc(n.slice(at + q.length));
-    return `<button type="button" data-pick="${esc(n)}" class="${k === 0 ? 'hl' : ''}">${shown}</button>`;
-  }).join('');
+  list.innerHTML = hits.map((it, k) => `<button type="button" data-pick="${esc(it.name)}" class="${k === 0 ? 'hl' : ''}">${highlight(it.name, q)}${it.cat ? `<span class="cat">${esc(it.cat)}</span>` : ''}</button>`).join('');
   list.hidden = false;
 }
+function applyPick(input, value) {
+  input.value = value;
+  const i = +input.dataset.j;
+  if (input.dataset.g) state.jobs[i].materials[+input.dataset.k][input.dataset.g] = value;
+  else state.jobs[i].customer = value;
+  input.parentElement.querySelector('.ac-list').hidden = true;
+  updateDerived();
+}
+const isSuggestInput = t => t && t.dataset && (t.dataset.f === 'customer' || t.dataset.g === 'desc');
 $('jobs').addEventListener('pointerdown', e => {
   const p = e.target.closest('[data-pick]'); if (!p) return;
   e.preventDefault();
-  const input = p.closest('.ac').querySelector('input');
-  state.jobs[+input.dataset.j].customer = p.dataset.pick;
-  input.value = p.dataset.pick;
-  p.closest('.ac-list').hidden = true;
-  updateDerived();
+  applyPick(p.closest('.ac').querySelector('input'), p.dataset.pick);
 });
 $('jobs').addEventListener('focusout', e => {
-  if (e.target.dataset && e.target.dataset.f === 'customer') setTimeout(() => { const l = e.target.parentElement.querySelector('.ac-list'); if (l) l.hidden = true; }, 150);
+  if (isSuggestInput(e.target)) setTimeout(() => { const l = e.target.parentElement.querySelector('.ac-list'); if (l) l.hidden = true; }, 150);
 });
 $('jobs').addEventListener('keydown', e => {
-  const t = e.target; if (!t.dataset || t.dataset.f !== 'customer') return;
-  const list = t.parentElement.querySelector('.ac-list'); if (list.hidden) return;
+  const t = e.target; if (!isSuggestInput(t)) return;
+  const list = t.parentElement.querySelector('.ac-list'); if (!list || list.hidden) return;
   const items = [...list.querySelectorAll('button')]; let k = items.findIndex(b => b.classList.contains('hl'));
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault(); k = (k + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
     items.forEach((b, n) => b.classList.toggle('hl', n === k));
   } else if (e.key === 'Enter' && k >= 0) {
-    e.preventDefault(); t.value = items[k].dataset.pick; state.jobs[+t.dataset.j].customer = t.value; list.hidden = true; updateDerived();
+    e.preventDefault(); applyPick(t, items[k].dataset.pick);
   } else if (e.key === 'Escape') list.hidden = true;
 });
 
@@ -1039,10 +1084,28 @@ async function saveRecord(rec) {
     });
   }
   await b.commit();
+  if (!TEST) saveNewGear(rec);
   const local = Object.assign({}, full, { id, updatedAt: null, createdAt: (existing && existing.createdAt) || null, history });
   MINE = MINE.filter(r => r.id !== id).concat([local]).sort((a, b2) => b2.date.localeCompare(a.date));
   (rec.jobs || []).forEach(j => { if (j.customer && !CUSTOMERS.some(n => n.toLowerCase() === j.customer.toLowerCase())) CUSTOMERS.push(j.customer); });
   return local;
+}
+// Materials nobody has used before join the shared list. Done separately and
+// quietly after the timesheet is saved, so it can never stop a timesheet saving.
+function saveNewGear(rec) {
+  const known = new Set(GEAR.map(g => customerKey(g.name)));
+  const fresh = [];
+  (rec.jobs || []).forEach(j => (j.materials || []).forEach(m => {
+    const key = customerKey(m.desc);
+    if (!key || known.has(key)) return;
+    known.add(key); fresh.push({ name: m.desc.slice(0, 120), key });
+    GEAR.push({ name: m.desc.slice(0, 120), cat: '' });
+  }));
+  fresh.forEach(g => {
+    const b = writeBatch(db);
+    b.set(doc(db, 'timesheetGear', g.key), { name: g.name, key: g.key, addedBy: ME.email, addedOn: rec.date });
+    b.commit().catch(e => console.warn('gear item not added', g.name, e));
+  });
 }
 async function markEmail(rec, fields) {
   const upd = {};
@@ -1272,32 +1335,18 @@ function emailHTML(rec) {
       const flags = [j.callout === 'Yes' ? 'CALL-OUT' : '', j.testCert === 'Yes' ? 'TEST CERT NEEDED' : '', j.status === 'Return visit needed' ? 'RETURN VISIT NEEDED' : ''].filter(Boolean).join(' · ');
       h += `<tr><td style="${td}">${i + 1}.</td><td style="${td}"><b>${esc(j.customer)}</b></td><td style="${td}">${esc(j.start)}–${esc(j.end)}</td><td style="${td}">${fmtNum(j.paidMins)} h</td><td style="${td};color:#D0222A"><b>${flags}</b></td></tr>`;
     });
-    h += `</table><p style="color:#6b6b6b">The office copy and the engineer copy are attached as PDFs.</p>`;
+    h += `</table><p style="color:#6b6b6b">The office copy is attached as a PDF.</p>`;
   }
   if (rec.noStaffRecord) h += `<p style="color:#D0222A"><b>Note:</b> ${esc(rec.engineerEmail)} isn't on the staff list in the management page, so the name above is the email address. Please add them.</p>`;
   h += `<p style="color:#9a9a9a;font-size:12px">Sent from the Simpson &amp; Wood timesheet app ${VERSION}.</p></div>`;
   return h;
 }
-async function sendEmail(rec, token) {
-  const amended = (rec.version || 1) > 1;
-  const to = rec.testData ? ME.rawEmail : OFFICE_EMAIL;
-  const prefix = (rec.testData ? 'TEST — ' : '') + (amended ? `AMENDED (v${rec.version}) — ` : '');
-  let subject, attachments = [];
-  if (rec.kind === 'off') {
-    subject = `${prefix}Not working — ${rec.engineerName} — ${longDate(rec.date)} — ${REASONS[rec.offReason] || ''}`;
-  } else {
-    subject = `${prefix}Timesheet — ${rec.engineerName} — ${longDate(rec.date)}`;
-    attachments = [
-      { '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, 'office'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, true)) },
-      { '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, 'engineer'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, false)) }
-    ];
-  }
-  const message = { subject, body: { contentType: 'HTML', content: emailHTML(rec) }, toRecipients: [{ emailAddress: { address: to } }], attachments };
+async function graphSend(token, message) {
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, saveToSentItems: true })
   });
-  if (res.status === 202 || res.ok) return to;
+  if (res.status === 202 || res.ok) return;
   let detail = '';
   try { const j = await res.json(); detail = (j.error && (j.error.code + ': ' + j.error.message)) || ''; } catch (e) {}
   const err = new Error(res.status === 403
@@ -1305,6 +1354,27 @@ async function sendEmail(rec, token) {
     : `Microsoft said ${res.status}${detail ? ' (' + detail + ')' : ''}.`);
   err.status = res.status;
   throw err;
+}
+const pdfAttachment = (rec, office) => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, office ? 'office' : 'engineer'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, office)) });
+// The office gets the office copy only. Not-working days have no PDF.
+async function sendEmail(rec, token) {
+  const amended = (rec.version || 1) > 1;
+  const to = rec.testData ? ME.rawEmail : OFFICE_EMAIL;
+  const prefix = (rec.testData ? 'TEST — ' : '') + (amended ? `AMENDED (v${rec.version}) — ` : '');
+  const subject = rec.kind === 'off'
+    ? `${prefix}Not working — ${rec.engineerName} — ${longDate(rec.date)} — ${REASONS[rec.offReason] || ''}`
+    : `${prefix}Timesheet — ${rec.engineerName} — ${longDate(rec.date)}`;
+  await graphSend(token, { subject, body: { contentType: 'HTML', content: emailHTML(rec) }, toRecipients: [{ emailAddress: { address: to } }],
+    attachments: rec.kind === 'off' ? [] : [pdfAttachment(rec, true)] });
+  return to;
+}
+// The engineer gets their own copy, emailed to themselves.
+async function sendEngineerCopy(rec, token) {
+  const amended = (rec.version || 1) > 1;
+  const subject = `${rec.testData ? 'TEST — ' : ''}Your timesheet${amended ? ` (AMENDED v${rec.version})` : ''} — ${longDate(rec.date)}`;
+  const body = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a"><p>Your copy of your timesheet for <b>${esc(longDate(rec.date))}</b>${amended ? ` (amended, version ${rec.version})` : ''}: <b>${fmtNum(rec.totals.totalMins)} hours</b>, ${rec.jobs.length} job${rec.jobs.length === 1 ? '' : 's'}. The office has been sent their copy.</p><p style="color:#9a9a9a;font-size:12px">Sent from the Simpson &amp; Wood timesheet app ${VERSION}.</p></div>`;
+  await graphSend(token, { subject, body: { contentType: 'HTML', content: body }, toRecipients: [{ emailAddress: { address: ME.rawEmail } }],
+    attachments: [pdfAttachment(rec, false)] });
 }
 
 // Send the email for a saved record, asking Microsoft for a token if needed.
@@ -1326,7 +1396,12 @@ async function deliver(rec, opts = {}) {
       setStatus('sending', 'Sending the email…');
       const to = await sendEmail(rec, token);
       await markEmail(rec, { status: 'sent', sentAt: new Date().toISOString(), version: rec.version || 1, to, error: null });
-      sentOK(rec, to);
+      let copyOK = true;
+      if (rec.kind !== 'off') {
+        try { await sendEngineerCopy(rec, token); await markEmail(rec, { engineerCopy: 'sent' }); }
+        catch (e2) { copyOK = false; await markEmail(rec, { engineerCopy: 'failed' }); }
+      }
+      sentOK(rec, to, copyOK);
       return true;
     } catch (e) {
       if (e.status === 401 && attempt === 0) { sessionStorage.removeItem('ts-graph'); token = null; continue; }
@@ -1337,9 +1412,10 @@ async function deliver(rec, opts = {}) {
   }
   return false;
 }
-function sentOK(rec, to) {
+function sentOK(rec, to, copyOK = true) {
   const amended = (rec.version || 1) > 1;
-  setStatus('ok', `<b><i class="ti ti-circle-check"></i> ${amended ? 'Amended timesheet' : (rec.kind === 'off' ? 'Not-working day' : 'Timesheet')} sent</b> for ${esc(shortDate(rec.date))} to ${esc(to)}. A copy is in your Sent Items.
+  const yours = rec.kind === 'off' || copyOK ? '' : ' Your own copy didn\'t email, but you can download it below.';
+  setStatus('ok', `<b><i class="ti ti-circle-check"></i> ${amended ? 'Amended timesheet sent' : 'Sent'}</b> for ${esc(shortDate(rec.date))}.${yours}
     <div class="acts">${rec.kind !== 'off' ? `<button type="button" class="mini" data-pdf="${esc(rec.id)}">Download my copy</button>` : ''}</div>`);
   renderBanners(); renderMine();
 }
@@ -1393,19 +1469,54 @@ $('sendBtn').addEventListener('click', onSend);
 // ═══════════════════════════════════════════════════════════════════════════
 //  MY TIMESHEETS
 // ═══════════════════════════════════════════════════════════════════════════
-let mineShown = 30;
+let calMonth = todayISO().slice(0, 7);     // 'YYYY-MM' shown on My timesheets
 const openHist = new Set();
+function emailSent(r) { return r.email && r.email.status === 'sent' && (r.email.version || 1) === (r.version || 1); }
+function renderCalendar() {
+  const [y, m] = calMonth.split('-').map(Number);
+  const first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;     // Monday first
+  const byDate = new Map(realm().map(r => [r.date, r]));
+  const missing = new Set(missingDays());
+  const today = todayISO();
+  let html = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<div class="dn">${d}</div>`).join('');
+  for (let k = 0; k < lead; k++) html += '<div class="c pad"></div>';
+  for (let d = 1; d <= days; d++) {
+    const date = `${y}-${pad(m)}-${pad(d)}`, r = byDate.get(date), t = dayType(date);
+    const cls = ['c'], parts = [];
+    if (r && r.kind === 'off') {
+      cls.push('off');
+      const letter = { holiday: 'H', sick: 'S', dayOff: 'D', bankHoliday: 'BH' }[r.offReason] || '–';
+      parts.push(`<span class="v">${letter}</span><span class="s">${esc(REASONS[r.offReason] || '')}</span>`);
+    } else if (r) {
+      cls.push('done');
+      parts.push(`<span class="v">${fmtNum(r.totals ? r.totals.totalMins : 0)}</span><span class="s">${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}</span>`);
+    } else if (missing.has(date)) {
+      cls.push('miss'); parts.push('<span class="v">!</span><span class="s">Missing</span>');
+    } else if (t !== 'wk') {
+      cls.push('wkend'); if (t === 'bh') parts.push('<span class="s">Bank hol</span>');
+    }
+    if (date > today) cls.push('future');
+    if (date === today) cls.push('today');
+    const dot = r && !emailSent(r) ? '<span class="dot" title="Email not sent"></span>' : '';
+    html += `<button type="button" class="${cls.join(' ')}" data-calday="${date}" aria-label="${esc(longDate(date))}"><span class="n">${d}</span>${parts.join('')}${dot}</button>`;
+  }
+  const label = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  return `<div class="cal-h"><button type="button" data-calmove="-1" aria-label="Previous month">‹</button><h3>${esc(label)}</h3><button type="button" data-calmove="1" aria-label="Next month">›</button></div>
+    <div class="cal">${html}</div>
+    <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working (H holiday · S sick · D day off)</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>`;
+}
 function renderMine() {
-  const list = realm();
   const box = $('mineList');
-  if (!list.length) { box.innerHTML = `<div class="empty">Nothing sent from this app yet.${TEST ? ' (Test mode shows test timesheets only.)' : ''}</div>`; return; }
-  box.innerHTML = list.slice(0, mineShown).map(r => {
+  const list = realm().filter(r => r.date.slice(0, 7) === calMonth);
+  const label = parseISO(calMonth + '-01').toLocaleDateString('en-GB', { month: 'long' });
+  box.innerHTML = renderCalendar() + `<div class="mlist-h">${esc(label)}</div>` + (!list.length ? `<div class="empty">Nothing sent for ${esc(label)}.${TEST ? ' (Test mode shows test timesheets only.)' : ''}</div>` : list.map(r => {
     const off = r.kind === 'off';
     const what = off ? `<b>Not working</b> — ${esc(REASONS[r.offReason] || r.offReason)}${r.offNote ? `<div class="cust">${esc(r.offNote)}</div>` : ''}`
       : `<b>${fmtH(r.totals ? r.totals.totalMins : 0)}</b> · ${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}<div class="cust">${esc(r.jobs.map(j => j.customer).join(', '))}</div>`;
-    const sent = r.email && r.email.status === 'sent' && (r.email.version || 1) === (r.version || 1);
+    const sent = emailSent(r);
     const tags = [(r.version || 1) > 1 ? `<span class="tag warn">Amended · v${r.version}</span>` : '',
-      sent ? '<span class="tag ok">Emailed</span>' : '<span class="tag bad">Email not sent</span>',
+      sent ? '' : '<span class="tag bad">Email not sent</span>',
       r.testData ? '<span class="tag test">Test</span>' : ''].join('');
     const hist = openHist.has(r.id) ? `<div class="hist">${(r.history || []).map(h => `<div>Version ${h.v}: ${h.v === 1 ? 'sent' : 'amended'} ${esc(new Date(h.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} by ${esc(h.byName || h.by)}</div>`).join('') || 'No history recorded.'}</div>` : '';
     return `<div class="trow"><div class="d"><b>${esc(shortDate(r.date))}</b><span>${r.date.slice(0, 4)}</span></div>
@@ -1413,13 +1524,30 @@ function renderMine() {
       <div class="acts">${!sent ? `<button type="button" class="mini" data-send="${esc(r.id)}" style="color:var(--red)">Send email</button>` : ''}
         <button type="button" class="mini" data-edit="${esc(r.id)}"><i class="ti ti-pencil"></i> Change</button>
         ${!off ? `<button type="button" class="mini" data-pdf="${esc(r.id)}"><i class="ti ti-file-download"></i> PDF</button>` : ''}
-        <button type="button" class="mini" data-hist="${esc(r.id)}">History</button></div>${hist}</div>`;
-  }).join('') + (list.length > mineShown ? `<button type="button" class="btn-ghost" id="moreMine" style="width:100%">Show older</button>` : '');
+        ${(r.version || 1) > 1 ? `<button type="button" class="mini" data-hist="${esc(r.id)}">History</button>` : ''}</div>${hist}</div>`;
+  }).join(''));
 }
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-edit],[data-pdf],[data-send],[data-hist],#moreMine');
+  const mv = e.target.closest('[data-calmove]');
+  if (mv) {
+    const d = parseISO(calMonth + '-01'); d.setMonth(d.getMonth() + +mv.dataset.calmove);
+    calMonth = isoOf(d).slice(0, 7); renderMine(); return;
+  }
+  const cd = e.target.closest('[data-calday]');
+  if (cd) {
+    const date = cd.dataset.calday, rec = recordFor(date);
+    const alreadyOpen = state.date === date && (rec ? !!(state.editing && state.editing.id === rec.id) : !state.editing);
+    if (!alreadyOpen) {
+      if (!(await confirmDiscard())) return;
+      openDate(date);
+    }
+    showTab('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-edit],[data-pdf],[data-send],[data-hist]');
   if (!t) return;
-  if (t.id === 'moreMine') { mineShown += 30; renderMine(); return; }
   const rec = MINE.find(r => r.id === (t.dataset.edit || t.dataset.pdf || t.dataset.send || t.dataset.hist));
   if (!rec) return;
   if (t.dataset.hist) { openHist.has(rec.id) ? openHist.delete(rec.id) : openHist.add(rec.id); renderMine(); return; }
@@ -1468,6 +1596,16 @@ async function loadCustomers() {
   CUSTOMERS = [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 
+async function loadGear() {
+  const map = new Map();
+  try {
+    const snap = await getDocs(collection(db, 'timesheetGear'));
+    snap.forEach(d => { const x = d.data(); if (x.name) map.set(x.name.toLowerCase(), { name: x.name, cat: x.category || '' }); });
+  } catch (e) { console.warn('gear list not loaded', e); }
+  MINE.forEach(r => (r.jobs || []).forEach(j => (j.materials || []).forEach(m => { if (m.desc && !map.has(m.desc.toLowerCase())) map.set(m.desc.toLowerCase(), { name: m.desc, cat: '' }); })));
+  GEAR = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 let started = false;
 onAuthStateChanged(auth, async user => {
   if (!user) {
@@ -1487,7 +1625,7 @@ onAuthStateChanged(auth, async user => {
   } catch (e) { console.error('staff lookup failed', e); }
   $('whoName').textContent = ME.name;
   try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); }
-  await Promise.all([loadCustomers(), loadLogo()]);
+  await Promise.all([loadCustomers(), loadGear(), loadLogo()]);
   const draft = loadDraft();
   if (draft) {
     state = draft.state;
