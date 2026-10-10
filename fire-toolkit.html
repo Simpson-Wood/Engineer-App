@@ -179,7 +179,9 @@
 
   /* ---- contacts ---- */
   .contact{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; display:flex; flex-direction:column;}
-  .contact .top{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:6px;}
+  .contact .top{display:flex; justify-content:space-between; gap:6px 10px; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap;}
+  .contact .top .tag{white-space:normal;}
+  .contact.internal{max-width:640px;}
   .contact .name{font-weight:700; font-size:18px;}
   .contact .purpose{color:var(--grey); font-size:14.5px; margin-bottom:14px;}
   .contact .call{width:100%; justify-content:flex-start; font-size:17px; padding:13px 16px; margin-bottom:9px;}
@@ -265,7 +267,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Fire toolkit</h1>
-        <p id="versionLabel">v1.1</p>
+        <p id="versionLabel">v1.2</p>
       </div>
     </a>
     <div class="who">
@@ -293,7 +295,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v1.1";
+const VERSION = "v1.2";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -341,13 +343,14 @@ function toast(msg) {
 }
 const kind = k => DATA.byKind[k] || [];
 const get = id => DATA.byId.get(id);
-const guided = () => kind('troubleshootingTree').filter(t => t.guided);
-const technical = () => kind('troubleshootingTree').filter(t => !t.guided);
+const guidedTrees = () => kind('troubleshootingTree').filter(t => t.guided);
+const technicalTrees = () => kind('troubleshootingTree').filter(t => !t.guided);
+const guidedFaults = () => kind('faultType').filter(t => t.guided);
 const pendingTag = e => e && e.pending ? ' <span class="tag draft" title="New wording — being checked by Rob">Being checked</span>' : '';
 
 // FT01 → fault guide, T3 → plain-English tree (or technical if there isn't one).
 function routeFor(ref) {
-  if (/^FT\d{2}$/.test(ref)) return get(ref) ? 'faults/' + ref : null;
+  if (/^FT\d{2}$/.test(ref)) return get('guide-' + ref) ? 'faults/' + ref : (get(ref) ? 'faults/tech/' + ref : null);
   if (get('guide-' + ref)) return 'troubleshoot/' + ref;
   return get(ref) ? 'troubleshoot/tech/' + ref : null;
 }
@@ -364,7 +367,10 @@ function linkRefs(html) {
 // Inline markdown: **bold**, *italic*, `code`, [text](https://…), FT/T refs.
 function inline(raw) {
   const codes = [], links = [];
-  let s = String(raw ?? '').replace(/\\\*/g, '\u0001');
+  let s = String(raw ?? '')
+    .replace(/^Sources?:.*?\[M\d+\]\.\s*/, '')              // "Source: manual … [M1]." lead-ins
+    .replace(/\s*\[(?:M\d+|B\d+)\](?!\()/g, '')             // [M1], [B1] source codes
+    .replace(/\\\*/g, '\u0001');
   s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return '\u0002' + (codes.length - 1) + '\u0002'; });
   s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_, t, u) => { links.push([t, u]); return '\u0003' + (links.length - 1) + '\u0003'; });
   s = esc(s);
@@ -393,8 +399,10 @@ function md(text) {
       while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
       const body = rows.filter(r => !/^\|[\s\-|]+\|$/.test(r.trim()));
       const [head, ...rest] = body;
-      out += '<div class="tbl"><table><thead><tr>' + cells(head).map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>' +
-        rest.map(r => '<tr>' + cells(r).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+      const keep = cells(head).map(h => !/^(evidence|evidence status|evidence and limitations|source|source \/ website|evidence status \/ operational treatment)$/i.test(h));
+      const pick = r => cells(r).filter((_, k) => keep[k]);
+      out += '<div class="tbl"><table><thead><tr>' + pick(head).map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>' +
+        rest.map(r => '<tr>' + pick(r).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
       continue;
     }
     if (/^\d+\.\s/.test(ln)) {
@@ -438,44 +446,43 @@ function escalate() {
 }
 const matches = (e, q) => !q || JSON.stringify(e).toLowerCase().includes(q.toLowerCase());
 
-// ---------- TROUBLESHOOT (plain-English yes/no) ---------------------------
+// ---------- YES/NO FLOWS (problems T1–T12 and fault guides FT01–FT24) ------
 const TREE_ICONS = { T1: 'ti-power', T2: 'ti-bell-ringing', T3: 'ti-flame', T4: 'ti-speakerphone', T5: 'ti-plug-connected-x', T6: 'ti-bolt',
   T7: 'ti-battery-2', T8: 'ti-refresh-alert', T9: 'ti-network', T10: 'ti-antenna', T11: 'ti-wifi', T12: 'ti-door' };
-let flow = { code: null, trail: [] };   // trail: [{n, answer}]
+// trail: [{code, n, answer}] — kept when one flow carries on into another
+let flow = { code: null, base: 'troubleshoot', trail: [], carry: false };
 
 function viewTroubleshoot(parts) {
   if (parts[0] === 'tech') return viewTechTree(parts[1]);
   if (parts[0] === 'procedure-common') return viewProcedure();
-  if (parts[0]) return viewFlow(parts[0], parts[1]);
-  const list = guided();
+  if (parts[0]) return viewFlow('troubleshoot', parts[0], parts[1]);
   return pageHead('Troubleshoot', 'What\'s happening? Pick one and answer a few questions.') +
-    '<div class="grid">' + list.map(t => '<a class="tree-card" href="#troubleshoot/' + t.code + '"><i class="ti ' + (TREE_ICONS[t.code] || 'ti-help-circle') + '"></i><div><b>' + esc(t.title) + '</b><span>' + esc(t.code) + '</span></div></a>').join('') + '</div>' +
+    '<div class="grid">' + guidedTrees().map(t => '<a class="tree-card" href="#troubleshoot/' + t.code + '"><i class="ti ' + (TREE_ICONS[t.code] || 'ti-help-circle') + '"></i><div><b>' + esc(t.title) + '</b><span>' + esc(t.code) + '</span></div></a>').join('') + '</div>' +
     escalate() +
     notes([
       noteFrom('notice-guided', 'About these questions'),
       '<details><summary>Technical versions (numbered steps)</summary><div class="btn-row" style="margin-top:4px">' +
-        technical().map(t => '<a class="ref" style="font-size:14px;padding:3px 8px" href="#troubleshoot/tech/' + t.code + '">' + esc(t.code) + ' ' + esc(t.title) + '</a>').join('') +
-        '</div><p style="margin:10px 0 0"><a href="#troubleshoot/procedure-common">Common fault-finding procedure</a></p></details>',
-      noteFrom('notice-troubleshooting', 'About the technical trees')
+        technicalTrees().map(t => '<a class="ref" style="font-size:14px;padding:3px 8px" href="#troubleshoot/tech/' + t.code + '">' + esc(t.code) + ' ' + esc(t.title) + '</a>').join('') +
+        '</div><p style="margin:10px 0 0"><a href="#troubleshoot/procedure-common">Common fault-finding procedure</a></p></details>'
     ]);
 }
 
-function viewFlow(code, stepStr) {
+function viewFlow(base, code, stepStr) {
   const t = get('guide-' + code);
-  if (!t) return notFound('troubleshoot');
+  if (!t) return notFound(base);
   const n = stepStr ? +stepStr.replace('s', '') : t.steps[0].n;
-  if (flow.code !== code || !stepStr) flow = { code, trail: [] };
+  if (flow.carry) { flow.carry = false; flow.code = code; flow.base = base; }
+  else if (flow.code !== code || !stepStr) flow = { code, base, trail: [], carry: false };
   // trim the trail if we've gone back
-  const at = flow.trail.findIndex(x => x.n === n);
+  const at = flow.trail.findIndex(x => x.code === code && x.n === n);
   if (at >= 0) flow.trail = flow.trail.slice(0, at);
   const step = t.steps.find(s => s.n === n);
-  if (!step) return notFound('troubleshoot');
+  if (!step) return notFound(base);
   const before = get('notice-guided-before-you-start');
-  let html = backBtn('troubleshoot', 'All problems') +
-    pageHead(t.title, 'Follow the steps to find the fix', pendingTag(t)) + '<div class="flow">';
-  if (n === t.steps[0].n && before) html += '<div class="before"><b>Before you start</b>' + md(before.body) + '</div>';
-  if (flow.trail.length) html += '<div class="trail">Your answers: ' + flow.trail.map(x => '<span>' + esc(x.answer) + '</span>').join('') + '</div>';
-
+  let html = backBtn(base, base === 'faults' ? 'All fault codes' : 'All problems') +
+    pageHead((/^FT/.test(code) ? code + ' — ' : '') + t.title, 'Answer each question to find the fix', pendingTag(t)) + '<div class="flow">';
+  if (!flow.trail.length && n === t.steps[0].n && before) html += '<div class="before"><b>Before you start</b>' + md(before.body) + '</div>';
+  html += trailHtml();
   if (step.type === 'question') {
     const many = step.options.length > 2;
     const [q, ...rest] = splitQuestion(step.text);
@@ -484,55 +491,59 @@ function viewFlow(code, stepStr) {
         '<button class="ans' + (!many && /^yes/i.test(o.label) ? ' yes' : '') + '" data-opt="' + i + '">' + esc(o.label) + '</button>').join('') + '</div></div>';
   } else if (step.type === 'info') {
     html += '<div class="q-card"><div class="qt"><i class="ti ti-info-circle"></i><div>' + inline(step.text) + '</div></div>' +
-      '<div class="answers"><button class="ans yes" data-next="' + step.next + '">OK — next</button></div></div>';
+      '<div class="answers"><button class="ans yes" data-next="1">OK — next</button></div></div>';
   } else {
     html += outcome(step.type, step.text);
   }
   html += '</div>';
+  if (/^FT/.test(code) && get(code)) html += notes(['<div class="note"><a href="#faults/tech/' + code + '">Technical version of ' + code + '</a> (numbered steps)</div>']);
   return html;
+}
+function trailHtml() {
+  return flow.trail.length ? '<div class="trail">Your answers: ' + flow.trail.map(x => '<span>' + esc(x.answer) + '</span>').join('') + '</div>' : '';
 }
 // First sentence = the question; the rest = smaller help text.
 function splitQuestion(text) {
   const m = String(text).match(/^(.*?\?)\s+(.*)$/);
   return m ? [m[1], m[2]] : [text];
 }
-function outcome(type, text, ref) {
+function outcome(type, text) {
   const finish = get('notice-guided-finish-up-checks');
-  const icons = { help: 'ti-tool', sorted: 'ti-circle-check', stop: 'ti-hand-stop', guide: 'ti-book-2' };
-  const titles = { help: 'What to do', sorted: 'Sorted', stop: 'Stop', guide: 'Open the fault guide' };
+  const icons = { help: 'ti-tool', sorted: 'ti-circle-check', stop: 'ti-hand-stop' };
+  const titles = { help: 'What to do', sorted: 'Sorted', stop: 'Stop' };
   let html = '<div class="outcome ' + type + '"><div class="ot"><i class="ti ' + icons[type] + '"></i>' + titles[type] + '</div>';
   if (text) html += '<div class="ob">' + inline(text) + '</div>';
-  const refs = [...new Set((String(text || '').match(/\b(FT\d{2}|T\d{1,2})\b/g) || []).concat(ref ? [ref] : []))].filter(routeFor);
-  if (refs.length) html += '<div class="btn-row">' + refs.map(r => { const e = get(r) || get('guide-' + r);
-    return '<a class="btn' + (type === 'stop' ? ' ghost' : '') + '" href="#' + routeFor(r) + '"><i class="ti ti-arrow-right"></i>' + r + (e ? ' — ' + esc(e.title) : '') + '</a>'; }).join('') + '</div>';
   html += '</div>';
   if (type === 'sorted' && finish) html += '<div class="card"><h3>Finish-up checks</h3>' + md(finish.body) + '</div>';
-  html += '<div class="btn-row" style="margin:6px 0"><a class="btn ghost" href="#troubleshoot/' + flow.code + '"><i class="ti ti-rotate"></i>Start again</a><a class="btn ghost" href="#troubleshoot"><i class="ti ti-list"></i>All problems</a></div>';
+  html += '<div class="btn-row" style="margin:6px 0"><a class="btn ghost" href="#' + flow.base + '/' + (flow.trail[0] ? flow.trail[0].code : flow.code) + '"><i class="ti ti-rotate"></i>Start again</a><a class="btn ghost" href="#' + flow.base + '"><i class="ti ti-list"></i>' + (flow.base === 'faults' ? 'All fault codes' : 'All problems') + '</a></div>';
   if (type !== 'sorted') html += escalate();
   return html;
 }
-function answerFlow(i, nextOverride) {
+function goTarget(tg) {
+  if (tg.type === 'step') { location.hash = flow.base + '/' + flow.code + '/s' + tg.n; return; }
+  if (tg.type === 'guide' || tg.type === 'tree') {     // carry straight on into the other flow
+    flow.carry = true; location.hash = flow.base + '/' + tg.ref; return;
+  }
+  // endings render in place (no route of their own)
+  const head = document.querySelector('#view .flow');
+  head.innerHTML = trailHtml() + outcome(tg.type, tg.text);
+  window.scrollTo(0, 0);
+}
+function answerFlow(i, isNext) {
   const t = get('guide-' + flow.code);
   const n = +((location.hash.split('/')[2] || '').replace('s', '')) || t.steps[0].n;
   const step = t.steps.find(s => s.n === n);
-  if (nextOverride !== undefined) { flow.trail.push({ n, answer: 'OK' }); location.hash = 'troubleshoot/' + flow.code + '/s' + nextOverride; return; }
+  if (isNext) { flow.trail.push({ code: flow.code, n, answer: 'OK' }); return goTarget(step.next); }
   const o = step.options[i];
-  flow.trail.push({ n, answer: o.label });
-  const tg = o.target;
-  if (tg.type === 'step') { location.hash = 'troubleshoot/' + flow.code + '/s' + tg.n; return; }
-  if (tg.type === 'tree') { location.hash = 'troubleshoot/' + tg.ref; return; }
-  // endings render in place (no route of their own)
-  const view = document.getElementById('view');
-  const head = view.querySelector('.flow');
-  const trail = '<div class="trail">Your answers: ' + flow.trail.map(x => '<span>' + esc(x.answer) + '</span>').join('') + '</div>';
-  head.innerHTML = trail + (tg.type === 'guide' ? outcome('guide', '', tg.ref) : outcome(tg.type, tg.text));
-  window.scrollTo(0, 0);
+  flow.trail.push({ code: flow.code, n, answer: o.label });
+  goTarget(o.target);
 }
 
 function viewTechTree(code) {
   const t = get(code);
   if (!t) return notFound('troubleshoot');
-  return backBtn('troubleshoot', 'Troubleshoot') + pageHead(t.code + ' — ' + t.title, 'Technical version') +
+  const back = /^FT/.test(code) ? backBtn('faults/' + code, 'Back to the questions') : backBtn('troubleshoot', 'Troubleshoot');
+  return back + pageHead(t.code + ' — ' + t.title, 'Technical version') +
     '<div class="card">' + stepsList(t.steps) + md(t.body) + suggestBtn(t) + '</div>' + escalate() +
     notes(['<div class="note">Apply the <a href="#troubleshoot/procedure-common">common fault-finding procedure</a> before and after.</div>']);
 }
@@ -542,38 +553,47 @@ function viewProcedure() {
   return backBtn('troubleshoot', 'Troubleshoot') + pageHead(p.title) + '<div class="card">' + stepsList(p.steps) + md(p.body) + suggestBtn(p) + '</div>';
 }
 
+// ---------- MANUALS (manufacturer-hosted links only) -----------------------
+const MAP_MANUALS = { 'map-kentec-syncro-as': /syncro as/i, 'map-c-tec-xfp': /xfp/i, 'map-fike-twinflex-pro': /twinflex/i, 'map-remaining-manufacturer-coverage': /^(eaton|ems)/i };
+const manuals = () => ((get('notice-manuals') || {}).manuals || []);
+const manualBtns = list => list.length ? '<div class="btn-row" style="margin:10px 0">' + list.map(m =>
+  '<a class="btn ghost" href="' + esc(m.url) + '" target="_blank" rel="noopener"><i class="ti ti-file-text"></i>' + esc(m.manufacturer) + ' — ' + esc(m.title) + '</a>').join('') + '</div>' : '';
+function manualsForContact(c) {
+  const first = c.title.split(/[\s—/]/)[0].toLowerCase();
+  return manuals().filter(m => m.manufacturer.split(/[\s/]/)[0].toLowerCase() === first);
+}
+
 // ---------- FAULT CODES ---------------------------------------------------
 function viewFaults(parts) {
   const open = parts[0] || '';
-  if (open.startsWith('map-')) UI.faultsFilter = open;
-  else if (open) UI.faultsFilter = 'all';
+  if (open === 'tech') return viewTechTree(parts[1]);
+  if (/^FT\d{2}$/.test(open)) return viewFlow('faults', open, parts[1]);
+  UI.faultsFilter = open.startsWith('map-') ? open : 'all';
   const maps = kind('manufacturerMapping');
   const chipVals = [['all', 'All fault types']].concat(maps.map(m => [m.id, m.title.replace(/ — .*/, '')]));
-  return pageHead('Fault codes', 'Fault guides, and what each manufacturer\'s messages mean') +
+  return pageHead('Fault codes', 'Pick a fault and answer the questions, or look up a manufacturer\'s messages') +
     '<input class="search" id="q" placeholder="Search faults, messages, manufacturers…" autocomplete="off" value="' + esc(UI.faultsQ) + '">' +
     chips('Manufacturer', chipVals, UI.faultsFilter, 'data-ff') +
     '<div id="results"></div>' +
     notes([
-      '<div class="note">Apply the <a href="#troubleshoot/procedure-common">common fault-finding procedure</a> before and after every fault.</div>',
-      noteFrom('notice-fault-types', 'About the fault guides'),
-      noteFrom('notice-manufacturer-mappings', 'About the manufacturer messages'),
-      noteFrom('notice-incomplete-evidence')
+      noteFrom('notice-guided-faults', 'About these questions'),
+      '<div class="note">Technical versions (numbered steps) are linked from the bottom of each fault, plus the <a href="#troubleshoot/procedure-common">common fault-finding procedure</a>.</div>'
     ]);
 }
-function faultsResults(openId) {
+function faultsResults() {
   const q = UI.faultsQ;
   if (UI.faultsFilter !== 'all') {
     const m = get(UI.faultsFilter);
     if (!m) return '';
-    return '<div class="card"><h3>' + esc(m.title) + '</h3>' + (m.verified ? '' : '<p><span class="tag warn">Unverified — reference only</span></p>') +
-      md(m.body) + '<p style="font-size:13.5px;color:var(--grey)">Tap a fault number (e.g. <span class="ref">FT05</span>) to open its guide.</p>' + suggestBtn(m) + '</div>';
+    const mans = MAP_MANUALS[m.id] ? manuals().filter(x => MAP_MANUALS[m.id].test(x.manufacturer + ' ' + x.title)) : [];
+    return '<div class="card"><h3>' + esc(m.title) + '</h3>' + (m.verified ? '' : '<p><span class="tag warn">Not confirmed — reference only</span></p>') +
+      manualBtns(mans) + md(m.body) +
+      '<p style="font-size:13.5px;color:var(--grey)">Tap a fault number (e.g. <span class="ref">FT05</span>) to start its questions.</p>' + suggestBtn(m) + '</div>';
   }
-  const fts = kind('faultType').filter(e => matches(e, q));
+  const fts = guidedFaults().filter(e => matches(e, q) || matches(get(e.code), q));
   const maps = q ? kind('manufacturerMapping').filter(e => matches(e, q)) : [];
   if (!fts.length && !maps.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
-  return fts.map(f => '<div class="acc' + (f.id === openId ? ' open' : '') + '" id="acc-' + f.id + '"><button data-acc="' + f.id + '"><span class="code">' + esc(f.code) + '</span><span class="tag fault">Fault</span><span class="t">' + esc(f.title) + '</span><i class="ti ti-chevron-down"></i></button>' +
-      '<div class="body"><h5>Step-by-step</h5>' + stepsList(f.steps) + md(f.body) +
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="tag ' + (/bs checked/i.test(f.evidence) ? 'ok' : '') + '">' + esc(f.evidence) + '</span>' + suggestBtn(f) + '</div></div></div>').join('') +
+  return fts.map(f => '<div class="acc"><button data-ffgo="' + f.code + '"><span class="code">' + esc(f.code) + '</span><span class="tag fault">Fault</span><span class="t">' + esc(f.title) + '</span><i class="ti ti-chevron-right"></i></button></div>').join('') +
     (maps.length ? '<div class="chip-label" style="margin-top:16px">Manufacturer messages matching “' + esc(q) + '”</div>' + maps.map(m => '<div class="acc"><button data-ffgo="' + m.id + '"><span class="t">' + esc(m.title) + '</span><i class="ti ti-chevron-right"></i></button></div>').join('') : '');
 }
 
@@ -584,10 +604,7 @@ function viewCodes() {
     '<input class="search" id="q" placeholder="Search panels…" autocomplete="off" value="' + esc(UI.codesQ) + '">' +
     chips('Manufacturer', mans, UI.codesMan, 'data-man') +
     '<div id="results"></div>' +
-    notes([
-      '<div class="note"><b>*</b> = unverified historical code or key — not confirmed as a factory default. <span class="tag ok">Manual supported</span> = checked against the named manual for that model only. Site codes may differ — check the authorised site records first. Use only for authorised work.</div>',
-      noteFrom('notice-panel-codes', 'About these codes (full notes)')
-    ]);
+    notes(['<div class="note"><b>*</b> = not confirmed as a factory default — try it, but site codes may differ. Check the site records first. For authorised work only.</div>']);
 }
 function codesResults() {
   const rows = kind('panelCode').filter(c => (UI.codesMan === 'All' || c.manufacturer === UI.codesMan) && matches(c, UI.codesQ));
@@ -596,35 +613,37 @@ function codesResults() {
     '<table class="codes"><thead><tr><th>Manufacturer</th><th>Panel type</th><th>Code</th><th>Key no.</th><th>Remarks</th><th></th></tr></thead><tbody>' +
     rows.map(c => '<tr><td class="man">' + esc(c.manufacturer) + '</td>' +
       '<td data-l="Panel" class="muted">' + (c.panel ? esc(c.panel) : '–') + '</td>' +
-      '<td class="code"><span class="cv">' + esc(c.code) + (c.verified ? '' : '<sup> *</sup>') + '</span>' + (c.verified ? ' <span class="tag ok">Manual supported</span>' : '') + '</td>' +
+      '<td class="code"><span class="cv">' + esc(c.code) + (c.verified ? '' : '<sup> *</sup>') + '</span></td>' +
       '<td data-l="Key" class="muted">' + (c.keyNo ? esc(c.keyNo) + (c.verified ? '' : ' *') : '–') + '</td>' +
-      '<td data-l="Remarks" class="muted">' + (c.remarks ? esc(c.remarks) : '–') + (c.verified ? '<div style="font-size:12.5px">' + inline(c.evidence) + '</div>' : '') + '</td>' +
+      '<td data-l="Remarks" class="muted">' + (c.remarks ? esc(c.remarks) : '–') + '</td>' +
       '<td class="act">' + suggestBtn(c, true) + '</td></tr>').join('') + '</tbody></table>';
 }
 
 // ---------- CONTACTS ------------------------------------------------------
+const catsOf = c => c.categories || (c.category ? [c.category] : []);
 function viewContacts() {
-  const cats = ['All'].concat([...new Set(kind('contact').filter(c => !c.internal).map(c => c.category).filter(Boolean))]);
+  const cats = ['All'].concat([...new Set(kind('contact').flatMap(catsOf))].sort());
   return pageHead('Technical support', 'Manufacturer and supplier contact numbers') +
     '<input class="search" id="q" placeholder="Search manufacturers…" autocomplete="off" value="' + esc(UI.contactsQ) + '">' +
     chips('', cats, UI.contactsCat, 'data-cat') +
-    '<div id="results"></div>' +
-    notes([noteFrom('notice-contacts', 'About these contacts')]);
+    '<div id="results"></div>';
 }
 function contactCard(c) {
-  return '<div class="contact' + (c.internal ? ' internal' : '') + '"><div class="top"><div class="name">' + esc(c.title) + '</div><span class="tag">' + esc(c.category || '') + '</span></div>' +
-    '<div class="purpose">' + esc(c.purpose) + '</div>' +
+  const mans = manualsForContact(c);
+  return '<div class="contact' + (c.internal ? ' internal' : '') + '"><div class="top"><div class="name">' + esc(c.title) + '</div><span class="tag">' + esc(catsOf(c).join(' · ')) + '</span></div>' +
+    (c.label ? '<div class="purpose">' + esc(c.label) + '</div>' : '<div class="purpose"></div>') +
     '<a class="btn call" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>' + esc(c.phone) + '</a>' +
-    ((c.websites || []).length ? '<div class="btn-row">' + c.websites.map(w => '<a class="btn ghost" style="flex:1" href="' + esc(w.url) + '" target="_blank" rel="noopener"><i class="ti ti-world"></i>' + esc(w.label) + '</a>').join('') + '</div>' : '') +
-    '<div class="ev">' + (c.verified ? '' : '<span class="tag warn">Unverified</span> ') + esc(c.evidence) + ' ' + suggestBtn(c, true) + '</div></div>';
+    '<div class="btn-row">' + (c.websites || []).slice(0, 1).map(w => '<a class="btn ghost" style="flex:1" href="' + esc(w.url) + '" target="_blank" rel="noopener"><i class="ti ti-world"></i>Website</a>').join('') +
+      mans.map(m => '<a class="btn ghost" style="flex:1" href="' + esc(m.url) + '" target="_blank" rel="noopener"><i class="ti ti-file-text"></i>' + esc(m.title.replace(/\s*\(.*\)$/, '')) + '</a>').join('') + '</div>' +
+    '<div class="ev">' + suggestBtn(c) + '</div></div>';
 }
 function contactsResults() {
   const all = kind('contact').filter(c => matches(c, UI.contactsQ));
-  const internal = all.filter(c => c.internal);
-  const rest = all.filter(c => !c.internal && (UI.contactsCat === 'All' || c.category === UI.contactsCat));
+  const internal = all.filter(c => c.internal && UI.contactsCat === 'All');
+  const rest = all.filter(c => !(c.internal && UI.contactsCat === 'All') && (UI.contactsCat === 'All' || catsOf(c).includes(UI.contactsCat)));
   if (!internal.length && !rest.length) return '<div class="empty">Nothing matches.</div>';
-  return (internal.length && UI.contactsCat === 'All' ? '<div class="grid" style="margin-bottom:14px">' + internal.map(contactCard).join('') + '</div>' : '') +
-    '<div class="count">' + rest.length + ' manufacturer' + (rest.length === 1 ? '' : 's') + ' found</div>' +
+  return (internal.length ? '<div style="margin-bottom:14px">' + internal.map(contactCard).join('') + '</div>' : '') +
+    '<div class="count">' + rest.length + ' found</div>' +
     '<div class="grid">' + rest.map(contactCard).join('') + '</div>';
 }
 
@@ -636,7 +655,7 @@ function viewStandards() {
     '<div class="subtabs">' + tabs.map(([k, l]) => '<button class="subtab' + (UI.stdTab === k ? ' active' : '') + '" data-std="' + k + '">' + l + '</button>').join('') + '</div>' +
     '<input class="search" id="q" placeholder="Search (e.g. sounder, void, battery)…" autocomplete="off" value="' + esc(UI.stdQ) + '">' +
     '<div id="results"></div>' +
-    notes([noteFrom('notice-standards', 'About this quick reference'), noteFrom('notice-clause-summaries'), noteFrom('notice-sources')]);
+    notes([noteFrom('notice-standards', 'About this quick reference'), noteFrom('notice-clause-summaries')]);
 }
 function standardsResults() {
   const all = kind('standardsSection').filter(s => matches(s, UI.stdQ));
@@ -792,8 +811,8 @@ const CALCS = {
     wire() {
       const R = CALCS.resistor, $ = id => document.getElementById(id);
       const c = get('calc-resistor') || {};
-      if (c.eolReference) $('rEol').innerHTML = '<h3>End-of-line values by panel / circuit</h3><div class="tbl"><table><thead><tr><th>Where</th><th>Value / type</th><th>Source</th></tr></thead><tbody>' +
-        c.eolReference.map(r => '<tr><td>' + inline(r.application) + '</td><td><b>' + inline(r.value) + '</b></td><td>' + inline(r.evidence) + '</td></tr>').join('') + '</tbody></table></div>';
+      if (c.eolReference) $('rEol').innerHTML = '<h3>End-of-line values by panel / circuit</h3><div class="tbl"><table><thead><tr><th>Where</th><th>Value / type</th></tr></thead><tbody>' +
+        c.eolReference.map(r => '<tr><td>' + inline(r.application) + '</td><td><b>' + inline(r.value) + '</b></td></tr>').join('') + '</tbody></table></div>';
       const ohm = v => v >= 1e6 ? fmt(v / 1e6, 3) + ' MΩ' : v >= 1e3 ? fmt(v / 1e3, 3) + ' kΩ' : fmt(v, 3) + ' Ω';
       const sel = (id, label, arr, def) => '<div class="f"><label>' + label + '</label><select id="' + id + '">' + arr.map((x, i) => '<option value="' + i + '"' + (i === def ? ' selected' : '') + '>' + x[0] + (x[2] !== undefined && typeof x[2] === 'string' ? ' (' + x[2] + ')' : (id.startsWith('rm') ? ' (×10' + sup(x[2]) + ')' : '')) + '</option>').join('') + '</select></div>';
       const sup = n => String(n).split('').map(ch => '⁰¹²³⁴⁵⁶⁷⁸⁹'[ch] || (ch === '-' ? '⁻' : ch)).join('');
@@ -844,71 +863,89 @@ const CALCS = {
   },
 
   dater: {
-    // Formats only for brands the content marks as supported (policy-detector-dating).
-    FORMATS: {
-      Apollo: [
-        { id: 'mmyy', label: 'MMYY-xxxxx', desc: 'Month/year + production number', ex: '0402-25684 = April 2002', re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/ },
-        { id: 'yymmdd', label: 'YYMMDD', desc: 'Year/month/day (may be followed by a build standard)', ex: '020401 = 1 April 2002', re: /^(\d{2})(\d{2})(\d{2})(?:[-\s]*[A-Z][0-9A-Z]*|[-\s]+[0-9A-Z]+)?$/ },
-        { id: 'wwyy', label: 'WWYY…', desc: 'Week/year at the start (sounders)', ex: '1502123 = week 15 of 2002', re: /^(\d{2})(\d{2})(?:\d{3,})?$/ }
-      ],
-      Hochiki: [
-        { id: 'ymmf', label: 'YMMF / YMMFxxxxx', desc: 'Year digit, month, factory digit (older AP093 labels)', ex: '0124 = December, year ending 0, factory 4', re: /^(\d)(\d{2})(\d)(\d{5})?$/ }
-      ]
+    // Formats come from the data (content v1.2: Fire Trade Supplies guide +
+    // manufacturer documents, manufacturer wins where they disagree).
+    // Every match gives a result: the most likely date first, then any other
+    // possibilities (decade or order can't always be pinned down).
+    PATTERNS: {
+      'MMYY-SFX':      { label: 'MMYY-xxxxx', re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/, read: (m, D) => D.month(+m[1], D.yy(+m[2], +m[1])) },
+      'YYMMDD':        { label: 'YYMMDD',     re: /^(\d{2})(\d{2})(\d{2})(?:[-\s]*[A-Z][0-9A-Z]*|[-\s]+[0-9A-Z]+)?$/, read: (m, D) => D.day(+m[3], +m[2], D.yy(+m[1], +m[2])) },
+      'WWYY-SOUNDER':  { label: 'WWYY… (sounder)', re: /^(\d{2})(\d{2})(?:\d{3,})?$/, read: (m, D) => D.week(+m[1], D.yy(+m[2])) },
+      'YYYY':          { label: 'YYYY',       re: /^((?:19|20)\d{2})$/, read: (m, D) => (+m[1] >= 1970 && +m[1] <= D.Y) ? [String(+m[1])] : null },
+      'YMMF':          { label: 'YMMF (older labels)', re: /^(\d)(\d{2})(\d)(\d{5})?$/, read: (m, D) => D.decade(+m[2] >= 1 && +m[2] <= 12 ? D.MONTHS[+m[2] - 1] : null, +m[1], +m[2]), extra: m => 'Factory digit ' + m[3] },
+      'WWYY':          { label: 'WWYY',       re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/, read: (m, D) => D.week(+m[1], D.yy(+m[2])) },
+      'MMYY':          { label: 'MMYY',       re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/, read: (m, D) => D.month(+m[1], D.yy(+m[2], +m[1])) },
+      'MMYY-OR-YYMM':  { label: 'MMYY or YYMM', re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/, read: (m, D) => {
+                           const a = D.month(+m[1], D.yy(+m[2], +m[1])) || [], b = D.month(+m[2], D.yy(+m[1], +m[2])) || [];
+                           const all = [...a, ...b.filter(x => !a.includes(x))]; return all.length ? all : null; } },
+      'YYWW':          { label: 'YYWW',       re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/, read: (m, D) => D.week(+m[2], D.yy(+m[1])) },
+      'YWW':           { label: 'YWW',        re: /^(\d)(\d{2})$/, read: (m, D) => D.decade(+m[2] >= 1 && +m[2] <= 53 ? 'Week ' + +m[2] : null, +m[1]) }
     },
     html() {
       const c = get('calc-detector-dater') || {};
-      return '<div class="cols"><div class="card"><h3>Detector dater</h3><p style="font-size:14px;color:var(--grey);margin:0 0 12px">Decode the manufacture date from a detector date code or serial.</p>' +
+      return '<div class="cols"><div class="card"><h3>Detector dater' + pendingTag(c) + '</h3><p style="font-size:14px;color:var(--grey);margin:0 0 12px">Decode the manufacture date from a detector date code or serial.</p>' +
         '<div class="f"><label>Manufacturer</label><select id="dtBrand">' + (c.brands || []).map((b, i) => '<option value="' + i + '">' + esc(b.brand) + '</option>').join('') + '</select></div>' +
         '<div id="dtFormats"></div>' +
-        '<div class="f"><label>Date code / serial</label><input id="dtCode" autocomplete="off" autocapitalize="characters" placeholder="Type it as printed, e.g. 0402-25684"><div class="hint">Hyphens and spaces are fine. Usually printed or etched under the detector or its base.</div></div></div>' +
+        '<div class="f"><label>Date code / serial</label><input id="dtCode" autocomplete="off" autocapitalize="characters" placeholder="Type it as printed"><div class="hint">Hyphens and spaces are fine. Usually printed or etched under the detector, on its base or on a label.</div></div></div>' +
         '<div class="card" id="dtOut"><h3>Result</h3><div class="empty" style="padding:16px">Enter a code to decode it.</div></div></div>';
     },
     notes() {
       const c = get('calc-detector-dater') || {};
       return ['<div class="note"><b>' + esc(c.replacementGuidance || '') + '</b></div>',
-        '<div class="note">Only formats backed by the manufacturer are decoded. Where a code could mean more than one date, every possible date is shown — confirm from the model, label or site records. Years before 1970 aren\'t offered.</div>',
-        noteFrom('policy-detector-dating', 'S&W policy on detector dating'), noteFrom('calc-detector-dater', 'Full reference for every brand')];
+        '<div class="note">Where a code could mean more than one date, the most likely one is shown big and the others underneath — confirm from the model, label or site records if it matters. Years before 1970 aren\'t offered.</div>',
+        noteFrom('policy-detector-dating', 'S&W policy on detector dating')];
     },
     wire() {
-      const $ = id => document.getElementById(id), D = CALCS.dater;
-      const brands = (get('calc-detector-dater') || {}).brands || [];
+      const $ = id => document.getElementById(id), P = CALCS.dater.PATTERNS;
+      const c = get('calc-detector-dater') || {};
+      const brands = c.brands || [], formats = c.formats || [];
       const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       const now = new Date(), Y = now.getFullYear(), M = now.getMonth() + 1;
       const past = (y, m) => y < Y || (y === Y && (m || 1) <= M);
-      const yy = (n, m) => [1900 + n, 2000 + n].filter(y => y >= 1970 && past(y, m));
-      const yDigit = (d, m) => { const o = []; for (let y = 1970 + d; y <= Y; y += 10) if (past(y, m)) o.push(y); return o; };
-      const decoders = {
-        mmyy: m => { const mo = +m[1]; if (mo < 1 || mo > 12) return null; const ys = yy(+m[2], mo); return ys.length ? ys.map(y => MONTHS[mo - 1] + ' ' + y) : null; },
-        yymmdd: m => { const mo = +m[2], da = +m[3]; if (mo < 1 || mo > 12) return null; const ys = yy(+m[1], mo).filter(y => da >= 1 && da <= new Date(y, mo, 0).getDate()); return ys.length ? ys.map(y => da + ' ' + MONTHS[mo - 1] + ' ' + y) : null; },
-        wwyy: m => { const wk = +m[1]; if (wk < 1 || wk > 53) return null; const ys = yy(+m[2]); return ys.length ? ys.map(y => 'Week ' + wk + ' of ' + y) : null; },
-        ymmf: m => { const mo = +m[2]; if (mo < 1 || mo > 12) return null; const ys = yDigit(+m[1], mo); return ys.length ? ys.map(y => MONTHS[mo - 1] + ' ' + y) : null; }
+      const D = {
+        Y, MONTHS,
+        // one year digit: the decade isn't in the code — show the options, don't pick one
+        decade: (what, d, m) => { if (!what) return null; const ys = D.y1(d, m); return ys.length ? [{ text: what + ', year ending ' + d, years: ys }] : null; },
+        // newest plausible year first
+        yy: (n, m) => [2000 + n, 1900 + n].filter(y => y >= 1970 && past(y, m)),
+        y1: (d, m) => { const o = []; for (let y = 1970 + d; y <= Y; y += 10) if (past(y, m)) o.push(y); return o.reverse(); },
+        month: (mo, ys) => (mo >= 1 && mo <= 12 && ys && ys.length) ? ys.map(y => MONTHS[mo - 1] + ' ' + y) : null,
+        day: (da, mo, ys) => { if (mo < 1 || mo > 12 || !ys) return null; const ok = ys.filter(y => da >= 1 && da <= new Date(y, mo, 0).getDate()); return ok.length ? ok.map(y => da + ' ' + MONTHS[mo - 1] + ' ' + y) : null; },
+        week: (wk, ys) => {
+          if (wk < 1 || wk > 53 || !ys || !ys.length) return null;
+          return ys.map(y => { const d = new Date(y, 0, 1 + (wk - 1) * 7); return 'Week ' + wk + ' of ' + y + ' (around ' + MONTHS[d.getMonth()] + ')'; });
+        }
       };
       const refresh = () => {
         const b = brands[+$('dtBrand').value] || {};
-        const fm = b.parserEnabled ? D.FORMATS[b.brand] : null;
-        $('dtFormats').innerHTML = fm
-          ? '<div class="fmt-list"><b>Date code formats:</b>' + fm.map(f => '<div><code>' + esc(f.label) + '</code> — ' + esc(f.desc) + ' — e.g. ' + esc(f.ex) + '</div>').join('') + '</div>'
-          : '<div class="fmt-list"><span class="tag warn">Format not verified</span><div style="margin-top:6px">' + inline(b.guidance || '') + '</div></div>';
+        const fm = formats.filter(f => f.brand === b.brand);
+        $('dtFormats').innerHTML = fm.length
+          ? '<div class="fmt-list"><b>Date code formats:</b>' + fm.map(f => '<div><code>' + esc((P[f.format] || {}).label || f.format) + '</code> — e.g. <b>' + esc(f.example) + '</b> = ' + esc(f.means) + '</div>').join('') + '</div>'
+          : '<div class="fmt-list"><span class="tag warn">No format known for this brand</span><div style="margin-top:6px">' + inline(b.guidance || '') + '</div></div>';
         decode();
       };
       const decode = () => {
         const out = $('dtOut'), b = brands[+$('dtBrand').value] || {};
         const code = $('dtCode').value.trim().toUpperCase();
         if (!code) { out.innerHTML = '<h3>Result</h3><div class="empty" style="padding:16px">Enter a code to decode it.</div>'; return; }
-        const fm = b.parserEnabled ? D.FORMATS[b.brand] : null;
-        if (!fm) { out.innerHTML = '<h3>Result</h3><div class="errbox">Format not verified — check the model, label and the manufacturer\'s guidance. No date is guessed.</div>'; return; }
+        const fm = formats.filter(f => f.brand === b.brand);
+        if (!fm.length) { out.innerHTML = '<h3>Result</h3><div class="errbox">There\'s no known date format for ' + esc(b.brand) + ' — check the label and the manufacturer\'s guidance.</div>'; return; }
         const readings = [];
-        fm.forEach(f => { const m = code.match(f.re); if (!m) return; const r = decoders[f.id](m); if (r) readings.push({ f, dates: r, extra: f.id === 'ymmf' ? 'Factory digit: ' + m[3] : '' }); });
-        if (!readings.length) { out.innerHTML = '<h3>Result</h3><div class="errbox">That doesn\'t match a known ' + esc(b.brand) + ' format, or gives a date in the future. Check the code against the formats shown.</div>'; return; }
-        const uncertain = readings.length > 1 || readings.some(r => r.dates.length > 1);
-        out.innerHTML = '<h3>Result</h3>' + (uncertain ? '<div class="warnbox" style="margin:0 0 10px">More than one date is possible — confirm from the model, label or site records.</div>' : '') +
-          '<div class="readings">' + readings.map(r => '<div class="reading"><div class="rl">Read as ' + esc(r.f.label) + '</div><div class="rv">' + r.dates.map(esc).join(' <span style="font-size:15px;color:var(--grey)">or</span> ') + '</div>' + (r.extra ? '<div style="font-size:13px;color:var(--grey)">' + esc(r.extra) + '</div>' : '') + '</div>').join('') + '</div>';
+        fm.forEach(f => { const p = P[f.format]; if (!p) return; const m = code.match(p.re); if (!m) return; const r = p.read(m, D); if (r && r.length) readings.push({ label: p.label, dates: r, extra: p.extra ? p.extra(m) : '' }); });
+        if (!readings.length) { out.innerHTML = '<h3>Result</h3><div class="errbox">That doesn\'t match a known ' + esc(b.brand) + ' format, or would be a date in the future. Check the code against the formats shown.</div>'; return; }
+        const all = readings.flatMap(r => r.dates.map(d => ({ d, label: r.label, extra: r.extra })));
+        const [first, ...others] = all;
+        const big = o => typeof o.d === 'string' ? esc(o.d) : esc(o.d.text);
+        const yrs = o => typeof o.d === 'string' ? '' : '<div style="font-size:14px;margin-top:4px">The code doesn\'t say which decade — pick the one that fits the age of the system: <b>' + o.d.years.slice(0, 4).join(' · ') + '</b>' + (o.d.years.length > 4 ? ' · ' + o.d.years.slice(4).join(' · ') : '') + '</div>';
+        out.innerHTML = '<h3>Result</h3><div class="reading"><div class="rl">' + (others.length ? 'Most likely · ' : '') + 'read as ' + esc(first.label) + '</div><div class="rv">' + big(first) + '</div>' + yrs(first) + (first.extra ? '<div style="font-size:13px;color:var(--grey)">' + esc(first.extra) + '</div>' : '') + '</div>' +
+          (others.length ? '<div class="chip-label" style="margin-top:12px">Could also be</div>' + others.map(o => '<div class="res-row"><span>' + big(o) + (typeof o.d === 'string' ? '' : ' <span style="color:var(--grey);font-size:13px">(' + o.d.years.slice(0, 4).join(' / ') + ')</span>') + '</span><span style="color:var(--grey);font-size:13px">' + esc(o.label) + '</span></div>').join('') : '');
       };
       $('dtBrand').addEventListener('change', refresh);
       $('dtCode').addEventListener('input', decode);
       refresh();
     }
   }
+
 };
 
 function notFound(back) { return backBtn(back, 'Back') + '<div class="empty">That isn\'t in the toolkit data.</div>'; }
@@ -953,12 +990,11 @@ function route() {
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.getElementById('view').innerHTML = VIEWS[t](parts);
   window.scrollTo(0, 0);
-  if (RESULTS[t]) {
-    const openId = t === 'faults' && parts[0] && !parts[0].startsWith('map-') ? parts[0] : null;
+  if (RESULTS[t] && document.getElementById('results')) {
+    const openId = null;
     const draw = () => { LINK_T = t !== 'standards'; document.getElementById('results').innerHTML = RESULTS[t](openId); };
     document.getElementById('q').addEventListener('input', e => { UI[QKEY[t]] = e.target.value.trim(); draw(); });
     draw();
-    if (openId) { const el = document.getElementById('acc-' + openId); if (el) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50); }
   }
   if (t === 'calc') { LINK_T = false; CALCS[CALCS[parts[0]] ? parts[0] : 'battery'].wire(); }
 }
@@ -975,7 +1011,7 @@ document.addEventListener('click', ev => {
   if (d.cat) { UI.contactsCat = d.cat; refreshList('contacts', '[data-cat]', d.cat); return; }
   if (d.std) { UI.stdTab = d.std; document.querySelectorAll('[data-std]').forEach(b => b.classList.toggle('active', b.dataset.std === d.std)); document.getElementById('results').innerHTML = standardsResults(); return; }
   if (d.opt !== undefined) return answerFlow(+d.opt);
-  if (d.next !== undefined) return answerFlow(null, +d.next);
+  if (d.next !== undefined) return answerFlow(null, true);
 });
 function refreshList(t, sel, val) {
   document.querySelectorAll(sel).forEach(b => b.classList.toggle('active', b.getAttribute(sel.slice(1, -1)) === val));
@@ -991,7 +1027,7 @@ function buildGuidance() {
   const ref = get('notice-reference'), purpose = get('notice-purpose'), legend = get('notice-evidence-legend');
   const el = document.getElementById('guidance');
   el.innerHTML = '<b>Guidance only.</b> Always follow the manufacturer\'s instructions, the approved design / cause-and-effect and BS 5839-1. <button id="gMore">More</button>';
-  document.getElementById('gMore').addEventListener('click', () => { el.innerHTML = '<b>Guidance only.</b> ' + inline(ref ? ref.body : '') + (purpose ? md(purpose.body) : '') + (legend ? md(legend.body) : ''); });
+  document.getElementById('gMore').addEventListener('click', () => { el.innerHTML = '<b>Guidance only.</b> ' + inline(ref ? ref.body : '') + (purpose ? md(purpose.body) : ''); });
 }
 
 async function loadData() {
