@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Simpson & Wood — Timesheet v4.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
+    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
+    --amber:#7a4f00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --blue:#1d3c63; --blue-bg:#eef3fa;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
+  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
+  [hidden]{display:none !important;}
+  button{font-family:inherit; color:inherit;}
+
+  /* ---- sign-in ---- */
+  #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinErr{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  /* ---- shell ---- */
+  #appRoot{display:none;}
+  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  header img{height:28px; display:block;}
+  header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
+  header .who{text-align:right; min-width:0;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  .tabs{display:flex; gap:4px; background:var(--card); border-bottom:1px solid var(--line); padding:6px 16px; position:sticky; top:0; z-index:20;}
+  .tab{display:flex; align-items:center; gap:7px; background:none; border:none; padding:9px 14px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:16px; cursor:pointer;}
+  .tab i{font-size:19px;}
+  .tab.active{background:var(--red-tint); color:var(--red);}
+  .tab .count{background:var(--red); color:#fff; border-radius:9px; font-size:12px; padding:0 6px; line-height:18px; font-family:'Barlow',sans-serif;}
+  .wrap{max-width:1320px; margin:0 auto; padding:20px 24px 40px;}
+  @media (max-width:640px){ .wrap{padding:14px 12px 30px;} .tabs{padding:6px 8px;} }
+
+  /* ---- banners ---- */
+  .banner{display:flex; gap:10px; align-items:flex-start; border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
+  .banner > i{font-size:20px; flex:0 0 auto; margin-top:1px;}
+  .banner b{font-weight:700;}
+  .banner.warn{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
+  .banner.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .banner.info{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
+  .banner.test{background:#e9e4f5; border-color:#d3c8ea; color:#3d2a63;}
+  .banner .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .mini{background:#fff; border:1px solid currentColor; color:inherit; border-radius:7px; padding:5px 10px; font-size:13.5px; font-weight:600; cursor:pointer;}
+
+  /* ---- layout ---- */
+  .layout{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; align-items:start;}
+  .side{position:sticky; top:62px;}
+  @media (max-width:1000px){ .layout{grid-template-columns:1fr;} .side{position:static;} }
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
+  @media (max-width:640px){ .card{padding:14px;} }
+  .card h2{margin:0 0 12px; font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
+
+  /* ---- form ---- */
+  .lbl{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin-bottom:6px;}
+  .inp{width:100%; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--ink); background:#fff; -webkit-appearance:none; appearance:none;}
+  .inp:focus{outline:none; border-color:var(--red);}
+  .inp:disabled{background:var(--soft); color:var(--grey);}
+  textarea.inp{min-height:104px; resize:vertical; line-height:1.4;}
+  .field{margin-bottom:14px; min-width:0;}
+  .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;}
+  .seg{display:flex; border:1.5px solid var(--field); border-radius:8px; overflow:hidden; background:#fff;}
+  .seg button{flex:1; border:none; background:#fff; padding:11px 6px; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); cursor:pointer; min-width:0;}
+  .seg button + button{border-left:1.5px solid var(--field);}
+  .seg button.on{background:var(--red); color:#fff;}
+  .seg button:disabled{opacity:.35; cursor:not-allowed;}
+  .seg.wrap4{flex-wrap:wrap;}
+  .seg.wrap4 button{flex:1 1 25%;}
+  @media (max-width:640px){
+    .seg.wrap4 button{flex:1 1 50%;}
+    .seg.wrap4 button:nth-child(3){border-left:none;}
+    .seg.wrap4 button:nth-child(n+3){border-top:1.5px solid var(--field);}
+  }
+  .tbtn{width:100%; text-align:left; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; background:#fff; font-size:17px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .tbtn .ph{color:var(--grey-2); font-weight:500; font-size:15.5px;}
+  .tbtn i{color:var(--grey-2); font-size:18px;}
+  .nd{font-size:13px; color:var(--amber); font-weight:700; margin-top:5px;}
+  .am{display:flex; gap:9px; align-items:flex-start; background:var(--amber-bg); border:1px solid #efd59c; border-radius:8px; padding:10px 12px; margin:-4px 0 14px; font-size:14.5px; cursor:pointer;}
+  .am input{width:20px; height:20px; margin:0; flex:0 0 auto;}
+  .hint{font-size:12.5px; color:var(--grey); margin-top:5px;}
+  .field.bad .inp, .field.bad .seg, .field.bad .tbtn{border-color:var(--red); box-shadow:0 0 0 3px var(--red-tint);}
+  .dayrow{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:14px;}
+  @media (max-width:640px){ .dayrow{grid-template-columns:1fr;} }
+  .daynote{font-size:15px; color:var(--grey); margin-top:-2px;}
+  .daynote b{color:var(--ink);}
+  .daynote .pay{display:inline-block; background:var(--amber-bg); color:var(--amber); font-weight:700; border-radius:6px; padding:1px 8px; margin-left:4px; font-size:13.5px;}
+  .editing{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--blue-bg); border:1px solid #cfdced; color:var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14.5px;}
+
+  /* ---- job cards ---- */
+  .job{background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:visible;}
+  .job-h{display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--ink); color:#fff; border-radius:11px 11px 0 0;}
+  .job-h h3{margin:0; font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .job-h .hrs{margin-left:auto; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; white-space:nowrap;}
+  .job-h .x{background:none; border:none; color:#e2b0b3; font-size:20px; cursor:pointer; padding:2px 4px; line-height:1;}
+  .job-b{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:0 24px; padding:16px 16px 4px;}
+  @media (max-width:900px){ .job-b{grid-template-columns:1fr;} }
+  .gear{display:grid; grid-template-columns:76px minmax(0,1fr) 40px; gap:6px; margin-bottom:6px;}
+  .gear .inp{padding:9px 10px; font-size:15.5px;}
+  .gear .x2{background:none; border:1.5px solid var(--line); border-radius:8px; color:var(--grey); cursor:pointer; font-size:17px;}
+  .addg{width:100%; background:none; border:1.5px dashed var(--field); border-radius:8px; color:var(--grey); padding:9px; font-weight:600; font-size:14.5px; cursor:pointer;}
+  .btn-outline{width:100%; background:#fff; border:2px solid var(--red); color:var(--red); border-radius:10px; padding:13px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer;}
+  .btn-outline:disabled{border-color:var(--field); color:var(--grey-2); cursor:not-allowed;}
+
+  /* ---- customer suggestions ---- */
+  .ac{position:relative;}
+  .ac-list{position:absolute; left:0; right:0; top:calc(100% + 3px); background:#fff; border:1px solid var(--field); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.14); z-index:30; max-height:280px; overflow:auto;}
+  .ac-list button{display:block; width:100%; text-align:left; padding:11px 12px; border:none; background:none; font-size:15.5px; cursor:pointer;}
+  .ac-list button + button{border-top:1px solid var(--line);}
+  .ac-list button.hl, .ac-list button:hover{background:var(--red-tint);}
+  .ac-list mark{background:none; color:var(--red); font-weight:700;}
+
+  /* ---- summary / send ---- */
+  .sum .big{font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; line-height:1;}
+  .sum .sub{color:var(--grey); font-size:13.5px; margin:2px 0 12px;}
+  .kv{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:15px;}
+  .kv span{color:var(--grey);}
+  .kv b{text-align:right;}
+  .sumnote{font-size:13.5px; color:var(--amber); background:var(--amber-bg); border-radius:8px; padding:8px 10px; margin-top:10px;}
+  .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:10px; padding:15px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn-primary:disabled{background:var(--field); color:#fff; cursor:not-allowed;}
+  .btn-ghost{background:#fff; border:1.5px solid var(--field); border-radius:10px; padding:12px 16px; font-weight:700; font-size:15px; cursor:pointer;}
+  .small{font-size:12.5px; color:var(--grey); margin:8px 0 0; line-height:1.4;}
+  .errs{background:var(--red-tint); color:#7d1418; border-radius:8px; padding:10px 12px 10px 30px; margin:12px 0 0; font-size:14px; line-height:1.4;}
+  .errs li{margin-bottom:4px;}
+  .status{border-radius:10px; padding:12px 14px; margin-top:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
+  .status.sending{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
+  .status.ok{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
+  .status.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .status .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+
+  /* ---- my timesheets ---- */
+  .tl-h{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
+  .tl-h h2{margin:0; font-size:28px; font-weight:700;}
+  .tl-h p{margin:2px 0 0; color:var(--grey); font-size:14.5px;}
+  .trow{display:grid; grid-template-columns:150px minmax(0,1fr) auto; gap:6px 18px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:8px;}
+  .trow .d b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:19px;}
+  .trow .d span{color:var(--grey); font-size:13px;}
+  .trow .what{font-size:15px;}
+  .trow .what .cust{color:var(--grey); font-size:13.5px; margin-top:2px; overflow-wrap:anywhere;}
+  .trow .acts{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;}
+  .trow .hist{grid-column:1 / -1; font-size:13.5px; color:var(--grey); border-top:1px dashed var(--line); padding-top:8px;}
+  .trow .hist div{padding:2px 0;}
+  @media (max-width:760px){
+    .trow{grid-template-columns:1fr; padding:12px;}
+    .trow .acts{justify-content:flex-start;}
+  }
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); vertical-align:middle; white-space:nowrap; margin:2px 4px 2px 0;}
+  .tag.ok{background:var(--green-bg); color:var(--green);}
+  .tag.bad{background:var(--red-tint); color:var(--red-dark);}
+  .tag.warn{background:var(--amber-bg); color:var(--amber);}
+  .tag.test{background:#e9e4f5; color:#5a3d8a;}
+  .empty{color:var(--grey); font-size:15px; text-align:center; padding:40px 10px; background:#fff; border:1px solid var(--line); border-radius:12px;}
+  .notes{margin-top:26px; color:var(--grey); font-size:13.5px; line-height:1.5;}
+  .notes h3{font-size:15px; text-transform:uppercase; margin:0 0 6px; color:var(--grey);}
+  .notes p{margin:0 0 8px;}
+
+  /* ---- modals ---- */
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:100; padding:16px;}
+  .modal{background:#fff; border-radius:14px; width:100%; max-width:520px; max-height:92vh; overflow:auto; padding:20px;}
+  .modal h3{margin:0 0 10px; font-size:22px; font-weight:700;}
+  .modal .mbody{font-size:15.5px; line-height:1.5;}
+  .modal .mbody p{margin:0 0 10px;}
+  .modal .mbtns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px;}
+  .modal .mbtns .btn-primary{width:auto; margin:0; padding:12px 18px; font-size:17px;}
+  @media (max-width:640px){
+    .modal-bg{align-items:flex-end; padding:0;}
+    .modal{border-radius:16px 16px 0 0; max-width:none; padding:18px 14px calc(18px + env(safe-area-inset-bottom));}
+    .modal .mbtns > *{flex:1;}
+  }
+  .tp-title{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .tp-title h3{margin:0;}
+  .tp-step{font-size:13.5px; color:var(--grey);}
+  .hgrid{display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:6px;}
+  @media (max-width:640px){ .hgrid{grid-template-columns:repeat(4, minmax(0,1fr));} }
+  .hgrid button{padding:13px 2px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:15px; font-weight:600; cursor:pointer;}
+  .hgrid button.std{background:var(--soft);}
+  .hgrid button.sel{background:var(--red); border-color:var(--red); color:#fff;}
+  .mgrid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
+  .mgrid button{padding:18px 4px; border:1px solid var(--line); border-radius:10px; background:#fff; font-size:20px; font-weight:700; cursor:pointer; font-family:'Barlow Condensed',sans-serif;}
+  .mgrid button.sel{background:var(--red); border-color:var(--red); color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- SIGN-IN SCREEN -->
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Timesheet</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to do your timesheet.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
+      <div>
+        <h1>Timesheet</h1>
+        <p id="versionLabel">v4.0</p>
+      </div>
+    </a>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+  <nav class="tabs">
+    <button class="tab active" data-tab="form"><i class="ti ti-clock-edit"></i> Timesheet</button>
+    <button class="tab" data-tab="mine"><i class="ti ti-list-details"></i> My timesheets</button>
+  </nav>
+
+  <main class="wrap">
+    <div id="banners"></div>
+
+    <!-- ===== TIMESHEET FORM ===== -->
+    <section id="view-form">
+      <div class="layout">
+        <div>
+          <div id="editingBar"></div>
+          <div class="card">
+            <div class="dayrow">
+              <div class="field">
+                <label class="lbl" for="dateIn">Date</label>
+                <input type="date" class="inp" id="dateIn">
+              </div>
+              <div class="field">
+                <span class="lbl">Were you working?</span>
+                <div class="seg" id="modeSeg">
+                  <button type="button" data-mode="work">Working</button>
+                  <button type="button" data-mode="off">Not working</button>
+                </div>
+              </div>
+            </div>
+            <div class="daynote" id="dayNote"></div>
+          </div>
+
+          <div id="workPane">
+            <div id="jobs"></div>
+            <button type="button" class="btn-outline" id="addJob"><i class="ti ti-plus"></i> Add another job</button>
+          </div>
+
+          <div id="offPane" class="card" hidden>
+            <h2>Not working</h2>
+            <div class="field" id="offReasonField">
+              <span class="lbl">Why?</span>
+              <div class="seg wrap4" id="offSeg">
+                <button type="button" data-reason="holiday">Holiday</button>
+                <button type="button" data-reason="sick">Sick</button>
+                <button type="button" data-reason="dayOff">Day off</button>
+                <button type="button" data-reason="bankHoliday">Bank holiday</button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="lbl" for="offNote">Anything the office should know? (optional)</label>
+              <textarea class="inp" id="offNote" placeholder="e.g. booked holiday, back Monday"></textarea>
+            </div>
+            <p class="small">This sends a short email to the office. There's no PDF for a day off.</p>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="card sum" id="sumCard">
+            <div id="sumWork">
+              <div class="big" id="sumTotal">0.00 h</div>
+              <div class="sub">total hours (dinner taken off)</div>
+              <div class="kv"><span>Started</span><b id="sumStart">—</b></div>
+              <div class="kv"><span>Finished</span><b id="sumEnd">—</b></div>
+              <div class="kv"><span>Jobs</span><b id="sumJobs">0</b></div>
+              <div class="kv"><span>Dinner</span><b id="sumDinner">—</b></div>
+              <div class="sumnote" id="sumNote" hidden></div>
+            </div>
+            <div id="sumOff" hidden>
+              <div class="big" style="font-size:30px">Not working</div>
+              <div class="sub" id="sumOffReason">Pick a reason</div>
+            </div>
+            <ul class="errs" id="errs" hidden></ul>
+            <button type="button" class="btn-primary" id="sendBtn"><i class="ti ti-send"></i> <span id="sendLabel">Send timesheet</span></button>
+            <p class="small" id="sendSmall">Sends from your own email to the office, with the office and engineer PDFs attached. A copy stays in your Sent Items.</p>
+            <div id="sendStatus"></div>
+          </div>
+        </aside>
+      </div>
+      <div class="notes">
+        <h3>How hours are worked out</h3>
+        <p>Monday to Friday, 08:00 to 16:30 is paid at 1×; anything before 08:00 or after 16:30 is 1.5×. Saturday is 1.5× all day. Sunday and bank holidays are 2× all day. A dinner break takes 30 minutes off. If a job runs past midnight, the hours after midnight are paid at the next day's rate.</p>
+        <p>If you finish a job at an earlier time than you started it, the app takes it as finishing the next day (for call-outs past midnight).</p>
+      </div>
+    </section>
+
+    <!-- ===== MY TIMESHEETS ===== -->
+    <section id="view-mine" hidden>
+      <div class="tl-h">
+        <div>
+          <h2>My timesheets</h2>
+          <p>Everything you've sent. Edit one to correct it: the office gets an email marked AMENDED, and every version is kept.</p>
+        </div>
+      </div>
+      <div id="mineList"></div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut, reauthenticateWithPopup, reauthenticateWithRedirect
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, query, where,
+  writeBatch, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+// Timesheet only: ask Microsoft for permission to send email as the signed-in
+// engineer (Microsoft Graph "Mail.Send"). Needs the Mail.Send permission +
+// admin consent on the Entra app registration that Firebase sign-in uses.
+msProvider.addScope('Mail.Send');
+
+// Keep the Microsoft access token from a sign-in (it's what lets us send mail
+// as the engineer). Kept for this browser tab only, and for less than its
+// real lifetime, so a stale one is never used.
+function keepToken(result) {
+  try {
+    const cred = OAuthProvider.credentialFromResult(result);
+    if (cred && cred.accessToken) {
+      sessionStorage.setItem('ts-graph', JSON.stringify({
+        t: cred.accessToken, exp: Date.now() + 50 * 60000,
+        who: ((result.user && result.user.email) || '').toLowerCase()
+      }));
+    }
+  } catch (e) { console.warn('token not kept', e); }
+}
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).then(keepToken).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => { sessionStorage.removeItem('ts-graph'); signOut(auth); });
+const redirectDone = getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════
+const VERSION = 'v4.0';
+const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
+const STD_START = 8 * 60;        // 08:00
+const STD_END = 16 * 60 + 30;    // 16:30
+const MAX_JOBS = 10;
+const LOOKBACK_DAYS = 31;        // how far back the "missing timesheets" check looks
+// Test mode: open the page as timesheet.html?test=1. Records are marked as test
+// data, kept apart from real ones, and the email goes to you instead of the office.
+const TEST = new URLSearchParams(location.search).get('test') === '1';
+
+// England & Wales bank holidays, from gov.uk/bank-holidays (checked 10 Oct 2026).
+// gov.uk only publishes about two years ahead: add the next year each autumn
+// (it's on the to-do list). These are paid at 2× and never count as "missing".
+const BANK_HOLIDAYS = {
+  '2026-01-01': "New Year's Day", '2026-04-03': 'Good Friday', '2026-04-06': 'Easter Monday',
+  '2026-05-04': 'Early May bank holiday', '2026-05-25': 'Spring bank holiday', '2026-08-31': 'Summer bank holiday',
+  '2026-12-25': 'Christmas Day', '2026-12-28': 'Boxing Day (substitute day)',
+  '2027-01-01': "New Year's Day", '2027-03-26': 'Good Friday', '2027-03-29': 'Easter Monday',
+  '2027-05-03': 'Early May bank holiday', '2027-05-31': 'Spring bank holiday', '2027-08-30': 'Summer bank holiday',
+  '2027-12-27': 'Christmas Day (substitute day)', '2027-12-28': 'Boxing Day (substitute day)',
+  '2028-01-03': "New Year's Day (substitute day)", '2028-04-14': 'Good Friday', '2028-04-17': 'Easter Monday',
+  '2028-05-01': 'Early May bank holiday', '2028-05-29': 'Spring bank holiday', '2028-08-28': 'Summer bank holiday',
+  '2028-12-25': 'Christmas Day', '2028-12-26': 'Boxing Day'
+};
+const BH_LAST_YEAR = 2028;
+const REASONS = { holiday: 'Holiday', sick: 'Sick', dayOff: 'Day off', bankHoliday: 'Bank holiday' };
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SMALL HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return isoOf(d); }
+function todayISO() { return isoOf(new Date()); }
+function dow(s) { return parseISO(s).getDay(); }
+function longDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function shortDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+function dayType(s) { if (BANK_HOLIDAYS[s]) return 'bh'; const d = dow(s); return d === 0 ? 'sun' : d === 6 ? 'sat' : 'wk'; }
+function toMin(hhmm) { if (!hhmm) return null; const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+function hhmm(min) { min = ((min % 1440) + 1440) % 1440; return pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+// "Midnight", "01:00am" … "11:45am", "Midday", "12:15pm", "01:00pm" …
+function timeLabel(min) {
+  if (min == null) return '';
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0 && m === 0) return 'Midnight';
+  if (h === 12 && m === 0) return 'Midday';
+  return pad(h % 12 || 12) + ':' + pad(m) + (h < 12 ? 'am' : 'pm');
+}
+function hourLabel(h) { return h === 0 ? 'Midnight' : h === 12 ? 'Midday' : pad(h % 12) + ':00' + (h < 12 ? 'am' : 'pm'); }
+const fmtH = mins => (Math.max(0, mins) / 60).toFixed(2) + ' h';
+const fmtNum = mins => (Math.max(0, mins) / 60).toFixed(2);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let ME = null;          // { email (lowercase), rawEmail, name, staff }
+let MINE = [];          // my saved timesheets
+let CUSTOMERS = [];     // shared customer list (names)
+let LOGO = null;        // logo for PDFs
+let state = null;
+let lastStatus = null;  // what the send panel is showing
+
+function blankJob(start = '') {
+  return { customer: '', start, end: '', afterMidnight: false, details: '', callout: 'No', dinner: '', testCert: '', status: '', materials: [] };
+}
+function blankState(date) {
+  return { date: date || todayISO(), mode: 'work', offReason: '', offNote: '', jobs: [blankJob()], editing: null, tried: false };
+}
+function realm() { return MINE.filter(r => !!r.testData === TEST); }
+function recordFor(date) { return realm().find(r => r.date === date) || null; }
+function recordId(date) { return ME.email + '_' + date + (TEST ? '_test' : ''); }
+function formHasContent() {
+  if (state.mode === 'off') return !!(state.offReason || state.offNote.trim());
+  return state.jobs.some(j => j.customer.trim() || j.details.trim() || j.start || j.end || j.materials.length);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HOURS
+//  Each job is laid out on a timeline measured in minutes from midnight at the
+//  start of the timesheet's date (so 1440 = midnight going into the next day).
+//  Every minute is paid at the rate for the day and time it falls in.
+// ═══════════════════════════════════════════════════════════════════════════
+function rateAt(date, t) {
+  const day = addDays(date, Math.floor(t / 1440)), mod = t % 1440, type = dayType(day);
+  if (type === 'bh' || type === 'sun') return 2;
+  if (type === 'sat') return 1.5;
+  return (mod >= STD_START && mod < STD_END) ? 1 : 1.5;
+}
+function compute(st) {
+  const out = { jobs: [], totalMins: 0, m1: 0, m15: 0, m2: 0, dinners: 0, callouts: 0, start: null, end: null };
+  let prevEnd = null;
+  st.jobs.forEach(j => {
+    const r = { placed: false, s: null, e: null, paid: 0, m1: 0, m15: 0, m2: 0, startsNextDay: false, finishesNextDay: false,
+                calloutEligible: false, askAfterMidnight: false, overlap: false, sameTime: false };
+    const s0 = toMin(j.start), e0 = toMin(j.end);
+    if (s0 != null) {
+      let s = s0;
+      if (prevEnd != null) {
+        if (prevEnd >= 1440) s += 1440;                       // the last job ran past midnight, so this one is the next day too
+        else if (s0 < prevEnd) { r.askAfterMidnight = true; if (j.afterMidnight) s += 1440; }
+      }
+      r.s = s; r.startsNextDay = s >= 1440;
+      if (prevEnd != null && s < prevEnd) r.overlap = true;
+      const sDay = addDays(st.date, Math.floor(s / 1440)), sMod = s % 1440;
+      r.calloutEligible = dayType(sDay) !== 'wk' || sMod < STD_START || sMod >= STD_END;
+      if (e0 != null) {
+        if (e0 === s0) r.sameTime = true;
+        else {
+          let e = e0 + (s >= 1440 ? 1440 : 0);
+          if (e <= s) e += 1440;
+          r.e = e; r.placed = true;
+          r.finishesNextDay = Math.floor((e - 1) / 1440) > Math.floor(s / 1440);
+        }
+      }
+    }
+    if (r.placed) {
+      for (let t = r.s; t < r.e; t++) { const k = rateAt(st.date, t); if (k === 1) r.m1++; else if (k === 1.5) r.m15++; else r.m2++; }
+      if (j.dinner === 'Yes') {
+        let left = 30;
+        for (const key of ['m1', 'm15', 'm2']) { const take = Math.min(left, r[key]); r[key] -= take; left -= take; }
+      }
+      r.paid = r.m1 + r.m15 + r.m2;
+      out.totalMins += r.paid; out.m1 += r.m1; out.m15 += r.m15; out.m2 += r.m2;
+      out.start = out.start == null ? r.s : Math.min(out.start, r.s);
+      out.end = out.end == null ? r.e : Math.max(out.end, r.e);
+      prevEnd = r.e;
+    }
+    out.jobs.push(r);
+  });
+  out.dinners = st.jobs.filter(j => j.dinner === 'Yes').length;
+  out.callouts = st.jobs.filter((j, i) => out.jobs[i].calloutEligible && j.callout === 'Yes').length;
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MISSING DAYS
+//  Counting starts from your first timesheet in this app (so nobody is nagged
+//  about days before it went live) and looks back at most LOOKBACK_DAYS.
+//  Monday–Friday only; bank holidays never count; today isn't "missing" yet.
+// ═══════════════════════════════════════════════════════════════════════════
+function missingDays() {
+  const recs = realm();
+  if (!recs.length) return [];
+  const have = new Set(recs.map(r => r.date));
+  const today = todayISO();
+  let from = recs.reduce((m, r) => r.date < m ? r.date : m, recs[0].date);
+  const floor = addDays(today, -LOOKBACK_DAYS);
+  if (from < floor) from = floor;
+  const out = [];
+  for (let d = from; d < today; d = addDays(d, 1)) {
+    const w = dow(d);
+    if (w === 0 || w === 6 || BANK_HOLIDAYS[d]) continue;
+    if (!have.has(d)) out.push(d);
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DRAFT (kept on this device so a half-done timesheet survives closing the app)
+// ═══════════════════════════════════════════════════════════════════════════
+const draftKey = () => 'ts-draft-v4-' + ME.email + (TEST ? '-test' : '');
+let draftTimer = null;
+function saveDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    try {
+      if (formHasContent()) localStorage.setItem(draftKey(), JSON.stringify({ state, at: Date.now() }));
+      else localStorage.removeItem(draftKey());
+    } catch (e) {}
+  }, 300);
+}
+function clearDraft() { clearTimeout(draftTimer); try { localStorage.removeItem(draftKey()); } catch (e) {} }
+function loadDraft() {
+  try { const o = JSON.parse(localStorage.getItem(draftKey()) || 'null'); if (o && o.state && Array.isArray(o.state.jobs)) return o; } catch (e) {}
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════════════════════════════
+function modal({ title, body, buttons }) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${esc(title)}</h3><div class="mbody">${body}</div>
+      <div class="mbtns">${buttons.map((b, i) => `<button type="button" class="${b.primary ? 'btn-primary' : 'btn-ghost'}" data-i="${i}">${esc(b.label)}</button>`).join('')}</div></div>`;
+    const close = v => { bg.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(undefined); };
+    bg.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b) close(buttons[+b.dataset.i].value); else if (e.target === bg) close(undefined);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    const p = bg.querySelector('.btn-primary'); if (p) p.focus();
+  });
+}
+
+// Two-tap time picker: pick the hour, then :00 / :15 / :30 / :45.
+function pickTime(current, title) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"></div>`;
+    const box = bg.firstChild;
+    const close = v => { bg.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(undefined); };
+    const curH = current == null ? null : Math.floor(current / 60);
+    const showHours = () => {
+      let html = '';
+      for (let h = 0; h < 24; h++) {
+        const cls = [h >= 8 && h <= 16 ? 'std' : '', h === curH ? 'sel' : ''].join(' ');
+        html += `<button type="button" class="${cls}" data-h="${h}">${hourLabel(h)}</button>`;
+      }
+      box.innerHTML = `<div class="tp-title"><h3>${esc(title)}</h3><span class="tp-step">1 of 2 · pick the hour</span></div>
+        <div class="hgrid">${html}</div>
+        <div class="mbtns">${current != null ? '<button type="button" class="btn-ghost" data-clear>Clear</button>' : ''}<button type="button" class="btn-ghost" data-cancel>Cancel</button></div>`;
+    };
+    const showMins = h => {
+      const ms = [0, 15, 30, 45].map(m => `<button type="button" class="${current === h * 60 + m ? 'sel' : ''}" data-m="${h * 60 + m}">${timeLabel(h * 60 + m)}</button>`).join('');
+      box.innerHTML = `<div class="tp-title"><h3>${esc(title)}</h3><span class="tp-step">2 of 2 · pick the minutes</span></div>
+        <div class="mgrid">${ms}</div>
+        <div class="mbtns"><button type="button" class="btn-ghost" data-back>← Change hour</button><button type="button" class="btn-ghost" data-cancel>Cancel</button></div>`;
+    };
+    bg.addEventListener('click', e => {
+      const t = e.target.closest('button');
+      if (e.target === bg) return close(undefined);
+      if (!t) return;
+      if (t.dataset.h != null) showMins(+t.dataset.h);
+      else if (t.dataset.m != null) close(+t.dataset.m);
+      else if (t.hasAttribute('data-back')) showHours();
+      else if (t.hasAttribute('data-clear')) close(null);
+      else if (t.hasAttribute('data-cancel')) close(undefined);
+    });
+    document.addEventListener('keydown', onKey);
+    showHours();
+    document.body.appendChild(bg);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RENDERING — the form
+// ═══════════════════════════════════════════════════════════════════════════
+function seg(i, f, opts, labels) {
+  const v = state.jobs[i][f];
+  return `<div class="seg">${opts.map((o, k) => `<button type="button" data-j="${i}" data-f="${f}" data-v="${esc(o)}" class="${v === o ? 'on' : ''}">${esc((labels || opts)[k])}</button>`).join('')}</div>`;
+}
+function timeBtn(i, which) {
+  const v = toMin(state.jobs[i][which]);
+  return `<button type="button" class="tbtn" data-time="${which}" data-j="${i}">${v == null ? '<span class="ph">Tap to set</span>' : esc(timeLabel(v))}<i class="ti ti-clock"></i></button>`;
+}
+function gearHTML(i, k, g) {
+  return `<div class="gear">
+    <input class="inp" data-j="${i}" data-k="${k}" data-g="qty" value="${esc(g.qty)}" placeholder="Qty" aria-label="Quantity">
+    <input class="inp" data-j="${i}" data-k="${k}" data-g="desc" value="${esc(g.desc)}" placeholder="e.g. 5m 1.5mm T&amp;E" aria-label="Description">
+    <button type="button" class="x2" data-delgear="${i}:${k}" aria-label="Remove item"><i class="ti ti-trash"></i></button></div>`;
+}
+function jobHTML(j, i) {
+  return `<div class="job" data-job="${i}">
+    <div class="job-h"><h3>Job ${i + 1}</h3><span class="hrs" id="jh${i}"></span>${state.jobs.length > 1 ? `<button type="button" class="x" data-deljob="${i}" aria-label="Remove job ${i + 1}"><i class="ti ti-x"></i></button>` : ''}</div>
+    <div class="job-b">
+      <div>
+        <div class="field" data-err="${i}-customer"><label class="lbl" for="c${i}">Customer</label>
+          <div class="ac"><input class="inp" id="c${i}" data-j="${i}" data-f="customer" value="${esc(j.customer)}" autocomplete="off" placeholder="Start typing — earlier customers pop up"><div class="ac-list" hidden></div></div></div>
+        <div class="row2">
+          <div class="field" data-err="${i}-start"><span class="lbl">Started</span>${timeBtn(i, 'start')}<div class="nd" id="nds${i}" hidden>After midnight (next day)</div></div>
+          <div class="field" data-err="${i}-end"><span class="lbl">Finished</span>${timeBtn(i, 'end')}<div class="nd" id="nde${i}" hidden>Finishes the next day</div></div>
+        </div>
+        <label class="am" id="am${i}" hidden><input type="checkbox" data-j="${i}" data-f="afterMidnight" ${j.afterMidnight ? 'checked' : ''}><span>This job started <b>after midnight</b>, after the job above finished.</span></label>
+        <div class="field" data-err="${i}-details"><label class="lbl" for="d${i}">Work carried out</label>
+          <textarea class="inp" id="d${i}" data-j="${i}" data-f="details" placeholder="What did you do?">${esc(j.details)}</textarea></div>
+      </div>
+      <div>
+        <div class="field" id="co${i}" hidden><span class="lbl">Call-out?</span>${seg(i, 'callout', ['No', 'Yes'])}</div>
+        <div class="row2">
+          <div class="field" data-err="${i}-dinner"><span class="lbl">Dinner taken?</span>${seg(i, 'dinner', ['No', 'Yes'])}<div class="hint" id="dh${i}" hidden></div></div>
+          <div class="field" data-err="${i}-testCert"><span class="lbl">Test cert?</span>${seg(i, 'testCert', ['No', 'Yes'])}</div>
+        </div>
+        <div class="field" data-err="${i}-status"><span class="lbl">Job status</span>${seg(i, 'status', ['Completed', 'Return visit needed'], ['Completed', 'Return visit'])}</div>
+        <div class="field" data-err="${i}-materials"><span class="lbl">Materials from stores</span>
+          <div id="gl${i}">${j.materials.map((g, k) => gearHTML(i, k, g)).join('')}</div>
+          <button type="button" class="addg" data-addgear="${i}"><i class="ti ti-plus"></i> Add item</button></div>
+      </div>
+    </div></div>`;
+}
+function renderJobs() {
+  $('jobs').innerHTML = state.jobs.map(jobHTML).join('');
+  $('addJob').disabled = state.jobs.length >= MAX_JOBS;
+  $('addJob').innerHTML = state.jobs.length >= MAX_JOBS ? `Maximum ${MAX_JOBS} jobs` : '<i class="ti ti-plus"></i> Add another job';
+  updateDerived();
+}
+function renderDay() {
+  const d = state.date;
+  $('dateIn').value = d || '';
+  $('dateIn').disabled = !!state.editing;
+  $('dateIn').max = state.mode === 'work' ? todayISO() : '';
+  $('modeSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
+  let note = '';
+  if (d) {
+    const t = dayType(d);
+    note = `<b>${esc(longDate(d))}</b>`;
+    if (t === 'bh') note += ` · bank holiday (${esc(BANK_HOLIDAYS[d])}) <span class="pay">all hours 2×</span>`;
+    else if (t === 'sun') note += ` <span class="pay">Sunday · all hours 2×</span>`;
+    else if (t === 'sat') note += ` <span class="pay">Saturday · all hours 1.5×</span>`;
+  }
+  $('dayNote').innerHTML = note;
+  $('workPane').hidden = state.mode !== 'work';
+  $('offPane').hidden = state.mode !== 'off';
+  $('sumWork').hidden = state.mode !== 'work';
+  $('sumOff').hidden = state.mode !== 'off';
+  $('offSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.reason === state.offReason));
+  $('offNote').value = state.offNote;
+  $('sumOffReason').textContent = state.offReason ? REASONS[state.offReason] : 'Pick a reason';
+  const ed = state.editing;
+  $('editingBar').innerHTML = ed ? `<div class="editing"><i class="ti ti-pencil"></i><div style="flex:1;min-width:200px"><b>Changing your timesheet for ${esc(shortDate(state.date))}</b> (sent as version ${ed.version}). When you send it, the office gets an email marked <b>AMENDED</b>. The old version is kept.</div><button type="button" class="mini" id="cancelEdit">Cancel changes</button></div>` : '';
+  $('sendLabel').textContent = state.mode === 'off' ? (ed ? 'Send amended — not working' : 'Send — not working') : (ed ? 'Send amended timesheet' : 'Send timesheet');
+  $('sendSmall').textContent = state.mode === 'off'
+    ? 'Sends a short email from your own account to the office.'
+    : 'Sends from your own email to the office, with the office and engineer PDFs attached. A copy stays in your Sent Items.';
+  if (TEST) $('sendSmall').textContent = 'TEST MODE: the email comes to you, not the office.';
+}
+function renderBanners() {
+  const b = [];
+  if (TEST) b.push(`<div class="banner test"><i class="ti ti-flask"></i><div><b>Test mode.</b> Timesheets here are marked as test data and kept apart from real ones. Emails come to you, not the office. <a href="timesheet.html" style="color:inherit">Leave test mode</a></div></div>`);
+  if (ME && !ME.staff) b.push(`<div class="banner bad"><i class="ti ti-user-question"></i><div><b>You're not on the staff list yet</b>, so your timesheets show your email address instead of your name. You can still send them; the office gets a note about it with each one.</div></div>`);
+  const miss = missingDays();
+  if (miss.length) {
+    const shown = miss.slice(0, 10);
+    const dom = new Date().getDate();
+    const wages = dom >= 20 && dom <= 25 ? ' Wages are run around the 25th, so please catch up now.' : '';
+    b.push(`<div class="banner ${wages ? 'bad' : 'warn'}"><i class="ti ti-alert-triangle"></i><div><b>You haven't done ${miss.length === 1 ? 'a timesheet' : 'timesheets'} for ${miss.length === 1 ? 'this day' : 'these days'}:</b>${wages}
+      <div class="acts">${shown.map(d => `<button type="button" class="mini" data-goday="${d}">${esc(shortDate(d))}</button>`).join('')}${miss.length > 10 ? `<span>+ ${miss.length - 10} more</span>` : ''}</div>
+      <div class="small" style="color:inherit">Tap a day to fill it in. Off that day? Choose <b>Not working</b>.</div></div></div>`);
+  }
+  if (state && state.date && +state.date.slice(0, 4) > BH_LAST_YEAR) b.push(`<div class="banner info"><i class="ti ti-calendar-question"></i><div>The app's bank holiday list only goes up to ${BH_LAST_YEAR}, so bank holidays after that won't be spotted. Tell Rob.</div></div>`);
+  $('banners').innerHTML = b.join('');
+}
+function renderStatus() {
+  const s = lastStatus;
+  $('sendStatus').innerHTML = s ? `<div class="status ${s.cls}">${s.html}</div>` : '';
+}
+function setStatus(cls, html) { lastStatus = cls ? { cls, html } : null; renderStatus(); }
+function renderAll() { renderBanners(); renderDay(); renderJobs(); renderStatus(); }
+
+// Everything that changes as you type/tap, without rebuilding the form.
+function updateDerived() {
+  const c = compute(state);
+  const dinnerJob = state.jobs.findIndex(j => j.dinner === 'Yes');
+  state.jobs.forEach((j, i) => {
+    const r = c.jobs[i];
+    const h = $('jh' + i); if (!h) return;
+    h.textContent = r.placed ? fmtH(r.paid) + (j.dinner === 'Yes' ? ' (dinner off)' : '') : '';
+    $('nds' + i).hidden = !r.startsNextDay;
+    $('nde' + i).hidden = !r.finishesNextDay;
+    $('am' + i).hidden = !r.askAfterMidnight;
+    $('co' + i).hidden = !r.calloutEligible;
+    // only one dinner a day
+    const yes = document.querySelector(`.seg button[data-j="${i}"][data-f="dinner"][data-v="Yes"]`);
+    const hint = $('dh' + i);
+    if (yes) {
+      const block = dinnerJob !== -1 && dinnerJob !== i;
+      yes.disabled = block;
+      hint.hidden = !block;
+      hint.textContent = block ? `Dinner is already on Job ${dinnerJob + 1}` : '';
+    }
+  });
+  $('sumTotal').textContent = fmtH(c.totalMins);
+  $('sumStart').textContent = c.start == null ? '—' : timeLabel(c.start % 1440) + (c.start >= 1440 ? ' (next day)' : '');
+  $('sumEnd').textContent = c.end == null ? '—' : timeLabel(c.end % 1440) + (c.end > 1440 ? ' (next day)' : '');
+  $('sumJobs').textContent = state.jobs.length;
+  $('sumDinner').textContent = c.dinners ? 'Yes (30 min off)' : (state.jobs.some(j => j.dinner === 'No') ? 'No' : '—');
+  const notes = [];
+  const t = state.date ? dayType(state.date) : 'wk';
+  if (t === 'bh') notes.push('Bank holiday: all hours paid at 2×.');
+  else if (t === 'sun') notes.push('Sunday: all hours paid at 2×.');
+  else if (t === 'sat') notes.push('Saturday: all hours paid at 1.5×.');
+  if (c.end != null && c.end > 1440) notes.push('Runs past midnight: those hours are paid at the next day\'s rate.');
+  $('sumNote').hidden = !notes.length;
+  $('sumNote').textContent = notes.join(' ');
+  if (state.tried) showErrors(validate());
+  saveDraft();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  VALIDATION
+// ═══════════════════════════════════════════════════════════════════════════
+function validate() {
+  const errs = [];
+  const add = (msg, key) => errs.push({ msg, key });
+  if (!state.date) add('Pick the date.', 'date');
+  if (!ME.name) add('Your name couldn\'t be found. Sign out and back in.', '');
+  if (state.mode === 'off') {
+    if (!state.offReason) add('Choose why you weren\'t working.', 'offReason');
+    return errs;
+  }
+  if (state.date && state.date > todayISO()) add('You can\'t send a working timesheet for a day that hasn\'t happened yet. (Holidays can be sent in advance: choose Not working.)', 'date');
+  const c = compute(state);
+  state.jobs.forEach((j, i) => {
+    const r = c.jobs[i], name = `Job ${i + 1}`;
+    if (!j.customer.trim()) add(`${name}: enter the customer.`, `${i}-customer`);
+    if (!j.start) add(`${name}: set the start time.`, `${i}-start`);
+    if (!j.end) add(`${name}: set the finish time.`, `${i}-end`);
+    if (r.sameTime) add(`${name}: the start and finish times are the same.`, `${i}-end`);
+    if (r.overlap) add(`${name} starts before Job ${i} finishes. Check the times${r.askAfterMidnight ? ', or tick "started after midnight" if that\'s what happened' : ''}.`, `${i}-start`);
+    if (!j.details.trim()) add(`${name}: say what work was carried out.`, `${i}-details`);
+    if (!j.dinner) add(`${name}: was dinner taken? Pick Yes or No.`, `${i}-dinner`);
+    if (!j.testCert) add(`${name}: is a test cert needed? Pick Yes or No.`, `${i}-testCert`);
+    if (!j.status) add(`${name}: pick Completed or Return visit.`, `${i}-status`);
+    j.materials.forEach((g, k) => {
+      const q = g.qty.trim(), d = g.desc.trim();
+      if (q && !d) add(`${name}: materials line ${k + 1} needs a description.`, `${i}-materials`);
+      if (!q && d) add(`${name}: materials line ${k + 1} needs a quantity.`, `${i}-materials`);
+    });
+  });
+  if (c.totalMins > 24 * 60) add('That\'s more than 24 hours in total. Check the times.', '');
+  return errs;
+}
+function showErrors(errs) {
+  document.querySelectorAll('.field.bad').forEach(f => f.classList.remove('bad'));
+  errs.forEach(e => {
+    if (!e.key) return;
+    if (e.key === 'date') $('dateIn').closest('.field').classList.add('bad');
+    else if (e.key === 'offReason') $('offReasonField').classList.add('bad');
+    else { const f = document.querySelector(`[data-err="${e.key}"]`); if (f) f.classList.add('bad'); }
+  });
+  const box = $('errs');
+  box.hidden = !errs.length;
+  box.innerHTML = errs.slice(0, 8).map(e => `<li>${esc(e.msg)}</li>`).join('') + (errs.length > 8 ? `<li>…and ${errs.length - 8} more</li>` : '');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FORM EVENTS
+// ═══════════════════════════════════════════════════════════════════════════
+async function confirmDiscard() {
+  if (!formHasContent()) return true;
+  return await modal({ title: 'Lose what you\'ve typed?', body: '<p>The timesheet you\'re filling in hasn\'t been sent. If you carry on, it\'s cleared.</p>',
+    buttons: [{ label: 'Keep it', value: false }, { label: 'Clear it and carry on', value: true, primary: true }] });
+}
+// Open a date: if it's already been sent, open it for changes; otherwise a fresh form.
+function openDate(date) {
+  const rec = recordFor(date);
+  state = rec ? stateFromRecord(rec) : blankState(date);
+  if (!rec && BANK_HOLIDAYS[date]) { state.mode = 'off'; state.offReason = 'bankHoliday'; }
+  setStatus(null);
+  renderAll();
+}
+$('dateIn').addEventListener('change', async e => {
+  const d = e.target.value;
+  if (!d) { state.date = ''; renderDay(); updateDerived(); return; }
+  if (recordFor(d)) {
+    if (!(await confirmDiscard())) { e.target.value = state.date; return; }
+    openDate(d);
+  } else {
+    state.date = d;
+    renderBanners(); renderDay(); updateDerived();
+  }
+});
+$('modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-mode]'); if (!b) return;
+  state.mode = b.dataset.mode;
+  if (state.mode === 'off' && !state.offReason && BANK_HOLIDAYS[state.date]) state.offReason = 'bankHoliday';
+  renderDay(); updateDerived();
+});
+$('offSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-reason]'); if (!b) return;
+  state.offReason = b.dataset.reason; renderDay(); updateDerived();
+});
+$('offNote').addEventListener('input', e => { state.offNote = e.target.value; saveDraft(); });
+$('addJob').addEventListener('click', () => {
+  if (state.jobs.length >= MAX_JOBS) return;
+  const prev = state.jobs[state.jobs.length - 1];
+  state.jobs.push(blankJob(prev && prev.end ? prev.end : ''));
+  renderJobs();
+  const cards = document.querySelectorAll('.job');
+  cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.addEventListener('click', async e => {
+  if (e.target.id === 'cancelEdit') {
+    if (!(await modal({ title: 'Cancel your changes?', body: '<p>The timesheet you already sent stays as it is.</p>', buttons: [{ label: 'Keep editing', value: false }, { label: 'Cancel changes', value: true, primary: true }] }))) return;
+    clearDraft(); state = blankState(); setStatus(null); renderAll(); return;
+  }
+  const go = e.target.closest('[data-goday]');
+  if (go) {
+    if (state.date !== go.dataset.goday && !(await confirmDiscard())) return;
+    showTab('form'); openDate(go.dataset.goday); window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+$('jobs').addEventListener('input', e => {
+  const t = e.target, i = +t.dataset.j;
+  if (t.dataset.g) { state.jobs[i].materials[+t.dataset.k][t.dataset.g] = t.value; updateDerived(); return; }
+  if (t.dataset.f === 'customer') { state.jobs[i].customer = t.value; showSuggestions(t); updateDerived(); return; }
+  if (t.dataset.f === 'details') { state.jobs[i].details = t.value; updateDerived(); return; }
+});
+$('jobs').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.f === 'afterMidnight') { state.jobs[+t.dataset.j].afterMidnight = t.checked; updateDerived(); }
+});
+$('jobs').addEventListener('click', async e => {
+  const sb = e.target.closest('.seg button[data-f]');
+  if (sb) {
+    if (sb.disabled) return;
+    const i = +sb.dataset.j, f = sb.dataset.f;
+    state.jobs[i][f] = sb.dataset.v;
+    sb.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === sb));
+    updateDerived(); return;
+  }
+  const tb = e.target.closest('[data-time]');
+  if (tb) {
+    const i = +tb.dataset.j, which = tb.dataset.time;
+    const v = await pickTime(toMin(state.jobs[i][which]), `Job ${i + 1}: ${which === 'start' ? 'started' : 'finished'}`);
+    if (v === undefined) return;
+    const old = state.jobs[i][which];
+    state.jobs[i][which] = v == null ? '' : hhmm(v);
+    // the next job starts when this one finished, unless it's been set differently
+    if (which === 'end' && state.jobs[i + 1] && (!state.jobs[i + 1].start || state.jobs[i + 1].start === old)) state.jobs[i + 1].start = state.jobs[i].end;
+    renderJobs(); return;
+  }
+  const dj = e.target.closest('[data-deljob]');
+  if (dj) {
+    const i = +dj.dataset.deljob, j = state.jobs[i];
+    if ((j.customer.trim() || j.details.trim() || j.materials.length) && !(await modal({ title: `Remove Job ${i + 1}?`, body: `<p>${esc(j.customer || 'This job')} will be taken off this timesheet.</p>`, buttons: [{ label: 'Keep it', value: false }, { label: 'Remove', value: true, primary: true }] }))) return;
+    state.jobs.splice(i, 1); renderJobs(); return;
+  }
+  const ag = e.target.closest('[data-addgear]');
+  if (ag) {
+    const i = +ag.dataset.addgear; state.jobs[i].materials.push({ qty: '', desc: '' }); renderJobs();
+    const rows = $('gl' + i).querySelectorAll('.gear'); rows[rows.length - 1].querySelector('input').focus(); return;
+  }
+  const dg = e.target.closest('[data-delgear]');
+  if (dg) { const [i, k] = dg.dataset.delgear.split(':').map(Number); state.jobs[i].materials.splice(k, 1); renderJobs(); }
+});
+
+// ---- customer suggestions ----
+function showSuggestions(input) {
+  const list = input.parentElement.querySelector('.ac-list');
+  const q = input.value.trim().toLowerCase();
+  if (q.length < 1) { list.hidden = true; return; }
+  const starts = [], contains = [];
+  for (const n of CUSTOMERS) {
+    const l = n.toLowerCase();
+    if (l === q) continue;
+    if (l.startsWith(q)) starts.push(n); else if (l.includes(q)) contains.push(n);
+  }
+  const hits = starts.concat(contains).slice(0, 8);
+  if (!hits.length) { list.hidden = true; return; }
+  list.innerHTML = hits.map((n, k) => {
+    const at = n.toLowerCase().indexOf(q);
+    const shown = esc(n.slice(0, at)) + '<mark>' + esc(n.slice(at, at + q.length)) + '</mark>' + esc(n.slice(at + q.length));
+    return `<button type="button" data-pick="${esc(n)}" class="${k === 0 ? 'hl' : ''}">${shown}</button>`;
+  }).join('');
+  list.hidden = false;
+}
+$('jobs').addEventListener('pointerdown', e => {
+  const p = e.target.closest('[data-pick]'); if (!p) return;
+  e.preventDefault();
+  const input = p.closest('.ac').querySelector('input');
+  state.jobs[+input.dataset.j].customer = p.dataset.pick;
+  input.value = p.dataset.pick;
+  p.closest('.ac-list').hidden = true;
+  updateDerived();
+});
+$('jobs').addEventListener('focusout', e => {
+  if (e.target.dataset && e.target.dataset.f === 'customer') setTimeout(() => { const l = e.target.parentElement.querySelector('.ac-list'); if (l) l.hidden = true; }, 150);
+});
+$('jobs').addEventListener('keydown', e => {
+  const t = e.target; if (!t.dataset || t.dataset.f !== 'customer') return;
+  const list = t.parentElement.querySelector('.ac-list'); if (list.hidden) return;
+  const items = [...list.querySelectorAll('button')]; let k = items.findIndex(b => b.classList.contains('hl'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); k = (k + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((b, n) => b.classList.toggle('hl', n === k));
+  } else if (e.key === 'Enter' && k >= 0) {
+    e.preventDefault(); t.value = items[k].dataset.pick; state.jobs[+t.dataset.j].customer = t.value; list.hidden = true; updateDerived();
+  } else if (e.key === 'Escape') list.hidden = true;
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RECORDS
+// ═══════════════════════════════════════════════════════════════════════════
+function buildRecord() {
+  const c = compute(state);
+  const rec = {
+    engineerEmail: ME.email, engineerName: ME.name, date: state.date, kind: state.mode,
+    bankHoliday: BANK_HOLIDAYS[state.date] || null, noStaffRecord: !ME.staff, app: 'timesheet ' + VERSION
+  };
+  if (state.mode === 'off') {
+    Object.assign(rec, { offReason: state.offReason, offNote: state.offNote.trim(), jobs: [], totals: null });
+  } else {
+    rec.jobs = state.jobs.map((j, i) => {
+      const r = c.jobs[i];
+      return {
+        customer: j.customer.trim(), start: j.start, end: j.end, afterMidnight: !!(r.askAfterMidnight && j.afterMidnight),
+        startsNextDay: r.startsNextDay, finishesNextDay: r.finishesNextDay,
+        details: j.details.trim(), callout: r.calloutEligible && j.callout === 'Yes' ? 'Yes' : 'No',
+        dinner: j.dinner, testCert: j.testCert, status: j.status,
+        materials: j.materials.filter(g => g.qty.trim() || g.desc.trim()).map(g => ({ qty: g.qty.trim(), desc: g.desc.trim() })),
+        paidMins: r.paid, mins1x: r.m1, mins1_5x: r.m15, mins2x: r.m2
+      };
+    });
+    rec.totals = {
+      totalMins: c.totalMins, mins1x: c.m1, mins1_5x: c.m15, mins2x: c.m2, dinners: c.dinners, callouts: c.callouts,
+      dayStart: hhmm(c.start), dayEnd: hhmm(c.end), startsNextDay: c.start >= 1440, endsNextDay: c.end > 1440,
+      testCerts: rec.jobs.filter(j => j.testCert === 'Yes').length,
+      returnVisits: rec.jobs.filter(j => j.status === 'Return visit needed').length
+    };
+  }
+  if (TEST) rec.testData = true;
+  return rec;
+}
+function stateFromRecord(rec) {
+  const st = blankState(rec.date);
+  st.mode = rec.kind === 'off' ? 'off' : 'work';
+  st.offReason = rec.offReason || '';
+  st.offNote = rec.offNote || '';
+  if (rec.kind !== 'off' && rec.jobs && rec.jobs.length) {
+    st.jobs = rec.jobs.map(j => ({
+      customer: j.customer || '', start: j.start || '', end: j.end || '', afterMidnight: !!j.afterMidnight,
+      details: j.details || '', callout: j.callout || 'No', dinner: j.dinner || '', testCert: j.testCert || '', status: j.status || '',
+      materials: (j.materials || []).map(g => ({ qty: g.qty || '', desc: g.desc || '' }))
+    }));
+  }
+  st.editing = { id: rec.id, version: rec.version || 1 };
+  return st;
+}
+function customerKey(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100); }
+
+async function saveRecord(rec) {
+  const id = recordId(rec.date);
+  const existing = MINE.find(r => r.id === id);
+  const v = existing ? (existing.version || 1) + 1 : 1;
+  const nowIso = new Date().toISOString();
+  const history = [...((existing && existing.history) || []), { v, at: nowIso, by: ME.email, byName: ME.name }];
+  const full = Object.assign({}, rec, {
+    version: v, history, updatedAt: serverTimestamp(), updatedBy: ME.email,
+    createdAt: existing && existing.createdAt ? existing.createdAt : serverTimestamp(),
+    email: { status: 'pending', version: v }
+  });
+  const b = writeBatch(db);
+  b.set(doc(db, 'timesheets', id), full);
+  b.set(doc(db, 'timesheets', id, 'versions', 'v' + v), Object.assign({}, rec, { version: v, savedAt: serverTimestamp(), savedBy: ME.email, savedByName: ME.name }));
+  if (!TEST) {
+    const seen = new Set();
+    (rec.jobs || []).forEach(j => {
+      const key = customerKey(j.customer);
+      if (!key || seen.has(key)) return; seen.add(key);
+      b.set(doc(db, 'timesheetCustomers', key), { name: j.customer.slice(0, 120), key, lastUsed: rec.date, lastUsedBy: ME.email });
+    });
+  }
+  await b.commit();
+  const local = Object.assign({}, full, { id, updatedAt: null, createdAt: (existing && existing.createdAt) || null, history });
+  MINE = MINE.filter(r => r.id !== id).concat([local]).sort((a, b2) => b2.date.localeCompare(a.date));
+  (rec.jobs || []).forEach(j => { if (j.customer && !CUSTOMERS.some(n => n.toLowerCase() === j.customer.toLowerCase())) CUSTOMERS.push(j.customer); });
+  return local;
+}
+async function markEmail(rec, fields) {
+  const upd = {};
+  Object.entries(fields).forEach(([k, v]) => { upd['email.' + k] = v; });
+  try { await updateDoc(doc(db, 'timesheets', rec.id), upd); } catch (e) { console.warn('email status not saved', e); }
+  rec.email = Object.assign({}, rec.email || {}, fields);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PDF
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadLogo() {
+  try {
+    const img = new Image();
+    img.src = 'sw-logo.png';
+    await img.decode();
+    const W = 560, H = Math.round(W * img.naturalHeight / img.naturalWidth);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+    LOGO = { data: cv.toDataURL('image/jpeg', 0.9), ratio: H / W };
+  } catch (e) { LOGO = null; }
+}
+function buildPDF(rec, office) {
+  if (!window.jspdf) throw new Error('The PDF tool didn\'t load. Check your signal and reload the page.');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 14, CW = W - 2 * M, BOTTOM = 274;
+  const INK = [20, 20, 20], DARK = [50, 50, 50], MID = [90, 90, 90], LINE = [200, 200, 200], RED = [208, 34, 42], SOFT = [244, 243, 240], WHITE = [255, 255, 255];
+  const F = (style, size, col) => { pdf.setFont('helvetica', style); pdf.setFontSize(size); pdf.setTextColor(...(col || INK)); };
+  const t = rec.totals || {};
+  const H = mins => fmtNum(mins || 0);
+  let y = 12;
+
+  // ---- top ----
+  const logoH = LOGO ? 50 * LOGO.ratio : 0;
+  if (LOGO) pdf.addImage(LOGO.data, 'JPEG', M, y, 50, logoH);
+  else { F('bold', 16, RED); pdf.text('SIMPSON & WOOD', M, y + 9); }
+  F('bold', 12, office ? RED : MID);
+  pdf.text(office ? 'OFFICE COPY' : 'ENGINEER COPY', W - M, y + 5, { align: 'right' });
+  let ry = y + 11;
+  if ((rec.version || 1) > 1) { F('bold', 12, RED); pdf.text(`AMENDED — version ${rec.version}`, W - M, ry, { align: 'right' }); ry += 6; }
+  if (rec.testData) { F('bold', 12, RED); pdf.text('TEST DATA — NOT A REAL TIMESHEET', W - M, ry, { align: 'right' }); }
+  y = Math.max(y + (logoH || 12), ry - 4) + 5;
+  pdf.setDrawColor(...RED); pdf.setLineWidth(0.8); pdf.line(M, y, W - M, y); pdf.setLineWidth(0.25);
+  y += 10;
+  F('bold', 21, INK); pdf.text(rec.engineerName || rec.engineerEmail, M, y);
+  F('bold', 13, INK); pdf.text(longDate(rec.date), W - M, y, { align: 'right' });
+  y += 7;
+  const dt = dayType(rec.date);
+  const subBits = [];
+  subBits.push(`Started ${t.dayStart}${t.startsNextDay ? ' (next day)' : ''}  ·  Finished ${t.dayEnd}${t.endsNextDay ? ' (next day)' : ''}  ·  ${rec.jobs.length} job${rec.jobs.length === 1 ? '' : 's'}`);
+  if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]}): all hours 2×`);
+  else if (dt === 'sun') subBits.push('Sunday: all hours 2×');
+  else if (dt === 'sat') subBits.push('Saturday: all hours 1.5×');
+  F('normal', 11, DARK);
+  pdf.splitTextToSize(subBits.join('     '), CW).forEach(l => { pdf.text(l, M, y); y += 5.2; });
+  y += 1;
+
+  // ---- summary boxes ----
+  const boxes = office
+    ? [['Total hours', H(t.totalMins), false], ['At 1×', H(t.mins1x), false], ['At 1.5×', H(t.mins1_5x), t.mins1_5x > 0], ['At 2×', H(t.mins2x), t.mins2x > 0], ['Call-outs', String(t.callouts || 0), t.callouts > 0], ['Dinner', t.dinners ? 'Yes' : 'No', false]]
+    : [['Total hours', H(t.totalMins), false], ['Jobs', String(rec.jobs.length), false], ['Call-outs', String(t.callouts || 0), false], ['Dinner', t.dinners ? 'Yes' : 'No', false]];
+  const bw = CW / boxes.length, bh = 19;
+  boxes.forEach((bx, k) => {
+    const x = M + k * bw;
+    pdf.setFillColor(...SOFT); pdf.setDrawColor(...LINE); pdf.rect(x, y, bw, bh, 'FD');
+    F('bold', 8.5, MID); pdf.text(bx[0].toUpperCase(), x + bw / 2, y + 6, { align: 'center' });
+    F('bold', 16, bx[2] ? RED : INK); pdf.text(bx[1], x + bw / 2, y + 15, { align: 'center' });
+  });
+  y += bh + 5;
+  if (office && (t.testCerts || t.returnVisits)) {
+    const flags = [];
+    if (t.testCerts) flags.push(`${t.testCerts} test cert${t.testCerts === 1 ? '' : 's'} needed`);
+    if (t.returnVisits) flags.push(`${t.returnVisits} return visit${t.returnVisits === 1 ? '' : 's'} needed`);
+    F('bold', 12, RED); pdf.text(flags.join('   ·   '), M, y + 2); y += 8;
+  }
+  if (rec.noStaffRecord) { F('italic', 10, RED); pdf.text('Note: this account is not on the staff list, so the name shown is the email address.', M, y + 1); y += 7; }
+
+  // ---- jobs ----
+  const runningHead = () => { F('normal', 9.5, MID); pdf.text(`${rec.engineerName}  ·  ${longDate(rec.date)}  ·  continued`, M, 12); };
+  let contJob = null;
+  const newPageIf = need => {
+    if (y + need <= BOTTOM) return;
+    pdf.addPage(); runningHead(); y = 18;
+    if (contJob) {
+      pdf.setFillColor(90, 90, 90); pdf.rect(M, y, CW, 7.5, 'F');
+      F('bold', 10.5, WHITE); pdf.text(`JOB ${contJob.n} continued  ·  ${contJob.customer}`.slice(0, 95), M + 3, y + 5.2);
+      y += 13.5;
+    }
+  };
+  rec.jobs.forEach((j, i) => {
+    F('bold', 15); const custLines = pdf.splitTextToSize(j.customer || '—', CW - 4);
+    F('normal', 11.5); const detLines = j.details ? pdf.splitTextToSize(j.details, CW - 4) : [];
+    const badges = [];
+    if (j.callout === 'Yes') badges.push({ t: 'CALL-OUT', fill: RED, col: WHITE });
+    if (j.testCert === 'Yes') badges.push({ t: 'TEST CERT NEEDED', fill: [255, 205, 80], col: INK });
+    else if (office) badges.push({ t: 'NO TEST CERT', fill: null, col: MID, line: LINE });
+    if (j.status === 'Return visit needed') badges.push({ t: 'RETURN VISIT NEEDED', fill: WHITE, col: RED, line: RED });
+    else if (j.status === 'Completed') badges.push({ t: 'COMPLETED', fill: [30, 107, 52], col: WHITE });
+    if (j.dinner === 'Yes') badges.push({ t: 'DINNER TAKEN (30 MIN OFF)', fill: [225, 225, 225], col: DARK });
+    const custH = custLines.length * 6.4 + 2;
+    const minBlock = 10 + custH + 10 + 7 + Math.min(3, detLines.length) * 5.6;
+    newPageIf(minBlock);
+    contJob = { n: i + 1, customer: j.customer };
+    // header bar
+    pdf.setFillColor(26, 26, 26); pdf.rect(M, y, CW, 9, 'F');
+    F('bold', 12, WHITE); pdf.text(`JOB ${i + 1}`, M + 3, y + 6.2);
+    const times = `${j.startsNextDay ? '(next day) ' : ''}${j.start} – ${j.end}${j.finishesNextDay ? ' (next day)' : ''}`;
+    pdf.text(`${times}     ${fmtNum(j.paidMins)} h`, W - M - 3, y + 6.2, { align: 'right' });
+    y += 9 + 6.5;
+    F('bold', 15, INK); custLines.forEach(l => { pdf.text(l, M + 2, y); y += 6.4; });
+    y -= 2;
+    // badges
+    if (badges.length) {
+      y += 2;
+      let bx = M + 2;
+      F('bold', 9);
+      badges.forEach(bd => {
+        const w = pdf.getTextWidth(bd.t) + 6;
+        if (bx + w > W - M) { bx = M + 2; y += 8.5; }
+        if (bd.fill) pdf.setFillColor(...bd.fill);
+        if (bd.line) pdf.setDrawColor(...bd.line);
+        pdf.roundedRect(bx, y, w, 6.5, 1.2, 1.2, bd.fill && bd.line ? 'FD' : bd.fill ? 'F' : 'D');
+        F('bold', 9, bd.col); pdf.text(bd.t, bx + 3, y + 4.6);
+        bx += w + 3;
+      });
+      y += 6.5 + 3;
+    }
+    if (office && (j.mins1_5x || j.mins2x)) {
+      const parts = [];
+      if (j.mins1x) parts.push(`${fmtNum(j.mins1x)} h at 1×`);
+      if (j.mins1_5x) parts.push(`${fmtNum(j.mins1_5x)} h at 1.5×`);
+      if (j.mins2x) parts.push(`${fmtNum(j.mins2x)} h at 2×`);
+      F('normal', 10.5, DARK); pdf.text('Paid: ' + parts.join('  +  '), M + 2, y + 3); y += 6;
+    }
+    // details
+    y += 2;
+    F('bold', 9, MID); pdf.text('WORK CARRIED OUT', M + 2, y + 2.5); y += 8;
+    F('normal', 11.5, INK);
+    detLines.forEach(l => { newPageIf(5.6); F('normal', 11.5, INK); pdf.text(l, M + 2, y); y += 5.6; });
+    // materials
+    if (j.materials && j.materials.length) {
+      y += 2;
+      F('normal', 11.5);
+      const rows = j.materials.map(g => ({ q: g.qty, lines: pdf.splitTextToSize(g.desc, CW - 30) }));
+      newPageIf(14 + rows[0].lines.length * 5.2);
+      F('bold', 9, MID); pdf.text('MATERIALS FROM STORES', M + 2, y + 2.5); y += 5;
+      const tHead = () => { pdf.setFillColor(...SOFT); pdf.rect(M, y, CW, 6.5, 'F'); F('bold', 9, DARK); pdf.text('QTY', M + 3, y + 4.5); pdf.text('DESCRIPTION', M + 26, y + 4.5); y += 6.5; };
+      tHead();
+      rows.forEach(r => {
+        const rh = Math.max(7.5, r.lines.length * 5.2 + 2.6);
+        if (y + rh > BOTTOM) { newPageIf(rh + 10); tHead(); }
+        F('bold', 11.5, INK); pdf.text(String(r.q), M + 3, y + 5.2);
+        F('normal', 11.5, INK); r.lines.forEach((l, k) => pdf.text(l, M + 26, y + 5.2 + k * 5.2));
+        y += rh;
+        pdf.setDrawColor(...LINE); pdf.line(M, y, W - M, y);
+      });
+    }
+    contJob = null;
+    y += 9;
+  });
+
+  // ---- footer on every page ----
+  const n = pdf.getNumberOfPages();
+  const sent = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  for (let p = 1; p <= n; p++) {
+    pdf.setPage(p);
+    pdf.setDrawColor(...LINE); pdf.line(M, 283, W - M, 283);
+    F('normal', 8.5, MID);
+    pdf.text(`Simpson & Wood Electrical Contractors  ·  Timesheet  ·  ${rec.engineerName}  ·  ${longDate(rec.date)}`, M, 288);
+    pdf.text(`Page ${p} of ${n}`, W - M, 288, { align: 'right' });
+    pdf.text(`Version ${rec.version || 1}  ·  made ${sent}  ·  timesheet app ${VERSION}`, M, 292);
+  }
+  return pdf;
+}
+const pdfB64 = pdf => pdf.output('datauristring').split(',')[1];
+function pdfName(rec, which) {
+  return `Timesheet ${rec.engineerName.replace(/[^\w .-]+/g, '')} ${rec.date}${(rec.version || 1) > 1 ? ' v' + rec.version : ''}${rec.testData ? ' TEST' : ''} ${which}.pdf`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  EMAIL (Microsoft Graph, sent as the signed-in engineer)
+// ═══════════════════════════════════════════════════════════════════════════
+function storedToken() {
+  try {
+    const o = JSON.parse(sessionStorage.getItem('ts-graph') || 'null');
+    if (o && o.exp > Date.now() && o.who === ME.email) return o.t;
+  } catch (e) {}
+  return null;
+}
+// Ask Microsoft for a fresh token. Must be called straight from a tap.
+async function tokenInteractive(pendingId) {
+  try {
+    const r = await reauthenticateWithPopup(auth.currentUser, msProvider);
+    keepToken(r);
+    return storedToken();
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      sessionStorage.setItem('ts-pending-send', pendingId || '');
+      await reauthenticateWithRedirect(auth.currentUser, msProvider);
+      return null;
+    }
+    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
+    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
+  }
+}
+function emailHTML(rec) {
+  const amended = (rec.version || 1) > 1;
+  const st = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a';
+  const td = 'padding:5px 14px 5px 0;border-bottom:1px solid #e5e5e5';
+  let h = `<div style="${st}">`;
+  if (rec.testData) h += `<p style="color:#5a3d8a;font-weight:bold">TEST — not a real timesheet.</p>`;
+  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. This replaces the timesheet sent earlier for this day.</p>`;
+  h += `<p style="font-size:16px"><b>${esc(rec.engineerName)}</b> — ${esc(longDate(rec.date))}</p>`;
+  if (rec.kind === 'off') {
+    h += `<p style="font-size:16px">Not working: <b>${esc(REASONS[rec.offReason] || rec.offReason)}</b></p>`;
+    if (rec.offNote) h += `<p>Note: ${esc(rec.offNote)}</p>`;
+  } else {
+    const t = rec.totals;
+    const rows = [['Total hours', fmtNum(t.totalMins)], ['At 1×', fmtNum(t.mins1x)], ['At 1.5×', fmtNum(t.mins1_5x)], ['At 2×', fmtNum(t.mins2x)],
+      ['Call-outs', t.callouts], ['Dinner', t.dinners ? 'Yes' : 'No'], ['Started', t.dayStart + (t.startsNextDay ? ' (next day)' : '')], ['Finished', t.dayEnd + (t.endsNextDay ? ' (next day)' : '')]];
+    if (rec.bankHoliday) rows.push(['Bank holiday', rec.bankHoliday]);
+    h += `<table style="border-collapse:collapse;${st}">${rows.map(r => `<tr><td style="${td};color:#6b6b6b">${r[0]}</td><td style="${td}"><b>${esc(r[1])}</b></td></tr>`).join('')}</table>`;
+    h += `<p style="margin-top:16px"><b>Jobs</b></p><table style="border-collapse:collapse;${st}">`;
+    rec.jobs.forEach((j, i) => {
+      const flags = [j.callout === 'Yes' ? 'CALL-OUT' : '', j.testCert === 'Yes' ? 'TEST CERT NEEDED' : '', j.status === 'Return visit needed' ? 'RETURN VISIT NEEDED' : ''].filter(Boolean).join(' · ');
+      h += `<tr><td style="${td}">${i + 1}.</td><td style="${td}"><b>${esc(j.customer)}</b></td><td style="${td}">${esc(j.start)}–${esc(j.end)}</td><td style="${td}">${fmtNum(j.paidMins)} h</td><td style="${td};color:#D0222A"><b>${flags}</b></td></tr>`;
+    });
+    h += `</table><p style="color:#6b6b6b">The office copy and the engineer copy are attached as PDFs.</p>`;
+  }
+  if (rec.noStaffRecord) h += `<p style="color:#D0222A"><b>Note:</b> ${esc(rec.engineerEmail)} isn't on the staff list in the management page, so the name above is the email address. Please add them.</p>`;
+  h += `<p style="color:#9a9a9a;font-size:12px">Sent from the Simpson &amp; Wood timesheet app ${VERSION}.</p></div>`;
+  return h;
+}
+async function sendEmail(rec, token) {
+  const amended = (rec.version || 1) > 1;
+  const to = rec.testData ? ME.rawEmail : OFFICE_EMAIL;
+  const prefix = (rec.testData ? 'TEST — ' : '') + (amended ? `AMENDED (v${rec.version}) — ` : '');
+  let subject, attachments = [];
+  if (rec.kind === 'off') {
+    subject = `${prefix}Not working — ${rec.engineerName} — ${longDate(rec.date)} — ${REASONS[rec.offReason] || ''}`;
+  } else {
+    subject = `${prefix}Timesheet — ${rec.engineerName} — ${longDate(rec.date)}`;
+    attachments = [
+      { '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, 'office'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, true)) },
+      { '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, 'engineer'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, false)) }
+    ];
+  }
+  const message = { subject, body: { contentType: 'HTML', content: emailHTML(rec) }, toRecipients: [{ emailAddress: { address: to } }], attachments };
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, saveToSentItems: true })
+  });
+  if (res.status === 202 || res.ok) return to;
+  let detail = '';
+  try { const j = await res.json(); detail = (j.error && (j.error.code + ': ' + j.error.message)) || ''; } catch (e) {}
+  const err = new Error(res.status === 403
+    ? 'Microsoft hasn\'t given the app permission to send email yet (an Entra setting — tell Rob).'
+    : `Microsoft said ${res.status}${detail ? ' (' + detail + ')' : ''}.`);
+  err.status = res.status;
+  throw err;
+}
+
+// Send the email for a saved record, asking Microsoft for a token if needed.
+async function deliver(rec, opts = {}) {
+  setStatus('sending', 'Saved. Sending the email…');
+  let token = storedToken();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!token) {
+      if (!opts.tapped || attempt > 0) {
+        const go = await modal({ title: 'One more tap to send', body: '<p>Your timesheet is <b>saved</b>. To send the email from your account, Microsoft needs to check it\'s you. Usually it just flashes up and closes.</p>',
+          buttons: [{ label: 'Later', value: false }, { label: 'Confirm and send', value: true, primary: true }] });
+        if (!go) { notSent(rec, 'You chose to send it later.'); return false; }
+      }
+      try { token = await tokenInteractive(rec.id); }
+      catch (e) { await markEmail(rec, { status: 'failed', error: e.message }); notSent(rec, e.message); return false; }
+      if (!token) return false;    // gone to Microsoft and will come back here
+    }
+    try {
+      setStatus('sending', 'Sending the email…');
+      const to = await sendEmail(rec, token);
+      await markEmail(rec, { status: 'sent', sentAt: new Date().toISOString(), version: rec.version || 1, to, error: null });
+      sentOK(rec, to);
+      return true;
+    } catch (e) {
+      if (e.status === 401 && attempt === 0) { sessionStorage.removeItem('ts-graph'); token = null; continue; }
+      await markEmail(rec, { status: 'failed', error: e.message });
+      notSent(rec, e.message);
+      return false;
+    }
+  }
+  return false;
+}
+function sentOK(rec, to) {
+  const amended = (rec.version || 1) > 1;
+  setStatus('ok', `<b><i class="ti ti-circle-check"></i> ${amended ? 'Amended timesheet' : (rec.kind === 'off' ? 'Not-working day' : 'Timesheet')} sent</b> for ${esc(shortDate(rec.date))} to ${esc(to)}. A copy is in your Sent Items.
+    <div class="acts">${rec.kind !== 'off' ? `<button type="button" class="mini" data-pdf="${esc(rec.id)}">Download my copy</button>` : ''}</div>`);
+  renderBanners(); renderMine();
+}
+function notSent(rec, why) {
+  setStatus('bad', `<b>Saved, but the email hasn't gone yet.</b> ${esc(why || '')}
+    <div class="acts"><button type="button" class="mini" data-send="${esc(rec.id)}">Try sending again</button></div>
+    <div class="small" style="color:inherit">It's also in My timesheets marked "Email not sent".</div>`);
+  renderBanners(); renderMine();
+}
+
+async function onSend() {
+  state.tried = true;
+  const errs = validate();
+  showErrors(errs);
+  if (errs.length) {
+    const first = document.querySelector('.field.bad');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (!navigator.onLine) { setStatus('bad', '<b>No signal.</b> Your timesheet is kept on this phone. Press Send again when you have signal.'); return; }
+  if (state.mode === 'work' && !state.jobs.some(j => j.dinner === 'Yes')) {
+    const ok = await modal({ title: 'No dinner break?', body: '<p>You haven\'t put a dinner break on any job. Send it without one?</p>', buttons: [{ label: 'Go back', value: false }, { label: 'Send without dinner', value: true, primary: true }] });
+    if (!ok) return;
+  }
+  if (!state.editing) {
+    const earlier = missingDays().filter(d => d < state.date);
+    if (earlier.length) {
+      const ok = await modal({ title: 'Earlier days still to do', body: `<p>You haven't done ${earlier.length === 1 ? 'this day' : 'these days'} yet:</p><p><b>${earlier.map(d => esc(shortDate(d))).join(', ')}</b></p><p>You can send this one now, but you'll still need to do ${earlier.length === 1 ? 'that one' : 'those'}.</p>`,
+        buttons: [{ label: 'Go back', value: false }, { label: 'Send this one anyway', value: true, primary: true }] });
+      if (!ok) return;
+    }
+  } else {
+    const ok = await modal({ title: 'Send the amended timesheet?', body: `<p>This replaces version ${state.editing.version} for ${esc(shortDate(state.date))}. The office gets a new email marked <b>AMENDED</b> with new PDFs. The old version is kept.</p>`,
+      buttons: [{ label: 'Go back', value: false }, { label: 'Send amended', value: true, primary: true }] });
+    if (!ok) return;
+  }
+  const btn = $('sendBtn'); btn.disabled = true;
+  try {
+    setStatus('sending', 'Saving…');
+    let rec;
+    try { rec = await saveRecord(buildRecord()); }
+    catch (e) { console.error(e); setStatus('bad', `<b>Couldn't save it</b> (${esc(e.code || e.message)}). Nothing has been sent. Check your signal and press Send again.`); return; }
+    clearDraft();
+    state = blankState();
+    renderAll();
+    await deliver(rec, { tapped: true });
+  } finally { btn.disabled = false; }
+}
+$('sendBtn').addEventListener('click', onSend);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MY TIMESHEETS
+// ═══════════════════════════════════════════════════════════════════════════
+let mineShown = 30;
+const openHist = new Set();
+function renderMine() {
+  const list = realm();
+  const box = $('mineList');
+  if (!list.length) { box.innerHTML = `<div class="empty">Nothing sent from this app yet.${TEST ? ' (Test mode shows test timesheets only.)' : ''}</div>`; return; }
+  box.innerHTML = list.slice(0, mineShown).map(r => {
+    const off = r.kind === 'off';
+    const what = off ? `<b>Not working</b> — ${esc(REASONS[r.offReason] || r.offReason)}${r.offNote ? `<div class="cust">${esc(r.offNote)}</div>` : ''}`
+      : `<b>${fmtH(r.totals ? r.totals.totalMins : 0)}</b> · ${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}<div class="cust">${esc(r.jobs.map(j => j.customer).join(', '))}</div>`;
+    const sent = r.email && r.email.status === 'sent' && (r.email.version || 1) === (r.version || 1);
+    const tags = [(r.version || 1) > 1 ? `<span class="tag warn">Amended · v${r.version}</span>` : '',
+      sent ? '<span class="tag ok">Emailed</span>' : '<span class="tag bad">Email not sent</span>',
+      r.testData ? '<span class="tag test">Test</span>' : ''].join('');
+    const hist = openHist.has(r.id) ? `<div class="hist">${(r.history || []).map(h => `<div>Version ${h.v}: ${h.v === 1 ? 'sent' : 'amended'} ${esc(new Date(h.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} by ${esc(h.byName || h.by)}</div>`).join('') || 'No history recorded.'}</div>` : '';
+    return `<div class="trow"><div class="d"><b>${esc(shortDate(r.date))}</b><span>${r.date.slice(0, 4)}</span></div>
+      <div class="what">${what}<div>${tags}</div></div>
+      <div class="acts">${!sent ? `<button type="button" class="mini" data-send="${esc(r.id)}" style="color:var(--red)">Send email</button>` : ''}
+        <button type="button" class="mini" data-edit="${esc(r.id)}"><i class="ti ti-pencil"></i> Change</button>
+        ${!off ? `<button type="button" class="mini" data-pdf="${esc(r.id)}"><i class="ti ti-file-download"></i> PDF</button>` : ''}
+        <button type="button" class="mini" data-hist="${esc(r.id)}">History</button></div>${hist}</div>`;
+  }).join('') + (list.length > mineShown ? `<button type="button" class="btn-ghost" id="moreMine" style="width:100%">Show older</button>` : '');
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-edit],[data-pdf],[data-send],[data-hist],#moreMine');
+  if (!t) return;
+  if (t.id === 'moreMine') { mineShown += 30; renderMine(); return; }
+  const rec = MINE.find(r => r.id === (t.dataset.edit || t.dataset.pdf || t.dataset.send || t.dataset.hist));
+  if (!rec) return;
+  if (t.dataset.hist) { openHist.has(rec.id) ? openHist.delete(rec.id) : openHist.add(rec.id); renderMine(); return; }
+  if (t.dataset.pdf) { try { buildPDF(rec, false).save(pdfName(rec, 'engineer')); } catch (err) { alertBox(err.message); } return; }
+  if (t.dataset.send) {
+    showTab('form'); window.scrollTo({ top: 0 });
+    let token = storedToken();
+    if (!token) {
+      try { token = await tokenInteractive(rec.id); } catch (err) { notSent(rec, err.message); return; }
+      if (!token) return;
+    }
+    await deliver(rec);
+    return;
+  }
+  if (t.dataset.edit) {
+    if (!(state.editing && state.editing.id === rec.id) && !(await confirmDiscard())) return;
+    state = stateFromRecord(rec); setStatus(null); showTab('form'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+function alertBox(msg) { modal({ title: 'Something went wrong', body: `<p>${esc(msg)}</p>`, buttons: [{ label: 'OK', value: true, primary: true }] }); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TABS + START-UP
+// ═══════════════════════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $('view-form').hidden = name !== 'form';
+  $('view-mine').hidden = name !== 'mine';
+  if (name === 'mine') renderMine();
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+async function loadMine() {
+  const snap = await getDocs(query(collection(db, 'timesheets'), where('engineerEmail', '==', ME.email)));
+  MINE = [];
+  snap.forEach(d => MINE.push(Object.assign({ id: d.id }, d.data())));
+  MINE.sort((a, b) => b.date.localeCompare(a.date));
+}
+async function loadCustomers() {
+  const names = new Map();
+  try {
+    const snap = await getDocs(collection(db, 'timesheetCustomers'));
+    snap.forEach(d => { const n = d.data().name; if (n) names.set(n.toLowerCase(), n); });
+  } catch (e) { console.warn('customer list not loaded', e); }
+  MINE.forEach(r => (r.jobs || []).forEach(j => { if (j.customer && !names.has(j.customer.toLowerCase())) names.set(j.customer.toLowerCase(), j.customer); }));
+  CUSTOMERS = [...names.values()].sort((a, b) => a.localeCompare(b));
+}
+
+let started = false;
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    document.getElementById('signinScreen').style.display = 'flex';
+    document.getElementById('appRoot').style.display = 'none';
+    return;
+  }
+  document.getElementById('signinScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  if (started) return;
+  started = true;
+  const raw = user.email || '';
+  ME = { email: raw.toLowerCase(), rawEmail: raw, name: raw, staff: false };
+  try {
+    const s = await getDoc(doc(db, 'staff', ME.email));
+    if (s.exists() && s.data().name) { ME.name = s.data().name; ME.staff = true; }
+  } catch (e) { console.error('staff lookup failed', e); }
+  $('whoName').textContent = ME.name;
+  try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); }
+  await Promise.all([loadCustomers(), loadLogo()]);
+  const draft = loadDraft();
+  if (draft) {
+    state = draft.state;
+    state.tried = false;
+    lastStatus = { cls: 'sending', html: `Your unsent timesheet for <b>${esc(shortDate(state.date))}</b> was kept on this device. <div class="acts"><button type="button" class="mini" id="freshStart">Start again instead</button></div>` };
+  } else {
+    state = blankState();
+    if (recordFor(state.date)) state = stateFromRecord(recordFor(state.date));
+  }
+  renderAll();
+  // Back from Microsoft with an email waiting to go?
+  await redirectDone;
+  const pending = sessionStorage.getItem('ts-pending-send');
+  if (pending) {
+    sessionStorage.removeItem('ts-pending-send');
+    const rec = MINE.find(r => r.id === pending);
+    const token = storedToken();
+    if (rec && token) await deliver(rec);
+  }
+});
+document.addEventListener('click', e => {
+  if (e.target.id === 'freshStart') { clearDraft(); state = blankState(); if (recordFor(state.date)) state = stateFromRecord(recordFor(state.date)); setStatus(null); renderAll(); }
+});
+window.addEventListener('beforeunload', e => {
+  if ($('sendBtn').disabled) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Test hooks (used only by Claude's automatic checks; harmless otherwise).
+window.__ts = { compute: st => compute(st), buildPDF: (r, o) => buildPDF(r, o), missingDays: () => missingDays(), get state() { return state; }, get MINE() { return MINE; } };
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>

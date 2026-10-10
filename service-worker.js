@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v15';
+const CACHE_NAME = 'sw-engineer-apps-shell-v16';
 
 const APP_SHELL = [
   './',
@@ -25,6 +25,7 @@ const APP_SHELL = [
   'isolator-interlock-test.html',
   'isolator-interlock-report.html',
   'sw-timesheet.html',
+  'timesheet.html',
   'manifest.json',
   'sw-logo.png',
   'sw-logo-white.png',
