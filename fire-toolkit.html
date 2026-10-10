@@ -9,16 +9,18 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 <style>
   :root{
-    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a; --grey:#6b6b6b;
-    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff; --amber:#8a5a00; --amber-bg:#fff4dd;
-    --green:#1e6b34; --green-bg:#e9f5ec;
+    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#6b6b6b; --grey-2:#9a9893;
+    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
+    --amber:#8a5a00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --orange:#e8731a;
   }
   *{box-sizing:border-box;}
   body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
-  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
   [hidden]{display:none !important;}
   a{color:var(--red-dark);}
+  button{font-family:inherit;}
 
+  /* ---- sign-in ---- */
   #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
   #signinScreen img{height:44px; margin-bottom:28px;}
   #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
@@ -26,127 +28,223 @@
   .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
   #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
 
+  /* ---- shell ---- */
   #appRoot{display:none;}
-  header{background:var(--ink); padding:calc(12px + env(safe-area-inset-top)) 16px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; position:sticky; top:0; z-index:20;}
-  header .brand{display:flex; align-items:center; gap:10px; text-decoration:none;}
+  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
   header img{height:28px; display:block;}
-  header h1{font-weight:700; font-size:17px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
   header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
   header .who{text-align:right;}
-  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
-
-  .tabs{display:flex; gap:4px; overflow-x:auto; background:var(--card); border-bottom:1px solid var(--line); padding:6px 8px; position:sticky; top:52px; z-index:19; scrollbar-width:none;}
+  .tabs{display:flex; gap:4px; overflow-x:auto; background:var(--card); border-bottom:1px solid var(--line); padding:6px 16px; position:sticky; top:0; z-index:20; scrollbar-width:none;}
   .tabs::-webkit-scrollbar{display:none;}
-  .tab{flex:1 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:6px 8px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; min-width:64px;}
-  .tab i{font-size:20px;}
-  .tab.active{background:#fbe9ea; color:var(--red);}
+  .tab{flex:0 0 auto; display:flex; align-items:center; gap:7px; background:none; border:none; padding:9px 14px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:15px; cursor:pointer;}
+  .tab i{font-size:19px;}
+  .tab.active{background:var(--red-tint); color:var(--red);}
+  @media (max-width:640px){
+    .tabs{padding:6px 8px;}
+    .tab{flex-direction:column; gap:1px; font-size:12px; padding:6px 9px; min-width:62px;}
+  }
+  .wrap{max-width:1320px; margin:0 auto; padding:20px 24px 40px;}
+  @media (max-width:640px){ .wrap{padding:14px 12px 30px;} }
 
-  .wrap{max-width:640px; margin:0 auto; padding:14px 14px 80px;}
-  .disclaimer{background:var(--amber-bg); color:var(--amber); border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.4; margin-bottom:12px;}
-  .disclaimer button{background:none; border:none; color:var(--amber); text-decoration:underline; font-size:12.5px; padding:0; cursor:pointer;}
-  .offline{background:#e8e6e0; color:var(--grey); border-radius:8px; padding:7px 12px; font-size:12px; margin-bottom:12px;}
+  /* ---- page furniture ---- */
+  .page-h{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .page-h h2{margin:0; font-size:28px; font-weight:700; line-height:1.1;}
+  .page-h p{margin:3px 0 0; color:var(--grey); font-size:14.5px;}
+  .back{display:inline-flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:8px; color:var(--ink); font-size:14px; font-weight:600; padding:7px 12px; cursor:pointer; margin-bottom:12px; text-decoration:none;}
+  .search{width:100%; padding:12px 14px 12px 40px; font-size:15.5px; border:1.5px solid var(--line); border-radius:10px; font-family:'Barlow',sans-serif; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%236b6b6b' stroke-width='2'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='m13 13 4 4'/%3E%3C/svg%3E") no-repeat 13px center; margin-bottom:12px;}
+  .search:focus{outline:none; border-color:var(--red);}
+  .chip-label{font-size:13px; font-weight:600; color:var(--grey); margin:2px 0 7px;}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px;}
+  .chipb{background:var(--card); border:1px solid var(--line); border-radius:7px; padding:6px 11px; font-size:13.5px; font-weight:600; cursor:pointer; color:var(--ink);}
+  .chipb.active{background:var(--red); border-color:var(--red); color:#fff;}
+  .count{color:var(--grey); font-size:13.5px; margin:-4px 0 12px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
+  .card h3{margin:0 0 6px; font-size:20px; font-weight:700;}
+  .card h4{font-family:'Barlow Condensed',sans-serif; margin:14px 0 6px; font-size:15px; text-transform:uppercase; color:var(--grey);}
+  @media (max-width:640px){ .card{padding:14px;} }
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:14px;}
+  .cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start;}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr;} }
+  .tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); vertical-align:middle; white-space:nowrap;}
+  .tag.ok{background:var(--green-bg); color:var(--green);}
+  .tag.warn{background:var(--amber-bg); color:var(--amber);}
+  .tag.fault{background:var(--orange); color:#fff;}
+  .tag.draft{background:#e9e4f5; color:#5a3d8a;}
+  .ref{display:inline-block; background:var(--red-tint); color:var(--red-dark); font-weight:700; font-size:13px; padding:0 6px; border-radius:4px; text-decoration:none; font-family:'Barlow Condensed',sans-serif;}
+  .empty{color:var(--grey); font-size:14px; text-align:center; padding:30px 10px;}
+  .suggest{display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--grey-2); font-size:12px; text-decoration:underline; padding:8px 0 0; cursor:pointer;}
+  .suggest.icon{padding:4px; text-decoration:none; font-size:16px;}
 
-  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:12px;}
-  .card h2{margin:0 0 6px; font-size:19px; font-weight:700;}
-  .card h3{margin:14px 0 6px; font-size:15px; font-weight:700; text-transform:uppercase; color:var(--grey);}
-  .sec-label{font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:18px 2px 8px;}
-  .search{width:100%; padding:11px 12px 11px 36px; font-size:15px; border:1.5px solid var(--line); border-radius:9px; font-family:'Barlow',sans-serif; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b6b6b' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") no-repeat 12px center; margin-bottom:10px;}
-
-  .list{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:12px;}
-  .item{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); text-decoration:none; color:var(--ink); cursor:pointer;}
-  .item:last-child{border-bottom:none;}
-  .item:active{background:#f7f6f3;}
-  .item .code{font-family:'Barlow Condensed',sans-serif; font-weight:700; color:var(--red); min-width:38px;}
-  .item .t{flex:1; font-size:14.5px; font-weight:600;}
-  .item .s{display:block; font-size:12px; color:var(--grey); font-weight:400; margin-top:1px;}
-  .item > i{color:#b5b3ad;}
-
-  .chip{display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:2px 7px; border-radius:5px; background:#eeece7; color:var(--grey); vertical-align:middle;}
-  .chip.ok{background:var(--green-bg); color:var(--green);}
-  .chip.warn{background:var(--amber-bg); color:var(--amber);}
-  .chip.red{background:#fbe9ea; color:var(--red-dark);}
-
-  .back{display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--grey); font-size:13.5px; font-weight:600; padding:4px 0 10px; cursor:pointer;}
-  ol.steps{margin:6px 0 4px; padding:0; list-style:none; counter-reset:s;}
-  ol.steps li{counter-increment:s; position:relative; padding:9px 0 9px 36px; border-bottom:1px solid var(--line); font-size:14.5px; line-height:1.45;}
-  ol.steps li:last-child{border-bottom:none;}
-  ol.steps li::before{content:counter(s); position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:var(--ink); color:#fff; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center;}
-  .ref{display:inline-block; background:#fbe9ea; color:var(--red-dark); font-weight:700; font-size:12.5px; padding:0 5px; border-radius:4px; text-decoration:none; font-family:'Barlow Condensed',sans-serif;}
-
-  .md{font-size:14px; line-height:1.5;}
+  /* ---- markdown / tables ---- */
+  .md{font-size:14.5px; line-height:1.55;}
   .md p{margin:0 0 10px;}
-  .md ul, .md ol{margin:0 0 10px; padding-left:20px;}
+  .md ul, .md ol{margin:0 0 10px; padding-left:22px;}
   .md li{margin-bottom:4px;}
-  .md pre{background:#f4f3ef; border-radius:7px; padding:10px; overflow-x:auto; font-size:13px;}
-  .md code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:12.5px;}
+  .md pre{background:var(--soft); border-radius:8px; padding:10px 12px; overflow-x:auto; font-size:13.5px;}
+  .md code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:13px;}
   .md pre code{background:none; padding:0;}
   .tbl{overflow-x:auto; margin:0 0 12px; -webkit-overflow-scrolling:touch;}
-  .tbl table{border-collapse:collapse; width:100%; font-size:12.5px; min-width:420px;}
-  .tbl th{background:#f4f3ef; text-align:left; padding:7px 8px; font-weight:700; border-bottom:1px solid var(--line);}
-  .tbl td{padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .tbl table{border-collapse:collapse; width:100%; font-size:14px;}
+  .tbl th{text-align:left; padding:9px 10px; font-weight:700; border-bottom:2px solid var(--line); white-space:nowrap;}
+  .tbl td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .tbl tr:last-child td{border-bottom:none;}
+  @media (max-width:640px){ .tbl table{font-size:13px; min-width:520px;} }
 
-  details.about{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:12px;}
-  details.about summary{cursor:pointer; font-weight:600; font-size:13.5px; color:var(--grey);}
-  details.about[open] summary{margin-bottom:8px;}
+  /* ---- notes at the bottom of every page ---- */
+  .notes{margin-top:28px; border-top:1px solid #dad8d2; padding-top:14px;}
+  .notes .nh{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:13px; color:var(--grey); margin:0 0 8px;}
+  .notes details{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:8px;}
+  .notes summary{cursor:pointer; font-weight:600; font-size:14px; color:var(--ink);}
+  .notes details[open] summary{margin-bottom:8px;}
+  .notes .note{background:var(--soft); border-radius:10px; padding:11px 14px; font-size:13.5px; color:var(--grey); margin-bottom:8px; line-height:1.5;}
+  .guidance{font-size:12.5px; color:var(--grey); margin-top:10px;}
+  .guidance button{background:none; border:none; color:var(--grey); text-decoration:underline; cursor:pointer; padding:0; font-size:12.5px;}
+  .offline{background:#e8e6e0; color:var(--grey); border-radius:8px; padding:7px 12px; font-size:12.5px; margin-bottom:12px;}
 
-  .escalate{background:var(--ink); color:#fff; border-radius:10px; padding:14px 16px; margin-bottom:12px;}
-  .escalate h3{margin:0 0 6px; color:#fff; font-size:16px; text-transform:uppercase;}
-  .escalate p{margin:0 0 10px; font-size:13px; color:#cfcfcf;}
-  .btn{display:inline-flex; align-items:center; gap:6px; background:var(--red); color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:700; font-size:14px; text-decoration:none; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .btn.ghost{background:none; border:1.5px solid currentColor; color:inherit;}
-  .btn.dark{background:var(--ink);}
-  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+  /* ---- troubleshoot ---- */
+  .tree-card{display:flex; gap:14px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; text-decoration:none; color:var(--ink); cursor:pointer; transition:border-color .12s;}
+  .tree-card:hover{border-color:var(--red);}
+  .tree-card i{font-size:26px; color:var(--red); flex-shrink:0;}
+  .tree-card b{display:block; font-size:16.5px;}
+  .tree-card span{font-size:12.5px; color:var(--grey);}
+  .before{background:var(--amber-bg); color:var(--amber); border-radius:10px; padding:11px 14px; font-size:14px; margin-bottom:12px;}
+  .before ul{margin:4px 0 0; padding-left:20px;}
+  .q-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 22px 20px; margin-bottom:12px;}
+  .q-card .qt{display:flex; gap:12px; align-items:flex-start; font-size:19px; font-weight:600; line-height:1.4; margin-bottom:18px;}
+  .q-card .qt i{color:var(--red); font-size:26px; flex-shrink:0; margin-top:1px;}
+  .q-card .qt small{display:block; font-size:14.5px; font-weight:400; color:var(--grey); margin-top:4px;}
+  .answers{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .answers.many{grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:9px;}
+  .ans{border:1.5px solid var(--line); background:#fff; color:var(--ink); border-radius:10px; padding:15px 14px; font-size:16.5px; font-weight:700; cursor:pointer; text-align:center;}
+  .ans.yes{background:var(--red); border-color:var(--red); color:#fff;}
+  .answers.many .ans{font-size:15px; font-weight:600; text-align:left; padding:12px 14px;}
+  .ans:active{transform:scale(.99);}
+  .outcome{border-radius:14px; padding:20px 22px; margin-bottom:12px; background:var(--card); border:1px solid var(--line);}
+  .outcome .ot{display:flex; gap:12px; align-items:flex-start; font-size:18px; font-weight:700; margin-bottom:8px;}
+  .outcome .ot i{font-size:26px; flex-shrink:0;}
+  .outcome.help .ot i{color:var(--red);}
+  .outcome.sorted .ot i{color:var(--green);}
+  .outcome.stop{background:var(--red); border-color:var(--red); color:#fff;}
+  .outcome.stop .ot i{color:#fff;}
+  .outcome .ob{font-size:15.5px; line-height:1.5; margin-bottom:12px;}
+  .trail{font-size:13px; color:var(--grey); margin:4px 0 12px;}
+  .trail span{display:inline-block; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:3px 8px; margin:0 4px 4px 0;}
+  .escalate{background:var(--ink); color:#fff; border-radius:12px; padding:16px 18px; margin:14px 0;}
+  .escalate h4{margin:0 0 4px; color:#fff; font-family:'Barlow Condensed',sans-serif; font-size:17px; text-transform:uppercase;}
+  .escalate p{margin:0 0 10px; font-size:13.5px; color:#cfcfcf;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:7px; background:var(--red); color:#fff; border:none; padding:11px 16px; border-radius:9px; font-weight:700; font-size:15px; text-decoration:none; cursor:pointer;}
+  .btn.ghost{background:#fff; border:1.5px solid var(--line); color:var(--ink);}
+  .btn.ghost-dark{background:none; border:1.5px solid #fff; color:#fff;}
+  .btn-row{display:flex; gap:9px; flex-wrap:wrap;}
+  .steps{margin:4px 0; padding:0; list-style:none; counter-reset:s;}
+  .steps li{counter-increment:s; position:relative; padding:7px 0 7px 38px; font-size:15px; line-height:1.5;}
+  .steps li::before{content:counter(s); position:absolute; left:0; top:6px; width:26px; height:26px; border-radius:50%; background:var(--red-dark); color:#fff; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center;}
 
-  .codeval{font-family:ui-monospace,Consolas,monospace; font-size:17px; font-weight:700; letter-spacing:.03em;}
-  .pc{padding:12px 14px; border-bottom:1px solid var(--line);}
-  .pc:last-child{border-bottom:none;}
-  .pc .top{display:flex; justify-content:space-between; gap:10px; align-items:baseline;}
-  .pc .man{font-weight:700; font-size:14.5px;}
-  .pc .meta{font-size:12px; color:var(--grey); margin-top:3px;}
+  /* ---- fault codes accordion ---- */
+  .acc{background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden;}
+  .acc > button{width:100%; display:flex; align-items:center; gap:12px; background:var(--card); border:none; padding:13px 16px; cursor:pointer; text-align:left; font-size:16px; font-weight:600; color:var(--ink);}
+  .acc > button .code{font-family:ui-monospace,Consolas,monospace; color:var(--red-dark); font-weight:700; font-size:14.5px; min-width:44px;}
+  .acc > button .t{flex:1;}
+  .acc > button i{color:var(--grey); transition:transform .15s;}
+  .acc.open > button i{transform:rotate(180deg);}
+  .acc .body{display:none; padding:4px 18px 16px; border-top:1px solid var(--line); background:var(--soft);}
+  .acc.open .body{display:block;}
+  .acc .body h5{color:var(--red-dark); font-size:15px; margin:10px 0 4px;}
+  .maps{display:grid; grid-template-columns:1fr; gap:14px;}
 
-  .contact{padding:12px 14px; border-bottom:1px solid var(--line);}
-  .contact:last-child{border-bottom:none;}
-  .contact .name{font-weight:700; font-size:15px;}
-  .contact .purpose{font-size:12.5px; color:var(--grey); margin:2px 0 8px;}
-  .contact .ev{font-size:11.5px; color:var(--grey); margin-top:6px;}
+  /* ---- panel codes table ---- */
+  .codes{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .codes th{text-align:left; font-size:15px; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--card);}
+  .codes td{padding:12px 14px; border-bottom:1px solid var(--line); font-size:15px; vertical-align:top;}
+  .codes tr:last-child td{border-bottom:none;}
+  .codes .cv{font-family:ui-monospace,Consolas,monospace; color:var(--red-dark); font-weight:700; font-size:15px; letter-spacing:.02em;}
+  .codes .cv sup{color:var(--amber); font-size:13px;}
+  .codes .muted{color:var(--grey);}
+  .codes td.act{width:34px; padding:8px 6px; text-align:center;}
+  @media (max-width:760px){
+    .codes, .codes tbody, .codes tr, .codes td{display:block; width:100%;}
+    .codes thead{display:none;}
+    .codes{border:none; background:none;}
+    .codes tr{background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:8px; padding:10px 12px; position:relative;}
+    .codes td{border:none; padding:2px 0; font-size:14px;}
+    .codes td[data-l]::before{content:attr(data-l) ': '; color:var(--grey); font-size:12.5px;}
+    .codes td.man{font-weight:700; font-size:15.5px; padding-right:30px;}
+    .codes td.code{font-size:17px; padding:4px 0;}
+    .codes td.act{position:absolute; top:8px; right:8px; width:auto;}
+  }
 
-  .suggest{display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--grey); font-size:12px; text-decoration:underline; padding:6px 0 0; cursor:pointer;}
+  /* ---- contacts ---- */
+  .contact{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; display:flex; flex-direction:column;}
+  .contact .top{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:6px;}
+  .contact .name{font-weight:700; font-size:18px;}
+  .contact .purpose{color:var(--grey); font-size:14.5px; margin-bottom:14px;}
+  .contact .call{width:100%; justify-content:flex-start; font-size:17px; padding:13px 16px; margin-bottom:9px;}
+  .contact .ev{font-size:12px; color:var(--grey); margin-top:auto; padding-top:10px;}
+  .contact.internal{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .contact.internal .purpose{color:#cfcfcf;}
+  .contact.internal .ev{color:#aaa;}
 
-  .subtabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
-  .subtab{background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink);}
-  .subtab.active{border-color:var(--red); color:var(--red); background:#fbe9ea;}
-  .f{display:flex; flex-direction:column; margin-bottom:10px;}
-  .f label{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); margin-bottom:4px;}
-  .f input, .f select, .f textarea{padding:10px; font-size:15px; border:1.5px solid var(--line); border-radius:8px; font-family:'Barlow',sans-serif; background:#fff; width:100%;}
-  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  .unit{display:flex; gap:6px;}
-  .unit select{width:auto; flex:0 0 74px;}
-  .result{background:var(--bg); border-radius:9px; padding:12px 14px; margin-top:6px; font-size:14px; line-height:1.55;}
-  .result .big{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700;}
-  .result.err{background:#fbe9ea; color:var(--red-dark);}
-  .calc-line{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #d8d6cf; padding:4px 0;}
-  .calc-line:last-child{border-bottom:none;}
-
-  .switches{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;}
-  .sw{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:var(--grey);}
-  .sw button{width:34px; height:56px; border-radius:6px; border:1.5px solid #bdbbb4; background:#f4f3ef; position:relative; cursor:pointer;}
-  .sw button::after{content:''; position:absolute; left:4px; right:4px; height:22px; border-radius:4px; background:#bdbbb4; bottom:4px; transition:.12s;}
+  /* ---- calculators ---- */
+  .subtabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .subtab{background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:10px 16px; font-size:15px; font-weight:700; cursor:pointer; color:var(--ink); text-decoration:none; display:inline-flex; align-items:center; gap:7px;}
+  .subtab.active{border-color:var(--red); color:#fff; background:var(--red);}
+  .formula{background:var(--red-tint); border:1px solid #f0c9cb; border-radius:12px; padding:14px; text-align:center; margin-bottom:14px;}
+  .formula code{font-family:ui-monospace,Consolas,monospace; font-size:17px; font-weight:600;}
+  .formula div{font-size:13px; color:var(--grey); margin-top:4px;}
+  .f{display:flex; flex-direction:column; margin-bottom:14px;}
+  .f label{font-size:15px; font-weight:700; margin-bottom:6px;}
+  .f input, .f select{padding:12px; font-size:16px; border:1.5px solid var(--line); border-radius:9px; font-family:'Barlow',sans-serif; background:var(--soft); width:100%;}
+  .f input:focus, .f select:focus{outline:none; border-color:var(--red); background:#fff;}
+  .f .hint{font-size:13px; color:var(--grey); margin-top:5px; line-height:1.45;}
+  .f2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:520px){ .f2{grid-template-columns:1fr;} }
+  .with-unit{display:flex; gap:6px;}
+  .with-unit select{flex:0 0 78px;}
+  .quick{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px;}
+  .quick button{background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-size:13px; font-weight:600; cursor:pointer;}
+  .quick button:hover{border-color:var(--red);}
+  .working{background:#fff; border:1px solid var(--line); border-radius:9px; padding:12px 14px; font-family:ui-monospace,Consolas,monospace; font-size:13.5px; line-height:1.8; margin-bottom:12px; overflow-x:auto; white-space:nowrap;}
+  .working b{font-size:14.5px;}
+  .res-row{display:flex; justify-content:space-between; gap:10px; padding:11px 2px; border-bottom:1px solid var(--line); font-size:15.5px;}
+  .res-row b{font-size:16.5px;}
+  .res-big{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 2px 6px; font-size:17px; font-weight:700;}
+  .badge{background:var(--red-dark); color:#fff; border-radius:9px; padding:8px 16px; font-size:20px; font-weight:700; font-family:'Barlow Condensed',sans-serif;}
+  .warnbox{background:var(--amber-bg); color:var(--amber); border-radius:9px; padding:10px 12px; font-size:13.5px; margin-top:10px;}
+  .errbox{background:var(--red-tint); color:var(--red-dark); border-radius:9px; padding:12px 14px; font-size:14.5px;}
+  .okbox{background:var(--green-bg); color:var(--green); border-radius:9px; padding:14px; font-size:15px;}
+  .readings{display:grid; gap:9px;}
+  .reading{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+  .reading .rl{font-size:12.5px; color:var(--grey); text-transform:uppercase; font-weight:700; letter-spacing:.02em;}
+  .reading .rv{font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700;}
+  .fmt-list{background:var(--soft); border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:14.5px;}
+  .fmt-list div{margin:4px 0;}
+  .fmt-list code{font-weight:700; font-size:13.5px;}
+  .switches{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 4px;}
+  .sw{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:12px; color:var(--grey);}
+  .sw button{width:40px; height:66px; border-radius:7px; border:1.5px solid #bdbbb4; background:var(--soft); position:relative; cursor:pointer;}
+  .sw button::after{content:''; position:absolute; left:5px; right:5px; height:26px; border-radius:5px; background:#bdbbb4; bottom:5px; transition:.12s;}
   .sw button.on{border-color:var(--red);}
-  .sw button.on::after{background:var(--red); bottom:28px;}
+  .sw button.on::after{background:var(--red); bottom:33px;}
+  .resistor{display:flex; align-items:center; margin:8px 0 16px;}
+  .resistor .lead{height:4px; flex:1; background:#9a9893;}
+  .resistor .bodyr{display:flex; align-items:stretch; gap:0; height:56px; border-radius:26px; background:#e3cfa6; padding:0 18px; border:1.5px solid #c9b48a; min-width:230px; justify-content:space-between;}
+  .resistor .band{width:14px;}
+  .resistor .gap{width:22px;}
+  .bandsel{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px;}
 
-  .bands{display:flex; height:46px; border-radius:23px; overflow:hidden; border:1.5px solid #bdbbb4; margin:10px 0; background:#e9dcc3;}
-  .bands span{flex:1;}
-  .bands span.band{flex:0 0 18px; margin:0 6px;}
-
+  /* ---- modal / toast ---- */
   .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center; z-index:50;}
   .modal{background:#fff; width:100%; max-width:560px; border-radius:14px 14px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom));}
-  .modal h3{margin:0 0 4px; font-size:18px;}
-  .modal p{margin:0 0 10px; font-size:13px; color:var(--grey);}
-  .empty{color:var(--grey); font-size:13.5px; text-align:center; padding:24px 10px;}
-  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60; max-width:90%; text-align:center;}
-  .toast.show{opacity:1;}
+  .modal h3{margin:0 0 4px; font-size:19px;}
+  .modal p{margin:0 0 10px; font-size:13.5px; color:var(--grey);}
+  .modal textarea{width:100%; padding:10px; font-size:15px; border:1.5px solid var(--line); border-radius:8px; font-family:'Barlow',sans-serif;}
   @media (min-width:700px){ .modal-bg{align-items:center;} .modal{border-radius:14px;} }
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13.5px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60; max-width:90%; text-align:center;}
+  .toast.show{opacity:1;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -167,7 +265,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Fire toolkit</h1>
-        <p id="versionLabel">v1.0</p>
+        <p id="versionLabel">v1.1</p>
       </div>
     </a>
     <div class="who">
@@ -177,15 +275,14 @@
   </header>
   <nav class="tabs" id="tabs"></nav>
   <main class="wrap">
-    <div class="disclaimer" id="disclaimer"></div>
     <div class="offline" id="offlineNote" hidden>Offline — showing the copy saved on this device.</div>
     <div id="view"><div class="empty">Loading the toolkit…</div></div>
+    <div class="guidance" id="guidance"></div>
   </main>
 </div>
 
 <div id="modalHost"></div>
 <div id="toast" class="toast"></div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
@@ -196,7 +293,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v1.0";
+const VERSION = "v1.1";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -214,15 +311,16 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache() });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
-// All content comes from the fireToolkit collection (loaded via the import
-// panel in management.html from Docs/fire-toolkit-content.md). Nothing
-// private is in this file — it's on the public site; the data is behind
-// sign-in in Firestore. Standards §2 / §14.3.
+// All content comes from the fireToolkit collection (imported via the panel in
+// management.html from Docs/fire-toolkit-content.md). Nothing private lives in
+// this file — it's on the public site. Standards §2 / §14.3.
+// Layout: full width on desktop, single column on phones (standards §5).
+// Notes/notices always sit at the BOTTOM of each page (Rob, 9 Oct).
 
 const TABS = [
   { id: 'troubleshoot', label: 'Troubleshoot', icon: 'ti-route' },
   { id: 'faults',       label: 'Fault codes',  icon: 'ti-alert-triangle' },
-  { id: 'codes',        label: 'Panel codes',  icon: 'ti-key' },
+  { id: 'codes',        label: 'Panel codes',  icon: 'ti-lock' },
   { id: 'calc',         label: 'Calculators',  icon: 'ti-calculator' },
   { id: 'standards',    label: 'Standards',    icon: 'ti-book' },
   { id: 'contacts',     label: 'Contacts',     icon: 'ti-phone' }
@@ -230,6 +328,7 @@ const TABS = [
 
 let DATA = { byId: new Map(), byKind: {} };
 let currentUser = null;
+const UI = { faultsFilter: 'all', codesMan: 'All', codesQ: '', contactsCat: 'All', contactsQ: '', stdTab: 'quick', stdQ: '', faultsQ: '' };
 
 // ---------- helpers -------------------------------------------------------
 function esc(s) {
@@ -242,23 +341,31 @@ function toast(msg) {
 }
 const kind = k => DATA.byKind[k] || [];
 const get = id => DATA.byId.get(id);
+const guided = () => kind('troubleshootingTree').filter(t => t.guided);
+const technical = () => kind('troubleshootingTree').filter(t => !t.guided);
+const pendingTag = e => e && e.pending ? ' <span class="tag draft" title="New wording — being checked by Rob">Being checked</span>' : '';
 
-// FT01 / T3 references become links to that entry (only if it exists).
+// FT01 → fault guide, T3 → plain-English tree (or technical if there isn't one).
+function routeFor(ref) {
+  if (/^FT\d{2}$/.test(ref)) return get(ref) ? 'faults/' + ref : null;
+  if (get('guide-' + ref)) return 'troubleshoot/' + ref;
+  return get(ref) ? 'troubleshoot/tech/' + ref : null;
+}
+// Only whole codes are linked (not "T1.6A"), and T-refs are switched off on
+// the calculator / standards pages where T1, T2 mean time.
+let LINK_T = true;
 function linkRefs(html) {
-  return html.replace(/\b(FT\d{2}|T\d{1,2})\b/g, (m) => {
-    const e = get(m);
-    if (!e) return m;
-    const route = e.kind === 'faultType' ? 'faults/' + m : 'troubleshoot/' + m;
-    return '<a class="ref" href="#' + route + '">' + m + '</a>';
+  return html.replace(/\b(FT\d{2}|T\d{1,2})(?!\.\d)(?!\w)/g, m => {
+    if (!LINK_T && m[0] === 'T') return m;
+    const r = routeFor(m);
+    return r ? '<a class="ref" href="#' + r + '">' + m + '</a>' : m;
   });
 }
-
 // Inline markdown: **bold**, *italic*, `code`, [text](https://…), FT/T refs.
 function inline(raw) {
-  const codes = [];
-  let s = String(raw).replace(/\\\*/g, '\u0001');
+  const codes = [], links = [];
+  let s = String(raw ?? '').replace(/\\\*/g, '\u0001');
   s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return '\u0002' + (codes.length - 1) + '\u0002'; });
-  const links = [];
   s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_, t, u) => { links.push([t, u]); return '\u0003' + (links.length - 1) + '\u0003'; });
   s = esc(s);
   s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>');
@@ -267,13 +374,12 @@ function inline(raw) {
   s = s.replace(/\u0002(\d+)\u0002/g, (_, i) => '<code>' + esc(codes[i]) + '</code>');
   return s.replace(/\u0001/g, '*');
 }
-
-// Block markdown: paragraphs, lists, tables, ``` fences. Enough for the
-// toolkit document — not a general-purpose renderer.
+// Block markdown — enough for the toolkit document.
 function md(text) {
   if (!text) return '';
   const lines = String(text).split('\n');
   let out = '', i = 0;
+  const cells = r => r.trim().split(/(?<!\\)\|/).slice(1, -1).map(c => c.trim());
   while (i < lines.length) {
     const ln = lines[i];
     if (!ln.trim()) { i++; continue; }
@@ -285,7 +391,6 @@ function md(text) {
     if (ln.startsWith('|')) {
       const rows = [];
       while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
-      const cells = r => r.trim().split(/(?<!\\)\|/).slice(1, -1).map(c => c.trim());
       const body = rows.filter(r => !/^\|[\s\-|]+\|$/.test(r.trim()));
       const [head, ...rest] = body;
       out += '<div class="tbl"><table><thead><tr>' + cells(head).map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>' +
@@ -308,404 +413,505 @@ function md(text) {
   }
   return '<div class="md">' + out + '</div>';
 }
-
-function steps(list) {
-  return '<ol class="steps">' + (list || []).map(s => '<li>' + inline(s) + '</li>').join('') + '</ol>';
+const stepsList = list => '<ol class="steps">' + (list || []).map(s => '<li>' + inline(s) + '</li>').join('') + '</ol>';
+const suggestBtn = (e, icon) => '<button class="suggest' + (icon ? ' icon' : '') + '" data-suggest="' + esc(e.id) + '" title="Suggest a correction"><i class="ti ti-message-report"></i>' + (icon ? '' : 'Suggest a correction') + '</button>';
+const pageHead = (title, sub, right) => '<div class="page-h"><div><h2>' + esc(title) + '</h2>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>' + (right || '') + '</div>';
+const backBtn = (route, label) => '<a class="back" href="#' + route + '"><i class="ti ti-arrow-left"></i>' + esc(label) + '</a>';
+const chips = (label, values, active, attr) => (label ? '<div class="chip-label">' + esc(label) + '</div>' : '') +
+  '<div class="chips">' + values.map(v => { const [val, txt] = Array.isArray(v) ? v : [v, v];
+    return '<button class="chipb' + (val === active ? ' active' : '') + '" ' + attr + '="' + esc(val) + '">' + esc(txt) + '</button>'; }).join('') + '</div>';
+function notes(items) {
+  const parts = items.filter(Boolean);
+  return parts.length ? '<div class="notes"><div class="nh">Notes</div>' + parts.join('') + '</div>' : '';
 }
-function evidenceChip(text) {
-  if (!text) return '';
-  const t = text.toLowerCase();
-  const cls = t.startsWith('unverified') ? 'warn' : (t.includes('manual supported') || t.includes('bs checked') || t.includes('published') || t.includes('s&w') ? 'ok' : '');
-  return '<span class="chip ' + cls + '">' + esc(text.split(/[—;]/)[0].trim()) + '</span>';
-}
-function about(id, label) {
+function noteFrom(id, label, open) {
   const e = get(id);
   if (!e) return '';
-  return '<details class="about"><summary>' + esc(label || e.title) + '</summary>' + md(e.body) + '</details>';
+  return '<details' + (open ? ' open' : '') + '><summary>' + esc(label || e.title) + pendingTag(e) + '</summary>' + md(e.body) + '</details>';
 }
-function suggestBtn(e) {
-  return '<button class="suggest" data-suggest="' + esc(e.id) + '"><i class="ti ti-message-report"></i>Suggest a correction</button>';
-}
+function tfs() { return kind('contact').find(c => c.internal); }
 function escalate() {
-  const tfs = kind('contact').find(c => c.internal);
-  return '<div class="escalate"><h3>Still stuck?</h3><p>Check the panel manual for the exact model, then escalate rather than guess.</p><div class="btn-row">' +
-    (tfs ? '<a class="btn" href="tel:' + esc(tfs.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>Call ' + esc(tfs.title.split('—').pop().trim()) + ' (TFS)</a>' : '') +
-    '<a class="btn ghost" href="#contacts"><i class="ti ti-building-factory"></i>Manufacturer support</a></div></div>';
+  const t = tfs();
+  return '<div class="escalate"><h4>Still stuck?</h4><p>Check the manual for the exact model, then get help rather than guess.</p><div class="btn-row">' +
+    (t ? '<a class="btn" href="tel:' + esc(t.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>Call ' + esc(t.title.split('—').pop().trim()) + ' (TFS)</a>' : '') +
+    '<a class="btn ghost-dark" href="#contacts"><i class="ti ti-building-factory"></i>Manufacturer support</a></div></div>';
 }
-function backBtn(route, label) {
-  return '<button class="back" data-go="' + route + '"><i class="ti ti-chevron-left"></i>' + esc(label) + '</button>';
+const matches = (e, q) => !q || JSON.stringify(e).toLowerCase().includes(q.toLowerCase());
+
+// ---------- TROUBLESHOOT (plain-English yes/no) ---------------------------
+const TREE_ICONS = { T1: 'ti-power', T2: 'ti-bell-ringing', T3: 'ti-flame', T4: 'ti-speakerphone', T5: 'ti-plug-connected-x', T6: 'ti-bolt',
+  T7: 'ti-battery-2', T8: 'ti-refresh-alert', T9: 'ti-network', T10: 'ti-antenna', T11: 'ti-wifi', T12: 'ti-door' };
+let flow = { code: null, trail: [] };   // trail: [{n, answer}]
+
+function viewTroubleshoot(parts) {
+  if (parts[0] === 'tech') return viewTechTree(parts[1]);
+  if (parts[0] === 'procedure-common') return viewProcedure();
+  if (parts[0]) return viewFlow(parts[0], parts[1]);
+  const list = guided();
+  return pageHead('Troubleshoot', 'What\'s happening? Pick one and answer a few questions.') +
+    '<div class="grid">' + list.map(t => '<a class="tree-card" href="#troubleshoot/' + t.code + '"><i class="ti ' + (TREE_ICONS[t.code] || 'ti-help-circle') + '"></i><div><b>' + esc(t.title) + '</b><span>' + esc(t.code) + '</span></div></a>').join('') + '</div>' +
+    escalate() +
+    notes([
+      noteFrom('notice-guided', 'About these questions'),
+      '<details><summary>Technical versions (numbered steps)</summary><div class="btn-row" style="margin-top:4px">' +
+        technical().map(t => '<a class="ref" style="font-size:14px;padding:3px 8px" href="#troubleshoot/tech/' + t.code + '">' + esc(t.code) + ' ' + esc(t.title) + '</a>').join('') +
+        '</div><p style="margin:10px 0 0"><a href="#troubleshoot/procedure-common">Common fault-finding procedure</a></p></details>',
+      noteFrom('notice-troubleshooting', 'About the technical trees')
+    ]);
 }
-function listItem(route, code, title, sub) {
-  return '<a class="item" href="#' + route + '">' + (code ? '<span class="code">' + esc(code) + '</span>' : '') +
-    '<span class="t">' + esc(title) + (sub ? '<span class="s">' + sub + '</span>' : '') + '</span><i class="ti ti-chevron-right"></i></a>';
-}
-function matches(e, q) {
-  if (!q) return true;
-  return JSON.stringify(e).toLowerCase().includes(q.toLowerCase());
-}
 
-// ---------- views ---------------------------------------------------------
-const VIEWS = {
-  troubleshoot(id) {
-    if (id) {
-      const t = get(id);
-      if (!t || t.kind !== 'troubleshootingTree') return notFound('troubleshoot');
-      return backBtn('troubleshoot', 'All troubleshooting') +
-        '<div class="card"><h2><span class="code" style="color:var(--red)">' + esc(t.code) + '</span> ' + esc(t.title) + '</h2>' +
-        '<p style="font-size:12.5px;color:var(--grey);margin:0 0 6px;">Apply the <a href="#troubleshoot/procedure-common">common procedure</a> first.</p>' +
-        steps(t.steps) + md(t.body) +
-        (t.links && t.links.length ? '<h3>Fault guides used here</h3><div class="btn-row">' + t.links.map(l => get(l) ? '<a class="ref" href="#' + (get(l).kind === 'faultType' ? 'faults/' : 'troubleshoot/') + l + '">' + l + ' · ' + esc(get(l).title) + '</a>' : '').join(' ') + '</div>' : '') +
-        suggestBtn(t) + '</div>' + escalate();
-    }
-    const p = get('procedure-common');
-    return '<div class="sec-label">What\'s happening?</div><div class="list">' +
-      kind('troubleshootingTree').map(t => listItem('troubleshoot/' + t.id, t.code, t.title)).join('') + '</div>' +
-      (p ? '<div class="list">' + listItem('troubleshoot/procedure-common', '', p.title, 'Before and after every fault — read this first') + '</div>' : '') +
-      about('notice-troubleshooting') + escalate();
-  },
+function viewFlow(code, stepStr) {
+  const t = get('guide-' + code);
+  if (!t) return notFound('troubleshoot');
+  const n = stepStr ? +stepStr.replace('s', '') : t.steps[0].n;
+  if (flow.code !== code || !stepStr) flow = { code, trail: [] };
+  // trim the trail if we've gone back
+  const at = flow.trail.findIndex(x => x.n === n);
+  if (at >= 0) flow.trail = flow.trail.slice(0, at);
+  const step = t.steps.find(s => s.n === n);
+  if (!step) return notFound('troubleshoot');
+  const before = get('notice-guided-before-you-start');
+  let html = backBtn('troubleshoot', 'All problems') +
+    pageHead(t.title, 'Follow the steps to find the fix', pendingTag(t)) + '<div class="flow">';
+  if (n === t.steps[0].n && before) html += '<div class="before"><b>Before you start</b>' + md(before.body) + '</div>';
+  if (flow.trail.length) html += '<div class="trail">Your answers: ' + flow.trail.map(x => '<span>' + esc(x.answer) + '</span>').join('') + '</div>';
 
-  procedure() {
-    const p = get('procedure-common');
-    if (!p) return notFound('troubleshoot');
-    return backBtn('troubleshoot', 'Troubleshoot') + '<div class="card"><h2>' + esc(p.title) + '</h2>' + steps(p.steps) + md(p.body) + suggestBtn(p) + '</div>';
-  },
-
-  faults(id) {
-    if (id) {
-      const f = get(id);
-      if (!f) return notFound('faults');
-      if (f.kind === 'manufacturerMapping') {
-        return backBtn('faults', 'All fault codes') + '<div class="card"><h2>' + esc(f.title) + '</h2>' +
-          (f.verified ? '' : '<p><span class="chip warn">Unverified — reference only</span></p>') + md(f.body) + suggestBtn(f) + '</div>' + escalate();
-      }
-      if (f.kind !== 'faultType') return notFound('faults');
-      return backBtn('faults', 'All fault codes') + '<div class="card"><h2><span style="color:var(--red)">' + esc(f.code) + '</span> ' + esc(f.title) + '</h2>' +
-        '<p style="margin:0 0 4px;">' + evidenceChip(f.evidence) + '</p>' +
-        '<p style="font-size:12.5px;color:var(--grey);margin:4px 0;">Apply the <a href="#troubleshoot/procedure-common">common procedure</a> before and after.</p>' +
-        steps(f.steps) + md(f.body) + suggestBtn(f) + '</div>' + escalate();
-    }
-    return '<input class="search" id="q" placeholder="Search fault codes, messages, manufacturers…" autocomplete="off">' +
-      '<div id="results"></div>' + about('notice-fault-types') + about('notice-manufacturer-mappings');
-  },
-  faultsResults(q) {
-    const fts = kind('faultType').filter(e => matches(e, q));
-    const maps = kind('manufacturerMapping').filter(e => matches(e, q));
-    if (!fts.length && !maps.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
-    return (fts.length ? '<div class="sec-label">Fault types</div><div class="list">' + fts.map(f => listItem('faults/' + f.id, f.code, f.title)).join('') + '</div>' : '') +
-      (maps.length ? '<div class="sec-label">By manufacturer</div><div class="list">' + maps.map(m => listItem('faults/' + m.id, '', m.title, m.verified ? '' : 'Unverified — reference only')).join('') + '</div>' : '');
-  },
-
-  codes() {
-    const n = get('notice-panel-codes');
-    const appNotice = n ? (n.body.match(/\*\*App notice:\*\*\s*“?([^”\n]+)”?/) || [])[1] : '';
-    return '<div class="disclaimer" style="background:#fbe9ea;color:var(--red-dark);">' + esc(appNotice || 'Use only for authorised work.') + '</div>' +
-      '<p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;"><b>*</b> = unverified historical code or key. Not confirmed as a factory default. <span class="chip ok">Manual supported</span> = checked against the named manual.</p>' +
-      '<input class="search" id="q" placeholder="Search manufacturer, panel or code…" autocomplete="off">' +
-      '<div id="results"></div>' + about('notice-panel-codes', 'About these codes');
-  },
-  codesResults(q) {
-    const rows = kind('panelCode').filter(e => matches(e, q));
-    if (!rows.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
-    return '<div class="list">' + rows.map(c =>
-      '<div class="pc"><div class="top"><div><div class="man">' + esc(c.manufacturer) + (c.panel ? ' <span style="font-weight:500;color:var(--grey)">' + esc(c.panel) + '</span>' : '') + '</div>' +
-      (c.remarks ? '<div class="meta">' + esc(c.remarks) + '</div>' : '') + '</div>' +
-      '<div class="codeval">' + esc(c.code) + (c.verified ? '' : ' <span style="color:var(--amber)">*</span>') + '</div></div>' +
-      '<div class="meta">' + (c.verified ? '<span class="chip ok">Manual supported</span> ' : '') + (c.keyNo ? 'Key: <b>' + esc(c.keyNo) + '</b>' + (c.verified ? '' : ' *') + ' · ' : '') + esc(c.evidence) + '</div>' +
-      suggestBtn(c) + '</div>').join('') + '</div>';
-  },
-
-  contacts() {
-    return '<input class="search" id="q" placeholder="Search manufacturer or supplier…" autocomplete="off"><div id="results"></div>' + about('notice-contacts');
-  },
-  contactsResults(q) {
-    const all = kind('contact').filter(e => matches(e, q));
-    const internal = all.filter(c => c.internal), rest = all.filter(c => !c.internal);
-    const card = c => '<div class="contact"><div class="name">' + esc(c.title) + '</div><div class="purpose">' + esc(c.purpose) + '</div>' +
-      '<div class="btn-row"><a class="btn dark" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>' + esc(c.phone) + '</a>' +
-      (c.websites || []).map(w => '<a class="btn ghost" style="color:var(--ink)" href="' + esc(w.url) + '" target="_blank" rel="noopener"><i class="ti ti-world"></i>' + esc(w.label) + '</a>').join('') + '</div>' +
-      '<div class="ev">' + (c.verified ? '' : '<span class="chip warn">Unverified</span> ') + esc(c.evidence) + '</div>' + suggestBtn(c) + '</div>';
-    if (!all.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
-    return (internal.length ? '<div class="sec-label">S&amp;W escalation</div><div class="list">' + internal.map(card).join('') + '</div>' : '') +
-      '<div class="sec-label">Manufacturers &amp; suppliers</div><div class="list">' + rest.map(card).join('') + '</div>';
-  },
-
-  standards(id) {
-    if (id) {
-      const s = get(id);
-      if (!s || s.kind !== 'standardsSection') return notFound('standards');
-      return backBtn('standards', 'All standards') + '<div class="card"><h2>' + esc(s.title) + '</h2>' +
-        (s.clauses ? '<p style="margin:0 0 8px;"><span class="chip">' + esc(s.clauses) + '</span></p>' : '') + md(s.body) + suggestBtn(s) + '</div>';
-    }
-    return '<input class="search" id="q" placeholder="Search standards (e.g. sounder, void, battery)…" autocomplete="off"><div id="results"></div>' +
-      about('notice-standards', 'About the BS 5839-1:2025 quick reference') + about('notice-sources');
-  },
-  standardsResults(q) {
-    const all = kind('standardsSection').filter(e => matches(e, q));
-    if (!all.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
-    const groups = [...new Set(all.map(s => s.group))];
-    return groups.map(g => '<div class="sec-label">' + esc(g) + '</div><div class="list">' +
-      all.filter(s => s.group === g).map(s => listItem('standards/' + s.id, '', s.title, s.clauses ? esc(s.clauses) : '')).join('') + '</div>').join('');
-  },
-
-  calc(id) {
-    const subs = [['battery', 'Battery'], ['dil', 'DIL address'], ['resistor', 'Resistor / EOL'], ['dater', 'Detector date']];
-    const cur = id || 'battery';
-    return '<div class="subtabs">' + subs.map(([k, l]) => '<a class="subtab' + (k === cur ? ' active' : '') + '" href="#calc/' + k + '" style="text-decoration:none">' + l + '</a>').join('') + '</div>' +
-      '<div id="calcBody">' + (CALCS[cur] ? CALCS[cur].html() : notFound('calc')) + '</div>';
+  if (step.type === 'question') {
+    const many = step.options.length > 2;
+    const [q, ...rest] = splitQuestion(step.text);
+    html += '<div class="q-card"><div class="qt"><i class="ti ti-help-circle"></i><div>' + inline(q) + (rest.length ? '<small>' + inline(rest.join(' ')) + '</small>' : '') + '</div></div>' +
+      '<div class="answers' + (many ? ' many' : '') + '">' + step.options.map((o, i) =>
+        '<button class="ans' + (!many && /^yes/i.test(o.label) ? ' yes' : '') + '" data-opt="' + i + '">' + esc(o.label) + '</button>').join('') + '</div></div>';
+  } else if (step.type === 'info') {
+    html += '<div class="q-card"><div class="qt"><i class="ti ti-info-circle"></i><div>' + inline(step.text) + '</div></div>' +
+      '<div class="answers"><button class="ans yes" data-next="' + step.next + '">OK — next</button></div></div>';
+  } else {
+    html += outcome(step.type, step.text);
   }
-};
-
-function notFound(back) {
-  return backBtn(back, 'Back') + '<div class="empty">That entry isn\'t in the toolkit data.</div>';
+  html += '</div>';
+  return html;
+}
+// First sentence = the question; the rest = smaller help text.
+function splitQuestion(text) {
+  const m = String(text).match(/^(.*?\?)\s+(.*)$/);
+  return m ? [m[1], m[2]] : [text];
+}
+function outcome(type, text, ref) {
+  const finish = get('notice-guided-finish-up-checks');
+  const icons = { help: 'ti-tool', sorted: 'ti-circle-check', stop: 'ti-hand-stop', guide: 'ti-book-2' };
+  const titles = { help: 'What to do', sorted: 'Sorted', stop: 'Stop', guide: 'Open the fault guide' };
+  let html = '<div class="outcome ' + type + '"><div class="ot"><i class="ti ' + icons[type] + '"></i>' + titles[type] + '</div>';
+  if (text) html += '<div class="ob">' + inline(text) + '</div>';
+  const refs = [...new Set((String(text || '').match(/\b(FT\d{2}|T\d{1,2})\b/g) || []).concat(ref ? [ref] : []))].filter(routeFor);
+  if (refs.length) html += '<div class="btn-row">' + refs.map(r => { const e = get(r) || get('guide-' + r);
+    return '<a class="btn' + (type === 'stop' ? ' ghost' : '') + '" href="#' + routeFor(r) + '"><i class="ti ti-arrow-right"></i>' + r + (e ? ' — ' + esc(e.title) : '') + '</a>'; }).join('') + '</div>';
+  html += '</div>';
+  if (type === 'sorted' && finish) html += '<div class="card"><h3>Finish-up checks</h3>' + md(finish.body) + '</div>';
+  html += '<div class="btn-row" style="margin:6px 0"><a class="btn ghost" href="#troubleshoot/' + flow.code + '"><i class="ti ti-rotate"></i>Start again</a><a class="btn ghost" href="#troubleshoot"><i class="ti ti-list"></i>All problems</a></div>';
+  if (type !== 'sorted') html += escalate();
+  return html;
+}
+function answerFlow(i, nextOverride) {
+  const t = get('guide-' + flow.code);
+  const n = +((location.hash.split('/')[2] || '').replace('s', '')) || t.steps[0].n;
+  const step = t.steps.find(s => s.n === n);
+  if (nextOverride !== undefined) { flow.trail.push({ n, answer: 'OK' }); location.hash = 'troubleshoot/' + flow.code + '/s' + nextOverride; return; }
+  const o = step.options[i];
+  flow.trail.push({ n, answer: o.label });
+  const tg = o.target;
+  if (tg.type === 'step') { location.hash = 'troubleshoot/' + flow.code + '/s' + tg.n; return; }
+  if (tg.type === 'tree') { location.hash = 'troubleshoot/' + tg.ref; return; }
+  // endings render in place (no route of their own)
+  const view = document.getElementById('view');
+  const head = view.querySelector('.flow');
+  const trail = '<div class="trail">Your answers: ' + flow.trail.map(x => '<span>' + esc(x.answer) + '</span>').join('') + '</div>';
+  head.innerHTML = trail + (tg.type === 'guide' ? outcome('guide', '', tg.ref) : outcome(tg.type, tg.text));
+  window.scrollTo(0, 0);
 }
 
-// ---------- calculators ---------------------------------------------------
-function num(v) { const n = Number(String(v).trim()); return String(v).trim() === '' ? NaN : n; }
-function fmt(n, dp = 3) { return Number(n.toFixed(dp)).toLocaleString('en-GB', { maximumFractionDigits: dp }); }
+function viewTechTree(code) {
+  const t = get(code);
+  if (!t) return notFound('troubleshoot');
+  return backBtn('troubleshoot', 'Troubleshoot') + pageHead(t.code + ' — ' + t.title, 'Technical version') +
+    '<div class="card">' + stepsList(t.steps) + md(t.body) + suggestBtn(t) + '</div>' + escalate() +
+    notes(['<div class="note">Apply the <a href="#troubleshoot/procedure-common">common fault-finding procedure</a> before and after.</div>']);
+}
+function viewProcedure() {
+  const p = get('procedure-common');
+  if (!p) return notFound('troubleshoot');
+  return backBtn('troubleshoot', 'Troubleshoot') + pageHead(p.title) + '<div class="card">' + stepsList(p.steps) + md(p.body) + suggestBtn(p) + '</div>';
+}
+
+// ---------- FAULT CODES ---------------------------------------------------
+function viewFaults(parts) {
+  const open = parts[0] || '';
+  if (open.startsWith('map-')) UI.faultsFilter = open;
+  else if (open) UI.faultsFilter = 'all';
+  const maps = kind('manufacturerMapping');
+  const chipVals = [['all', 'All fault types']].concat(maps.map(m => [m.id, m.title.replace(/ — .*/, '')]));
+  return pageHead('Fault codes', 'Fault guides, and what each manufacturer\'s messages mean') +
+    '<input class="search" id="q" placeholder="Search faults, messages, manufacturers…" autocomplete="off" value="' + esc(UI.faultsQ) + '">' +
+    chips('Manufacturer', chipVals, UI.faultsFilter, 'data-ff') +
+    '<div id="results"></div>' +
+    notes([
+      '<div class="note">Apply the <a href="#troubleshoot/procedure-common">common fault-finding procedure</a> before and after every fault.</div>',
+      noteFrom('notice-fault-types', 'About the fault guides'),
+      noteFrom('notice-manufacturer-mappings', 'About the manufacturer messages'),
+      noteFrom('notice-incomplete-evidence')
+    ]);
+}
+function faultsResults(openId) {
+  const q = UI.faultsQ;
+  if (UI.faultsFilter !== 'all') {
+    const m = get(UI.faultsFilter);
+    if (!m) return '';
+    return '<div class="card"><h3>' + esc(m.title) + '</h3>' + (m.verified ? '' : '<p><span class="tag warn">Unverified — reference only</span></p>') +
+      md(m.body) + '<p style="font-size:13.5px;color:var(--grey)">Tap a fault number (e.g. <span class="ref">FT05</span>) to open its guide.</p>' + suggestBtn(m) + '</div>';
+  }
+  const fts = kind('faultType').filter(e => matches(e, q));
+  const maps = q ? kind('manufacturerMapping').filter(e => matches(e, q)) : [];
+  if (!fts.length && !maps.length) return '<div class="empty">Nothing matches “' + esc(q) + '”.</div>';
+  return fts.map(f => '<div class="acc' + (f.id === openId ? ' open' : '') + '" id="acc-' + f.id + '"><button data-acc="' + f.id + '"><span class="code">' + esc(f.code) + '</span><span class="tag fault">Fault</span><span class="t">' + esc(f.title) + '</span><i class="ti ti-chevron-down"></i></button>' +
+      '<div class="body"><h5>Step-by-step</h5>' + stepsList(f.steps) + md(f.body) +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="tag ' + (/bs checked/i.test(f.evidence) ? 'ok' : '') + '">' + esc(f.evidence) + '</span>' + suggestBtn(f) + '</div></div></div>').join('') +
+    (maps.length ? '<div class="chip-label" style="margin-top:16px">Manufacturer messages matching “' + esc(q) + '”</div>' + maps.map(m => '<div class="acc"><button data-ffgo="' + m.id + '"><span class="t">' + esc(m.title) + '</span><i class="ti ti-chevron-right"></i></button></div>').join('') : '');
+}
+
+// ---------- PANEL CODES ---------------------------------------------------
+function viewCodes() {
+  const mans = ['All'].concat([...new Set(kind('panelCode').map(c => c.manufacturer))]);
+  return pageHead('Panel access codes', 'Search by manufacturer, panel or code') +
+    '<input class="search" id="q" placeholder="Search panels…" autocomplete="off" value="' + esc(UI.codesQ) + '">' +
+    chips('Manufacturer', mans, UI.codesMan, 'data-man') +
+    '<div id="results"></div>' +
+    notes([
+      '<div class="note"><b>*</b> = unverified historical code or key — not confirmed as a factory default. <span class="tag ok">Manual supported</span> = checked against the named manual for that model only. Site codes may differ — check the authorised site records first. Use only for authorised work.</div>',
+      noteFrom('notice-panel-codes', 'About these codes (full notes)')
+    ]);
+}
+function codesResults() {
+  const rows = kind('panelCode').filter(c => (UI.codesMan === 'All' || c.manufacturer === UI.codesMan) && matches(c, UI.codesQ));
+  if (!rows.length) return '<div class="empty">Nothing matches.</div>';
+  return '<div class="count">' + rows.length + ' code' + (rows.length === 1 ? '' : 's') + '</div>' +
+    '<table class="codes"><thead><tr><th>Manufacturer</th><th>Panel type</th><th>Code</th><th>Key no.</th><th>Remarks</th><th></th></tr></thead><tbody>' +
+    rows.map(c => '<tr><td class="man">' + esc(c.manufacturer) + '</td>' +
+      '<td data-l="Panel" class="muted">' + (c.panel ? esc(c.panel) : '–') + '</td>' +
+      '<td class="code"><span class="cv">' + esc(c.code) + (c.verified ? '' : '<sup> *</sup>') + '</span>' + (c.verified ? ' <span class="tag ok">Manual supported</span>' : '') + '</td>' +
+      '<td data-l="Key" class="muted">' + (c.keyNo ? esc(c.keyNo) + (c.verified ? '' : ' *') : '–') + '</td>' +
+      '<td data-l="Remarks" class="muted">' + (c.remarks ? esc(c.remarks) : '–') + (c.verified ? '<div style="font-size:12.5px">' + inline(c.evidence) + '</div>' : '') + '</td>' +
+      '<td class="act">' + suggestBtn(c, true) + '</td></tr>').join('') + '</tbody></table>';
+}
+
+// ---------- CONTACTS ------------------------------------------------------
+function viewContacts() {
+  const cats = ['All'].concat([...new Set(kind('contact').filter(c => !c.internal).map(c => c.category).filter(Boolean))]);
+  return pageHead('Technical support', 'Manufacturer and supplier contact numbers') +
+    '<input class="search" id="q" placeholder="Search manufacturers…" autocomplete="off" value="' + esc(UI.contactsQ) + '">' +
+    chips('', cats, UI.contactsCat, 'data-cat') +
+    '<div id="results"></div>' +
+    notes([noteFrom('notice-contacts', 'About these contacts')]);
+}
+function contactCard(c) {
+  return '<div class="contact' + (c.internal ? ' internal' : '') + '"><div class="top"><div class="name">' + esc(c.title) + '</div><span class="tag">' + esc(c.category || '') + '</span></div>' +
+    '<div class="purpose">' + esc(c.purpose) + '</div>' +
+    '<a class="btn call" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '"><i class="ti ti-phone"></i>' + esc(c.phone) + '</a>' +
+    ((c.websites || []).length ? '<div class="btn-row">' + c.websites.map(w => '<a class="btn ghost" style="flex:1" href="' + esc(w.url) + '" target="_blank" rel="noopener"><i class="ti ti-world"></i>' + esc(w.label) + '</a>').join('') + '</div>' : '') +
+    '<div class="ev">' + (c.verified ? '' : '<span class="tag warn">Unverified</span> ') + esc(c.evidence) + ' ' + suggestBtn(c, true) + '</div></div>';
+}
+function contactsResults() {
+  const all = kind('contact').filter(c => matches(c, UI.contactsQ));
+  const internal = all.filter(c => c.internal);
+  const rest = all.filter(c => !c.internal && (UI.contactsCat === 'All' || c.category === UI.contactsCat));
+  if (!internal.length && !rest.length) return '<div class="empty">Nothing matches.</div>';
+  return (internal.length && UI.contactsCat === 'All' ? '<div class="grid" style="margin-bottom:14px">' + internal.map(contactCard).join('') + '</div>' : '') +
+    '<div class="count">' + rest.length + ' manufacturer' + (rest.length === 1 ? '' : 's') + ' found</div>' +
+    '<div class="grid">' + rest.map(contactCard).join('') + '</div>';
+}
+
+// ---------- STANDARDS -----------------------------------------------------
+function viewStandards() {
+  LINK_T = false;
+  const tabs = [['quick', 'Quick reference'], ['clauses', 'Clauses'], ['categories', 'System categories']];
+  return pageHead('Standards', 'BS 5839-1:2025 quick reference') +
+    '<div class="subtabs">' + tabs.map(([k, l]) => '<button class="subtab' + (UI.stdTab === k ? ' active' : '') + '" data-std="' + k + '">' + l + '</button>').join('') + '</div>' +
+    '<input class="search" id="q" placeholder="Search (e.g. sounder, void, battery)…" autocomplete="off" value="' + esc(UI.stdQ) + '">' +
+    '<div id="results"></div>' +
+    notes([noteFrom('notice-standards', 'About this quick reference'), noteFrom('notice-clause-summaries'), noteFrom('notice-sources')]);
+}
+function standardsResults() {
+  const all = kind('standardsSection').filter(s => matches(s, UI.stdQ));
+  let list;
+  if (UI.stdTab === 'categories') list = all.filter(s => s.id === 'std-system-categories');
+  else if (UI.stdTab === 'clauses') list = all.filter(s => s.group === 'Clause summaries');
+  else list = all.filter(s => s.group === 'Quick reference' && s.id !== 'std-system-categories');
+  if (!list.length) return '<div class="empty">Nothing matches.</div>';
+  if (UI.stdTab === 'clauses') return '<div class="grid">' + list.map(s => '<div class="card" style="margin:0"><h3>' + esc(s.title) + '</h3><p style="margin:0 0 8px"><span class="tag">' + esc(s.clauses || '') + '</span></p>' + md(s.body) + suggestBtn(s) + '</div>').join('') + '</div>';
+  return list.map(s => '<div class="card"><h3>' + esc(s.title) + '</h3>' + md(s.body) + suggestBtn(s) + '</div>').join('');
+}
+
+// ---------- CALCULATORS ---------------------------------------------------
+function viewCalc(parts) {
+  const subs = [['battery', 'Battery', 'ti-battery-charging'], ['dater', 'Detector date', 'ti-calendar'], ['resistor', 'Resistor / EOL', 'ti-wave-sine'], ['dil', 'DIL address', 'ti-toggle-left']];
+  const cur = CALCS[parts[0]] ? parts[0] : 'battery';
+  LINK_T = false;
+  return pageHead('Calculators') +
+    '<div class="subtabs">' + subs.map(([k, l, ic]) => '<a class="subtab' + (k === cur ? ' active' : '') + '" href="#calc/' + k + '"><i class="ti ' + ic + '"></i>' + l + '</a>').join('') + '</div>' +
+    '<div id="calcBody">' + CALCS[cur].html() + '</div>' + notes(CALCS[cur].notes());
+}
+const num = v => String(v).trim() === '' ? NaN : Number(String(v).trim());
+const fmt = (n, dp = 3) => Number(n.toFixed(dp)).toLocaleString('en-GB', { maximumFractionDigits: dp });
 
 const CALCS = {
   battery: {
     html() {
       const c = get('calc-battery') || {};
-      const profiles = c.standbyProfiles || [];
-      return '<div class="card"><h2>Battery calculator</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">BS 5839-1:2025 Annex E.1 (VRLA): <b>Cmin = 1.25 × (T1 × I1 + D × I2 × T2)</b></p>' +
-        '<div class="row2"><div class="f"><label>Standby current I1</label><div class="unit"><input id="bI1" inputmode="decimal" placeholder="e.g. 360"><select id="bI1u"><option value="mA">mA</option><option value="A">A</option></select></div></div>' +
-        '<div class="f"><label>Alarm current I2 (total)</label><div class="unit"><input id="bI2" inputmode="decimal" placeholder="e.g. 750"><select id="bI2u"><option value="mA">mA</option><option value="A">A</option></select></div></div></div>' +
-        '<div class="f"><label>Standby period T1</label><select id="bProfile">' +
-          profiles.map((p, i) => '<option value="' + i + '">' + esc(p.profile) + ' — ' + esc(p.standby) + '</option>').join('') +
-          '<option value="custom">Other / project requirement (enter hours)</option></select></div>' +
-        '<div class="row2"><div class="f"><label>T1 hours</label><input id="bT1" inputmode="decimal"></div>' +
-        '<div class="f"><label>Alarm period T2 (hours)</label><input id="bT2" inputmode="decimal" value="0.5"></div></div>' +
-        '<div class="f"><label>Derating factor D</label><select id="bDmode"><option value="default">1.75 (labelled default)</option><option value="auto">Automatic (Annex E.1.2 test)</option><option value="manual">Battery manufacturer\'s value</option></select></div>' +
-        '<div class="f" id="bDmanualWrap" hidden><label>Manufacturer derating factor</label><input id="bDmanual" inputmode="decimal"></div>' +
-        '<div id="bOut"></div>' + '</div>' + about('calc-battery', 'Full reference and rules for this calculator');
+      const prof = (c.standbyProfiles || []);
+      const fixed = prof.map(p => [p, (p.standby.match(/^(\d+(?:\.\d+)?)\s*h$/) || [])[1]]).filter(x => x[1]);
+      return '<div class="formula"><code>C<sub>min</sub> = 1.25 × (T<sub>1</sub> × I<sub>1</sub> + D × I<sub>2</sub> × T<sub>2</sub>)</code><div>BS 5839-1:2025 Annex E.1 · valve-regulated lead-acid batteries</div></div>' +
+        '<div class="cols"><div class="card">' +
+          '<div class="f2"><div class="f"><label>I₁ — Standby current</label><div class="with-unit"><input id="bI1" inputmode="decimal" placeholder="e.g. 250"><select id="bI1u"><option>mA</option><option>A</option></select></div><div class="hint">Panel normal — no faults, no alarms</div></div>' +
+          '<div class="f"><label>I₂ — Alarm current</label><div class="with-unit"><input id="bI2" inputmode="decimal" placeholder="e.g. 500"><select id="bI2u"><option>mA</option><option>A</option></select></div><div class="hint">Total current with all sounders and beacons going</div></div></div>' +
+          '<div class="f"><label>T₁ — Standby duration (hours)</label><input id="bT1" inputmode="decimal" value="24">' +
+            '<div class="quick">' + fixed.map(([p, h]) => '<button data-t1="' + h + '" title="' + esc(p.conditions) + '">' + esc(p.profile) + ' — ' + h + ' h</button>').join('') + '</div>' +
+            '<div class="hint"><b>Category P, ordinary case:</b> 24 h + the <b>longest continuous</b> unoccupied period, up to 72 h max. <span style="white-space:nowrap">Longest unoccupied: <input id="bUnocc" inputmode="decimal" placeholder="hours" style="width:80px;padding:4px 6px;font-size:14px;border:1px solid var(--line);border-radius:6px"> → <a href="#" id="bUseP">use it</a></span></div></div>' +
+          '<div class="f2"><div class="f"><label>T₂ — Alarm duration (hours)</label><input id="bT2" inputmode="decimal" value="0.5"><div class="hint">At least 30 minutes (0.5 h); more if the project needs it</div></div>' +
+          '<div class="f"><label>D — Derating factor</label><select id="bDmode"><option value="default">1.75 (default)</option><option value="auto">Automatic (Annex E.1.2 test)</option><option value="manual">Battery maker\'s value</option></select><input id="bDmanual" inputmode="decimal" placeholder="Maker\'s factor" style="margin-top:6px" hidden></div></div>' +
+        '</div><div><div class="card" id="bOut"><h3>Calculation results</h3><div class="empty" style="padding:16px">Enter the currents to see the result.</div></div>' +
+        '<div class="card" id="bMeasure"></div></div></div>';
+    },
+    notes() {
+      return [noteFrom('policy-battery-selection', 'Battery selection'), noteFrom('policy-standby-batteries', 'S&W battery replacement policy'), noteFrom('calc-battery', 'Full rules for this calculator')];
     },
     wire() {
       const $ = id => document.getElementById(id);
       const c = get('calc-battery') || {};
-      const profiles = c.standbyProfiles || [];
-      const setT1 = () => {
-        const v = $('bProfile').value;
-        if (v === 'custom') { $('bT1').readOnly = false; return; }
-        const p = profiles[+v]; const m = (p.standby || '').match(/^(\d+(?:\.\d+)?)\s*h$/);
-        if (m) { $('bT1').value = m[1]; $('bT1').readOnly = true; }
-        else { $('bT1').value = ''; $('bT1').readOnly = false; $('bT1').placeholder = 'Work out from: ' + p.standby; }
-      };
-      $('bProfile').addEventListener('change', () => { setT1(); calc(); });
-      $('bDmode').addEventListener('change', () => { $('bDmanualWrap').hidden = $('bDmode').value !== 'manual'; calc(); });
+      const m = get('calc-battery-measure');
+      if (m) $('bMeasure').innerHTML = '<h3>How to measure the currents' + pendingTag(m) + '</h3>' + md(m.body.replace(/^Added[^\n]*\n\n?/, ''));
+      else $('bMeasure').hidden = true;
+      document.querySelectorAll('[data-t1]').forEach(b => b.addEventListener('click', () => { $('bT1').value = b.dataset.t1; calc(); }));
+      $('bUseP').addEventListener('click', ev => { ev.preventDefault(); const u = num($('bUnocc').value); if (isFinite(u) && u >= 0) { $('bT1').value = Math.min(24 + u, 72); calc(); } else toast('Enter the longest unoccupied period in hours'); });
+      $('bDmode').addEventListener('change', () => { $('bDmanual').hidden = $('bDmode').value !== 'manual'; calc(); });
       ['bI1', 'bI1u', 'bI2', 'bI2u', 'bT1', 'bT2', 'bDmanual'].forEach(id => $(id).addEventListener('input', calc));
-      setT1();
       function calc() {
         const out = $('bOut');
-        const toA = (v, u) => u === 'mA' ? v / 1000 : v;
-        const I1 = toA(num($('bI1').value), $('bI1u').value), I2 = toA(num($('bI2').value), $('bI2u').value);
+        const toMA = (v, u) => u === 'A' ? v * 1000 : v;
+        const I1 = toMA(num($('bI1').value), $('bI1u').value), I2 = toMA(num($('bI2').value), $('bI2u').value);
         const T1 = num($('bT1').value), T2 = num($('bT2').value);
         const errs = [];
-        if (!isFinite(I1) || I1 < 0) errs.push('Enter the standby current I1 (zero or more).');
-        if (!isFinite(I2) || I2 < 0) errs.push('Enter the total alarm current I2 (zero or more).');
-        if (!isFinite(T1) || T1 <= 0) errs.push('Enter the standby period T1 in hours.');
-        if (!isFinite(T2) || T2 <= 0) errs.push('Enter the alarm period T2 in hours.');
+        if (!isFinite(I1) || I1 < 0) errs.push('Enter the standby current I₁.');
+        if (!isFinite(I2) || I2 < 0) errs.push('Enter the alarm current I₂.');
+        if (!isFinite(T1) || T1 <= 0) errs.push('Enter the standby duration T₁ in hours.');
+        if (!isFinite(T2) || T2 <= 0) errs.push('Enter the alarm duration T₂ in hours.');
         let D, dNote;
         const mode = $('bDmode').value;
-        if (mode === 'manual') { D = num($('bDmanual').value); if (!isFinite(D) || D <= 0) errs.push('Enter the manufacturer derating factor.'); dNote = 'battery manufacturer\'s value'; }
-        if (errs.length) { out.innerHTML = ($('bI1').value || $('bI2').value) ? '<div class="result err">' + errs.map(esc).join('<br>') + '</div>' : ''; return; }
-        if (mode === 'default') { D = c.defaultDerating || 1.75; dNote = 'labelled default — not universally required'; }
+        if (mode === 'manual') { D = num($('bDmanual').value); if (!isFinite(D) || D <= 0) errs.push('Enter the battery maker\'s derating factor.'); dNote = 'battery maker\'s value'; }
+        const head = '<h3>Calculation results</h3>';
+        if (errs.length) { out.innerHTML = head + (($('bI1').value || $('bI2').value) ? '<div class="errbox">' + errs.join('<br>') + '</div>' : '<div class="empty" style="padding:16px">Enter the currents to see the result.</div>'); return; }
+        if (mode === 'default') { D = c.defaultDerating || 1.75; dNote = 'default — the standard doesn\'t require it in every case'; }
         if (mode === 'auto') {
-          const c1 = 1.25 * (T1 * I1 + 1 * I2 * T2);
-          if (c1 / 20 >= I2) { D = 1; dNote = 'D = 1 permitted: Cmin/20 (' + fmt(c1 / 20) + ' A) ≥ I2'; }
-          else { D = 1.75; dNote = 'Cmin/20 < I2, so D = 1 not permitted; 1.75 used (use the manufacturer\'s factor if you have it)'; }
+          const c1 = 1.25 * (T1 * I1 / 1000 + 1 * (I2 / 1000) * T2);   // Cmin in Ah with D = 1
+          if (c1 / 20 >= I2 / 1000) { D = 1; dNote = 'D = 1 allowed: Cmin/20 = ' + fmt(c1 / 20) + ' A ≥ I₂'; }
+          else { D = 1.75; dNote = 'D = 1 not allowed (Cmin/20 < I₂), so 1.75 — use the maker\'s factor if you have it'; }
         }
-        const sAh = T1 * I1, aAh = D * I2 * T2, sub = sAh + aAh, cmin = 1.25 * sub;
+        const sMAh = T1 * I1, aMAh = D * I2 * T2, sub = sMAh + aMAh, cmin = 1.25 * sub, cAh = cmin / 1000;
         const caps = (c.capacitiesAh || []).slice().sort((a, b) => a - b);
-        const next = caps.find(x => x >= cmin);
+        const next = caps.find(x => x >= cAh - 1e-9);
         const warns = [];
-        if (I1 === 0 || I2 === 0) warns.push('A zero current is unusual — check the load figures.');
-        if (T2 < (c.alarmMinHours || 0.5)) warns.push('Alarm period is below the 30 minutes all standby profiles require.');
-        (c.productLimits || []).forEach(p => { if (next && next > p.maxAh) warns.push(p.product + ' takes up to ' + p.maxAh + ' Ah [' + p.source + '] — check the panel can house and charge this.'); });
-        out.innerHTML = '<div class="result">' +
-          '<div class="calc-line"><span>Standby Ah (T1 × I1)</span><b>' + fmt(sAh, 4) + '</b></div>' +
-          '<div class="calc-line"><span>Alarm Ah (D × I2 × T2)</span><b>' + fmt(aAh, 4) + '</b></div>' +
-          '<div class="calc-line"><span>Subtotal</span><b>' + fmt(sub, 4) + '</b></div>' +
-          '<div class="calc-line"><span>Derating D used</span><b>' + fmt(D, 3) + '</b></div>' +
-          '<div style="font-size:12px;color:var(--grey);margin:2px 0 8px;">' + esc(dNote) + '</div>' +
-          'Minimum capacity <span class="big">' + fmt(cmin, 4) + ' Ah</span><br>' +
-          (next ? 'Next reference size: <b>' + next + ' Ah</b> — only if an <b>approved</b>, compatible battery of that size suits this panel, enclosure and charger.'
-                : '<b>Larger than every reference size.</b> Check the design / split supplies.') +
-          (warns.length ? '<div style="margin-top:8px;color:var(--amber)">' + warns.map(esc).join('<br>') + '</div>' : '') +
-          '<div style="margin-top:8px;font-size:12px;color:var(--grey)">Two 12 V batteries in series give 24 V at the <i>same</i> Ah. Check charger recovery (24.3.4) and calculate each separately backed-up PSU.</div></div>';
+        if (I1 === 0 || I2 === 0) warns.push('A zero current is unusual — check the readings.');
+        if (T2 < (c.alarmMinHours || 0.5)) warns.push('T₂ is below the 30 minutes every profile needs.');
+        if (T1 > 72) warns.push('T₁ is over 72 h — check the standby requirement.');
+        (c.productLimits || []).forEach(p => { if (next && next > p.maxAh) warns.push(p.product + ' takes up to ' + p.maxAh + ' Ah — check this panel can house and charge the battery.'); });
+        out.innerHTML = head +
+          '<div class="working">C<sub>min</sub> = 1.25 × (' + fmt(T1, 2) + ' × ' + fmt(I1, 2) + ' + ' + fmt(D, 3) + ' × ' + fmt(I2, 2) + ' × ' + fmt(T2, 2) + ')<br>' +
+          'C<sub>min</sub> = 1.25 × (' + fmt(sMAh, 1) + ' + ' + fmt(aMAh, 1) + ')<br>' +
+          'C<sub>min</sub> = 1.25 × ' + fmt(sub, 1) + ' mAh<br><b>C<sub>min</sub> = ' + fmt(cmin, 1) + ' mAh ÷ 1000 = ' + fmt(cAh, 3) + ' Ah</b></div>' +
+          '<div class="res-row"><span>Standby part (T₁ × I₁)</span><b>' + fmt(sMAh / 1000, 3) + ' Ah</b></div>' +
+          '<div class="res-row"><span>Alarm part (D × I₂ × T₂)</span><b>' + fmt(aMAh / 1000, 3) + ' Ah</b></div>' +
+          '<div class="res-row"><span>Derating D used <span style="display:block;font-size:12.5px;color:var(--grey)">' + esc(dNote) + '</span></span><b>' + fmt(D, 3) + '</b></div>' +
+          '<div class="res-row"><span>C<sub>min</sub> required</span><b>' + fmt(cAh, 3) + ' Ah</b></div>' +
+          '<div class="res-big"><span>Next battery size up</span>' + (next ? '<span class="badge">' + next + ' Ah</span>' : '<span class="badge">None big enough</span>') + '</div>' +
+          '<div class="hint" style="font-size:13px;color:var(--grey);margin-top:6px">Reference sizes: ' + caps.join(', ') + ' Ah. Use an <b>approved</b> battery that suits this panel, enclosure and charger. Two 12 V batteries in series = 24 V at the <i>same</i> Ah.</div>' +
+          (warns.length ? '<div class="warnbox">' + warns.map(esc).join('<br>') + '</div>' : '');
       }
     }
   },
 
   dil: {
     html() {
-      return '<div class="card"><h2>DIL address — generic binary</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">Generic binary only: switch 1 = 1, switch 2 = 2, switch 3 = 4… <b>ON = 1</b>. Device profiles aren\'t enabled — check the device\'s own addressing instructions, which can exclude 0, reserve values or use switch 8 for something else.</p>' +
-        '<div class="row2"><div class="f"><label>Switches</label><select id="dBits"><option value="7">7-bit (0–127)</option><option value="8">8-bit (0–255)</option></select></div>' +
+      return '<div class="cols"><div class="card"><h3>DIL address</h3><p style="font-size:14px;color:var(--grey);margin:0 0 12px">Generic binary: switch 1 = 1, switch 2 = 2, switch 3 = 4… <b>ON = 1</b>. Tap the switches or type an address.</p>' +
+        '<div class="f2"><div class="f"><label>Switches</label><select id="dBits"><option value="7">7-bit (0–127)</option><option value="8">8-bit (0–255)</option></select></div>' +
         '<div class="f"><label>Address</label><input id="dAddr" inputmode="numeric" placeholder="e.g. 37"></div></div>' +
-        '<div class="switches" id="dSw"></div><div id="dOut"></div></div>' +
-        about('calc-dil', 'Apollo XPERT, Hochiki and other device profiles');
+        '<div class="switches" id="dSw"></div></div><div class="card" id="dOut"><h3>Result</h3><div class="empty" style="padding:16px">Type an address or tap the switches.</div></div></div>';
+    },
+    notes() {
+      return ['<div class="note">Device profiles aren\'t set up yet — always check the device\'s own addressing instructions. Some devices don\'t accept 0, reserve values, or use switch 8 for something else.</div>', noteFrom('calc-dil', 'Apollo XPERT, Hochiki and other devices')];
     },
     wire() {
       const $ = id => document.getElementById(id);
-      let bits = 7, val = 0;
+      let bits = 7, val = 0, touched = false;
       const draw = () => {
         $('dSw').innerHTML = Array.from({ length: bits }, (_, i) =>
           '<div class="sw"><span>' + (1 << i) + '</span><button data-bit="' + i + '" class="' + (val >> i & 1 ? 'on' : '') + '" aria-label="Switch ' + (i + 1) + '"></button><b>' + (i + 1) + '</b><span>' + (val >> i & 1 ? 'ON' : 'off') + '</span></div>').join('');
-        $('dSw').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { val ^= (1 << +b.dataset.bit); $('dAddr').value = val; draw(); show(); }));
+        $('dSw').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { touched = true; val ^= (1 << +b.dataset.bit); $('dAddr').value = val; draw(); show(); }));
       };
       const show = () => {
+        if (!touched) return;
         const on = Array.from({ length: bits }, (_, i) => val >> i & 1 ? i + 1 : null).filter(Boolean);
-        $('dOut').innerHTML = '<div class="result">Address <span class="big">' + val + '</span> · generic ' + bits + '-bit binary<br>Switches ON: <b>' + (on.length ? on.join(', ') : 'none') + '</b>' +
-          (val === 0 ? '<br><span style="color:var(--amber)">Many devices don\'t accept address 0 — check the device.</span>' : '') + '</div>';
+        $('dOut').innerHTML = '<h3>Result</h3><div class="reading"><div class="rl">Address</div><div class="rv">' + val + '</div></div>' +
+          '<div class="res-row"><span>Switches ON</span><b>' + (on.length ? on.join(', ') : 'none') + '</b></div><div class="res-row"><span>Setting</span><b>Generic ' + bits + '-bit binary</b></div>' +
+          (val === 0 ? '<div class="warnbox">Many devices don\'t accept address 0 — check the device.</div>' : '');
       };
-      $('dBits').addEventListener('change', () => { bits = +$('dBits').value; val = Math.min(val, (1 << bits) - 1); $('dAddr').value = val || ''; draw(); show(); });
+      $('dBits').addEventListener('change', () => { bits = +$('dBits').value; val = Math.min(val, (1 << bits) - 1); if (touched) $('dAddr').value = val; draw(); show(); });
       $('dAddr').addEventListener('input', () => {
-        const s = $('dAddr').value.trim();
-        if (s === '') { val = 0; draw(); $('dOut').innerHTML = ''; return; }
-        const n = Number(s), max = (1 << bits) - 1;
-        if (!/^\d+$/.test(s) || n > max) { $('dOut').innerHTML = '<div class="result err">Enter a whole number from 0 to ' + max + ' for a ' + bits + '-bit setting.</div>'; return; }
-        val = n; draw(); show();
+        const s = $('dAddr').value.trim(), max = (1 << bits) - 1;
+        if (s === '') { val = 0; touched = false; draw(); $('dOut').innerHTML = '<h3>Result</h3><div class="empty" style="padding:16px">Type an address or tap the switches.</div>'; return; }
+        if (!/^\d+$/.test(s) || +s > max) { $('dOut').innerHTML = '<h3>Result</h3><div class="errbox">Enter a whole number from 0 to ' + max + ' for ' + bits + ' switches.</div>'; return; }
+        touched = true; val = +s; draw(); show();
       });
       draw();
     }
   },
 
   resistor: {
-    COLOURS: [['Black', '#111'], ['Brown', '#7a4a1e'], ['Red', '#d0222a'], ['Orange', '#ef7d17'], ['Yellow', '#f2d01a'], ['Green', '#2e8b3e'], ['Blue', '#2459c9'], ['Violet', '#7b3fb5'], ['Grey', '#8a8a8a'], ['White', '#f4f4f4']],
+    DIG: [['Black', '#111', 0], ['Brown', '#7a4a1e', 1], ['Red', '#d0222a', 2], ['Orange', '#ef7d17', 3], ['Yellow', '#f2d01a', 4], ['Green', '#2e8b3e', 5], ['Blue', '#2459c9', 6], ['Violet', '#7b3fb5', 7], ['Grey', '#8a8a8a', 8], ['White', '#f4f4f4', 9]],
     MULT: [['Silver', '#c0c0c0', -2], ['Gold', '#c9a227', -1], ['Black', '#111', 0], ['Brown', '#7a4a1e', 1], ['Red', '#d0222a', 2], ['Orange', '#ef7d17', 3], ['Yellow', '#f2d01a', 4], ['Green', '#2e8b3e', 5], ['Blue', '#2459c9', 6], ['Violet', '#7b3fb5', 7]],
-    TOL: [['Gold', '#c9a227', '±5%'], ['Silver', '#c0c0c0', '±10%'], ['Brown', '#7a4a1e', '±1%'], ['Red', '#d0222a', '±2%']],
+    TOL: [['Gold', '#c9a227', '±5%'], ['Silver', '#c0c0c0', '±10%'], ['Brown', '#7a4a1e', '±1%'], ['Red', '#d0222a', '±2%'], ['Green', '#2e8b3e', '±0.5%'], ['Blue', '#2459c9', '±0.25%'], ['Violet', '#7b3fb5', '±0.1%'], ['Grey', '#8a8a8a', '±0.05%']],
+    TEMP: [['Brown', '#7a4a1e', '100 ppm/K'], ['Red', '#d0222a', '50 ppm/K'], ['Yellow', '#f2d01a', '25 ppm/K'], ['Orange', '#ef7d17', '15 ppm/K'], ['Blue', '#2459c9', '10 ppm/K'], ['Violet', '#7b3fb5', '5 ppm/K']],
     html() {
-      const R = CALCS.resistor;
-      const opt = (arr, sel) => arr.map((c, i) => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + c[0] + '</option>').join('');
-      const c = get('calc-resistor') || {};
-      return '<div class="card"><h2>Resistor colour code — 4-band</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 6px;">Read with the tolerance band (gold/silver) on the right.</p>' +
-        '<div class="bands" id="rBands"></div>' +
-        '<div class="row2"><div class="f"><label>Band 1</label><select id="r1">' + opt(R.COLOURS, 1) + '</select></div><div class="f"><label>Band 2</label><select id="r2">' + opt(R.COLOURS, 0) + '</select></div></div>' +
-        '<div class="row2"><div class="f"><label>Multiplier</label><select id="r3">' + opt(R.MULT, 5) + '</select></div><div class="f"><label>Tolerance</label><select id="r4">' + opt(R.TOL, 0) + '</select></div></div>' +
-        '<div id="rOut"></div>' +
-        '<div class="f" style="margin-top:12px"><label>Or find the colours for a value (Ω)</label><input id="rVal" inputmode="decimal" placeholder="e.g. 6800"></div><div id="rRev"></div></div>' +
-        (c.eolReference ? '<div class="card"><h2>EOL by panel / circuit</h2><div class="tbl"><table><thead><tr><th>Application</th><th>Value / type</th><th>Evidence</th></tr></thead><tbody>' +
-          c.eolReference.map(r => '<tr><td>' + inline(r.application) + '</td><td>' + inline(r.value) + '</td><td>' + inline(r.evidence) + '</td></tr>').join('') +
-          '</tbody></table></div><p style="font-size:12.5px;color:var(--grey);margin:0">Select EOL by exact panel and circuit using the manual\'s component spec. Never convert a capacitor or active EOL into a "equivalent" resistor.</p></div>' : '') +
-        about('calc-resistor', 'Full reference for this calculator');
+      return '<div class="cols"><div class="card"><h3>Resistor colour code</h3>' +
+        '<div class="f"><label>Number of bands</label><select id="rN"><option value="4">4 bands — carbon, usually ±5%</option><option value="5">5 bands — metal film / precision, often ±1%</option><option value="6">6 bands — 5 bands + temperature band</option></select><div class="hint">Read from the end <b>away</b> from the tolerance band (gold/silver or the wider-spaced band).</div></div>' +
+        '<div class="resistor"><div class="lead"></div><div class="bodyr" id="rVis"></div><div class="lead"></div></div>' +
+        '<div class="bandsel" id="rSel"></div></div>' +
+        '<div><div class="card" id="rOut"></div>' +
+        '<div class="card"><h3>Value → colours</h3><div class="f"><label>Value in ohms</label><input id="rVal" inputmode="decimal" placeholder="e.g. 6800 or 6.8k"></div><div id="rRev"></div></div></div></div>' +
+        '<div class="card" id="rEol"></div>';
+    },
+    notes() {
+      return ['<div class="note">Pick the EOL by the exact panel and circuit using the manual\'s component spec (including wattage and tolerance where given). Never swap a capacitor or active EOL for a "matching" resistor.</div>', noteFrom('calc-resistor', 'Full reference')];
     },
     wire() {
       const R = CALCS.resistor, $ = id => document.getElementById(id);
-      const fmtOhm = v => v >= 1e6 ? fmt(v / 1e6, 3) + ' MΩ' : v >= 1e3 ? fmt(v / 1e3, 3) + ' kΩ' : fmt(v, 3) + ' Ω';
-      const calc = () => {
-        const a = +$('r1').value, b = +$('r2').value, m = R.MULT[+$('r3').value], t = R.TOL[+$('r4').value];
-        $('rBands').innerHTML = '<span></span>' + [R.COLOURS[a][1], R.COLOURS[b][1], m[1], '#e9dcc3', t[1]].map((c, i) => i === 3 ? '<span></span>' : '<span class="band" style="background:' + c + '"></span>').join('') + '<span></span>';
-        if (a === 0) { $('rOut').innerHTML = '<div class="result err">A first band of black isn\'t a valid 4-band value.</div>'; return; }
-        const v = (a * 10 + b) * Math.pow(10, m[2]);
-        $('rOut').innerHTML = '<div class="result"><span class="big">' + fmtOhm(v) + '</span> ' + t[2] + '<br><span style="font-size:12.5px;color:var(--grey)">' + fmt(v, 2) + ' Ω</span></div>';
+      const c = get('calc-resistor') || {};
+      if (c.eolReference) $('rEol').innerHTML = '<h3>End-of-line values by panel / circuit</h3><div class="tbl"><table><thead><tr><th>Where</th><th>Value / type</th><th>Source</th></tr></thead><tbody>' +
+        c.eolReference.map(r => '<tr><td>' + inline(r.application) + '</td><td><b>' + inline(r.value) + '</b></td><td>' + inline(r.evidence) + '</td></tr>').join('') + '</tbody></table></div>';
+      const ohm = v => v >= 1e6 ? fmt(v / 1e6, 3) + ' MΩ' : v >= 1e3 ? fmt(v / 1e3, 3) + ' kΩ' : fmt(v, 3) + ' Ω';
+      const sel = (id, label, arr, def) => '<div class="f"><label>' + label + '</label><select id="' + id + '">' + arr.map((x, i) => '<option value="' + i + '"' + (i === def ? ' selected' : '') + '>' + x[0] + (x[2] !== undefined && typeof x[2] === 'string' ? ' (' + x[2] + ')' : (id.startsWith('rm') ? ' (×10' + sup(x[2]) + ')' : '')) + '</option>').join('') + '</select></div>';
+      const sup = n => String(n).split('').map(ch => '⁰¹²³⁴⁵⁶⁷⁸⁹'[ch] || (ch === '-' ? '⁻' : ch)).join('');
+      const build = () => {
+        const n = +$('rN').value, digits = n === 4 ? 2 : 3;
+        let h = '';
+        const defs = n === 4 ? [4, 7] : [4, 7, 0];
+        for (let i = 0; i < digits; i++) h += sel('rd' + i, 'Band ' + (i + 1) + ' — digit', R.DIG, defs[i]);
+        h += sel('rm', 'Band ' + (digits + 1) + ' — multiplier', R.MULT, n === 4 ? 4 : 3);
+        h += sel('rt', 'Band ' + (digits + 2) + ' — tolerance', R.TOL, n === 4 ? 0 : 2);
+        if (n === 6) h += sel('rtc', 'Band 6 — temperature', R.TEMP, 0);
+        $('rSel').innerHTML = h;
+        $('rSel').querySelectorAll('select').forEach(s => s.addEventListener('change', calc));
+        calc();
       };
-      ['r1', 'r2', 'r3', 'r4'].forEach(id => $(id).addEventListener('change', calc));
+      const calc = () => {
+        const n = +$('rN').value, digits = n === 4 ? 2 : 3;
+        const ds = Array.from({ length: digits }, (_, i) => R.DIG[+$('rd' + i).value]);
+        const m = R.MULT[+$('rm').value], t = R.TOL[+$('rt').value], tc = n === 6 ? R.TEMP[+$('rtc').value] : null;
+        const colours = ds.map(d => d[1]).concat([m[1]]);
+        $('rVis').innerHTML = colours.map(col => '<div class="band" style="background:' + col + '"></div>').join('') + '<div class="gap"></div><div class="band" style="background:' + t[1] + '"></div>' + (tc ? '<div class="band" style="background:' + tc[1] + '"></div>' : '');
+        if (ds[0][2] === 0) { $('rOut').innerHTML = '<h3>Value</h3><div class="errbox">The first band can\'t be black — you may be reading it backwards.</div>'; return; }
+        const base = ds.reduce((a, d) => a * 10 + d[2], 0), v = base * Math.pow(10, m[2]);
+        $('rOut').innerHTML = '<h3>Value</h3><div class="reading"><div class="rl">' + n + '-band resistor</div><div class="rv">' + ohm(v) + ' ' + t[2] + '</div></div>' +
+          '<div class="res-row"><span>In ohms</span><b>' + fmt(v, 2) + ' Ω</b></div>' + (tc ? '<div class="res-row"><span>Temperature coefficient</span><b>' + tc[2] + '</b></div>' : '') +
+          '<div class="res-row"><span>Colours</span><b>' + ds.map(d => d[0]).concat([m[0], t[0]]).concat(tc ? [tc[0]] : []).join(' – ') + '</b></div>';
+      };
+      $('rN').addEventListener('change', build);
       $('rVal').addEventListener('input', () => {
-        const s = $('rVal').value.trim(), v = Number(s);
+        let s = $('rVal').value.trim().toLowerCase().replace(/\s|ω|ohms?/g, '');
         if (!s) { $('rRev').innerHTML = ''; return; }
-        if (!isFinite(v) || v <= 0) { $('rRev').innerHTML = '<div class="result err">Enter a value in ohms, e.g. 4700.</div>'; return; }
-        for (const m of R.MULT) {
+        let mult = 1; if (/k$/.test(s)) { mult = 1e3; s = s.slice(0, -1); } else if (/m$/.test(s)) { mult = 1e6; s = s.slice(0, -1); }
+        const v = Number(s) * mult;
+        if (!isFinite(v) || v <= 0) { $('rRev').innerHTML = '<div class="errbox">Enter a value like 4700, 4.7k or 1M.</div>'; return; }
+        const out = [];
+        for (const digits of [2, 3]) for (const m of R.MULT) {
           const sig = v / Math.pow(10, m[2]);
-          if (Math.abs(sig - Math.round(sig)) < 1e-9 && sig >= 10 && sig <= 99) {
-            const d = Math.round(sig);
-            $('rRev').innerHTML = '<div class="result">' + fmtOhm(v) + ' = <b>' + R.COLOURS[Math.floor(d / 10)][0] + ' – ' + R.COLOURS[d % 10][0] + ' – ' + m[0] + '</b> – tolerance band</div>';
-            return;
+          if (Math.abs(sig - Math.round(sig)) < 1e-9 && sig >= Math.pow(10, digits - 1) && sig < Math.pow(10, digits)) {
+            const d = String(Math.round(sig)).split('').map(Number);
+            out.push('<div class="res-row"><span>' + (digits === 2 ? '4-band' : '5-band') + '</span><b>' + d.map(x => R.DIG[x][0]).join(' – ') + ' – ' + m[0] + ' + tolerance</b></div>');
+            break;
           }
         }
-        $('rRev').innerHTML = '<div class="result err">' + esc(s) + ' Ω can\'t be shown with two significant figures on a 4-band resistor.</div>';
+        $('rRev').innerHTML = out.length ? out.join('') : '<div class="errbox">' + esc($('rVal').value) + ' can\'t be shown with standard colour bands.</div>';
       });
-      calc();
+      build();
     }
   },
 
   dater: {
-    html() {
-      const c = get('calc-detector-dater') || {};
-      const brands = c.brands || [];
-      return '<div class="card"><h2>Detector date</h2><p style="font-size:12.5px;color:var(--grey);margin:0 0 10px;">Only documented formats are decoded. Anything else shows “format not verified” — no guessed ages. Years before 1970 aren\'t offered.</p>' +
-        '<div class="f"><label>Brand</label><select id="dtBrand">' + brands.map((b, i) => '<option value="' + i + '">' + esc(b.brand) + (b.parserEnabled ? '' : ' — not verified') + '</option>').join('') + '</select></div>' +
-        '<div class="f" id="dtFmtWrap"><label>Label format</label><select id="dtFmt"></select></div>' +
-        '<div class="f"><label>Code from the label</label><input id="dtCode" autocomplete="off" autocapitalize="characters" placeholder="Type exactly as printed"></div>' +
-        '<div id="dtOut"></div><div id="dtGuide" class="md" style="margin-top:10px;font-size:12.5px;color:var(--grey)"></div>' +
-        '<p style="font-size:12.5px;margin:10px 0 0;"><b>' + esc(c.replacementGuidance || '') + '</b></p></div>' +
-        about('calc-detector-dater', 'Full reference for the detector dater');
-    },
+    // Formats only for brands the content marks as supported (policy-detector-dating).
     FORMATS: {
       Apollo: [
-        ['mmyy', 'MMYY then production suffix (e.g. 0402-25684)'],
-        ['yymmdd', 'YYMMDD (e.g. 020401), optionally followed by build standard'],
-        ['wwyy', 'WWYY at the start (sounder, e.g. 1502123)']
+        { id: 'mmyy', label: 'MMYY-xxxxx', desc: 'Month/year + production number', ex: '0402-25684 = April 2002', re: /^(\d{2})(\d{2})(?:[-\s]+[0-9A-Z]+)?$/ },
+        { id: 'yymmdd', label: 'YYMMDD', desc: 'Year/month/day (may be followed by a build standard)', ex: '020401 = 1 April 2002', re: /^(\d{2})(\d{2})(\d{2})(?:[-\s]*[A-Z][0-9A-Z]*|[-\s]+[0-9A-Z]+)?$/ },
+        { id: 'wwyy', label: 'WWYY…', desc: 'Week/year at the start (sounders)', ex: '1502123 = week 15 of 2002', re: /^(\d{2})(\d{2})(?:\d{3,})?$/ }
       ],
-      Hochiki: [['ymmf', 'YMMF batch prefix / 9-digit YMMFxxxxx (historical AP093)']]
+      Hochiki: [
+        { id: 'ymmf', label: 'YMMF / YMMFxxxxx', desc: 'Year digit, month, factory digit (older AP093 labels)', ex: '0124 = December, year ending 0, factory 4', re: /^(\d)(\d{2})(\d)(\d{5})?$/ }
+      ]
+    },
+    html() {
+      const c = get('calc-detector-dater') || {};
+      return '<div class="cols"><div class="card"><h3>Detector dater</h3><p style="font-size:14px;color:var(--grey);margin:0 0 12px">Decode the manufacture date from a detector date code or serial.</p>' +
+        '<div class="f"><label>Manufacturer</label><select id="dtBrand">' + (c.brands || []).map((b, i) => '<option value="' + i + '">' + esc(b.brand) + '</option>').join('') + '</select></div>' +
+        '<div id="dtFormats"></div>' +
+        '<div class="f"><label>Date code / serial</label><input id="dtCode" autocomplete="off" autocapitalize="characters" placeholder="Type it as printed, e.g. 0402-25684"><div class="hint">Hyphens and spaces are fine. Usually printed or etched under the detector or its base.</div></div></div>' +
+        '<div class="card" id="dtOut"><h3>Result</h3><div class="empty" style="padding:16px">Enter a code to decode it.</div></div></div>';
+    },
+    notes() {
+      const c = get('calc-detector-dater') || {};
+      return ['<div class="note"><b>' + esc(c.replacementGuidance || '') + '</b></div>',
+        '<div class="note">Only formats backed by the manufacturer are decoded. Where a code could mean more than one date, every possible date is shown — confirm from the model, label or site records. Years before 1970 aren\'t offered.</div>',
+        noteFrom('policy-detector-dating', 'S&W policy on detector dating'), noteFrom('calc-detector-dater', 'Full reference for every brand')];
     },
     wire() {
       const $ = id => document.getElementById(id), D = CALCS.dater;
-      const c = get('calc-detector-dater') || {};
-      const brands = c.brands || [];
+      const brands = (get('calc-detector-dater') || {}).brands || [];
       const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      const now = new Date(), thisYear = now.getFullYear(), thisMonth = now.getMonth() + 1;
-      const notFuture = (y, m) => y < thisYear || (y === thisYear && (m || 1) <= thisMonth);
-      // Two-digit year: both centuries that aren't in the future, never a silent pick.
-      // Years before 1970 aren't offered (no addressable detectors then); the page says so.
-      const yy = (n, m) => [1900 + n, 2000 + n].filter(y => y >= 1970 && notFuture(y, m));
-      // One-digit year (Hochiki Y): every decade from 1970 that isn't in the future.
-      const yDigit = (d, m) => { const out = []; for (let y = 1970 + d; y <= thisYear; y += 10) if (notFuture(y, m)) out.push(y); return out; };
-      const say = (lines, certain) => $('dtOut').innerHTML = '<div class="result">' + lines + (certain ? '' : '<br><span class="chip warn">Decade uncertain</span> <span style="font-size:12.5px">— confirm from the model, label or site records.</span>') + '</div>';
-      const fail = m => $('dtOut').innerHTML = '<div class="result err">' + m + '</div>';
+      const now = new Date(), Y = now.getFullYear(), M = now.getMonth() + 1;
+      const past = (y, m) => y < Y || (y === Y && (m || 1) <= M);
+      const yy = (n, m) => [1900 + n, 2000 + n].filter(y => y >= 1970 && past(y, m));
+      const yDigit = (d, m) => { const o = []; for (let y = 1970 + d; y <= Y; y += 10) if (past(y, m)) o.push(y); return o; };
+      const decoders = {
+        mmyy: m => { const mo = +m[1]; if (mo < 1 || mo > 12) return null; const ys = yy(+m[2], mo); return ys.length ? ys.map(y => MONTHS[mo - 1] + ' ' + y) : null; },
+        yymmdd: m => { const mo = +m[2], da = +m[3]; if (mo < 1 || mo > 12) return null; const ys = yy(+m[1], mo).filter(y => da >= 1 && da <= new Date(y, mo, 0).getDate()); return ys.length ? ys.map(y => da + ' ' + MONTHS[mo - 1] + ' ' + y) : null; },
+        wwyy: m => { const wk = +m[1]; if (wk < 1 || wk > 53) return null; const ys = yy(+m[2]); return ys.length ? ys.map(y => 'Week ' + wk + ' of ' + y) : null; },
+        ymmf: m => { const mo = +m[2]; if (mo < 1 || mo > 12) return null; const ys = yDigit(+m[1], mo); return ys.length ? ys.map(y => MONTHS[mo - 1] + ' ' + y) : null; }
+      };
       const refresh = () => {
         const b = brands[+$('dtBrand').value] || {};
-        const fmts = D.FORMATS[b.brand] && b.parserEnabled ? D.FORMATS[b.brand] : null;
-        $('dtFmtWrap').hidden = !fmts;
-        $('dtFmt').innerHTML = (fmts || []).map(f => '<option value="' + f[0] + '">' + esc(f[1]) + '</option>').join('');
-        $('dtGuide').innerHTML = '<b>' + esc(b.brand) + ':</b> ' + inline(b.guidance || '') + ' <span class="chip">' + esc(b.status || '') + '</span>';
+        const fm = b.parserEnabled ? D.FORMATS[b.brand] : null;
+        $('dtFormats').innerHTML = fm
+          ? '<div class="fmt-list"><b>Date code formats:</b>' + fm.map(f => '<div><code>' + esc(f.label) + '</code> — ' + esc(f.desc) + ' — e.g. ' + esc(f.ex) + '</div>').join('') + '</div>'
+          : '<div class="fmt-list"><span class="tag warn">Format not verified</span><div style="margin-top:6px">' + inline(b.guidance || '') + '</div></div>';
         decode();
       };
       const decode = () => {
-        const b = brands[+$('dtBrand').value] || {};
+        const out = $('dtOut'), b = brands[+$('dtBrand').value] || {};
         const code = $('dtCode').value.trim().toUpperCase();
-        if (!code) { $('dtOut').innerHTML = ''; return; }
-        if (!b.parserEnabled || !D.FORMATS[b.brand]) { fail('Format not verified — check model/label and manufacturer guidance.'); return; }
-        const f = $('dtFmt').value;
-        let m;
-        if (f === 'mmyy') {
-          if (!(m = code.match(/^(\d{2})(\d{2})(?:[-\s]?[0-9A-Z]+)?$/))) return fail('Expected MMYY followed by the production suffix, e.g. 0402-25684.');
-          const mo = +m[1], ys = yy(+m[2], mo);
-          if (mo < 1 || mo > 12) return fail('“' + esc(m[1]) + '” isn\'t a real month.');
-          if (!ys.length) return fail('That date would be in the future — check the format.');
-          return say('Manufactured <span class="big">' + ys.map(y => MONTHS[mo - 1] + ' ' + y).join(' or ') + '</span>', ys.length === 1);
-        }
-        if (f === 'yymmdd') {
-          if (!(m = code.match(/^(\d{2})(\d{2})(\d{2})(?:[-\s]?[0-9A-Z]+)?$/))) return fail('Expected six digits YYMMDD, e.g. 020401.');
-          const mo = +m[2], da = +m[3];
-          if (mo < 1 || mo > 12) return fail('“' + esc(m[2]) + '” isn\'t a real month.');
-          const ys = yy(+m[1], mo).filter(y => da >= 1 && da <= new Date(y, mo, 0).getDate());
-          if (!ys.length) return fail('That isn\'t a real (past) date — check the format.');
-          return say('Manufactured <span class="big">' + ys.map(y => da + ' ' + MONTHS[mo - 1] + ' ' + y).join(' or ') + '</span>', ys.length === 1);
-        }
-        if (f === 'wwyy') {
-          if (!(m = code.match(/^(\d{2})(\d{2})\d*$/))) return fail('Expected digits starting WWYY, e.g. 1502123.');
-          const wk = +m[1];
-          if (wk < 1 || wk > 53) return fail('Week “' + esc(m[1]) + '” isn\'t valid (1–53).');
-          const ys = yy(+m[2]);
-          if (!ys.length) return fail('That date would be in the future — check the format.');
-          return say('Manufactured <span class="big">week ' + wk + ' of ' + ys.join(' or ') + '</span><br><span style="font-size:12.5px">Week/year code — no exact day.</span>', ys.length === 1);
-        }
-        if (f === 'ymmf') {
-          if (!(m = code.match(/^(\d)(\d{2})(\d)(\d{5})?$/))) return fail('Expected the 4-digit YMMF prefix or the 9-digit YMMFxxxxx serial, e.g. 0124.');
-          const mo = +m[2];
-          if (mo < 1 || mo > 12) return fail('“' + esc(m[2]) + '” isn\'t a real month (YMMF: Y = year digit, MM = month).');
-          const ys = yDigit(+m[1], mo);
-          if (!ys.length) return fail('No past date matches — check the format.');
-          return say('Manufactured <span class="big">' + MONTHS[mo - 1] + '</span> of a year ending in ' + m[1] + ': <b>' + ys.join(', ') + '</b><br><span style="font-size:12.5px">Manufacturing location digit: ' + m[3] + '</span>', ys.length === 1);
-        }
+        if (!code) { out.innerHTML = '<h3>Result</h3><div class="empty" style="padding:16px">Enter a code to decode it.</div>'; return; }
+        const fm = b.parserEnabled ? D.FORMATS[b.brand] : null;
+        if (!fm) { out.innerHTML = '<h3>Result</h3><div class="errbox">Format not verified — check the model, label and the manufacturer\'s guidance. No date is guessed.</div>'; return; }
+        const readings = [];
+        fm.forEach(f => { const m = code.match(f.re); if (!m) return; const r = decoders[f.id](m); if (r) readings.push({ f, dates: r, extra: f.id === 'ymmf' ? 'Factory digit: ' + m[3] : '' }); });
+        if (!readings.length) { out.innerHTML = '<h3>Result</h3><div class="errbox">That doesn\'t match a known ' + esc(b.brand) + ' format, or gives a date in the future. Check the code against the formats shown.</div>'; return; }
+        const uncertain = readings.length > 1 || readings.some(r => r.dates.length > 1);
+        out.innerHTML = '<h3>Result</h3>' + (uncertain ? '<div class="warnbox" style="margin:0 0 10px">More than one date is possible — confirm from the model, label or site records.</div>' : '') +
+          '<div class="readings">' + readings.map(r => '<div class="reading"><div class="rl">Read as ' + esc(r.f.label) + '</div><div class="rv">' + r.dates.map(esc).join(' <span style="font-size:15px;color:var(--grey)">or</span> ') + '</div>' + (r.extra ? '<div style="font-size:13px;color:var(--grey)">' + esc(r.extra) + '</div>' : '') + '</div>').join('') + '</div>';
       };
       $('dtBrand').addEventListener('change', refresh);
-      $('dtFmt').addEventListener('change', decode);
       $('dtCode').addEventListener('input', decode);
       refresh();
     }
   }
 };
+
+function notFound(back) { return backBtn(back, 'Back') + '<div class="empty">That isn\'t in the toolkit data.</div>'; }
 
 // ---------- suggestions ---------------------------------------------------
 function openSuggest(id) {
@@ -734,57 +940,65 @@ function openSuggest(id) {
   });
 }
 
-// ---------- routing -------------------------------------------------------
-function route() {
-  const [tab, id] = (location.hash.slice(1) || 'troubleshoot').split('/');
-  const t = TABS.find(x => x.id === tab) ? tab : 'troubleshoot';
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  const view = document.getElementById('view');
-  view.innerHTML = (t === 'troubleshoot' && id === 'procedure-common') ? VIEWS.procedure() : VIEWS[t](id);
-  window.scrollTo(0, 0);
 
-  // live search for list tabs
-  const q = document.getElementById('q');
-  const resKey = { faults: 'faultsResults', codes: 'codesResults', contacts: 'contactsResults', standards: 'standardsResults' }[t];
-  if (q && resKey) {
-    const saved = sessionGet('q-' + t);
-    q.value = saved;
-    const run = () => { document.getElementById('results').innerHTML = VIEWS[resKey](q.value.trim()); sessionSet('q-' + t, q.value); };
-    q.addEventListener('input', run); run();
+// ---------- routing -------------------------------------------------------
+const VIEWS = { troubleshoot: viewTroubleshoot, faults: viewFaults, codes: viewCodes, calc: viewCalc, standards: viewStandards, contacts: viewContacts };
+const RESULTS = { faults: faultsResults, codes: codesResults, contacts: contactsResults, standards: standardsResults };
+const QKEY = { faults: 'faultsQ', codes: 'codesQ', contacts: 'contactsQ', standards: 'stdQ' };
+
+function route() {
+  LINK_T = true;
+  const [tab, ...parts] = (location.hash.slice(1) || 'troubleshoot').split('/');
+  const t = VIEWS[tab] ? tab : 'troubleshoot';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.getElementById('view').innerHTML = VIEWS[t](parts);
+  window.scrollTo(0, 0);
+  if (RESULTS[t]) {
+    const openId = t === 'faults' && parts[0] && !parts[0].startsWith('map-') ? parts[0] : null;
+    const draw = () => { LINK_T = t !== 'standards'; document.getElementById('results').innerHTML = RESULTS[t](openId); };
+    document.getElementById('q').addEventListener('input', e => { UI[QKEY[t]] = e.target.value.trim(); draw(); });
+    draw();
+    if (openId) { const el = document.getElementById('acc-' + openId); if (el) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50); }
   }
-  if (t === 'calc' && CALCS[id || 'battery']) CALCS[id || 'battery'].wire();
+  if (t === 'calc') { LINK_T = false; CALCS[CALCS[parts[0]] ? parts[0] : 'battery'].wire(); }
 }
-function sessionGet(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
-function sessionSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
 
 document.addEventListener('click', ev => {
-  const s = ev.target.closest('[data-suggest]');
-  if (s) { openSuggest(s.dataset.suggest); return; }
-  const g = ev.target.closest('[data-go]');
-  if (g) { location.hash = g.dataset.go; }
+  const el = ev.target.closest('[data-suggest],[data-acc],[data-ff],[data-ffgo],[data-man],[data-cat],[data-std],[data-opt],[data-next]');
+  if (!el) return;
+  const d = el.dataset;
+  if (d.suggest) return openSuggest(d.suggest);
+  if (d.acc) return el.parentElement.classList.toggle('open');
+  if (d.ffgo) { location.hash = 'faults/' + d.ffgo; return; }
+  if (d.ff) { UI.faultsFilter = d.ff; location.hash = d.ff === 'all' ? 'faults' : 'faults/' + d.ff; return; }
+  if (d.man) { UI.codesMan = d.man; refreshList('codes', '[data-man]', d.man); return; }
+  if (d.cat) { UI.contactsCat = d.cat; refreshList('contacts', '[data-cat]', d.cat); return; }
+  if (d.std) { UI.stdTab = d.std; document.querySelectorAll('[data-std]').forEach(b => b.classList.toggle('active', b.dataset.std === d.std)); document.getElementById('results').innerHTML = standardsResults(); return; }
+  if (d.opt !== undefined) return answerFlow(+d.opt);
+  if (d.next !== undefined) return answerFlow(null, +d.next);
 });
+function refreshList(t, sel, val) {
+  document.querySelectorAll(sel).forEach(b => b.classList.toggle('active', b.getAttribute(sel.slice(1, -1)) === val));
+  document.getElementById('results').innerHTML = RESULTS[t]();
+}
 window.addEventListener('hashchange', () => { if (DATA.byId.size) route(); });
 
 function buildTabs() {
-  document.getElementById('tabs').innerHTML = TABS.map(t =>
-    '<button class="tab" data-tab="' + t.id + '"><i class="ti ' + t.icon + '"></i>' + t.label + '</button>').join('');
+  document.getElementById('tabs').innerHTML = TABS.map(t => '<button class="tab" data-tab="' + t.id + '"><i class="ti ' + t.icon + '"></i>' + t.label + '</button>').join('');
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { location.hash = b.dataset.tab; }));
 }
-
-function buildDisclaimer() {
+function buildGuidance() {
   const ref = get('notice-reference'), purpose = get('notice-purpose'), legend = get('notice-evidence-legend');
-  const el = document.getElementById('disclaimer');
-  el.innerHTML = '<b>Guidance only.</b> Follow the manufacturer\'s instructions, the approved design/cause-and-effect and BS 5839-1. <button id="discMore">More</button>';
-  document.getElementById('discMore').addEventListener('click', () => {
-    el.innerHTML = '<b>Guidance only.</b> ' + inline(ref ? ref.body : '') + (purpose ? md(purpose.body) : '') + (legend ? md(legend.body) : '');
-  });
+  const el = document.getElementById('guidance');
+  el.innerHTML = '<b>Guidance only.</b> Always follow the manufacturer\'s instructions, the approved design / cause-and-effect and BS 5839-1. <button id="gMore">More</button>';
+  document.getElementById('gMore').addEventListener('click', () => { el.innerHTML = '<b>Guidance only.</b> ' + inline(ref ? ref.body : '') + (purpose ? md(purpose.body) : '') + (legend ? md(legend.body) : ''); });
 }
 
 async function loadData() {
   try {
     const snap = await getDocs(collection(db, 'fireToolkit'));
     const byId = new Map(), byKind = {};
-    snap.forEach(d => { const e = { id: d.id, ...d.data() }; byId.set(d.id, e); });
+    snap.forEach(d => byId.set(d.id, { id: d.id, ...d.data() }));
     [...byId.values()].sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(e => (byKind[e.kind] = byKind[e.kind] || []).push(e));
     DATA = { byId, byKind };
     document.getElementById('offlineNote').hidden = !snap.metadata.fromCache;
@@ -792,7 +1006,7 @@ async function loadData() {
       document.getElementById('view').innerHTML = '<div class="empty">The toolkit data hasn\'t been loaded yet' + (snap.metadata.fromCache ? ' on this device — open it once with signal.' : '.') + '</div>';
       return;
     }
-    buildDisclaimer();
+    buildGuidance();
     route();
   } catch (e) {
     console.error(e);
@@ -832,6 +1046,7 @@ onAuthStateChanged(auth, (user) => {
   document.getElementById('whoName').textContent = user.displayName || user.email;
   if (!started) { started = true; buildTabs(); loadData(); }
 });
+
 </script>
 <script>
 if ("serviceWorker" in navigator) {
