@@ -177,7 +177,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v15.2 · Management</p>
+        <p id="versionLabel">v16.0 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -314,6 +314,13 @@
             <option value="qsed">QSed only</option>
             <option value="notqsed">Not QSed only</option>
           </select>
+          <select id="previewSinceFilter" style="flex:1;min-width:150px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+            <option value="">Since last report: all</option>
+            <option value="new">New since last report</option>
+            <option value="fixed">Fixed since last report</option>
+            <option value="notRetested">Not retested yet</option>
+            <option value="notRetestedFail">Failed, not retested yet</option>
+          </select>
         </div>
         <div style="margin-bottom:12px;">
           <label style="margin-bottom:4px;font-size:12.5px;font-weight:600;display:block;">Sort by</label>
@@ -402,6 +409,23 @@
       </div>
 
       <div class="card">
+        <p class="section-label">Report history</p>
+        <div id="reportHistoryList"><div class="empty-note">Select a site.</div></div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div>
+            <label>Date of a past report</label>
+            <input type="date" id="pastReportDate">
+          </div>
+          <div>
+            <label>Certificate number</label>
+            <input type="text" id="pastReportCert">
+          </div>
+        </div>
+        <button type="button" class="save-meta-btn" id="addPastReportBtn">Add past report</button>
+        <p class="hint" style="display:block;margin:12px 0 0;">Marking a site Complete adds an entry here automatically. Only add one by hand for a report issued before this was set up. Anything tested after the latest date here counts as new since the last report.</p>
+      </div>
+
+      <div class="card">
         <p class="section-label">Sign-off</p>
         <p class="hint" style="display:block;margin-bottom:14px;">Defaults to whoever tested the most items on this report — override if needed. Signatures are uploaded fresh each time a report is generated, not stored.</p>
         <div class="form-grid">
@@ -434,8 +458,17 @@
 
       <div class="card">
         <p class="section-label">Generate report</p>
-        <p class="hint" style="display:block;">Builds a landscape/portrait mixed PDF: front page, one section per equipment category (sorted by mill location), an Observations page, and a final Declaration/Scope/Limitations page. Resolve pending deletions first for an accurate report.</p>
-        <button type="button" class="generate-btn" id="generateBtn">Generate PDF</button>
+        <div class="form-grid">
+          <div>
+            <button type="button" class="generate-btn" id="generateProgressBtn" style="background:var(--ink);">Progress report</button>
+            <p class="hint" style="display:block;margin-top:8px;">Any time. A summary of what's fixed, still failing and not yet retested since the last report, then every item. Not a certificate, so no sign-off.</p>
+          </div>
+          <div>
+            <button type="button" class="generate-btn" id="generateBtn">Final certificate</button>
+            <p class="hint" style="display:block;margin-top:8px;" id="finalCertHint">Only once the site is marked Complete (Sites tab). Front page, sign-off, one section per category, observations and the final declaration.</p>
+          </div>
+        </div>
+        <p class="hint" style="display:block;margin-top:10px;">Resolve pending deletions first for an accurate report.</p>
       </div>
     </div>
   </main>
@@ -451,6 +484,20 @@
   </div>
 </div>
 
+<div id="completeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:10px;padding:22px;max-width:420px;width:100%;">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:15px;color:var(--red);margin:0 0 10px;">Mark <span id="completeSiteRef"></span> Complete</p>
+    <label>Certificate number</label>
+    <input type="text" id="completeCert">
+    <label>Report date</label>
+    <input type="date" id="completeDate">
+    <p id="completeErr" style="color:var(--fail);font-size:12.5px;font-weight:600;margin:-4px 0 10px;display:none;"></p>
+    <button type="button" id="completeOkBtn" style="width:100%;padding:11px;margin-bottom:8px;border:none;background:var(--red);color:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Mark Complete</button>
+    <button type="button" id="completeCancelBtn" style="width:100%;padding:11px;border:none;background:none;color:var(--grey);font-weight:600;font-size:13px;cursor:pointer;">Cancel</button>
+    <p class="hint" style="display:block;margin:8px 0 0;font-size:12px;">Engineers can't add or change tests until the site is reopened. The date and certificate number go into the site's report history, and anything tested after this date counts as new.</p>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -460,8 +507,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc,
-  query, where, orderBy, serverTimestamp
+  query, where, orderBy, serverTimestamp, FieldPath, deleteField
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const VERSION = "v16.0";
+document.getElementById('versionLabel').textContent = VERSION + ' · Management';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -641,15 +691,183 @@ function isLimitedRecord(record) {
   return record && record.testingStatus === 'Limited';
 }
 
-function isSiteComplete() {
-  return siteMeta.isolator && siteMeta.isolator.jobStatus === 'Complete';
+// ---- Report history / "since last report" (v16.0) ----
+// A site is closed (reported) when its isolator status is Complete or Sent to
+// Client. Closed sites can't have tests added or changed (Firestore rules).
+// Every time a site is marked Complete, an entry {date, certificateNumber, ...}
+// is added to jobs/{site}.isolator.reports; a manager can also add a past report
+// by hand. Tests dated AFTER the latest report date count as "new since last
+// report". Kept in sync by hand with the same helpers in isolator-interlock-test.html.
+const CLOSED_STATUSES = ['Complete', 'Sent to Client'];
+const OPEN_STATUSES = ['In Progress', 'Ready for QS', 'In QS'];
+function isClosedStatus(st) { return CLOSED_STATUSES.includes(st); }
+function statusOf(meta) { return (meta && meta.isolator && meta.isolator.jobStatus) || 'In Progress'; }
+function isSiteComplete() { return isClosedStatus(statusOf(siteMeta)); }
+function reportsOf(meta) {
+  const r = meta && meta.isolator && meta.isolator.reports;
+  return Array.isArray(r) ? r.filter(x => x && x.date) : [];
+}
+function lastReportOf(meta) {
+  return reportsOf(meta).reduce((best, r) => (!best || r.date > best.date) ? r : best, null);
+}
+function createdMillis(r) {
+  const c = r && r.createdAt;
+  if (!c) return Number.MAX_SAFE_INTEGER;
+  if (typeof c.toMillis === 'function') return c.toMillis();
+  if (typeof c.seconds === 'number') return c.seconds * 1000;
+  return 0;
+}
+function compareTests(a, b) {
+  return (a.equipmentId || '').localeCompare(b.equipmentId || '')
+    || (a.date || '').localeCompare(b.date || '')
+    || (createdMillis(a) - createdMillis(b));
+}
+function isFailRecord(r) {
+  return !!(r && r.checks && Object.values(r.checks).some(v => v === 'Fail'));
+}
+// activeHist: one item's non-deleted tests, oldest first.
+function classifySince(activeHist, lastDate) {
+  const latest = activeHist[activeHist.length - 1] || null;
+  if (!lastDate || !latest) return { kind: 'none', latest };
+  const before = activeHist.filter(h => (h.date || '') <= lastDate);
+  const after = activeHist.filter(h => (h.date || '') > lastDate);
+  const prev = before[before.length - 1] || null;
+  const prevFail = isFailRecord(prev);
+  if (after.length === 0) return { kind: 'notRetested', latest, prev, prevFail };
+  const nowFail = isFailRecord(latest);
+  if (!prev) return { kind: 'newItem', latest, prev, prevFail: false, nowFail };
+  let kind;
+  if (prevFail && !nowFail) kind = 'fixed';
+  else if (prevFail && nowFail) kind = 'stillFailing';
+  else if (!prevFail && nowFail) kind = 'newFail';
+  else kind = 'retestedOk';
+  return { kind, latest, prev, prevFail, nowFail };
+}
+const SINCE_LABELS = {
+  fixed: 'Fixed', stillFailing: 'Still failing', newFail: 'New fail', retestedOk: 'Retested OK',
+  newItem: 'New item', notRetested: 'Not retested', none: ''
+};
+function sinceLabel(since) {
+  if (!since) return '';
+  if (since.kind === 'newItem') return since.nowFail ? 'New item (fail)' : 'New item';
+  if (since.kind === 'notRetested') return since.prevFail ? 'Not retested (failed)' : 'Not retested';
+  return SINCE_LABELS[since.kind] || '';
+}
+function isNewSince(since) { return since && since.kind !== 'none' && since.kind !== 'notRetested'; }
+function shortDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return isNaN(dt.getTime()) ? d : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+function longDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return isNaN(dt.getTime()) ? d : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function localToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ---- Writing to the shared jobs document ----
+// Versions before v16.0 saved the site status and the site details with
+// setDoc(..., {merge:true}) and dotted keys. That creates stray top-level
+// fields literally named e.g. "isolator.certificateNumber" instead of
+// updating isolator.certificateNumber (standards section 2), so those values
+// were never read back and Complete never locked anything.
+// Everything now goes through updateJob(), which writes real nested paths and
+// tidies any stray fields at the same time: stray site details (certificate
+// number, dates, limitations) are moved into the right place unless this
+// write sets them; a stray status is simply removed, because the real status
+// is the one the rules and engineers have always used.
+function strayIsolatorKeys(meta) { return Object.keys(meta || {}).filter(k => k.startsWith('isolator.')); }
+function effectiveIsolator(meta) {
+  const iso = { ...((meta && meta.isolator) || {}) };
+  strayIsolatorKeys(meta).forEach(k => {
+    const sub = k.slice('isolator.'.length);
+    if (sub === 'jobStatus' || sub.includes('.')) return;
+    if (meta[k] !== undefined && meta[k] !== '') iso[sub] = meta[k];
+  });
+  return iso;
+}
+function showBanner(kind, text) {
+  const banner = document.getElementById('banner');
+  banner.className = 'banner ' + kind; banner.textContent = text; banner.style.display = 'block';
+}
+
+// Asks for the certificate number (required) and report date, then marks the
+// site Complete and adds the report to its history. Resolves true if done.
+function markComplete(ref, row) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('completeModal');
+    const certEl = document.getElementById('completeCert');
+    const dateEl = document.getElementById('completeDate');
+    const errEl = document.getElementById('completeErr');
+    const okBtn = document.getElementById('completeOkBtn');
+    const cancelBtn = document.getElementById('completeCancelBtn');
+    document.getElementById('completeSiteRef').textContent = ref;
+    certEl.value = effectiveIsolator(row).certificateNumber || '';
+    dateEl.value = localToday();
+    errEl.style.display = 'none';
+    modal.style.display = 'flex';
+    certEl.focus();
+    function finish(result) {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      okBtn.disabled = false;
+      resolve(result);
+    }
+    async function onOk() {
+      const cert = certEl.value.trim();
+      const date = dateEl.value;
+      if (!cert) { errEl.textContent = 'Fill in the certificate number first.'; errEl.style.display = 'block'; return; }
+      if (!date) { errEl.textContent = 'Pick the report date.'; errEl.style.display = 'block'; return; }
+      okBtn.disabled = true;
+      try {
+        const reports = [...reportsOf(row), {
+          date, certificateNumber: cert,
+          by: currentUser.displayName || currentUser.email, byEmail: currentUser.email,
+          at: new Date().toISOString(), how: 'Marked Complete'
+        }];
+        await updateJob(ref, row, { 'isolator.jobStatus': 'Complete', 'isolator.certificateNumber': cert, 'isolator.reports': reports });
+        showBanner('ok', ref + ' marked Complete (certificate ' + cert + '). Issue the final certificate from the "Front page & generate" tab.');
+        finish(true);
+      } catch (e) {
+        okBtn.disabled = false;
+        errEl.textContent = 'Could not save — ' + (e.message || e.code || 'unknown error');
+        errEl.style.display = 'block';
+      }
+    }
+    function onCancel() { finish(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
+async function updateJob(siteRef, meta, values) {
+  const pairs = [];
+  const setPaths = new Set(Object.keys(values));
+  Object.entries(values).forEach(([path, v]) => pairs.push(new FieldPath(...path.split('.')), v));
+  strayIsolatorKeys(meta).forEach(k => {
+    const sub = k.slice('isolator.'.length);
+    if (sub !== 'jobStatus' && !sub.includes('.') && !setPaths.has(k) && meta[k] !== undefined && meta[k] !== '') {
+      const nested = meta.isolator && meta.isolator[sub];
+      if (nested !== meta[k]) pairs.push(new FieldPath('isolator', sub), meta[k]);
+    }
+    pairs.push(new FieldPath(k), deleteField());
+  });
+  await updateDoc(doc(db, 'jobs', siteRef), ...pairs);
 }
 
 function matchesSearch(latest, eq, query) {
   if (!query) return true;
   const q = query.toLowerCase();
   if (eq.toLowerCase().includes(q)) return true;
-  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber'];
+  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber','whatWasDone'];
   return fields.some(f => latest[f] && String(latest[f]).toLowerCase().includes(q));
 }
 
@@ -660,7 +878,7 @@ function getReportGroups() {
     byEquip[d.equipmentId].push(d);
   });
   return Object.keys(byEquip).sort().map(eq => {
-    const hist = byEquip[eq];
+    const hist = byEquip[eq].sort(compareTests);
     return { eq, latest: hist[hist.length - 1], hist };
   });
 }
@@ -734,16 +952,15 @@ onAuthStateChanged(auth, async (user) => {
 // deliberately: a one-time "here's what to keep an eye on" is a reasonable
 // welcome, and it never repeats once recorded. Only fires again on a
 // genuine future major bump - never on minor/decimal releases.
-const CHANGELOG_MAJOR = 15;
+const CHANGELOG_MAJOR = 16;
 const CHANGELOG_ITEMS = [
-  "You can now edit the checklist result itself, not just wording — plus replace a photo, with a clear warning before it overwrites the current one.",
-  "Any edit that changes the checklist now leaves a visible \"Edited\" marker with who and when, right on the item.",
-  "The site picker is back as a real dropdown at the top of every tab, rather than only selectable from the Sites list.",
-  "Fixed a real bug where switching sites while a slower request was still loading could leave you looking at - or editing - the wrong site's data.",
-  "Limitations and Report Preview are now a proper multi-column layout instead of one long column, and Limitations collapses by default with a Show/Hide button.",
-  "Report Preview now has the same search, category, location, Pass/Fail, sort, and overdue/limitation filters as the Site Register - plus a new QSed filter, so a big site doesn't just dump everything in one list.",
-  "New: export a site's records to CSV or a full JSON backup, from the Sites list.",
-  "This \"what's new\" message is itself new — you'll see one again whenever a significant update ships."
+  "Fixed: the site Status and the site details (certificate number, dates, limitations) weren't really being saved. They are now, and Complete actually locks the site.",
+  "Marking a site Complete asks for the certificate number and adds the report to the site's Report history. Use Reopen on the Sites tab to let engineers test again.",
+  "Report history on the \"Front page & generate\" tab. Add a past report by hand if one was issued before this existed.",
+  "Items show whether they're new since the last report: fixed, still failing, new fail, retested OK, new item or not retested yet. There's a filter for it in Report preview.",
+  "Two reports: a Progress report any time, and the Final certificate once the site is Complete.",
+  "Retests of failed items now record \"What was done\", shown in Report preview and the reports.",
+  "The JSON backup now includes the site record as well as the tests."
 ];
 async function checkChangelog() {
   if (!currentUser) return;
@@ -846,20 +1063,26 @@ async function renderSitesList() {
     list.innerHTML = rows.map(r => {
       const createdDate = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleDateString('en-GB') : '—';
       const isSelected = r.id === currentSiteRef;
+      const iso = effectiveIsolator(r);
+      const status = statusOf(r);
+      const closed = isClosedStatus(status);
+      const last = lastReportOf(r);
+      const statusOptions = closed ? CLOSED_STATUSES : [...OPEN_STATUSES, 'Complete'];
       return `
       <div class="site-item" style="flex-direction:column;align-items:stretch;gap:8px;${isSelected ? 'border-color:var(--red);background:#fff8f8;' : ''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
           <div style="cursor:pointer;" data-select-site="${r.id}">
             <div class="name">${r.id} — ${r.name || ''}</div>
-            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${(r.isolator && r.isolator.certificateNumber) ? ' · Cert #' + r.isolator.certificateNumber : ''}</div>
+            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${iso.certificateNumber ? ' · Cert #' + escHtml(iso.certificateNumber) : ''}${last ? ' · Last report ' + longDate(last.date) : ''}</div>
           </div>
           <button type="button" class="remove-btn" data-delete-site="${r.id}">Delete site</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <label style="margin:0;font-size:11.5px;">Status:</label>
           <select data-status-for="${r.id}" style="width:auto;padding:6px 8px;font-size:12.5px;border:1.5px solid var(--line);border-radius:6px;">
-            ${['In Progress','Ready for QS','In QS','Complete','Sent to Client'].map(s => `<option ${((r.isolator && r.isolator.jobStatus) || 'In Progress') === s ? 'selected' : ''}>${s}</option>`).join('')}
+            ${statusOptions.map(st => `<option ${status === st ? 'selected' : ''}>${st}</option>`).join('')}
           </select>
+          ${closed ? `<button type="button" class="edit-btn" data-reopen="${r.id}">Reopen</button>` : ''}
           <button type="button" class="edit-btn" data-export-csv="${r.id}">Export CSV</button>
           <button type="button" class="edit-btn" data-export-json="${r.id}">Export JSON</button>
           <button type="button" class="edit-btn" data-select-site="${r.id}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
@@ -878,10 +1101,38 @@ async function renderSitesList() {
     });
     list.querySelectorAll('[data-status-for]').forEach(sel => {
       sel.addEventListener('change', async () => {
+        const ref = sel.dataset.statusFor;
+        const row = rows.find(x => x.id === ref) || {};
+        const oldStatus = statusOf(row);
+        const newStatus = sel.value;
         try {
-          await setDoc(doc(db, 'jobs', sel.dataset.statusFor), { 'isolator.jobStatus': sel.value }, { merge: true });
-          renderSitesList();
-        } catch (e) { alert('Could not update status — ' + (e.message || e.code || 'unknown error')); }
+          if (newStatus === 'Complete' && !isClosedStatus(oldStatus)) {
+            const done = await markComplete(ref, row);
+            if (!done) { sel.value = oldStatus; return; }
+          } else {
+            await updateJob(ref, row, { 'isolator.jobStatus': newStatus });
+          }
+          await renderSitesList();
+          if (ref === document.getElementById('site').value) await loadSiteData();
+        } catch (e) {
+          sel.value = oldStatus;
+          alert('Could not update status — ' + (e.message || e.code || 'unknown error'));
+        }
+      });
+    });
+    list.querySelectorAll('[data-reopen]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ref = btn.dataset.reopen;
+        const row = rows.find(x => x.id === ref) || {};
+        const last = lastReportOf(row);
+        if (!confirm('Reopen ' + ref + '?\n\nEngineers will be able to add and change tests again. ' +
+          (last ? 'The last report (' + longDate(last.date) + (last.certificateNumber ? ', cert ' + last.certificateNumber : '') + ') stays in the history, and anything tested from now on counts as new.' : ''))) return;
+        try {
+          await updateJob(ref, row, { 'isolator.jobStatus': 'In Progress' });
+          await renderSitesList();
+          if (ref === document.getElementById('site').value) await loadSiteData();
+          showBanner('ok', ref + ' reopened.');
+        } catch (e) { alert('Could not reopen — ' + (e.message || e.code || 'unknown error')); }
       });
     });
     list.querySelectorAll('[data-export-csv]').forEach(btn => {
@@ -891,7 +1142,8 @@ async function renderSitesList() {
         btn.disabled = true; btn.textContent = 'Exporting…';
         try {
           const records = await fetchSiteTestRecords(ref);
-          downloadBlob(ref + '-export-' + new Date().toISOString().slice(0,10) + '.csv', recordsToCSV(records), 'text/csv');
+          const row = rows.find(x => x.id === ref) || {};
+          downloadBlob(ref + '-export-' + new Date().toISOString().slice(0,10) + '.csv', recordsToCSV(records, row.name), 'text/csv');
         } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
         btn.disabled = false; btn.textContent = original;
       });
@@ -903,7 +1155,15 @@ async function renderSitesList() {
         btn.disabled = true; btn.textContent = 'Exporting…';
         try {
           const records = await fetchSiteTestRecords(ref);
-          downloadBlob(ref + '-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(records, null, 2), 'application/json');
+          // v16.0: the backup also carries the site record itself (status,
+          // certificate number, limitations, report history), not just the tests.
+          const siteSnap = await getDoc(doc(db, 'jobs', ref));
+          const backup = {
+            exportedAt: new Date().toISOString(), exportedBy: currentUser.email, siteRef: ref,
+            site: siteSnap.exists() ? { _id: ref, ...siteSnap.data() } : null,
+            tests: records
+          };
+          downloadBlob(ref + '-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(backup, null, 2), 'application/json');
         } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
         btn.disabled = false; btn.textContent = original;
       });
@@ -948,11 +1208,14 @@ function downloadBlob(filename, content, mimeType) {
 // CSV deliberately excludes photo data (base64 images are useless in a
 // spreadsheet and would make the file enormous) - use the JSON export for a
 // genuine full backup including photos.
-function recordsToCSV(records) {
+function recordsToCSV(records, currentSiteName) {
   const cols = ['equipmentId','category','date','engineer','siteRef','siteName','millLocation','panelName',
     'equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','partNumber',
     'currentRating','poles','auxiliary','testingStatus','limitationReason','limitationAgreedWith','action',
-    'observations','qsed'];
+    'observations','whatWasDone','qsed'];
+  // Every row shows the site's current name, whatever it was called on the day.
+  if (currentSiteName) records = records.map(r => ({ ...r, siteName: currentSiteName }));
+  records = [...records].sort(compareTests);
   const esc = (v) => {
     if (v === undefined || v === null) return '';
     const s = String(v);
@@ -1077,6 +1340,7 @@ async function loadSiteData() {
     const snap = await getDocs(q);
     if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
+    siteHistoryCache.sort(compareTests);
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
     if (myToken !== siteLoadToken) return;
     siteMeta = jobSnap.exists() ? jobSnap.data() : {};
@@ -1113,7 +1377,7 @@ function renderPending() {
   `).join('');
   pendingList.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
       const id = btn.dataset.id;
       try {
         if (btn.dataset.action === 'restore') {
@@ -1138,7 +1402,7 @@ function updateBulkDeleteBar() {
   bar.style.display = selected.length > 0 ? 'block' : 'none';
 }
 document.getElementById('bulkDeleteBtn').addEventListener('click', async () => {
-  if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+  if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
   const selected = Array.from(document.querySelectorAll('.bulk-select:checked')).map(cb => cb.dataset.bulkId);
   if (selected.length === 0) return;
   if (!confirm('Permanently delete ' + selected.length + ' test record' + (selected.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
@@ -1161,7 +1425,18 @@ function renderStatsBar() {
   const passed = total - failed;
   const qsed = groups.filter(g => g.latest && g.latest.qsed).length;
   const stat = (label, val, color) => `<div><div style="font-size:22px;font-weight:700;${color ? 'color:' + color + ';' : ''}">${val}</div><div style="font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;">${label}</div></div>`;
-  bar.innerHTML = stat('Total', total) + stat('Passed', passed, 'var(--pass)') + stat('Failed', failed, 'var(--fail)') + stat('Limitations', limited, '#8a6d1a') + stat('QSed', qsed + ' / ' + total);
+  let html = stat('Total', total) + stat('Passed', passed, 'var(--pass)') + stat('Failed', failed, 'var(--fail)') + stat('Limitations', limited, '#8a6d1a') + stat('QSed', qsed + ' / ' + total);
+  const last = lastReportOf(siteMeta);
+  if (last) {
+    const sinces = groups.map(g => classifySince(g.hist, last.date));
+    const newSince = sinces.filter(isNewSince).length;
+    const fixed = sinces.filter(x => x.kind === 'fixed').length;
+    const notYet = sinces.filter(x => x.kind === 'notRetested');
+    const notYetFail = notYet.filter(x => x.prevFail).length;
+    html += stat('New since ' + shortDate(last.date), newSince, '#1f5fa8') + stat('Fixed since', fixed, 'var(--pass)') +
+      stat('Not retested', notYet.length + (notYetFail ? ' (' + notYetFail + ' failed)' : ''), 'var(--grey)');
+  }
+  bar.innerHTML = html;
 }
 
 document.getElementById('selectAllBox').addEventListener('change', (e) => {
@@ -1226,6 +1501,7 @@ function buildPreviewLocFilterOptions() {
 document.getElementById('previewLocFilter').addEventListener('change', (e) => { activePreviewLocFilter = e.target.value; renderPreview(); });
 document.getElementById('previewPassFilter').addEventListener('change', renderPreview);
 document.getElementById('previewQsedFilter').addEventListener('change', renderPreview);
+document.getElementById('previewSinceFilter').addEventListener('change', renderPreview);
 document.getElementById('previewSortOrder').addEventListener('change', renderPreview);
 document.getElementById('previewOverdueOnly').addEventListener('change', renderPreview);
 document.getElementById('previewLimitedOnly').addEventListener('change', renderPreview);
@@ -1238,11 +1514,19 @@ function renderPreview() {
   if (groups.length === 0) { previewList.innerHTML = '<div class="empty-note">Nothing active to report for this site.</div>'; return; }
 
   const today = new Date();
+  const lastRep = lastReportOf(siteMeta);
+  const lastDate = lastRep ? lastRep.date : '';
   groups = groups.map(g => {
     let overdue = false;
     if (g.latest && g.latest.date) overdue = Math.floor((today - new Date(g.latest.date)) / 86400000) > 365;
-    return { ...g, overdue };
+    return { ...g, overdue, since: classifySince(g.hist, lastDate) };
   });
+
+  const sinceFilter = document.getElementById('previewSinceFilter').value;
+  if (sinceFilter === 'new') groups = groups.filter(g => isNewSince(g.since));
+  if (sinceFilter === 'fixed') groups = groups.filter(g => g.since.kind === 'fixed');
+  if (sinceFilter === 'notRetested') groups = groups.filter(g => g.since.kind === 'notRetested');
+  if (sinceFilter === 'notRetestedFail') groups = groups.filter(g => g.since.kind === 'notRetested' && g.since.prevFail);
 
   if (activePreviewCatFilter !== 'All') groups = groups.filter(g => g.latest.category === activePreviewCatFilter);
   if (activePreviewLocFilter) groups = groups.filter(g => locationOf(g.latest) === activePreviewLocFilter);
@@ -1295,6 +1579,8 @@ function renderPreview() {
                 ${detailLine ? `<div class="detail-line">${detailLine}</div>` : ''}
                 ${latest.manufacturer || latest.model ? `<div class="detail-line">${[latest.manufacturer, latest.model].filter(Boolean).join(', ')}</div>` : ''}
                 ${checklistWasEdited && lastEdit ? `<div class="detail-line" style="color:#8a6d1a;">Checklist last edited by ${lastEdit.by} · ${formatDateDMY(lastEdit.at.slice(0,10))}</div>` : ''}
+                ${g.since.kind !== 'none' ? `<div class="detail-line"><span class="chip" style="${isNewSince(g.since) ? 'background:#e8f0fb;color:#1f5fa8;' : 'background:#f0f0f0;color:var(--grey);'}">${isNewSince(g.since) ? 'New since last report · ' : ''}${sinceLabel(g.since)}</span></div>` : ''}
+                ${latest.whatWasDone ? `<div class="detail-line"><strong>What was done:</strong> ${escHtml(latest.whatWasDone)}</div>` : ''}
               </div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
@@ -1356,6 +1642,8 @@ function renderPreview() {
           <input type="text" data-edit-field="partNumber" value="${(latest.partNumber || '').replace(/"/g,'&quot;')}">
           <label>Observations</label>
           <textarea data-edit-field="observations">${latest.observations || ''}</textarea>
+          ${latest.whatWasDone !== undefined ? `<label>What was done</label>
+          <textarea data-edit-field="whatWasDone">${escHtml(latest.whatWasDone)}</textarea>` : ''}
 
           <p class="hint" style="font-weight:600;margin:10px 0 6px;">Checklist result</p>
           ${checksEditable || '<p class="hint">No checklist recorded.</p>'}
@@ -1375,7 +1663,7 @@ function renderPreview() {
 
   previewList.querySelectorAll('[data-qsed-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
       const newState = !btn.classList.contains('is-qsed');
       try {
         await updateDoc(doc(db, 'isolatorTests', btn.dataset.qsedId), { qsed: newState });
@@ -1389,7 +1677,7 @@ function renderPreview() {
   });
   previewList.querySelectorAll('[data-single-delete]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
       if (!confirm('Permanently delete this test record? This cannot be undone.')) return;
       try { await deleteDoc(doc(db, 'isolatorTests', btn.dataset.singleDelete)); await loadSiteData(); }
       catch (e) { alert('Could not delete — ' + (e.message || e.code || 'unknown error')); }
@@ -1453,7 +1741,7 @@ function renderPreview() {
     editBox.querySelector('[data-role="cancel"]').addEventListener('click', () => { editingId = null; renderPreview(); });
 
     editBox.querySelector('[data-role="save"]').addEventListener('click', async () => {
-      if (isSiteComplete()) { alert('This site is marked Complete — take it out of Complete status first.'); return; }
+      if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
       if (Object.keys(replacementPhotos).length > 0) {
         if (!confirm('This will permanently replace the current photo(s) shown. Continue?')) return;
       }
@@ -1548,6 +1836,8 @@ function renderSchedule() {
   const searchQuery = document.getElementById('scheduleSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => matchesSearch(g.latest, g.eq, searchQuery));
 
+  const schedLast = lastReportOf(siteMeta);
+  const schedLastDate = schedLast ? schedLast.date : '';
   const catsToShow = activeCatFilter === 'All' ? CATEGORY_NAMES : [activeCatFilter];
   let html = '';
   catsToShow.forEach(cat => {
@@ -1570,7 +1860,7 @@ function renderSchedule() {
     html += `<th>Location</th><th>Equipment ID</th><th>Manufacturer</th>`;
     if (def.hasIsolatorSpecs) html += `<th>Current rating</th><th>Poles</th><th>Auxiliary</th>`;
     checkCodes.forEach(code => { html += `<th>${code}</th>`; });
-    html += `<th>Model</th><th>Status</th><th>Observations</th></tr></thead><tbody>`;
+    html += `<th>Model</th><th>Status</th>${schedLastDate ? '<th>Since last report</th>' : ''}<th>Observations</th></tr></thead><tbody>`;
 
     rows.forEach(g => {
       const latest = g.latest;
@@ -1583,7 +1873,8 @@ function renderSchedule() {
         html += `<td class="${cellClass}">${cellText}</td>`;
       });
       const statusLabel = isLimitedRecord(latest) ? '<span class="chip" style="background:#fff3cd;color:#8a6d1a;">Limitation</span>' : '<span class="chip chip-pass">Full</span>';
-      html += `<td style="white-space:nowrap;">${latest.model || '—'}</td><td>${statusLabel}</td><td style="max-width:220px;">${latest.observations || '-'}</td></tr>`;
+      const sinceCell = schedLastDate ? `<td style="white-space:nowrap;">${sinceLabel(classifySince(g.hist, schedLastDate))}</td>` : '';
+      html += `<td style="white-space:nowrap;">${latest.model || '—'}</td><td>${statusLabel}</td>${sinceCell}<td style="max-width:220px;">${latest.observations || '-'}${latest.whatWasDone ? '<br><em>Done: ' + escHtml(latest.whatWasDone) + '</em>' : ''}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -1652,9 +1943,71 @@ function tallyEngineers(groups) {
   return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
 }
 
+function renderReportHistory() {
+  const list = document.getElementById('reportHistoryList');
+  if (!document.getElementById('site').value) { list.innerHTML = '<div class="empty-note">Select a site.</div>'; return; }
+  const reports = reportsOf(siteMeta).map((r, i) => ({ ...r, _i: i })).sort((a, b) => b.date.localeCompare(a.date));
+  if (reports.length === 0) {
+    list.innerHTML = '<div class="empty-note" style="text-align:left;">No reports recorded yet, so nothing counts as "new since last report".</div>';
+    return;
+  }
+  list.innerHTML = reports.map((r, idx) => `
+    <div class="site-item" style="margin-bottom:6px;">
+      <div>
+        <div class="name">${longDate(r.date)}${r.certificateNumber ? ' · Cert ' + escHtml(r.certificateNumber) : ''}${idx === 0 ? ' <span class="chip chip-pass" style="margin-left:6px;">Latest</span>' : ''}</div>
+        <div class="meta">${escHtml(r.how || 'Added by hand')}${r.by ? ' by ' + escHtml(r.by) : ''}</div>
+      </div>
+      <button type="button" class="remove-btn" data-remove-report="${r._i}">Remove</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-remove-report]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const siteRef = document.getElementById('site').value;
+      const all = reportsOf(siteMeta);
+      const target = all[parseInt(btn.dataset.removeReport, 10)];
+      if (!target) return;
+      if (!confirm('Remove the report of ' + longDate(target.date) + ' from the history? This changes what counts as "new since last report".')) return;
+      try {
+        const remaining = all.filter((_, i) => i !== parseInt(btn.dataset.removeReport, 10));
+        await updateJob(siteRef, siteMeta, { 'isolator.reports': remaining });
+        await loadSiteData();
+        renderSitesList();
+      } catch (e) { alert('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+    });
+  });
+}
+
+document.getElementById('addPastReportBtn').addEventListener('click', async () => {
+  const siteRef = document.getElementById('site').value;
+  if (!siteRef) { alert('Select a site first.'); return; }
+  const date = document.getElementById('pastReportDate').value;
+  const cert = document.getElementById('pastReportCert').value.trim();
+  if (!date) { alert('Pick the date the report was issued.'); return; }
+  if (date > localToday()) { alert('That date is in the future.'); return; }
+  if (reportsOf(siteMeta).some(r => r.date === date)) { alert('There is already a report on ' + longDate(date) + '.'); return; }
+  try {
+    const reports = [...reportsOf(siteMeta), {
+      date, certificateNumber: cert,
+      by: currentUser.displayName || currentUser.email, byEmail: currentUser.email,
+      at: new Date().toISOString(), how: 'Added by hand'
+    }];
+    await updateJob(siteRef, siteMeta, { 'isolator.reports': reports });
+    document.getElementById('pastReportDate').value = '';
+    document.getElementById('pastReportCert').value = '';
+    await loadSiteData();
+    renderSitesList();
+    showBanner('ok', 'Report of ' + longDate(date) + ' added to the history.');
+  } catch (e) { alert('Could not add — ' + (e.message || e.code || 'unknown error')); }
+});
+
 function renderFront() {
   const siteSelect = document.getElementById('site');
-  const iso = siteMeta.isolator || {};
+  const iso = effectiveIsolator(siteMeta);
+  renderReportHistory();
+  const closed = isSiteComplete();
+  const finalBtn = document.getElementById('generateBtn');
+  finalBtn.disabled = !closed;
+  document.getElementById('finalCertHint').style.color = closed ? '' : 'var(--fail)';
   document.getElementById('metaName').value = siteMeta.name || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
   document.getElementById('metaCertNumber').value = iso.certificateNumber || '';
   document.getElementById('metaAddressLine').value = siteMeta.addressLine || '';
@@ -1689,7 +2042,9 @@ document.getElementById('saveMetaBtn').addEventListener('click', async () => {
   const siteRef = document.getElementById('site').value;
   if (!siteRef) return;
   try {
-    await setDoc(doc(db, 'jobs', siteRef), {
+    // v16.0: updateDoc with real nested paths (was setDoc + dotted keys, which
+    // saved stray fields that were never read back - see updateJob()).
+    await updateJob(siteRef, siteMeta, {
       addressLine: document.getElementById('metaAddressLine').value.trim(),
       postcode: document.getElementById('metaPostcode').value.trim(),
       'isolator.certificateNumber': document.getElementById('metaCertNumber').value.trim(),
@@ -1697,7 +2052,8 @@ document.getElementById('saveMetaBtn').addEventListener('click', async () => {
       'isolator.nextRetestDue': document.getElementById('metaDue').value.trim(),
       'isolator.agreedLimitations': document.getElementById('metaLimitations').value.trim(),
       'isolator.agreedWith': document.getElementById('metaAgreedWith').value.trim()
-    }, { merge: true });
+    });
+    strayIsolatorKeys(siteMeta).forEach(k => { delete siteMeta[k]; });
     siteMeta.addressLine = document.getElementById('metaAddressLine').value.trim();
     siteMeta.postcode = document.getElementById('metaPostcode').value.trim();
     siteMeta.isolator = siteMeta.isolator || {};
@@ -1787,13 +2143,31 @@ function drawCross(pdf, cx, cy, size, color) {
   pdf.setLineWidth(0.75);
 }
 
-document.getElementById('generateBtn').addEventListener('click', async () => {
+document.getElementById('generateBtn').addEventListener('click', () => generateReport('final'));
+document.getElementById('generateProgressBtn').addEventListener('click', () => generateReport('progress'));
+
+// For the progress report's "without non-QSed" option: show each item as of its
+// latest QSed test, rather than dropping it altogether.
+function qsedOnlyGroups(groups) {
+  return groups.map(g => {
+    const hist = g.hist.filter(h => h.qsed);
+    return hist.length ? { eq: g.eq, hist, latest: hist[hist.length - 1] } : null;
+  }).filter(Boolean);
+}
+
+// mode 'final' = the certificate, exactly as before v16.0 (only once the site is
+// Complete). mode 'progress' = progress report: no certificate number, no
+// sign-off or declarations; a summary of what's changed since the last report
+// first, plus a "Since last report" column and last-time notes on retested items.
+async function generateReport(mode) {
+  const isProgress = mode === 'progress';
   const banner = document.getElementById('banner');
   banner.style.display = 'none';
   const siteSelect = document.getElementById('site');
   const siteRef = siteSelect.value;
   const siteName = document.getElementById('metaName').value || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
   if (!siteRef) { banner.className = 'banner bad'; banner.textContent = 'Select a site first.'; banner.style.display = 'block'; return; }
+  if (!isProgress && !isSiteComplete()) { banner.className = 'banner bad'; banner.textContent = 'Mark the site Complete on the Sites tab before issuing the final certificate. Use Progress report in the meantime.'; banner.style.display = 'block'; return; }
 
   let groups = getReportGroups();
   if (groups.length === 0) { banner.className = 'banner bad'; banner.textContent = 'Nothing to report for this site.'; banner.style.display = 'block'; return; }
@@ -1802,7 +2176,7 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   if (notQsedCount > 0) {
     const choice = await askQsedChoice(notQsedCount, groups.length);
     if (choice === 'cancel') return;
-    if (choice === 'without') groups = groups.filter(g => g.latest && g.latest.qsed);
+    if (choice === 'without') groups = isProgress ? qsedOnlyGroups(groups) : groups.filter(g => g.latest && g.latest.qsed);
     if (groups.length === 0) { banner.className = 'banner bad'; banner.textContent = 'Nothing left to report once non-QSed items are excluded.'; banner.style.display = 'block'; return; }
   }
 
@@ -1813,7 +2187,10 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   const authSig = authFileInput ? await fileToImageData(authFileInput).catch(() => null) : null;
 
   const certNumber = document.getElementById('metaCertNumber').value.trim() || (siteRef.toUpperCase() + '-' + new Date().toISOString().slice(0, 10));
-  const reportRef = certNumber;
+  const reportRef = isProgress ? (siteRef + ' · ' + formatDateDMY(localToday())) : certNumber;
+  const lastRep = lastReportOf(siteMeta);
+  const lastDate = lastRep ? lastRep.date : '';
+  groups.forEach(g => { g.since = classifySince(g.hist, lastDate); });
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
@@ -1866,11 +2243,20 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   }
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
   pdf.setTextColor(26, 26, 26);
+  if (isProgress) {
+    pdf.text('ISOLATOR / INTERLOCK PROGRESS REPORT', pageW - marginX, 45, { align: 'right' });
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+    pdf.setTextColor(110, 110, 110);
+    pdf.text('Progress update. This is not a test certificate.', pageW - marginX, 58, { align: 'right' });
+    pdf.text(lastRep ? 'Changes since the last report of ' + formatDateDMY(lastRep.date) + (lastRep.certificateNumber ? ' (certificate ' + lastRep.certificateNumber + ')' : '')
+      : 'No previous report recorded', pageW - marginX, 70, { align: 'right' });
+  } else {
   pdf.text('ISOLATOR / INTERLOCK TEST REPORT', pageW - marginX, 45, { align: 'right' });
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
   pdf.setTextColor(110, 110, 110);
   pdf.text('Isolator, interlock and emergency stop testing record', pageW - marginX, 58, { align: 'right' });
   pdf.text('Certificate number: ' + certNumber, pageW - marginX, 70, { align: 'right' });
+  }
 
   let y = 95;
   pdf.setDrawColor(220, 220, 220);
@@ -1878,7 +2264,13 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   y += 22;
 
   y = sectionBar(y, 'Installation Details', contentW);
-  const metaRows = [
+  const metaRows = isProgress ? [
+    ['Installation', siteName],
+    ['Address', fullAddress()],
+    ['Testing started', formatDateDMY(document.getElementById('metaStarted').value)],
+    ['Progress as at', formatDateDMY(localToday())],
+    ['Last report', lastRep ? formatDateDMY(lastRep.date) + (lastRep.certificateNumber ? ' · certificate ' + lastRep.certificateNumber : '') : 'None recorded']
+  ] : [
     ['Installation', siteName],
     ['Address', fullAddress()],
     ['Testing started', formatDateDMY(document.getElementById('metaStarted').value)],
@@ -1899,9 +2291,11 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   ];
   companyRows.forEach((r, i) => { ensureRoom(22); y = labelValueRow(y, contentW, r[0], r[1], i % 2 === 1); });
 
+  const anyFail = groups.some(g => g.latest && !overallPassOf(g.latest));
+  let assessmentPageNum = null, pageRefX = 0, pageRefY = 0;
+  if (!isProgress) {
   y += 26;
   ensureRoom(20 + 74);
-  const anyFail = groups.some(g => g.latest && !overallPassOf(g.latest));
   y = sectionBar(y, 'Overall Assessment', contentW);
   const boxH = 74;
   pdf.setFillColor(anyFail ? 251 : 234, anyFail ? 235 : 247, anyFail ? 235 : 238);
@@ -1920,8 +2314,8 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   // Reserve this page + coordinate now; the actual Observations page number
   // isn't known until that section is built later in the document, so the
   // real text gets filled in via a setPage() jump-back right before saving.
-  const assessmentPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
-  const pageRefX = marginX + 12, pageRefY = y + 62;
+  assessmentPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
+  pageRefX = marginX + 12; pageRefY = y + 62;
   y += boxH + 10;
 
   // Short declaration, with the sign-off flowing directly beneath it under
@@ -1962,6 +2356,132 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   const todayStr = new Date().toISOString().slice(0, 10);
   signOffBlock('Inspected and tested by', document.getElementById('signInspectedName').value, document.getElementById('signInspectedPosition').value.trim(), inspectedSig, todayStr);
   signOffBlock('Report authorised by', document.getElementById('signAuthName').value, document.getElementById('signAuthPosition').value.trim(), authSig, todayStr);
+  } else {
+    drawProgressSummary();
+  }
+
+  // ---- Progress report: summary of what's changed since the last report ----
+  function drawProgressSummary() {
+    function countRow(label, value, alt, strong) {
+      ensureRoom(22);
+      pdf.setFillColor(alt ? 244 : 250, alt ? 243 : 249, alt ? 240 : 247);
+      pdf.rect(marginX, y, contentW, 22, 'F');
+      pdf.setDrawColor(225, 223, 218);
+      pdf.rect(marginX, y, contentW, 22);
+      pdf.setFont('helvetica', strong ? 'bold' : 'normal'); pdf.setFontSize(9.5);
+      pdf.setTextColor(40, 40, 40);
+      pdf.text(label, marginX + 8, y + 14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(String(value), marginX + contentW - 10, y + 14, { align: 'right' });
+      y += 22;
+    }
+    const total = groups.length;
+    const failingNow = groups.filter(g => isFailRecord(g.latest)).length;
+    const limitedNow = groups.filter(g => isLimitedRecord(g.latest)).length;
+
+    y += 26;
+    ensureRoom(20 + 22 * 4);
+    y = sectionBar(y, 'Where things stand', contentW);
+    countRow('Items on the register', total, false);
+    countRow('Passing now', total - failingNow, true);
+    countRow('Failing now (outstanding)', failingNow, false, failingNow > 0);
+    countRow('Tested with agreed limitations', limitedNow, true);
+
+    y += 22;
+    if (lastDate) {
+      const count = k => groups.filter(g => g.since && g.since.kind === k).length;
+      const newItems = groups.filter(g => g.since && g.since.kind === 'newItem');
+      const notYet = groups.filter(g => g.since && g.since.kind === 'notRetested');
+      const notYetFail = notYet.filter(g => g.since.prevFail).length;
+      ensureRoom(20 + 22 * 6);
+      y = sectionBar(y, 'Since the last report (' + formatDateDMY(lastDate) + ')', contentW);
+      countRow('Fixed: failed last time, passes now', count('fixed'), false);
+      countRow('Still failing: retested and still fails', count('stillFailing'), true);
+      countRow('New fails: passed last time, fails now', count('newFail'), false);
+      countRow('Retested and still OK', count('retestedOk'), true);
+      countRow('New items' + (newItems.filter(g => g.since.nowFail).length ? ' (' + newItems.filter(g => g.since.nowFail).length + ' failing)' : ''), newItems.length, false);
+      countRow('Not retested yet' + (notYetFail ? ' (' + notYetFail + ' of them failed last time)' : ''), notYet.length, true);
+      y += 18;
+    }
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(90, 90, 90);
+    const note = (lastDate ? '' : 'No previous report is recorded for this site, so every item is shown as it stands today. ') +
+      'This progress report shows the position on ' + formatDateDMY(localToday()) + '. It is not a test certificate: the certificate is issued once testing is complete.' +
+      (lastDate ? ' The tables that follow list what has been fixed since the last report and every item still outstanding.' : '');
+    const noteLines = pdf.splitTextToSize(note, contentW);
+    ensureRoom(noteLines.length * 11 + 6);
+    pdf.text(noteLines, marginX, y + 4);
+    y += noteLines.length * 11 + 6;
+
+    // Simple portrait list table with repeating header on each new page.
+    function listTable(title, cols, rows, emptyText) {
+      pdf.addPage('a4', 'portrait');
+      pageW = pdf.internal.pageSize.getWidth();
+      pageH = pdf.internal.pageSize.getHeight();
+      const w = pageW - marginX * 2;
+      let ty = sectionBar(40, title + ' (' + rows.length + ')', w) + 10;
+      cols.forEach(c => { c.pw = Math.round(w * c.frac); });
+      function header(hy) {
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(90, 90, 90);
+        let hx = marginX;
+        cols.forEach(c => { pdf.text(c.label, hx + 3, hy + 10); hx += c.pw; });
+        pdf.setDrawColor(220, 220, 220);
+        pdf.line(marginX, hy + 16, marginX + w, hy + 16);
+        return hy + 20;
+      }
+      if (rows.length === 0) {
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(60, 60, 60);
+        pdf.text(emptyText, marginX, ty + 8);
+        return;
+      }
+      ty = header(ty);
+      rows.forEach((r, idx) => {
+        const cellLines = cols.map(c => { pdf.setFont('helvetica', c.bold ? 'bold' : 'normal'); pdf.setFontSize(7.5); return pdf.splitTextToSize(String(r[c.key] || '-'), c.pw - 6); });
+        const rowH = Math.max(1, ...cellLines.map(l => l.length)) * 10 + 6;
+        if (ty + rowH > pageH - 40) {
+          pdf.addPage('a4', 'portrait');
+          pageW = pdf.internal.pageSize.getWidth();
+          pageH = pdf.internal.pageSize.getHeight();
+          ty = sectionBar(40, title + ' — continued', w) + 10;
+          ty = header(ty);
+        }
+        if (idx % 2 === 1) { pdf.setFillColor(250, 249, 247); pdf.rect(marginX, ty - 3, w, rowH, 'F'); }
+        let cx = marginX;
+        cols.forEach((c, ci) => {
+          pdf.setFont('helvetica', c.bold ? 'bold' : 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(40, 40, 40);
+          if (c.key === 'status') pdf.setTextColor(...(String(r.status).startsWith('Fixed') ? PASS_COLOR : FAIL_COLOR));
+          pdf.text(cellLines[ci], cx + 3, ty + 6);
+          cx += c.pw;
+        });
+        ty += rowH;
+      });
+    }
+
+    const byLoc = (a, b) => locationOf(a.latest).localeCompare(locationOf(b.latest)) || a.eq.localeCompare(b.eq);
+    if (lastDate) {
+      const fixedRows = groups.filter(g => g.since && g.since.kind === 'fixed').sort(byLoc).map(g => ({
+        eq: g.eq, loc: locationOf(g.latest), date: formatDateDMY(g.latest.date),
+        done: g.latest.whatWasDone || g.latest.observations || 'Not recorded'
+      }));
+      listTable('Fixed since the last report', [
+        { key: 'eq', label: 'Equipment ID', frac: 0.36, bold: true },
+        { key: 'loc', label: 'Location', frac: 0.18 },
+        { key: 'date', label: 'Retested', frac: 0.12 },
+        { key: 'done', label: 'What was done', frac: 0.34 }
+      ], fixedRows, 'Nothing that failed at the last report has been fixed yet.');
+    }
+    const outstanding = groups.filter(g => isFailRecord(g.latest)).sort(byLoc).map(g => ({
+      eq: g.eq, loc: locationOf(g.latest), date: formatDateDMY(g.latest.date),
+      status: lastDate ? sinceLabel(g.since) : 'Fail',
+      action: g.latest.action || '-'
+    }));
+    listTable('Still outstanding (failing now)', [
+      { key: 'eq', label: 'Equipment ID', frac: 0.36, bold: true },
+      { key: 'loc', label: 'Location', frac: 0.17 },
+      { key: 'date', label: 'Last tested', frac: 0.12 },
+      { key: 'status', label: lastDate ? 'Since last report' : 'Result', frac: 0.15 },
+      { key: 'action', label: 'Further action', frac: 0.20 }
+    ], outstanding, 'Nothing is failing.');
+  }
 
   // ---- Agreed Limitations - its own page, so it never pushes the front
   // page or sign-off onto page 2 ----
@@ -2065,8 +2585,10 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
     const checkCols = def.checks.map((c, i) => ({ key: 'check:' + c.key, label: 'T' + (i + 1), check: true, checkLabel: c.label }));
     cols.push(...checkCols);
     cols.push({ key: 'model', label: 'Model' });
+    if (isProgress && lastDate) cols.push({ key: 'since', label: 'Since last report' });
 
-    function cellValue(latest, eq, c) {
+    function cellValue(latest, eq, c, g) {
+      if (c.key === 'since') return (g && sinceLabel(g.since)) || '-';
       if (c.key === 'equipmentId') return eq;
       if (c.key === 'location') return locationOf(latest) || '-';
       const v = latest[c.key];
@@ -2094,7 +2616,7 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
       if (c.check) { c.w = 20; sumFixed += c.w; return; }
       let maxW = pdf.getTextWidth(c.label);
       rowsForCat.forEach(g => {
-        const w = pdf.getTextWidth(cellValue(g.latest, g.eq, c));
+        const w = pdf.getTextWidth(cellValue(g.latest, g.eq, c, g));
         if (w > maxW) maxW = w;
       });
       const cap = (c.key === 'equipmentId' || c.key === 'location') ? 140 : 100;
@@ -2131,7 +2653,7 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
 
     rowsForCat.forEach((g, idx) => {
       const latest = g.latest;
-      const cellLines = cols.map(c => c.check ? ['#'] : pdf.splitTextToSize(cellValue(latest, g.eq, c), c.w - 6));
+      const cellLines = cols.map(c => c.check ? ['#'] : pdf.splitTextToSize(cellValue(latest, g.eq, c, g), c.w - 6));
       const maxLines = Math.max(1, ...cellLines.map(l => l.length));
       const rowH = maxLines * 9 + 6;
 
@@ -2166,8 +2688,19 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
       });
       ty += rowH;
 
-      if (latest.observations) {
-        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text: latest.observations });
+      const sk = g.since ? g.since.kind : 'none';
+      if (isProgress && g.since && g.since.prev && (sk === 'fixed' || sk === 'stillFailing' || sk === 'newFail')) {
+        // Retested items that changed or still fail: last time's notes next to this time's.
+        const prev = g.since.prev;
+        const parts = [
+          'Last time (' + formatDateDMY(prev.date) + '): ' + (prev.observations || 'no notes'),
+          'This time (' + formatDateDMY(latest.date) + '): ' + (latest.observations || 'no notes')
+        ];
+        if (latest.whatWasDone) parts.push('What was done: ' + latest.whatWasDone);
+        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text: parts.join('\n'), since: sinceLabel(g.since) });
+      } else if (latest.observations || (isProgress && latest.whatWasDone)) {
+        const text = (latest.observations || '') + (isProgress && latest.whatWasDone ? (latest.observations ? '\n' : '') + 'What was done: ' + latest.whatWasDone : '');
+        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text, since: isProgress && lastDate ? sinceLabel(g.since) : '' });
       }
     });
   });
@@ -2207,7 +2740,7 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
       pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(26, 26, 26);
       pdf.text(o.eq, marginX, oy);
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(110, 110, 110);
-      pdf.text(o.category, marginX + 200, oy);
+      pdf.text(o.category + (o.since ? ' · ' + o.since : ''), marginX + 200, oy);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(o.pass ? PASS_COLOR[0] : FAIL_COLOR[0], o.pass ? PASS_COLOR[1] : FAIL_COLOR[1], o.pass ? PASS_COLOR[2] : FAIL_COLOR[2]);
       pdf.text(o.pass ? 'PASS' : 'FAIL', pageW - marginX - 30, oy, { align: 'right' });
@@ -2223,6 +2756,7 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
     });
   }
 
+  if (!isProgress) {
   // ---- Final Declaration, Scope and Limitations page ----
   pdf.addPage('a4', 'portrait');
   pageW = pdf.internal.pageSize.getWidth();
@@ -2378,7 +2912,9 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
     }
   });
 
-  if (anyFail) {
+  }
+
+  if (anyFail && assessmentPageNum) {
     pdf.setPage(assessmentPageNum);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5);
     pdf.setTextColor(192, 39, 45);
@@ -2396,17 +2932,17 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
     pdf.line(marginX, ph - 30, pw - marginX, ph - 30);
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5);
     pdf.setTextColor(150, 150, 150);
-    pdf.text('Simpson & Wood · Isolator/Interlock Report · ' + reportRef, marginX, ph - 18);
+    pdf.text('Simpson & Wood · Isolator/Interlock ' + (isProgress ? 'Progress Report' : 'Report') + ' · ' + reportRef, marginX, ph - 18);
     pdf.text('Page ' + i + ' of ' + totalPages, pw - marginX, ph - 18, { align: 'right' });
   }
 
-  const filename = 'Isolator-Interlock-Report-' + siteRef + '-' + new Date().toISOString().slice(0,10) + '.pdf';
+  const filename = (isProgress ? 'Isolator-Interlock-Progress-' : 'Isolator-Interlock-Report-') + siteRef + '-' + new Date().toISOString().slice(0,10) + '.pdf';
   pdf.save(filename);
 
   banner.className = 'banner ok';
   banner.textContent = 'Report generated: ' + filename;
   banner.style.display = 'block';
-});
+}
 </script>
 
 <script>

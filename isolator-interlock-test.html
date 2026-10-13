@@ -140,6 +140,24 @@
   .del-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
   .history-empty{color:var(--grey);font-size:13px;text-align:center;padding:16px 0;}
   .loading-note{color:var(--grey);font-size:13px;text-align:center;padding:6px 0;}
+
+  /* v17.0: last time / since last report */
+  .last-time{background:#f7f6f3;border:1px solid var(--line);border-left:4px solid var(--grey);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;}
+  .last-time.was-fail{border-left-color:var(--fail);}
+  .last-time .lt-head{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:13px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .last-time .lt-row{margin:4px 0 0;}
+  .last-time .lt-label{font-weight:700;color:var(--grey);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;display:block;}
+  .last-time .lt-text{white-space:pre-wrap;}
+  .hist-detail{font-size:12px;color:var(--ink);margin-top:4px;line-height:1.45;}
+  .hist-detail .lt-label{font-weight:700;color:var(--grey);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;display:block;margin-top:4px;}
+  .hist-detail .lt-text{white-space:pre-wrap;}
+  .since-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;display:inline-block;margin-top:5px;}
+  .since-tag.retested{background:#eaf7ee;color:var(--pass);}
+  .since-tag.newitem{background:#e8f0fb;color:#1f5fa8;}
+  .since-tag.notyet{background:#f0f0f0;color:var(--grey);}
+  .since-tag.notyet.was-fail{background:#fbe9e9;color:var(--fail);}
+  .retest-summary{display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px;cursor:pointer;}
+  .retest-summary .sub{display:block;font-weight:400;font-size:12px;margin-top:2px;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -168,7 +186,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v15.0</p>
+        <p id="versionLabel">v17.0</p>
       </div>
     </a>
     <div class="who">
@@ -184,7 +202,7 @@
         <option value="" disabled selected>Loading site list…</option>
       </select>
       <p class="site-status" id="siteStatus"></p>
-      <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete — no new tests can be logged until a manager takes it out of Complete status.</div>
+      <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete, so tests can't be added or changed. If you need to, ask a manager to reopen it.</div>
       <div id="syncIndicator" style="display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;"></div>
       <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
       <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
@@ -242,6 +260,7 @@
     <div id="regTab" style="display:none;">
       <div class="card">
         <p class="section-label">Site register</p>
+        <div class="retest-summary" id="retestSummary"></div>
         <input type="text" id="regSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
         <div class="reg-subtabs" id="regSubtabs"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
@@ -263,6 +282,7 @@
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+          <label id="regNotRetestedWrap" style="display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regNotRetestedOnly" style="width:auto;margin:0;">Not retested since last report</label>
         </div>
         <div id="regList"><div class="loading-note">Select a site to view its register.</div></div>
       </div>
@@ -291,7 +311,7 @@ import {
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v16.2";
+const VERSION = "v17.0";
 document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
 console.log('Isolator/Interlock tool', VERSION);
 
@@ -474,6 +494,88 @@ let entryCounter = 0;
 const entries = {};
 let siteHistoryCache = [];
 let todaysTests = []; // { equipmentId, category } - this session only
+let siteMeta = {};     // the selected site's jobs document (read-only here)
+
+// ---- Report history / "since last report" (v17.0) ----
+// A site counts as closed (reported) when its isolator status is Complete or
+// Sent to Client. The site's report history lives in jobs/{site}.isolator.reports
+// as [{ date: 'YYYY-MM-DD', certificateNumber, ... }] and is only ever written by
+// managers from the report app (the Firestore rules enforce that). Any test
+// dated AFTER the latest report date counts as "new since last report".
+// Kept in sync by hand with the same helpers in isolator-interlock-report.html.
+const CLOSED_STATUSES = ['Complete', 'Sent to Client'];
+function isClosedStatus(st) { return CLOSED_STATUSES.includes(st); }
+function lastReportOf(meta) {
+  const reports = (meta && meta.isolator && Array.isArray(meta.isolator.reports)) ? meta.isolator.reports : [];
+  return reports.filter(r => r && r.date).reduce((best, r) => (!best || r.date > best.date) ? r : best, null);
+}
+function createdMillis(r) {
+  const c = r && r.createdAt;
+  if (!c) return Number.MAX_SAFE_INTEGER; // still pending locally = newest
+  if (typeof c.toMillis === 'function') return c.toMillis();
+  if (typeof c.seconds === 'number') return c.seconds * 1000;
+  return 0;
+}
+function compareTests(a, b) {
+  return (a.equipmentId || '').localeCompare(b.equipmentId || '')
+    || (a.date || '').localeCompare(b.date || '')
+    || (createdMillis(a) - createdMillis(b));
+}
+function isFailRecord(r) {
+  return !!(r && r.checks && Object.values(r.checks).some(v => v === 'Fail'));
+}
+// activeHist: one item's non-deleted tests, oldest first.
+// kind: 'none' (no report yet) | 'notRetested' | 'newItem' | 'fixed' | 'stillFailing' | 'newFail' | 'retestedOk'
+function classifySince(activeHist, lastDate) {
+  const latest = activeHist[activeHist.length - 1] || null;
+  if (!lastDate || !latest) return { kind: 'none', latest };
+  const before = activeHist.filter(h => (h.date || '') <= lastDate);
+  const after = activeHist.filter(h => (h.date || '') > lastDate);
+  const prev = before[before.length - 1] || null;
+  const prevFail = isFailRecord(prev);
+  if (after.length === 0) return { kind: 'notRetested', latest, prev, prevFail };
+  const nowFail = isFailRecord(latest);
+  if (!prev) return { kind: 'newItem', latest, prev, prevFail: false, nowFail };
+  let kind;
+  if (prevFail && !nowFail) kind = 'fixed';
+  else if (prevFail && nowFail) kind = 'stillFailing';
+  else if (!prevFail && nowFail) kind = 'newFail';
+  else kind = 'retestedOk';
+  return { kind, latest, prev, prevFail, nowFail };
+}
+function shortDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+function longDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function failedCheckLabels(r) {
+  const def = CATEGORIES[r && r.category];
+  if (!def || !r.checks) return [];
+  return def.checks.filter(c => r.checks[c.key] === 'Fail').map(c => c.label);
+}
+// Read-only summary of one past test: notes, failed checks, further action,
+// what was done, limitation. Used in the retest "Last time" box and the
+// Site Register history.
+function pastTestDetailHtml(r) {
+  const parts = [];
+  const failed = failedCheckLabels(r);
+  if (failed.length) parts.push(`<div class="lt-row"><span class="lt-label">Failed checks</span><span class="lt-text">${failed.map(escHtml).join('\n')}</span></div>`);
+  parts.push(`<div class="lt-row"><span class="lt-label">Notes</span><span class="lt-text">${r.observations ? escHtml(r.observations) : '<span style="color:var(--grey);">None written</span>'}</span></div>`);
+  if (r.whatWasDone) parts.push(`<div class="lt-row"><span class="lt-label">What was done</span><span class="lt-text">${escHtml(r.whatWasDone)}</span></div>`);
+  parts.push(`<div class="lt-row"><span class="lt-label">Further action</span><span class="lt-text">${escHtml(r.action || '—')}</span></div>`);
+  if (r.testingStatus === 'Limited') parts.push(`<div class="lt-row"><span class="lt-label">Limitation</span><span class="lt-text">${escHtml(r.limitationReason || '—')}${r.limitationAgreedWith ? ' (agreed with ' + escHtml(r.limitationAgreedWith) + ')' : ''}</span></div>`);
+  return parts.join('');
+}
 
 // ---- Sign-in ----
 function describeAuthError(err) {
@@ -517,15 +619,13 @@ onAuthStateChanged(auth, (user) => {
 // deliberately: a one-time "here's what to keep an eye on" is a reasonable
 // welcome, and it never repeats once recorded. Only fires again on a
 // genuine future major bump - never on minor/decimal releases.
-const CHANGELOG_MAJOR = 16;
+const CHANGELOG_MAJOR = 17;
 const CHANGELOG_ITEMS = [
-  "You can now edit your own test entries directly from the Site Register — any field, including the checklist — right up until it's been QSed.",
-  "Fixed a real bug in that self-edit feature that could silently save an empty checklist — checklist edits now save correctly.",
-  "Saving a test no longer waits on a signal — it saves instantly and finishes syncing in the background, with an on-screen indicator while anything's still pending.",
-  "This can now be installed properly to your home screen, and opens even with no signal at all.",
-  "Retesting an item now shows the previous photos as a reference, so it's easier to confirm you're looking at the right physical item.",
-  "The Site Register can now be searched, filtered, and sorted — including by how overdue something is.",
-  "This 'what's new' message is itself new — you'll see one again whenever a significant update ships."
+  "Retesting an item now shows what was found last time: the notes, which checks failed and the further action.",
+  "Opening an item's history in the Site Register now shows the notes from each past test.",
+  "If an item failed last time and passes now, say what was done (e.g. \"Interlock fitted\").",
+  "The Site Register shows what's still to retest since the last report, with a count you can tap and a filter.",
+  "If a site is marked Complete, ask a manager to reopen it before adding or changing tests."
 ];
 async function checkChangelog() {
   if (!currentUser) return;
@@ -666,6 +766,7 @@ async function loadSiteData() {
   const myToken = ++siteLoadToken;
   const siteRef = document.getElementById('site').value;
   siteHistoryCache = [];
+  siteMeta = {};
   currentJobStatus = '';
   if (!siteRef) { updateJobStatusUI(); return; }
   const spinner = document.getElementById('siteLoadingIndicator');
@@ -675,10 +776,14 @@ async function loadSiteData() {
     const snap = await getDocs(q);
     if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
     snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
+    // Same-day retests: order by when they were saved, so "latest" and
+    // "last time" are always the right test.
+    siteHistoryCache.sort(compareTests);
     rebuildSuggestions();
 
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
     if (myToken !== siteLoadToken) return;
+    siteMeta = jobSnap.exists() ? jobSnap.data() : {};
     currentJobStatus = jobSnap.exists() ? ((jobSnap.data().isolator && jobSnap.data().isolator.jobStatus) || 'In Progress') : 'In Progress';
     updateJobStatusUI();
   } catch (e) {
@@ -691,7 +796,7 @@ async function loadSiteData() {
 function updateJobStatusUI() {
   const completeBanner = document.getElementById('completeBanner');
   const readyBtn = document.getElementById('readyForQsBtn');
-  completeBanner.style.display = currentJobStatus === 'Complete' ? 'block' : 'none';
+  completeBanner.style.display = isClosedStatus(currentJobStatus) ? 'block' : 'none';
   readyBtn.style.display = currentJobStatus === 'In Progress' ? 'block' : 'none';
 }
 
@@ -888,6 +993,8 @@ function buildEditPanel(record) {
       <label>Part number</label><input type="text" data-editfield="partNumber" value="${esc(record.partNumber)}">
       <label>Observations</label>
       <textarea data-editfield="observations">${record.observations || ''}</textarea>
+      ${record.whatWasDone !== undefined ? `<label>What was done</label>
+      <textarea data-editfield="whatWasDone">${escHtml(record.whatWasDone)}</textarea>` : ''}
       <div style="display:flex;gap:8px;margin-top:6px;">
         <button type="button" class="btn-cancel-edit" data-role="cancelEdit" data-doc-id="${record._id}">Cancel</button>
         <button type="button" class="btn-save-edit" data-role="saveEdit" data-doc-id="${record._id}">Save changes</button>
@@ -956,7 +1063,7 @@ function matchesSearch(latest, eq, query) {
   if (!query) return true;
   const q = query.toLowerCase();
   if (eq.toLowerCase().includes(q)) return true;
-  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber'];
+  const fields = ['millLocation','panelName','equipmentName','physicalLocation','relayLocation','equipmentAffected','manufacturer','model','observations','partNumber','whatWasDone'];
   return fields.some(f => latest[f] && String(latest[f]).toLowerCase().includes(q));
 }
 
@@ -966,7 +1073,7 @@ function matchesSearch(latest, eq, query) {
     renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
   });
 });
-['regOverdueOnly','regLimitedOnly'].forEach(id => {
+['regOverdueOnly','regLimitedOnly','regNotRetestedOnly'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
     const activeBtn = document.querySelector('#regSubtabs button.active');
     renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
@@ -985,8 +1092,16 @@ function renderRegister(activeTab) {
   buildRegLocFilterOptions(activeTab);
   const list = document.getElementById('regList');
   const siteRef = document.getElementById('site').value;
-  if (!siteRef) { list.innerHTML = '<div class="loading-note">Select a site to view its register.</div>'; return; }
-  if (siteHistoryCache.length === 0) { list.innerHTML = '<div class="history-empty">Nothing logged for this site yet.</div>'; return; }
+  const summaryEl = document.getElementById('retestSummary');
+  const notRetestedWrap = document.getElementById('regNotRetestedWrap');
+  summaryEl.style.display = 'none';
+  if (!siteRef) { notRetestedWrap.style.display = 'none'; list.innerHTML = '<div class="loading-note">Select a site to view its register.</div>'; return; }
+  if (siteHistoryCache.length === 0) { notRetestedWrap.style.display = 'none'; list.innerHTML = '<div class="history-empty">Nothing logged for this site yet.</div>'; return; }
+
+  const lastReport = lastReportOf(siteMeta);
+  const lastDate = lastReport ? lastReport.date : '';
+  const siteClosed = isClosedStatus(currentJobStatus);
+  notRetestedWrap.style.display = lastDate ? 'flex' : 'none';
 
   const byEquip = {};
   siteHistoryCache.forEach(d => {
@@ -1004,8 +1119,26 @@ function renderRegister(activeTab) {
       daysSince = Math.floor((today - new Date(latest.date)) / 86400000);
       overdue = daysSince > DUE_DAYS;
     }
-    return { eq, hist, active, latest, daysSince, overdue };
+    return { eq, hist, active, latest, daysSince, overdue, since: classifySince(active, lastDate) };
   }).filter(g => g.latest || g.hist.some(h => h.deletedFlag));
+
+  // "Still to retest" summary - counted across the whole site, before any filters.
+  if (lastDate && !siteClosed) {
+    const notYet = groups.filter(g => g.latest && g.since.kind === 'notRetested');
+    const failedNotYet = notYet.filter(g => g.since.prevFail);
+    if (notYet.length) {
+      summaryEl.innerHTML = (failedNotYet.length
+        ? `${failedNotYet.length} failed item${failedNotYet.length === 1 ? '' : 's'} not yet retested`
+        : `Nothing that failed is waiting for a retest`) +
+        `<span class="sub">${notYet.length} item${notYet.length === 1 ? '' : 's'} not tested since the last report (${longDate(lastDate)})${failedNotYet.length ? ' · tap to show the failed ones' : ''}</span>`;
+      summaryEl.style.display = 'block';
+      summaryEl.onclick = failedNotYet.length ? () => {
+        document.getElementById('regNotRetestedOnly').checked = true;
+        document.getElementById('regPassFilter').value = 'fail';
+        renderRegister(currentRegTab);
+      } : null;
+    }
+  }
 
   if (activeTab !== 'All') groups = groups.filter(g => (g.latest ? g.latest.category : g.hist[g.hist.length-1].category) === activeTab);
 
@@ -1017,6 +1150,7 @@ function renderRegister(activeTab) {
 
   if (document.getElementById('regOverdueOnly').checked) groups = groups.filter(g => g.overdue);
   if (document.getElementById('regLimitedOnly').checked) groups = groups.filter(g => g.latest && g.latest.testingStatus === 'Limited');
+  if (lastDate && document.getElementById('regNotRetestedOnly').checked) groups = groups.filter(g => g.latest && g.since.kind === 'notRetested');
 
   const searchQuery = document.getElementById('regSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
@@ -1046,7 +1180,7 @@ function renderRegister(activeTab) {
         `;
       }
       const hPass = overallPassOf(h);
-      const canEdit = h.engineerEmail === currentUser.email && !h.qsed;
+      const canEdit = h.engineerEmail === currentUser.email && !h.qsed && !siteClosed;
       const isEditingThis = editingDocIds.has(h._id);
       return `
         <div class="hist-row" style="${isEditingThis ? 'display:block;' : ''}">
@@ -1054,10 +1188,11 @@ function renderRegister(activeTab) {
             <div>
               <div class="hist-date">${h.date || '—'} <span class="chip ${hPass ? 'pass' : 'fail'}" style="margin-left:6px;">${hPass ? 'Pass' : 'Fail'}</span></div>
               <div class="hist-meta">by ${h.engineer || '—'}${h.qsed ? ' · QSed' : ''}</div>
+              ${isEditingThis ? '' : `<div class="hist-detail">${pastTestDetailHtml(h)}</div>`}
             </div>
             <div style="display:flex;gap:6px;">
               ${canEdit ? `<button type="button" class="btn-edit-own" data-toggle-doc-id="${h._id}">${isEditingThis ? 'Close' : 'Edit'}</button>` : ''}
-              <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>
+              ${siteClosed ? '' : `<button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>`}
             </div>
           </div>
           ${!canEdit && h.engineerEmail === currentUser.email && h.qsed ? '<div class="id-locked-note">This has been QSed — ask QS to un-tick it before you can edit.</div>' : ''}
@@ -1087,6 +1222,11 @@ function renderRegister(activeTab) {
     const daysSince = g.daysSince, overdue = g.overdue;
     const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
     const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
+    let sinceTag = '';
+    const sk = g.since.kind;
+    if (sk === 'notRetested') sinceTag = `<span class="since-tag notyet ${g.since.prevFail ? 'was-fail' : ''}">${g.since.prevFail ? 'Failed last time · not retested yet' : 'Not retested yet'}</span>`;
+    else if (sk === 'newItem') sinceTag = `<span class="since-tag newitem">New item · ${shortDate(latest.date)}</span>`;
+    else if (sk !== 'none') sinceTag = `<span class="since-tag retested">Retested ${shortDate(latest.date)}</span>`;
     return `
       <div class="reg-item ${overdue ? 'overdue' : ''} ${isExpanded ? 'editing-full' : ''}">
         <div class="reg-item-top">
@@ -1104,9 +1244,10 @@ function renderRegister(activeTab) {
           ${daysSince !== null ? ` · ${daysSince} days ago` : ''}
           ${checklistWasEdited && lastEdit ? `<br>Checklist last edited by ${lastEdit.by} · ${lastEdit.at.slice(0,10)}` : ''}
         </div>
+        ${sinceTag}
         <div class="reg-item-bottom">
           <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
-          <button type="button" class="retest-btn" data-eq="${g.eq}">Retest</button>
+          ${siteClosed ? '<span></span>' : `<button type="button" class="retest-btn" data-eq="${g.eq}">Retest</button>`}
         </div>
         ${isExpanded ? `<div class="hist-list">${historyRows}</div>` : ''}
       </div>
@@ -1309,6 +1450,8 @@ function updateActionConstraint(wrap) {
   wrap.querySelector('[data-role="actionHint"]').style.display = anyFail ? 'block' : 'none';
   wrap.querySelector('[data-role="internalsReq"]').style.display = anyFail ? 'inline' : 'none';
   wrap.querySelector('[data-role="obsReq"]').style.display = anyFail ? 'inline' : 'none';
+  const wwdReq = wrap.querySelector('[data-role="wwdReq"]');
+  if (wwdReq) wwdReq.style.display = anyFail ? 'none' : 'inline';
 }
 
 const PHOTO_TARGET_BYTES = 200000;
@@ -1348,6 +1491,14 @@ function addEntry(prefill) {
   wrap.className = 'entry';
   wrap.id = id;
   if (prefill && prefill.equipmentId) wrap.dataset.lockedId = prefill.equipmentId;
+  const prevFail = prefill ? isFailRecord(prefill) : false;
+  if (prevFail) wrap.dataset.prevFail = '1';
+  const lastTimeHtml = prefill ? `
+      <div class="last-time ${prevFail ? 'was-fail' : ''}">
+        <p class="lt-head"><span>Last time · ${longDate(prefill.date)}</span><span style="color:${prevFail ? 'var(--fail)' : 'var(--pass)'};">${prevFail ? 'Fail' : 'Pass'}</span></p>
+        <div style="font-size:12px;color:var(--grey);">by ${escHtml(prefill.engineer || '—')}</div>
+        ${pastTestDetailHtml(prefill)}
+      </div>` : '';
   wrap.innerHTML = `
     <div class="entry-head">
       <span class="tag">${prefill ? 'Retest' : 'New'}</span>
@@ -1355,6 +1506,7 @@ function addEntry(prefill) {
       <button type="button" data-role="remove">Cancel</button>
     </div>
     <div class="entry-body">
+      ${lastTimeHtml}
 
       <label>Category <span class="req">*</span></label>
       <select data-field="category" ${prefill ? 'disabled' : ''}>
@@ -1414,6 +1566,11 @@ function addEntry(prefill) {
       <label>Observations <span class="req" data-role="obsReq" style="display:none;">*</span><span class="hint">Required if anything above failed</span></label>
       <textarea data-field="observations"></textarea>
       <div class="error-msg" data-error-for="observations">An observation is required when a check has failed</div>
+
+      ${prevFail ? `
+      <label>What was done <span class="req" data-role="wwdReq">*</span><span class="hint">This failed last time. E.g. "Interlock fitted", "Labelled"</span></label>
+      <textarea data-field="whatWasDone"></textarea>
+      <div class="error-msg" data-error-for="whatWasDone">Say what was done, as this failed last time</div>` : ''}
 
       <label>General photo of equipment <span class="req">*</span></label>
       ${prefill && prefill.photoBase64 ? `
@@ -1585,6 +1742,18 @@ function validateEntry(wrap, id) {
   if (obsErrEl) obsErrEl.style.display = obsOk ? 'none' : 'block';
   if (!obsOk) valid = false;
 
+  // Retest of something that failed last time: if it passes now, say what
+  // was done to fix it. (Optional while it's still failing.)
+  if (wrap.dataset.prevFail === '1') {
+    record.whatWasDone = val('whatWasDone');
+    const wwdOk = anyFail || !!record.whatWasDone;
+    const wwdEl = get('[data-field="whatWasDone"]');
+    const wwdErrEl = wrap.querySelector('[data-error-for="whatWasDone"]');
+    if (wwdEl) wwdEl.classList.toggle('field-error', !wwdOk);
+    if (wwdErrEl) wwdErrEl.style.display = wwdOk ? 'none' : 'block';
+    if (!wwdOk) valid = false;
+  }
+
   record.photoBase64 = entries[id] ? (entries[id].photoBase64 || null) : null;
   const photoErrEl = wrap.querySelector('[data-error-for="photo"]');
   const photoOk = !!record.photoBase64;
@@ -1633,8 +1802,8 @@ function saveEntry(wrap, id) {
     banner.className = 'banner bad'; banner.textContent = 'Date and site are both required.';
     banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
   }
-  if (currentJobStatus === 'Complete') {
-    banner.className = 'banner bad'; banner.textContent = 'This site is marked Complete — a manager needs to take it out of Complete status before new tests can be logged.';
+  if (isClosedStatus(currentJobStatus)) {
+    banner.className = 'banner bad'; banner.textContent = 'This site is marked Complete. Ask a manager to reopen it before adding tests.';
     banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
   }
 
