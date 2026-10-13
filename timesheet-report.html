@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Simpson & Wood — Timesheets v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
+    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
+    --amber:#7a4f00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --blue:#1d3c63; --blue-bg:#eef3fa;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
+  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
+  [hidden]{display:none !important;}
+  button{font-family:inherit; color:inherit;}
+
+  #signinScreen, #notAuthorised{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img, #notAuthorised img{height:44px; margin-bottom:28px;}
+  #signinScreen h2, #notAuthorised h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p, #notAuthorised p{color:var(--grey); font-size:14px; max-width:340px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinErr{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  #appRoot{display:none;}
+  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  header img{height:28px; display:block;}
+  header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
+  header .who{text-align:right; min-width:0;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  .wrap{max-width:1500px; margin:0 auto; padding:20px 24px 40px;}
+  @media (max-width:640px){ .wrap{padding:14px 10px 30px;} }
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:16px;}
+  @media (max-width:640px){ .card{padding:12px;} }
+  .card h2{margin:0 0 12px; font-size:22px; font-weight:700;}
+  .bar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px;}
+  .bar .grow{flex:1;}
+  .wk{display:flex; align-items:center; gap:8px;}
+  .wk h2{margin:0; font-size:24px; font-weight:700; min-width:230px; text-align:center;}
+  @media (max-width:640px){ .wk h2{font-size:19px; min-width:0;} }
+  .nav{background:#fff; border:1px solid var(--line); border-radius:8px; width:42px; height:40px; font-size:20px; cursor:pointer;}
+  .btn{background:#fff; border:1.5px solid var(--field); border-radius:9px; padding:9px 14px; font-weight:700; font-size:14.5px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+  .btn.red{background:var(--red); border-color:var(--red); color:#fff;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .tick{display:inline-flex; align-items:center; gap:7px; font-size:14.5px; cursor:pointer;}
+  .tick input{width:18px; height:18px;}
+  .inp{width:100%; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; font-family:'Barlow',sans-serif; font-size:16px; background:#fff;}
+  .inp:focus{outline:none; border-color:var(--red);}
+
+  /* ---- week grid ---- */
+  .gridwrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table.grid{width:100%; border-collapse:separate; border-spacing:5px; min-width:760px; table-layout:fixed;}
+  table.grid col.cw{width:250px;}
+  .grid td.who{overflow:hidden; text-overflow:ellipsis;}
+  .grid th{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; color:var(--grey); text-transform:uppercase; text-align:center; padding:2px 4px;}
+  .grid th small{display:block; font-family:'Barlow',sans-serif; text-transform:none; font-weight:600; font-size:12px;}
+  .grid th.bh{color:var(--amber);}
+  .grid td.who{position:sticky; left:0; background:var(--card); z-index:1; font-weight:700; font-size:15px; white-space:nowrap; padding-right:8px; min-width:150px;}
+  .grid td.who small{display:block; font-weight:500; color:var(--grey); font-size:12px;}
+  .grid td.c{height:64px; border-radius:9px; border:1px solid var(--line); background:#fff; text-align:center; cursor:pointer; position:relative; padding:4px;}
+  .grid td.c .v{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:21px; line-height:1;}
+  .grid td.c .s{font-size:12px; margin-top:2px;}
+  .grid td.c.done{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
+  .grid td.c.off{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
+  .grid td.c.miss{background:var(--red-tint); border-color:#f1c4c6; color:var(--red-dark);}
+  .grid td.c.wkend{background:#ecebe7; cursor:default;}
+  .grid td.c.future{cursor:default;}
+  @media (max-width:640px){
+    table.grid{min-width:600px; border-spacing:3px;}
+    table.grid col.cw{width:100px;}
+    .grid td.who{min-width:92px; max-width:110px; white-space:normal; font-size:13px; line-height:1.2;}
+    .grid td.who small{display:none;}
+    .grid td.c{height:56px;}
+    .grid td.c .v{font-size:18px;}
+    .grid td.c .s{font-size:11px;}
+  }
+  .grid td.c .dot{position:absolute; top:6px; right:6px; width:9px; height:9px; border-radius:50%;}
+  .grid td.c .dot.amend{background:#4a6fa5;}
+  .grid td.c .dot.unsent{background:#e8a317; right:18px;}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--grey); margin-top:8px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{display:inline-block; width:13px; height:13px; border-radius:4px; border:1px solid var(--line);}
+  .empty{color:var(--grey); font-size:15px; text-align:center; padding:30px 10px;}
+
+  /* ---- customer search ---- */
+  table.list{width:100%; border-collapse:collapse; font-size:14.5px;}
+  .list th{text-align:left; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; color:var(--grey); font-size:14px; padding:6px 8px; border-bottom:1.5px solid var(--line);}
+  .list td{padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .list tr.click{cursor:pointer;}
+  .list tr.click:hover td{background:var(--soft);}
+  @media (max-width:700px){
+    .list thead{display:none;}
+    .list tr{display:block; border-bottom:1px solid var(--line); padding:8px 0;}
+    .list td{display:block; border:none; padding:2px 4px;}
+  }
+
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); white-space:nowrap; margin:2px 4px 2px 0;}
+  .tag.red{background:var(--red); color:#fff;}
+  .tag.amber{background:#ffcd50; color:var(--ink);}
+  .tag.green{background:var(--green); color:#fff;}
+  .tag.outline{background:#fff; border:1.5px solid var(--red); color:var(--red);}
+  .tag.test{background:#e9e4f5; color:#5a3d8a;}
+  .tag.warn{background:var(--amber-bg); color:var(--amber);}
+
+  /* ---- timesheet view (laid out like the PDF) ---- */
+  .sheet{max-width:980px; margin:0 auto;}
+  .sheet .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; border-bottom:3px solid var(--red); padding-bottom:10px; margin-bottom:12px;}
+  .sheet .top h2{margin:0; font-size:30px; font-weight:700;}
+  .sheet .top .date{font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; text-align:right;}
+  .sheet .sub{color:var(--grey); font-size:15px; margin-bottom:12px;}
+  .boxes{display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:12px;}
+  .boxes div{background:var(--soft); padding:9px 4px; text-align:center; border-left:1px solid var(--line);}
+  .boxes div:first-child{border-left:none;}
+  .boxes span{display:block; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--grey);}
+  .boxes b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:26px;}
+  .boxes b.alert{color:var(--red);}
+  @media (max-width:640px){ .boxes{grid-template-columns:repeat(3, minmax(0,1fr));} .boxes div:nth-child(4){border-left:none;} .boxes div:nth-child(n+4){border-top:1px solid var(--line);} }
+  .flags{color:var(--red); font-weight:700; font-size:15.5px; margin:0 0 12px;}
+  .sjob{border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:14px; background:#fff;}
+  .sjob .h{background:var(--ink); color:#fff; display:flex; justify-content:space-between; gap:10px; padding:8px 14px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:18px;}
+  .sjob .b{padding:12px 14px;}
+  .sjob .cust{font-family:'Barlow Condensed',sans-serif; font-size:23px; font-weight:700; margin-bottom:6px;}
+  .sjob .paid{color:var(--grey); font-size:14.5px; margin:4px 0;}
+  .sjob .lbl{font-family:'Barlow Condensed',sans-serif; font-size:13.5px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:10px 0 3px;}
+  .sjob .det{font-size:16px; line-height:1.45; white-space:pre-wrap;}
+  .sjob table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  .sjob table th{background:var(--soft); text-align:left; font-size:13px; text-transform:uppercase; color:var(--grey); padding:5px 8px;}
+  .sjob table td{padding:6px 8px; border-bottom:1px solid var(--line);}
+  .sjob table td:first-child{font-weight:700; width:70px;}
+  .meta{background:var(--soft); border-radius:10px; padding:10px 14px; font-size:14px; color:var(--grey); margin-top:6px;}
+  .meta div{padding:2px 0;}
+  .meta button{background:none; border:none; color:var(--red-dark); text-decoration:underline; cursor:pointer; font-size:14px; padding:0 0 0 6px;}
+
+  /* ---- overlays ---- */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; overflow:auto; padding:24px 16px;}
+  .overlay .panel{background:var(--bg); border-radius:14px; max-width:1040px; margin:0 auto; padding:18px 20px 24px;}
+  .overlay .ptop{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-bottom:10px;}
+  @media (max-width:640px){ .overlay{padding:0;} .overlay .panel{border-radius:0; min-height:100vh; padding:12px 10px 24px;} }
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:200; padding:16px;}
+  .modal{background:#fff; border-radius:14px; width:100%; max-width:620px; max-height:90vh; overflow:auto; padding:20px;}
+  .modal h3{margin:0 0 10px; font-size:22px; font-weight:700;}
+  .modal .mbody{font-size:15px; line-height:1.5;}
+  .modal .mbtns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px;}
+  .rem{display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line);}
+  .rem input{width:19px; height:19px; margin-top:2px;}
+  .rem small{display:block; color:var(--grey);}
+  .rem .res{margin-left:auto; font-weight:700; font-size:13px;}
+
+  /* ---- tidy lists ---- */
+  .tabs2{display:flex; gap:6px; margin-bottom:12px;}
+  .tabs2 button{background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer;}
+  .tabs2 button.on{background:var(--red); border-color:var(--red); color:#fff;}
+  .tidy-row{display:flex; gap:10px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line); font-size:15px;}
+  .tidy-row input{width:18px; height:18px;}
+  .tidy-row small{color:var(--grey); margin-left:auto; text-align:right; font-size:12.5px;}
+  .more{margin-top:20px; font-size:14px;}
+  .more a{color:var(--grey); cursor:pointer; text-decoration:underline;}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:9px; font-size:14px; z-index:300;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Timesheets</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div id="signinErr"></div>
+</div>
+
+<div id="notAuthorised">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Access restricted</h2>
+  <p>This page is for managers only. Signed in as <span id="notAuthEmail"></span>.</p>
+  <button class="ms-btn" id="signOutBtn2">Sign out</button>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
+      <div>
+        <h1>Timesheets</h1>
+        <p id="versionLabel">v1.0</p>
+      </div>
+    </a>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="view-main">
+      <div class="card">
+        <div class="bar">
+          <div class="wk"><button class="nav" data-wk="-1" aria-label="Previous week">‹</button><h2 id="wkTitle">—</h2><button class="nav" data-wk="1" aria-label="Next week">›</button></div>
+          <button class="btn" id="thisWeek">This week</button>
+          <span class="grow"></span>
+          <label class="tick"><input type="checkbox" id="showTest"> Show test</label>
+          <button class="btn red" id="remindBtn"><i class="ti ti-mail"></i> Send reminders</button>
+        </div>
+        <div class="gridwrap" id="grid"><div class="empty">Loading…</div></div>
+        <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#4a6fa5;border-radius:50%"></i>Amended</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Find a customer</h2>
+        <input class="inp" id="custQ" placeholder="Type a customer name" autocomplete="off">
+        <div id="custResults"></div>
+      </div>
+
+      <div class="more"><a id="openTidy">Tidy the customer and gear lists</a></div>
+    </section>
+
+    <section id="view-tidy" hidden>
+      <div class="bar"><button class="btn" id="backMain"><i class="ti ti-arrow-left"></i> Back to timesheets</button></div>
+      <div class="card">
+        <h2>Tidy lists</h2>
+        <div class="tabs2"><button data-tidy="cust" class="on">Customers</button><button data-tidy="gear">Gear</button></div>
+        <div class="bar">
+          <input class="inp" id="tidyQ" placeholder="Filter" autocomplete="off" style="max-width:360px">
+          <span class="grow"></span>
+          <button class="btn" id="tidyMerge" disabled>Merge selected</button>
+          <button class="btn red" id="tidyDelete" disabled>Delete selected</button>
+        </div>
+        <div id="tidyList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut, reauthenticateWithPopup, reauthenticateWithRedirect
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+// Same as timesheet.html: Mail.Send lets a manager send reminder emails from
+// their own account (Microsoft Graph). Permission + admin consent already set.
+msProvider.addScope('Mail.Send');
+
+function keepToken(result) {
+  try {
+    const cred = OAuthProvider.credentialFromResult(result);
+    if (cred && cred.accessToken) {
+      sessionStorage.setItem('ts-graph', JSON.stringify({
+        t: cred.accessToken, exp: Date.now() + 50 * 60000,
+        who: ((result.user && result.user.email) || '').toLowerCase()
+      }));
+    }
+  } catch (e) { console.warn('token not kept', e); }
+}
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).then(keepToken).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => { sessionStorage.removeItem('ts-graph'); signOut(auth); });
+document.getElementById('signOutBtn2').addEventListener('click', () => { sessionStorage.removeItem('ts-graph'); signOut(auth); });
+getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+// Standards §1.2 — must match the rules' isManager() exactly.
+async function checkManager(email){
+  try {
+    const mgrSnap = await getDoc(doc(db, 'managers', email));
+    if (mgrSnap.exists()) return true;
+  } catch (e) { console.error('managers check failed', e); }
+  try {
+    const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
+    if (staffSnap.exists()){
+      const pos = staffSnap.data().position;
+      if (pos === 'Manager' || pos === 'QS') return true;
+    }
+  } catch (e) { console.error('staff check failed', e); }
+  return false;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED WITH timesheet.html (copied, keep in step): settings, helpers, PDF
+// ═══════════════════════════════════════════════════════════════════════════
+const VERSION = 'report v1.0';   // shown in PDF footers made from this page
+const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
+const STD_START = 8 * 60;        // 08:00
+const STD_END = 16 * 60 + 30;    // 16:30
+const MAX_JOBS = 10;
+const LOOKBACK_DAYS = 31;        // how far back the "missing timesheets" check looks
+// Test mode: open the page as timesheet.html?test=1. Records are marked as test
+// data, kept apart from real ones, and the email goes to you instead of the office.
+const TEST = new URLSearchParams(location.search).get('test') === '1';
+
+// England & Wales bank holidays, from gov.uk/bank-holidays (checked 10 Oct 2026).
+// gov.uk only publishes about two years ahead: add the next year each autumn
+// (it's on the to-do list). These are paid at 2× and never count as "missing".
+const BANK_HOLIDAYS = {
+  '2026-01-01': "New Year's Day", '2026-04-03': 'Good Friday', '2026-04-06': 'Easter Monday',
+  '2026-05-04': 'Early May bank holiday', '2026-05-25': 'Spring bank holiday', '2026-08-31': 'Summer bank holiday',
+  '2026-12-25': 'Christmas Day', '2026-12-28': 'Boxing Day (substitute day)',
+  '2027-01-01': "New Year's Day", '2027-03-26': 'Good Friday', '2027-03-29': 'Easter Monday',
+  '2027-05-03': 'Early May bank holiday', '2027-05-31': 'Spring bank holiday', '2027-08-30': 'Summer bank holiday',
+  '2027-12-27': 'Christmas Day (substitute day)', '2027-12-28': 'Boxing Day (substitute day)',
+  '2028-01-03': "New Year's Day (substitute day)", '2028-04-14': 'Good Friday', '2028-04-17': 'Easter Monday',
+  '2028-05-01': 'Early May bank holiday', '2028-05-29': 'Spring bank holiday', '2028-08-28': 'Summer bank holiday',
+  '2028-12-25': 'Christmas Day', '2028-12-26': 'Boxing Day'
+};
+const BH_LAST_YEAR = 2028;
+const REASONS = { holiday: 'Holiday', sick: 'Sick', dayOff: 'Day off', bankHoliday: 'Bank holiday' };
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SMALL HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return isoOf(d); }
+function todayISO() { return isoOf(new Date()); }
+function dow(s) { return parseISO(s).getDay(); }
+function longDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function shortDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+function dayType(s) { if (BANK_HOLIDAYS[s]) return 'bh'; const d = dow(s); return d === 0 ? 'sun' : d === 6 ? 'sat' : 'wk'; }
+function toMin(hhmm) { if (!hhmm) return null; const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+function hhmm(min) { min = ((min % 1440) + 1440) % 1440; return pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+// "Midnight", "01:00am" … "11:45am", "Midday", "12:15pm", "01:00pm" …
+function timeLabel(min) {
+  if (min == null) return '';
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0 && m === 0) return 'Midnight';
+  if (h === 12 && m === 0) return 'Midday';
+  return pad(h % 12 || 12) + ':' + pad(m) + (h < 12 ? 'am' : 'pm');
+}
+function hourLabel(h) { return h === 0 ? 'Midnight' : h === 12 ? 'Midday' : pad(h % 12) + ':00' + (h < 12 ? 'am' : 'pm'); }
+const fmtH = mins => (Math.max(0, mins) / 60).toFixed(2) + ' h';
+const fmtNum = mins => (Math.max(0, mins) / 60).toFixed(2);
+
+
+function modal({ title, body, buttons }) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${esc(title)}</h3><div class="mbody">${body}</div>
+      <div class="mbtns">${buttons.map((b, i) => `<button type="button" class="${b.primary ? 'btn-primary' : 'btn-ghost'}" data-i="${i}">${esc(b.label)}</button>`).join('')}</div></div>`;
+    const close = v => { bg.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(undefined); };
+    bg.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b) close(buttons[+b.dataset.i].value); else if (e.target === bg) close(undefined);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    const p = bg.querySelector('.btn-primary'); if (p) p.focus();
+  });
+}
+
+
+async function loadLogo() {
+  try {
+    const img = new Image();
+    img.src = 'sw-logo.png';
+    await img.decode();
+    const W = 560, H = Math.round(W * img.naturalHeight / img.naturalWidth);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+    LOGO = { data: cv.toDataURL('image/jpeg', 0.9), ratio: H / W };
+  } catch (e) { LOGO = null; }
+}
+function buildPDF(rec, office) {
+  if (!window.jspdf) throw new Error('The PDF tool didn\'t load. Check your signal and reload the page.');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 14, CW = W - 2 * M, BOTTOM = 274;
+  const INK = [20, 20, 20], DARK = [50, 50, 50], MID = [90, 90, 90], LINE = [200, 200, 200], RED = [208, 34, 42], SOFT = [244, 243, 240], WHITE = [255, 255, 255];
+  const F = (style, size, col) => { pdf.setFont('helvetica', style); pdf.setFontSize(size); pdf.setTextColor(...(col || INK)); };
+  const t = rec.totals || {};
+  const H = mins => fmtNum(mins || 0);
+  let y = 12;
+
+  // ---- top ----
+  const logoH = LOGO ? 50 * LOGO.ratio : 0;
+  if (LOGO) pdf.addImage(LOGO.data, 'JPEG', M, y, 50, logoH);
+  else { F('bold', 16, RED); pdf.text('SIMPSON & WOOD', M, y + 9); }
+  F('bold', 12, office ? RED : MID);
+  pdf.text(office ? 'OFFICE COPY' : 'ENGINEER COPY', W - M, y + 5, { align: 'right' });
+  let ry = y + 11;
+  if ((rec.version || 1) > 1) { F('bold', 12, RED); pdf.text(`AMENDED — version ${rec.version}`, W - M, ry, { align: 'right' }); ry += 6; }
+  if (rec.testData) { F('bold', 12, RED); pdf.text('TEST DATA — NOT A REAL TIMESHEET', W - M, ry, { align: 'right' }); }
+  y = Math.max(y + (logoH || 12), ry - 4) + 5;
+  pdf.setDrawColor(...RED); pdf.setLineWidth(0.8); pdf.line(M, y, W - M, y); pdf.setLineWidth(0.25);
+  y += 10;
+  F('bold', 21, INK); pdf.text(rec.engineerName || rec.engineerEmail, M, y);
+  F('bold', 13, INK); pdf.text(longDate(rec.date), W - M, y, { align: 'right' });
+  y += 7;
+  const dt = dayType(rec.date);
+  const subBits = [];
+  subBits.push(`Started ${t.dayStart}${t.startsNextDay ? ' (next day)' : ''}  ·  Finished ${t.dayEnd}${t.endsNextDay ? ' (next day)' : ''}  ·  ${rec.jobs.length} job${rec.jobs.length === 1 ? '' : 's'}`);
+  if (!office) { if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]})`); }
+  else if (dt === 'bh') subBits.push(`Bank holiday (${rec.bankHoliday || BANK_HOLIDAYS[rec.date]}): all hours 2×`);
+  else if (dt === 'sun') subBits.push('Sunday: all hours 2×');
+  else if (dt === 'sat') subBits.push('Saturday: all hours 1.5×');
+  F('normal', 11, DARK);
+  pdf.splitTextToSize(subBits.join('     '), CW).forEach(l => { pdf.text(l, M, y); y += 5.2; });
+  y += 1;
+
+  // ---- summary boxes ----
+  const boxes = office
+    ? [['Total hours', H(t.totalMins), false], ['At 1×', H(t.mins1x), false], ['At 1.5×', H(t.mins1_5x), t.mins1_5x > 0], ['At 2×', H(t.mins2x), t.mins2x > 0], ['Call-outs', String(t.callouts || 0), t.callouts > 0], ['Dinner', t.dinners ? 'Yes' : 'No', false]]
+    : [['Total hours', H(t.totalMins), false], ['Jobs', String(rec.jobs.length), false], ['Call-outs', String(t.callouts || 0), false], ['Dinner', t.dinners ? 'Yes' : 'No', false]];
+  const bw = CW / boxes.length, bh = 19;
+  boxes.forEach((bx, k) => {
+    const x = M + k * bw;
+    pdf.setFillColor(...SOFT); pdf.setDrawColor(...LINE); pdf.rect(x, y, bw, bh, 'FD');
+    F('bold', 8.5, MID); pdf.text(bx[0].toUpperCase(), x + bw / 2, y + 6, { align: 'center' });
+    F('bold', 16, bx[2] ? RED : INK); pdf.text(bx[1], x + bw / 2, y + 15, { align: 'center' });
+  });
+  y += bh + 5;
+  if (office && (t.testCerts || t.returnVisits)) {
+    const flags = [];
+    if (t.testCerts) flags.push(`${t.testCerts} test cert${t.testCerts === 1 ? '' : 's'} needed`);
+    if (t.returnVisits) flags.push(`${t.returnVisits} return visit${t.returnVisits === 1 ? '' : 's'} needed`);
+    F('bold', 12, RED); pdf.text(flags.join('   ·   '), M, y + 2); y += 8;
+  }
+  if (rec.noStaffRecord) { F('italic', 10, RED); pdf.text('Note: this account is not on the staff list, so the name shown is the email address.', M, y + 1); y += 7; }
+
+  // ---- jobs ----
+  const runningHead = () => { F('normal', 9.5, MID); pdf.text(`${rec.engineerName}  ·  ${longDate(rec.date)}  ·  continued`, M, 12); };
+  let contJob = null;
+  const newPageIf = need => {
+    if (y + need <= BOTTOM) return;
+    pdf.addPage(); runningHead(); y = 18;
+    if (contJob) {
+      pdf.setFillColor(90, 90, 90); pdf.rect(M, y, CW, 7.5, 'F');
+      F('bold', 10.5, WHITE); pdf.text(`JOB ${contJob.n} continued  ·  ${contJob.customer}`.slice(0, 95), M + 3, y + 5.2);
+      y += 13.5;
+    }
+  };
+  rec.jobs.forEach((j, i) => {
+    F('bold', 15); const custLines = pdf.splitTextToSize(j.customer || '—', CW - 4);
+    F('normal', 11.5); const detLines = j.details ? pdf.splitTextToSize(j.details, CW - 4) : [];
+    const badges = [];
+    if (j.callout === 'Yes') badges.push({ t: 'CALL-OUT', fill: RED, col: WHITE });
+    if (j.testCert === 'Yes') badges.push({ t: 'TEST CERT NEEDED', fill: [255, 205, 80], col: INK });
+    else if (office) badges.push({ t: 'NO TEST CERT', fill: null, col: MID, line: LINE });
+    if (j.status === 'Return visit needed') badges.push({ t: 'RETURN VISIT NEEDED', fill: WHITE, col: RED, line: RED });
+    else if (j.status === 'Completed') badges.push({ t: 'COMPLETED', fill: [30, 107, 52], col: WHITE });
+    if (j.dinner === 'Yes') badges.push({ t: 'DINNER TAKEN (30 MIN OFF)', fill: [225, 225, 225], col: DARK });
+    const custH = custLines.length * 6.4 + 2;
+    const minBlock = 10 + custH + 10 + 7 + Math.min(3, detLines.length) * 5.6;
+    newPageIf(minBlock);
+    contJob = { n: i + 1, customer: j.customer };
+    // header bar
+    pdf.setFillColor(26, 26, 26); pdf.rect(M, y, CW, 9, 'F');
+    F('bold', 12, WHITE); pdf.text(`JOB ${i + 1}`, M + 3, y + 6.2);
+    const times = `${j.startsNextDay ? '(next day) ' : ''}${j.start} – ${j.end}${j.finishesNextDay ? ' (next day)' : ''}`;
+    pdf.text(`${times}     ${fmtNum(j.paidMins)} h`, W - M - 3, y + 6.2, { align: 'right' });
+    y += 9 + 6.5;
+    F('bold', 15, INK); custLines.forEach(l => { pdf.text(l, M + 2, y); y += 6.4; });
+    y -= 2;
+    // badges
+    if (badges.length) {
+      y += 2;
+      let bx = M + 2;
+      F('bold', 9);
+      badges.forEach(bd => {
+        const w = pdf.getTextWidth(bd.t) + 6;
+        if (bx + w > W - M) { bx = M + 2; y += 8.5; }
+        if (bd.fill) pdf.setFillColor(...bd.fill);
+        if (bd.line) pdf.setDrawColor(...bd.line);
+        pdf.roundedRect(bx, y, w, 6.5, 1.2, 1.2, bd.fill && bd.line ? 'FD' : bd.fill ? 'F' : 'D');
+        F('bold', 9, bd.col); pdf.text(bd.t, bx + 3, y + 4.6);
+        bx += w + 3;
+      });
+      y += 6.5 + 3;
+    }
+    if (office && (j.mins1_5x || j.mins2x)) {
+      const parts = [];
+      if (j.mins1x) parts.push(`${fmtNum(j.mins1x)} h at 1×`);
+      if (j.mins1_5x) parts.push(`${fmtNum(j.mins1_5x)} h at 1.5×`);
+      if (j.mins2x) parts.push(`${fmtNum(j.mins2x)} h at 2×`);
+      F('normal', 10.5, DARK); pdf.text('Paid: ' + parts.join('  +  '), M + 2, y + 3); y += 6;
+    }
+    // details
+    y += 2;
+    F('bold', 9, MID); pdf.text('WORK CARRIED OUT', M + 2, y + 2.5); y += 8;
+    F('normal', 11.5, INK);
+    detLines.forEach(l => { newPageIf(5.6); F('normal', 11.5, INK); pdf.text(l, M + 2, y); y += 5.6; });
+    // materials
+    if (j.materials && j.materials.length) {
+      y += 2;
+      F('normal', 11.5);
+      const rows = j.materials.map(g => ({ q: g.qty, lines: pdf.splitTextToSize(g.desc, CW - 30) }));
+      newPageIf(14 + rows[0].lines.length * 5.2);
+      F('bold', 9, MID); pdf.text('MATERIALS FROM STORES', M + 2, y + 2.5); y += 5;
+      const tHead = () => { pdf.setFillColor(...SOFT); pdf.rect(M, y, CW, 6.5, 'F'); F('bold', 9, DARK); pdf.text('QTY', M + 3, y + 4.5); pdf.text('DESCRIPTION', M + 26, y + 4.5); y += 6.5; };
+      tHead();
+      rows.forEach(r => {
+        const rh = Math.max(7.5, r.lines.length * 5.2 + 2.6);
+        if (y + rh > BOTTOM) { newPageIf(rh + 10); tHead(); }
+        F('bold', 11.5, INK); pdf.text(String(r.q), M + 3, y + 5.2);
+        F('normal', 11.5, INK); r.lines.forEach((l, k) => pdf.text(l, M + 26, y + 5.2 + k * 5.2));
+        y += rh;
+        pdf.setDrawColor(...LINE); pdf.line(M, y, W - M, y);
+      });
+    }
+    contJob = null;
+    y += 9;
+  });
+
+  // ---- footer on every page ----
+  const n = pdf.getNumberOfPages();
+  const sent = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  for (let p = 1; p <= n; p++) {
+    pdf.setPage(p);
+    pdf.setDrawColor(...LINE); pdf.line(M, 283, W - M, 283);
+    F('normal', 8.5, MID);
+    pdf.text(`Simpson & Wood Electrical Contractors  ·  Timesheet  ·  ${rec.engineerName}  ·  ${longDate(rec.date)}`, M, 288);
+    pdf.text(`Page ${p} of ${n}`, W - M, 288, { align: 'right' });
+    pdf.text(`Version ${rec.version || 1}  ·  made ${sent}  ·  timesheet app ${VERSION}`, M, 292);
+  }
+  return pdf;
+}
+const pdfB64 = pdf => pdf.output('datauristring').split(',')[1];
+function pdfName(rec, which) {
+  return `Timesheet ${rec.engineerName.replace(/[^\w .-]+/g, '')} ${rec.date}${(rec.version || 1) > 1 ? ' v' + rec.version : ''}${rec.testData ? ' TEST' : ''} ${which}.pdf`;
+}
+
+
+function storedToken() {
+  try {
+    const o = JSON.parse(sessionStorage.getItem('ts-graph') || 'null');
+    if (o && o.exp > Date.now() && o.who === ME.email) return o.t;
+  } catch (e) {}
+  return null;
+}
+// Ask Microsoft for a fresh token. Must be called straight from a tap.
+async function tokenInteractive(pendingId) {
+  try {
+    const r = await reauthenticateWithPopup(auth.currentUser, msProvider);
+    keepToken(r);
+    return storedToken();
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      sessionStorage.setItem('ts-pending-send', pendingId || '');
+      await reauthenticateWithRedirect(auth.currentUser, msProvider);
+      return null;
+    }
+    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
+    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
+  }
+}
+async function graphSend(token, message) {
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, saveToSentItems: true })
+  });
+  if (res.status === 202 || res.ok) return;
+  let detail = '';
+  try { const j = await res.json(); detail = (j.error && (j.error.code + ': ' + j.error.message)) || ''; } catch (e) {}
+  const err = new Error(res.status === 403
+    ? 'Microsoft hasn\'t given the app permission to send email yet (an Entra setting — tell Rob).'
+    : `Microsoft said ${res.status}${detail ? ' (' + detail + ')' : ''}.`);
+  err.status = res.status;
+  throw err;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TIMESHEETS (managers) — view-only
+// ═══════════════════════════════════════════════════════════════════════════
+const REPORT_VERSION = 'v1.0';
+const APP_LINK = 'https://app.simpsonandwood.co.uk/timesheet.html';
+let ME = null;            // { email, rawEmail, name }
+let STAFF = new Map();    // email -> { name, position, fills }
+let RECS = [];            // every timesheet
+let LOGO = null;
+let weekStart = mondayOf(todayISO());
+let showTest = false;
+
+function mondayOf(iso) { const d = parseISO(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoOf(d); }
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+const firstName = n => String(n || '').split(/[\s@.]/)[0] || n;
+
+// ---- people & missing days ----
+// Real people and test (seed) people are worked out separately, so test
+// records can never count as a real person's first timesheet or a done day.
+function peopleFor(test) {
+  const recs = RECS.filter(r => !!r.testData === test);
+  const map = new Map();
+  if (!test) STAFF.forEach((s, email) => { if (s.fills) map.set(email, { email, name: s.name || email, onStaff: true, recs: [] }); });
+  recs.forEach(r => {
+    let p = map.get(r.engineerEmail);
+    if (!p) {
+      const s = STAFF.get(r.engineerEmail);
+      if (!test && s && !s.fills) return;                 // switched off: not expected, not shown
+      p = { email: r.engineerEmail, name: (s && s.name) || r.engineerName || r.engineerEmail, onStaff: !!s, recs: [], test };
+      map.set(r.engineerEmail, p);
+    }
+    p.recs.push(r);
+  });
+  map.forEach(p => {
+    p.byDate = new Map(p.recs.map(r => [r.date, r]));
+    p.first = p.recs.reduce((m, r) => (!m || r.date < m) ? r.date : m, null);
+    p.test = test;
+  });
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+function isMissing(p, date) {
+  if (!p.first || date < p.first || date >= todayISO()) return false;
+  const w = dow(date);
+  if (w === 0 || w === 6 || BANK_HOLIDAYS[date]) return false;
+  return !p.byDate.has(date);
+}
+function missingFor(p) {
+  const out = [], today = todayISO();
+  for (let d = addDays(today, -LOOKBACK_DAYS); d < today; d = addDays(d, 1)) if (isMissing(p, d)) out.push(d);
+  return out;
+}
+const emailSent = r => r.email && r.email.status === 'sent' && (r.email.version || 1) === (r.version || 1);
+
+// ---- week grid ----
+function renderGrid() {
+  const days = [...Array(7)].map((_, k) => addDays(weekStart, k));
+  const end = days[6];
+  $('wkTitle').textContent = `${parseISO(weekStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${parseISO(end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const people = peopleFor(false).concat(showTest ? peopleFor(true) : []);
+  if (!people.length) { $('grid').innerHTML = '<div class="empty">Nobody to show yet. People appear once they\'re on the staff list (with "Fills in timesheets" on) or have sent a timesheet.</div>'; return; }
+  const today = todayISO();
+  const head = '<tr><th></th>' + days.map(d => `<th class="${BANK_HOLIDAYS[d] ? 'bh' : ''}">${parseISO(d).toLocaleDateString('en-GB', { weekday: 'short' })}<small>${parseISO(d).getDate()} ${parseISO(d).toLocaleDateString('en-GB', { month: 'short' })}${BANK_HOLIDAYS[d] ? ' · bank hol' : ''}</small></th>`).join('') + '</tr>';
+  const rows = people.map(p => {
+    const cells = days.map(d => {
+      const r = p.byDate.get(d), t = dayType(d);
+      const dots = r ? ((r.version || 1) > 1 ? '<span class="dot amend" title="Amended"></span>' : '') + (!emailSent(r) ? '<span class="dot unsent" title="Email not sent"></span>' : '') : '';
+      if (r && r.kind === 'off') return `<td class="c off" data-open="${esc(r.id)}"><div class="v">${esc({ holiday: 'H', sick: 'S', dayOff: 'D', bankHoliday: 'BH' }[r.offReason] || '–')}</div><div class="s">${esc(REASONS[r.offReason] || '')}</div>${dots}</td>`;
+      if (r) return `<td class="c done" data-open="${esc(r.id)}"><div class="v">${fmtNum(r.totals ? r.totals.totalMins : 0)}</div><div class="s">${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}</div>${dots}</td>`;
+      if (isMissing(p, d)) return '<td class="c miss"><div class="v">!</div><div class="s">Missing</div></td>';
+      if (t !== 'wk') return '<td class="c wkend"></td>';
+      return `<td class="c ${d >= today ? 'future' : ''}"></td>`;
+    }).join('');
+    const tags = (p.test ? ' <span class="tag test">Test</span>' : '') + (!p.test && !p.onStaff ? ' <span class="tag warn">Not on staff list</span>' : '');
+    return `<tr><td class="who">${esc(p.name)}${tags}<small>${esc(p.email)}</small></td>${cells}</tr>`;
+  }).join('');
+  $('grid').innerHTML = `<table class="grid"><colgroup><col class="cw">${days.map(() => '<col>').join('')}</colgroup><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+}
+
+// ---- one timesheet, laid out like the office PDF ----
+function sheetHTML(r, opts = {}) {
+  const amended = (r.version || 1) > 1;
+  let h = `<div class="sheet"><div class="top"><div><h2>${esc(r.engineerName || r.engineerEmail)}</h2>${r.testData ? '<span class="tag test">Test data</span>' : ''}${amended ? `<span class="tag outline">Amended · version ${r.version}</span>` : ''}${opts.old ? '<span class="tag warn">Earlier version</span>' : ''}</div><div class="date">${esc(longDate(r.date))}</div></div>`;
+  if (r.kind === 'off') {
+    h += `<div class="sjob"><div class="h"><span>NOT WORKING</span></div><div class="b"><div class="cust">${esc(REASONS[r.offReason] || r.offReason || '')}</div>${r.offNote ? `<div class="det">${esc(r.offNote)}</div>` : ''}</div></div>`;
+  } else {
+    const t = r.totals || {};
+    const bits = [`Started ${t.dayStart}${t.startsNextDay ? ' (next day)' : ''}`, `Finished ${t.dayEnd}${t.endsNextDay ? ' (next day)' : ''}`, `${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}`];
+    const dt = dayType(r.date);
+    if (dt === 'bh') bits.push(`Bank holiday (${r.bankHoliday || BANK_HOLIDAYS[r.date]}): all hours 2×`);
+    else if (dt === 'sun') bits.push('Sunday: all hours 2×');
+    else if (dt === 'sat') bits.push('Saturday: all hours 1.5×');
+    h += `<div class="sub">${bits.map(esc).join(' &nbsp;·&nbsp; ')}</div>`;
+    h += `<div class="boxes"><div><span>Total hours</span><b>${fmtNum(t.totalMins)}</b></div><div><span>At 1×</span><b>${fmtNum(t.mins1x)}</b></div><div><span>At 1.5×</span><b class="${t.mins1_5x > 0 ? 'alert' : ''}">${fmtNum(t.mins1_5x)}</b></div><div><span>At 2×</span><b class="${t.mins2x > 0 ? 'alert' : ''}">${fmtNum(t.mins2x)}</b></div><div><span>Call-outs</span><b class="${t.callouts > 0 ? 'alert' : ''}">${t.callouts || 0}</b></div><div><span>Dinner</span><b>${t.dinners ? 'Yes' : 'No'}</b></div></div>`;
+    const flags = [];
+    if (t.testCerts) flags.push(`${t.testCerts} test cert${t.testCerts === 1 ? '' : 's'} needed`);
+    if (t.returnVisits) flags.push(`${t.returnVisits} return visit${t.returnVisits === 1 ? '' : 's'} needed`);
+    if (flags.length) h += `<p class="flags">${flags.join(' &nbsp;·&nbsp; ')}</p>`;
+    r.jobs.forEach((j, i) => {
+      const badges = [j.callout === 'Yes' ? '<span class="tag red">Call-out</span>' : '',
+        j.testCert === 'Yes' ? '<span class="tag amber">Test cert needed</span>' : '<span class="tag">No test cert</span>',
+        j.status === 'Return visit needed' ? '<span class="tag outline">Return visit needed</span>' : j.status === 'Completed' ? '<span class="tag green">Completed</span>' : '',
+        j.dinner === 'Yes' ? '<span class="tag">Dinner taken (30 min off)</span>' : ''].join('');
+      const paid = [];
+      if (j.mins1_5x || j.mins2x) {
+        if (j.mins1x) paid.push(`${fmtNum(j.mins1x)} h at 1×`);
+        if (j.mins1_5x) paid.push(`${fmtNum(j.mins1_5x)} h at 1.5×`);
+        if (j.mins2x) paid.push(`${fmtNum(j.mins2x)} h at 2×`);
+      }
+      const times = `${j.startsNextDay ? '(next day) ' : ''}${j.start} – ${j.end}${j.finishesNextDay ? ' (next day)' : ''}`;
+      h += `<div class="sjob"><div class="h"><span>JOB ${i + 1}</span><span>${esc(times)} &nbsp; ${fmtNum(j.paidMins)} h</span></div><div class="b">
+        <div class="cust">${esc(j.customer)}</div><div>${badges}</div>${paid.length ? `<div class="paid">Paid: ${paid.join(' + ')}</div>` : ''}
+        <div class="lbl">Work carried out</div><div class="det">${esc(j.details)}</div>
+        ${j.materials && j.materials.length ? `<div class="lbl">Materials from stores</div><table><tr><th>Qty</th><th>Description</th></tr>${j.materials.map(m => `<tr><td>${esc(m.qty)}</td><td>${esc(m.desc)}</td></tr>`).join('')}</table>` : ''}
+      </div></div>`;
+    });
+  }
+  if (r.noStaffRecord) h += `<p class="flags">This account wasn't on the staff list when it was sent.</p>`;
+  if (!opts.old) {
+    const hist = (r.history || []).map(x => `<div>Version ${x.v}: ${x.v === 1 ? 'sent' : 'amended'} ${esc(new Date(x.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))} by ${esc(x.byName || x.by)}${x.v < (r.version || 1) ? `<button data-ver="${x.v}">View</button>` : ''}</div>`).join('');
+    const mail = emailSent(r) ? `Emailed to ${esc(r.email.to || 'the office')}${r.email.sentAt ? ' ' + esc(new Date(r.email.sentAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}` : '<b style="color:var(--red-dark)">The email for this version hasn\'t been sent.</b> The engineer can send it from My timesheets.';
+    h += `<div class="meta">${hist || '<div>No history recorded.</div>'}<div>${mail}</div></div>`;
+  }
+  return h + '</div>';
+}
+function openSheet(id) {
+  const r = RECS.find(x => x.id === id); if (!r) return;
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `<div class="panel"><div class="ptop">${r.kind !== 'off' ? '<button class="btn" data-dl><i class="ti ti-file-download"></i> Download office copy</button>' : ''}<button class="btn" data-close><i class="ti ti-x"></i> Close</button></div><div data-body>${sheetHTML(r)}</div></div>`;
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  ov.addEventListener('click', async e => {
+    if (e.target === ov || e.target.closest('[data-close]')) return close();
+    if (e.target.closest('[data-dl]')) { try { buildPDF(r, true).save(pdfName(r, 'office')); } catch (err) { toast(err.message); } return; }
+    const vb = e.target.closest('[data-ver]');
+    if (vb) {
+      const v = +vb.dataset.ver, body = ov.querySelector('[data-body]');
+      try {
+        const s = await getDoc(doc(db, 'timesheets', r.id, 'versions', 'v' + v));
+        if (!s.exists()) { toast('That earlier version isn\'t stored (test data has no history).'); return; }
+        const old = Object.assign({ id: r.id }, s.data());
+        body.innerHTML = `<div class="bar"><button class="btn" data-back><i class="ti ti-arrow-left"></i> Back to the latest version</button></div>` + sheetHTML(old, { old: true });
+        body.querySelector('[data-back]').onclick = () => { body.innerHTML = sheetHTML(r); };
+      } catch (err) { toast('Couldn\'t load that version: ' + (err.code || err.message)); }
+    }
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+}
+
+// ---- customer search ----
+function renderCustomerSearch() {
+  const q = $('custQ').value.trim();
+  const box = $('custResults');
+  if (!q) { box.innerHTML = ''; return; }
+  const words = q.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(Boolean);
+  const hits = [];
+  RECS.filter(r => showTest || !r.testData).forEach(r => (r.jobs || []).forEach((j, i) => {
+    const nw = String(j.customer || '').toLowerCase().split(/[\s/(),-]+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(Boolean);
+    if (words.every(w => nw.some(x => x.startsWith(w)))) hits.push({ r, j });
+  }));
+  hits.sort((a, b) => b.r.date.localeCompare(a.r.date));
+  if (!hits.length) { box.innerHTML = '<div class="empty">No jobs found for that customer.</div>'; return; }
+  box.innerHTML = `<p style="color:var(--grey);font-size:14px;margin:10px 0 4px">${hits.length} job${hits.length === 1 ? '' : 's'}${hits.length > 200 ? ', showing the newest 200' : ''}</p>
+    <table class="list"><thead><tr><th>Date</th><th>Engineer</th><th>Customer</th><th>Times</th><th>Hours</th><th></th></tr></thead><tbody>${hits.slice(0, 200).map(({ r, j }) => `<tr class="click" data-open="${esc(r.id)}">
+      <td><b>${esc(shortDate(r.date))}</b> ${r.date.slice(0, 4)}</td><td>${esc(r.engineerName)}${r.testData ? ' <span class="tag test">Test</span>' : ''}</td><td>${esc(j.customer)}</td><td>${esc(j.start)}–${esc(j.end)}</td><td>${fmtNum(j.paidMins)} h</td>
+      <td>${j.callout === 'Yes' ? '<span class="tag red">Call-out</span>' : ''}${j.testCert === 'Yes' ? '<span class="tag amber">Test cert</span>' : ''}${j.status === 'Return visit needed' ? '<span class="tag outline">Return visit</span>' : ''}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ---- reminders ----
+async function openReminders() {
+  const list = peopleFor(false).map(p => ({ p, days: missingFor(p) })).filter(x => x.days.length);
+  if (!list.length) { modal({ title: 'No reminders needed', body: '<p>Nobody has missing timesheets in the last 31 days.</p>', buttons: [{ label: 'OK', value: true, primary: true }] }); return; }
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><h3>Send reminders</h3><div class="mbody"><p>Each person gets their own email from you, listing their missing days. Untick anyone you don't want to remind.</p>
+    ${list.map((x, k) => `<label class="rem"><input type="checkbox" data-k="${k}" checked><span><b>${esc(x.p.name)}</b><small>${x.days.map(d => esc(shortDate(d))).join(', ')}</small></span><span class="res" data-res="${k}"></span></label>`).join('')}</div>
+    <div class="mbtns"><button class="btn" data-cancel>Cancel</button><button class="btn red" data-send>Send reminders</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', async e => {
+    if (e.target === bg || e.target.closest('[data-cancel]')) { bg.remove(); return; }
+    const sendBtn = e.target.closest('[data-send]');
+    if (!sendBtn) return;
+    const chosen = [...bg.querySelectorAll('input[data-k]:checked')].map(i => +i.dataset.k);
+    if (!chosen.length) { toast('Nobody ticked.'); return; }
+    let token = storedToken();
+    if (!token) {
+      try { token = await tokenInteractive(''); } catch (err) { toast(err.message); return; }
+      if (!token) return;
+    }
+    sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+    let ok = 0;
+    for (const k of chosen) {
+      const { p, days } = list[k];
+      const res = bg.querySelector(`[data-res="${k}"]`);
+      try {
+        await graphSend(token, {
+          subject: 'Missing timesheets',
+          body: { contentType: 'HTML', content: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a"><p>Hi ${esc(firstName(p.name))},</p><p>You haven't done a timesheet for:</p><p><b>${days.map(d => esc(longDate(d))).join('<br>')}</b></p><p>Please fill ${days.length === 1 ? 'it' : 'them'} in: <a href="${APP_LINK}">${APP_LINK}</a>. If you weren't working, choose <b>Not working</b>.</p><p>Thanks,<br>${esc(ME.name)}</p></div>` },
+          toRecipients: [{ emailAddress: { address: p.email } }]
+        });
+        ok++; res.textContent = 'Sent'; res.style.color = 'var(--green)';
+      } catch (err) {
+        if (err.status === 401) { sessionStorage.removeItem('ts-graph'); }
+        res.textContent = 'Failed'; res.style.color = 'var(--red)'; res.title = err.message;
+      }
+    }
+    sendBtn.textContent = `${ok} of ${chosen.length} sent`;
+    bg.querySelector('[data-cancel]').textContent = 'Close';
+  });
+}
+
+// ---- tidy lists (customers & gear) ----
+let tidyKind = 'cust', TIDY = [];
+async function loadTidy() {
+  const col = tidyKind === 'cust' ? 'timesheetCustomers' : 'timesheetGear';
+  $('tidyList').innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const snap = await getDocs(collection(db, col));
+    TIDY = []; snap.forEach(d => TIDY.push(Object.assign({ id: d.id }, d.data())));
+    TIDY.sort((a, b) => String(a.name).localeCompare(String(b.name), 'en', { numeric: true }));
+    renderTidy();
+  } catch (e) { $('tidyList').innerHTML = `<div class="empty">Couldn't load (${esc(e.code || e.message)}).</div>`; }
+}
+function renderTidy() {
+  const q = $('tidyQ').value.trim().toLowerCase();
+  const rows = TIDY.filter(x => !q || String(x.name).toLowerCase().includes(q));
+  $('tidyList').innerHTML = rows.length ? rows.map(x => `<label class="tidy-row"><input type="checkbox" data-id="${esc(x.id)}"><span>${esc(x.name)}</span><small>${tidyKind === 'cust'
+    ? (x.lastUsed ? 'last used ' + esc(shortDate(x.lastUsed)) + (x.lastUsedBy ? ' by ' + esc(x.lastUsedBy.split('@')[0]) : '') : '')
+    : (x.category ? esc(x.category) : x.addedBy ? 'added by ' + esc(x.addedBy.split('@')[0]) : '')}</small></label>`).join('') : '<div class="empty">Nothing here.</div>';
+  updateTidyButtons();
+}
+function tidySelected() { return [...document.querySelectorAll('#tidyList input:checked')].map(i => TIDY.find(x => x.id === i.dataset.id)).filter(Boolean); }
+function updateTidyButtons() { const n = tidySelected().length; $('tidyDelete').disabled = !n; $('tidyMerge').disabled = n < 2; }
+async function tidyRemove(items) {
+  const col = tidyKind === 'cust' ? 'timesheetCustomers' : 'timesheetGear';
+  let failed = 0;
+  for (const x of items) { try { await deleteDoc(doc(db, col, x.id)); } catch (e) { failed++; console.warn(e); } }
+  if (failed) toast(`${failed} couldn't be removed.`);
+  await loadTidy();
+}
+
+// ---- wiring ----
+document.addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'); if (o && !e.target.closest('.overlay')) { openSheet(o.dataset.open); return; }
+  const w = e.target.closest('[data-wk]'); if (w) { weekStart = addDays(weekStart, 7 * +w.dataset.wk); renderGrid(); return; }
+  const tk = e.target.closest('[data-tidy]');
+  if (tk) { tidyKind = tk.dataset.tidy; document.querySelectorAll('[data-tidy]').forEach(b => b.classList.toggle('on', b === tk)); $('tidyQ').value = ''; loadTidy(); }
+});
+$('thisWeek').addEventListener('click', () => { weekStart = mondayOf(todayISO()); renderGrid(); });
+$('showTest').addEventListener('change', e => { showTest = e.target.checked; renderGrid(); renderCustomerSearch(); });
+$('custQ').addEventListener('input', renderCustomerSearch);
+$('remindBtn').addEventListener('click', openReminders);
+$('openTidy').addEventListener('click', () => { $('view-main').hidden = true; $('view-tidy').hidden = false; window.scrollTo(0, 0); loadTidy(); });
+$('backMain').addEventListener('click', () => { $('view-tidy').hidden = true; $('view-main').hidden = false; });
+$('tidyQ').addEventListener('input', renderTidy);
+$('tidyList').addEventListener('change', updateTidyButtons);
+$('tidyDelete').addEventListener('click', async () => {
+  const sel = tidySelected();
+  const ok = await modal({ title: `Delete ${sel.length} from the list?`, body: `<p>${sel.map(x => esc(x.name)).join('<br>')}</p><p>They stop appearing as suggestions. Timesheets already sent aren't changed.</p>`, buttons: [{ label: 'Cancel', value: false }, { label: 'Delete', value: true, primary: true }] });
+  if (ok) tidyRemove(sel);
+});
+$('tidyMerge').addEventListener('click', async () => {
+  const sel = tidySelected();
+  const keep = await modal({ title: 'Merge into one', body: `<p>Which name should stay? The others are removed from the suggestions. Timesheets already sent aren't changed.</p>`, buttons: sel.map(x => ({ label: x.name, value: x.id })).concat([{ label: 'Cancel', value: null }]) });
+  if (!keep) return;
+  tidyRemove(sel.filter(x => x.id !== keep));
+});
+
+let started = false;
+onAuthStateChanged(auth, async user => {
+  const show = id => ['signinScreen', 'notAuthorised', 'appRoot'].forEach(x => { $(x).style.display = x === id ? (x === 'appRoot' ? 'block' : 'flex') : 'none'; });
+  if (!user) { show('signinScreen'); return; }
+  if (!(await checkManager(user.email || ''))) { $('notAuthEmail').textContent = user.email; show('notAuthorised'); return; }
+  show('appRoot');
+  if (started) return;
+  started = true;
+  const raw = user.email || '';
+  ME = { email: raw.toLowerCase(), rawEmail: raw, name: raw };
+  try {
+    const sSnap = await getDocs(collection(db, 'staff'));
+    sSnap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', fills: x.fillsTimesheets !== false }); });
+  } catch (e) { console.error('staff not loaded', e); }
+  if (STAFF.has(ME.email)) ME.name = STAFF.get(ME.email).name;
+  $('whoName').textContent = ME.name;
+  try {
+    const snap = await getDocs(collection(db, 'timesheets'));
+    RECS = []; snap.forEach(d => RECS.push(Object.assign({ id: d.id }, d.data())));
+  } catch (e) { $('grid').innerHTML = `<div class="empty">Couldn't load timesheets (${esc(e.code || e.message)}).</div>`; return; }
+  renderGrid();
+  loadLogo();
+});
+
+window.__tr = { peopleFor, missingFor, get RECS() { return RECS; } };
+
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>

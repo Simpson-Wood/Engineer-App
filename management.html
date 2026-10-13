@@ -227,7 +227,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.5";
+const VERSION = "v2.6";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -377,6 +377,9 @@ async function renderStaffList() {
           <div class="meta">${r.id}</div>
         </div>
         <div style="display:flex; align-items:center; gap:14px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; white-space:nowrap; cursor:pointer;" title="Expected to fill in a timesheet every weekday">
+            <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'}> Fills in timesheets
+          </label>
           <select class="position-select" data-email="${r.id}" style="font-size:12.5px; padding:6px 8px;">
             ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
           </select>
@@ -392,6 +395,18 @@ async function renderStaffList() {
           await setDoc(doc(db, 'staff', email), { position: newPosition }, { merge: true });
           showToast(email + ' is now ' + newPosition);
         } catch (err) {
+          showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
+        }
+      });
+    });
+    list.querySelectorAll('.fills-ts').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const email = e.target.dataset.email, on = e.target.checked;
+        try {
+          await setDoc(doc(db, 'staff', email), { fillsTimesheets: on }, { merge: true });
+          showToast(email + (on ? ' fills in timesheets' : ' doesn\'t fill in timesheets'));
+        } catch (err) {
+          e.target.checked = !on;
           showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
         }
       });
@@ -462,6 +477,20 @@ const IMPORT_TYPES = [
       if (typeof e.name !== 'string' || !e.name.trim()) errs.push('missing name');
       else if (e.name.length > 120) errs.push('name is longer than 120 characters');
       if ('category' in e && typeof e.category !== 'string') errs.push('category must be text');
+      return errs;
+    }
+  }
+  ,{
+    id: 'timesheetTest',
+    label: 'Timesheet test data',
+    collection: 'timesheets',
+    testRecords: true,
+    note: 'Writes made-up timesheets to the timesheets collection, every one marked testData. They only show on the Timesheets page with "Show test" ticked, never count towards anyone\'s missing days, and are never emailed. Only test records are compared or removable here; real timesheets are never touched.',
+    validateEntry(e) {
+      const errs = [];
+      if (typeof e.engineerEmail !== 'string' || !e.engineerEmail.endsWith('.invalid')) errs.push('engineerEmail must be a made-up address ending .invalid');
+      if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errs.push('date must be YYYY-MM-DD');
+      if (!['work', 'off'].includes(e.kind)) errs.push('kind must be work or off');
       return errs;
     }
   }
@@ -563,7 +592,7 @@ async function runImportPreview() {
   let existing = new Map();
   try {
     const snap = await getDocsFromServer(collection(db, type.collection));
-    snap.forEach(d => existing.set(d.id, d.data()));
+    snap.forEach(d => { const v = d.data(); if (!type.testRecords || v.testData === true) existing.set(d.id, v); });
   } catch (e) {
     impMsg('err', 'Couldn\'t read the current data to compare against — ' + escapeHtml(e.code || e.message) +
       (e.code === 'permission-denied' ? '<br>The Firestore rules for <code>' + type.collection + '</code> may not be published yet.' : ''));
@@ -588,7 +617,8 @@ async function runImportPreview() {
 function renderImportPreview() {
   const { type, fileName, diff } = impState;
   const toWrite = diff.added.length + diff.changed.length;
-  const row = (e, tag) => '<div><span class="imp-tag ' + tag + '">' + tag + '</span><code>' + escapeHtml(e.id) + '</code>' + escapeHtml(e.title || '') + '</div>';
+  const label = e => e.title || e.name || (e.engineerName ? e.engineerName + ' · ' + e.date : '') || '';
+  const row = (e, tag) => '<div><span class="imp-tag ' + tag + '">' + tag + '</span><code>' + escapeHtml(e.id) + '</code>' + escapeHtml(label(e)) + '</div>';
   let html =
     '<div class="imp-msg info">File <b>' + escapeHtml(fileName) + '</b> → <code>' + type.collection + '</code>' +
     (type.testRecords ? ' · every entry will be marked <b>testData</b>' : '') + '</div>' +
@@ -610,10 +640,16 @@ function renderImportPreview() {
       '<p class="sub" style="margin:0 0 6px;">These are never deleted automatically. Tick any you really want removed.</p>' +
       '<div class="imp-list">' + diff.missing.map(e =>
         '<div><input type="checkbox" class="imp-del" value="' + escapeHtml(e.id) + '"><span class="imp-tag missing">missing</span><code>' +
-        escapeHtml(e.id) + '</code>' + escapeHtml(e.title || '') + '</div>').join('') + '</div>' +
+        escapeHtml(e.id) + '</code>' + escapeHtml(label(e)) + '</div>').join('') + '</div>' +
       '<button type="button" class="remove-btn" id="impDeleteBtn" disabled>Delete ticked entries</button>';
   }
+  if (type.testRecords) {
+    html += '<div class="imp-h">Remove all test data</div><p class="sub" style="margin:0 0 6px;">Deletes every <b>test</b> record in <code>' + type.collection + '</code> (including test timesheets sent from test mode), whatever file they came from. Real records are never touched.</p>' +
+      '<button type="button" class="remove-btn" id="impClearTestBtn">Remove all test data</button>';
+  }
   document.getElementById('impResult').innerHTML = html;
+  const clearBtn = document.getElementById('impClearTestBtn');
+  if (clearBtn) clearBtn.addEventListener('click', runClearTest);
 
   const confirmBtn = document.getElementById('impConfirmBtn');
   if (confirmBtn) confirmBtn.addEventListener('click', runImportWrite);
@@ -663,6 +699,34 @@ async function runImportWrite() {
     impMsg('err', '<b>Import failed — ' + escapeHtml(e.code || e.message) + '.</b>' +
       (e.code === 'permission-denied' ? '<br>The database refused the write. Check the Firestore rules are published and your account is in the console-only <code>managers</code> list.' : '') +
       '<br>Batches of up to 400 are all-or-nothing; if this was a very large file, run Preview again to see what did land.');
+  }
+}
+
+// Standards §2: test data can be removed in bulk. Only records marked
+// testData are ever deleted; any "versions" history under them goes too.
+async function runClearTest() {
+  if (!impState || !impState.type.testRecords) return;
+  const { type } = impState;
+  try {
+    const snap = await getDocsFromServer(collection(db, type.collection));
+    const ids = []; snap.forEach(d => { if (d.data().testData === true) ids.push(d.id); });
+    if (!ids.length) { showToast('No test data to remove'); return; }
+    if (!confirm('Remove all ' + ids.length + ' test record' + (ids.length === 1 ? '' : 's') + ' from ' + type.collection + '?')) return;
+    const ops = [];
+    for (const id of ids) {
+      if (type.collection === 'timesheets') {
+        try {
+          const vs = await getDocsFromServer(collection(db, type.collection, id, 'versions'));
+          vs.forEach(v => ops.push(batch => batch.delete(doc(db, type.collection, id, 'versions', v.id))));
+        } catch (e) { console.warn('versions not read for', id, e); }
+      }
+      ops.push(batch => batch.delete(doc(db, type.collection, id)));
+    }
+    await commitInChunks(ops);
+    showToast('Removed ' + ids.length + ' test record' + (ids.length === 1 ? '' : 's'));
+    await runImportPreview();
+  } catch (e) {
+    impMsg('err', 'Removing test data failed — ' + escapeHtml(e.code || e.message) + '.');
   }
 }
 
