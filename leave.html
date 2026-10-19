@@ -165,6 +165,19 @@
     .modal{border-radius:16px 16px 0 0; max-width:none; padding:18px 14px calc(18px + env(safe-area-inset-bottom));}
     .modal .mbtns > *{flex:1;}
   }
+  .lv-sum{font-size:15px; margin:6px 0 0; line-height:1.5;}
+  .dayl .d span{display:block; font-size:13px; color:var(--grey);}
+  .oc-alert{border:2px solid var(--red); background:var(--red-tint);}
+  .oc-alert h2{color:var(--red-dark); display:flex; gap:8px; align-items:center;}
+  .oc-alert .shift{border-top-color:#f1c4c6;}
+  .oc-alert .shift .when{color:var(--red-dark);}
+  .oc-note{font-size:13.5px; color:#7d1418; margin:8px 0 0;}
+  .oc-q{background:#fff; border:1px solid #f1c4c6; border-radius:10px; padding:10px 12px; margin-top:10px; font-size:15px;}
+  .oc-q .acts{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .calbox{display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:12px;}
+  .calbox select{width:auto; padding:8px 32px 8px 10px; font-size:15px;}
+  .tickl{display:inline-flex; gap:7px; align-items:center; font-size:15px; cursor:pointer;}
+  .tickl input{width:18px; height:18px;}
   .notes{margin-top:26px; color:var(--grey); font-size:13.5px; line-height:1.5;}
   .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:9px; font-size:14px; z-index:300;}
 
@@ -288,12 +301,10 @@
               <div class="field"><label class="lbl" for="lvFrom">First day off</label><input type="date" class="inp" id="lvFrom"></div>
               <div class="field"><label class="lbl" for="lvTo">Last day off</label><input type="date" class="inp" id="lvTo"></div>
             </div>
-            <div id="lvDays"></div>
+            <div id="lvParts"></div>
+            <p id="lvSummary" class="lv-sum"></p>
           </div>
-          <div class="card">
-            <h2>Your on-call in this time</h2>
-            <div id="lvOncall"><div class="none-note">Pick your dates first.</div></div>
-          </div>
+          <div id="lvOncallBox"></div>
           <div class="card">
             <div class="field" style="margin:0"><label class="lbl" for="lvNote">Note for the office (optional)</label><textarea class="inp" id="lvNote"></textarea></div>
           </div>
@@ -341,7 +352,11 @@
       <div class="rota-h">
         <button class="nav" data-rmove="-1" aria-label="Previous month" id="rotaPrev">‹</button><h2 id="rotaTitle">—</h2><button class="nav" data-rmove="1" aria-label="Next month">›</button>
         <span class="grow"></span>
-        <button type="button" class="mini" id="calBtn"><i class="ti ti-calendar-plus"></i> Add my call-out days to my calendar</button>
+      </div>
+      <div class="calbox">
+        <select class="inp" id="calRange" aria-label="How far ahead"><option value="1">Next month</option><option value="3" selected>Next 3 months</option><option value="all">Everything on the rota</option></select>
+        <label class="tickl"><input type="checkbox" id="calRemind"> Remind me the day before</label>
+        <button type="button" class="mini red" id="calBtn"><i class="ti ti-download"></i> Download my on-call days</button>
       </div>
       <div id="calStatus"></div>
       <div id="rotaBox"></div>
@@ -516,12 +531,6 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 // Same as timesheet.html: Mail.Send lets the engineer send their request from
 // their own account (Microsoft Graph). Already consented in Entra.
 msProvider.addScope('Mail.Send');
-// The calendar permission is asked for separately, only when someone taps
-// "Add my call-out days to my calendar", so sign-in never depends on it.
-const calProvider = new OAuthProvider('microsoft.com');
-calProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
-calProvider.addScope('Mail.Send');
-calProvider.addScope('Calendars.ReadWrite');
 
 // Keep the Microsoft access token from a sign-in. Kept for this browser tab
 // only, and for less than its real lifetime, so a stale one is never used.
@@ -554,11 +563,10 @@ document.getElementById('msSignInBtn').addEventListener('click', () => {
     const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
   });
 });
-const clearTokens = () => { sessionStorage.removeItem('ts-graph'); sessionStorage.removeItem('lv-graph-cal'); };
+const clearTokens = () => { sessionStorage.removeItem('ts-graph'); };
 document.getElementById('signOutBtn').addEventListener('click', () => { clearTokens(); signOut(auth); });
 const redirectDone = getRedirectResult(auth).then(r => {
-  if (r) keepToken(r, sessionStorage.getItem('lv-want-cal') ? 'lv-graph-cal' : 'ts-graph');
-  sessionStorage.removeItem('lv-want-cal');
+  if (r) keepToken(r, 'ts-graph');
 }).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
@@ -697,7 +705,7 @@ function alertBox(msg) { return modal({ title: 'Something went wrong', body: `<p
 const realm = list => list.filter(x => !!x.testData === TEST);
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MICROSOFT (email + calendar)
+//  MICROSOFT (email)
 // ═══════════════════════════════════════════════════════════════════════════
 function storedToken(key) {
   try {
@@ -707,15 +715,14 @@ function storedToken(key) {
   return null;
 }
 // Ask Microsoft for a fresh token. Must be called straight from a tap.
-async function tokenInteractive(cal) {
-  const provider = cal ? calProvider : msProvider, key = cal ? 'lv-graph-cal' : 'ts-graph';
+async function tokenInteractive() {
+  const provider = msProvider, key = 'ts-graph';
   try {
     const r = await reauthenticateWithPopup(auth.currentUser, provider);
     keepToken(r, key);
     return storedToken(key);
   } catch (err) {
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      if (cal) sessionStorage.setItem('lv-want-cal', '1');
       await reauthenticateWithRedirect(auth.currentUser, provider);
       return null;
     }
@@ -724,9 +731,8 @@ async function tokenInteractive(cal) {
     throw new Error(err.code || err.message || 'Microsoft sign-in failed');
   }
 }
-async function getToken(cal) {
-  const key = cal ? 'lv-graph-cal' : 'ts-graph';
-  return storedToken(key) || (cal ? null : storedToken('lv-graph-cal')) || await tokenInteractive(cal);
+async function getToken() {
+  return storedToken('ts-graph') || await tokenInteractive();
 }
 async function graph(token, method, path, body, extraHeaders) {
   const res = await fetch('https://graph.microsoft.com/v1.0' + path, {
@@ -753,9 +759,11 @@ const INFO_EMAIL = 'info@simpsonandwood.co.uk';
 function swapWatchers() { return [OWNER_EMAIL, INFO_EMAIL]; }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  BOOK LEAVE
+//  BOOK LEAVE (v1.1): half days only at the ends, on-call shown clearly, and
+//  a question about the weekend either side if they're on call then
 // ═══════════════════════════════════════════════════════════════════════════
-let lvParts = {};   // date -> 'full' | 'am' | 'pm' | 'none'
+let lvFirst = 'full', lvLast = 'full', lvSingle = 'full';   // first day: full|pm · last day: full|am · one day: full|am|pm
+let lvAdj = { before: null, after: null };                   // weekend either side: true = away, false = around, null = not asked
 let lvTried = false;
 let lvLastSent = null;
 function lvRange() {
@@ -763,50 +771,91 @@ function lvRange() {
   if (!from || to < from) return null;
   return { from, to };
 }
-function lvDayList() {
+function lvWorkDays() {
   const r = lvRange(); if (!r || daysBetween(r.from, r.to) > MAX_LEAVE_SPAN) return [];
   const out = [];
-  for (let d = r.from; d <= r.to; d = addDays(d, 1)) out.push(d);
+  for (let d = r.from; d <= r.to; d = addDays(d, 1)) if (!isOffDay(d)) out.push(d);
   return out;
 }
+// The days off and how much of each: half days can only be the very first day
+// (afternoon only) or the very last day (morning only).
 function lvChosen() {
-  return lvDayList().filter(d => !isOffDay(d) && (lvParts[d] || 'full') !== 'none').map(d => ({ date: d, part: lvParts[d] || 'full' }));
+  const wd = lvWorkDays();
+  if (wd.length === 1) return [{ date: wd[0], part: lvSingle }];
+  return wd.map((d, i) => ({ date: d, part: i === 0 ? lvFirst : i === wd.length - 1 ? lvLast : 'full' }));
 }
 const dayValue = part => part === 'full' ? 1 : 0.5;
 const fmtDays = n => String(Math.round((n || 0) * 100) / 100);
-// On-call shifts I hold in the time I'm off: the leave dates plus any weekend /
-// bank holiday / shutdown days running straight on from either end.
-function oncallDuring(from, to, email) {
-  let a = from, b = to;
-  while (isOffDay(addDays(a, -1)) && daysBetween(addDays(a, -1), from) < 10) a = addDays(a, -1);
-  while (isOffDay(addDays(b, 1)) && daysBetween(to, addDays(b, 1)) < 10) b = addDays(b, 1);
+function shiftsOn(dates, email) {
   const out = [];
-  for (let d = a; d <= b; d = addDays(d, 1)) {
-    const day = ROTA.get(d); if (!day) continue;
-    heldBy(day, email).forEach(x => out.push({ date: d, s: x.s, e: x.e, label: partLabel(d, x.s, x.e) }));
-  }
+  dates.forEach(d => { const day = ROTA.get(d); if (day) heldBy(day, email).forEach(x => out.push({ date: d, s: x.s, e: x.e, label: partLabel(d, x.s, x.e) })); });
   return out;
 }
+function datesFrom(a, b) { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; }
+// On-call while off: every shift on the dates they've picked (so a weekend in
+// the middle is included, and a Friday off includes Friday night).
+function oncallInside(from, to, email) { return shiftsOn(datesFrom(from, to), email); }
+// The weekend (or bank holiday) straight before / after the holiday, if
+// they're on call then. Before = the weekend days plus the Friday night that
+// starts it; after = the weekend days following the last day off.
+function oncallAdjacent(from, to, email) {
+  const before = [], after = [];
+  for (let d = addDays(from, -1), n = 0; isOffDay(d) && n < 10; d = addDays(d, -1), n++) before.unshift(d);
+  if (before.length) before.unshift(addDays(before[0], -1));   // the evening that starts the weekend
+  for (let d = addDays(to, 1), n = 0; isOffDay(d) && n < 10; d = addDays(d, 1), n++) after.push(d);
+  const mk = list => { const sh = shiftsOn(list, email); return sh.length ? { shifts: sh, start: shiftTime(sh[0].date, sh[0].s), end: shiftTime(sh[sh.length - 1].date, sh[sh.length - 1].e) } : null; };
+  return { before: mk(before), after: mk(after) };
+}
+const whenText = (start, end) => `${shortDate(start.slice(0, 10))} ${clock(+start.slice(11, 13) * 60 + +start.slice(14, 16))} – ${shortDate(end.slice(0, 10))} ${clock(+end.slice(11, 13) * 60 + +end.slice(14, 16))}`;
+function lvOncallAll() {
+  const ch = lvChosen(); if (!ch.length) return [];
+  const r = lvRange();
+  const adj = oncallAdjacent(r.from, r.to, ME.email);
+  return [...(adj.before && lvAdj.before ? adj.before.shifts : []), ...oncallInside(r.from, r.to, ME.email), ...(adj.after && lvAdj.after ? adj.after.shifts : [])];
+}
+function seg(name, options, cur) {
+  return `<div class="seg" data-lvseg="${name}">${options.map(([k, l]) => `<button type="button" data-v="${k}" class="${cur === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+}
 function renderLeave() {
-  const days = lvDayList(), r = lvRange();
-  const box = $('lvDays');
+  const r = lvRange(), wd = lvWorkDays(), box = $('lvParts');
   if (!r) box.innerHTML = $('lvFrom').value && $('lvTo').value ? '<div class="none-note" style="color:var(--red-dark)">The last day is before the first day.</div>' : '';
   else if (daysBetween(r.from, r.to) > MAX_LEAVE_SPAN) box.innerHTML = `<div class="none-note" style="color:var(--red-dark)">That's more than ${MAX_LEAVE_SPAN} days. Send it as two requests.</div>`;
-  else box.innerHTML = days.filter(d => !(dow(d) === 0 || dow(d) === 6) || BANK_HOLIDAYS[d] || isShutdown(d)).map(d => {
-    if (isOffDay(d)) return `<div class="dayl"><div class="d"><b>${esc(shortDate(d))}</b></div><div class="x">${esc(dayNote(d))} — not needed</div></div>`;
-    const p = lvParts[d] || 'full';
-    return `<div class="dayl"><div class="d"><b>${esc(shortDate(d))}</b></div><div class="seg" data-lvday="${d}">${[['full', 'Full day'], ['am', 'AM'], ['pm', 'PM'], ['none', 'Not off']].map(([k, l]) => `<button type="button" data-part="${k}" class="${p === k ? 'on' + (k === 'none' ? ' none' : '') : ''}">${l}</button>`).join('')}</div></div>`;
-  }).join('') || '';
+  else if (!wd.length) box.innerHTML = '<div class="none-note">Those days are all weekends, bank holidays or shutdown, so there\'s nothing to book.</div>';
+  else if (wd.length === 1) box.innerHTML = `<div class="dayl"><div class="d"><b>${esc(shortDate(wd[0]))}</b></div>${seg('single', [['full', 'Full day'], ['am', 'Morning only'], ['pm', 'Afternoon only']], lvSingle)}</div>`;
+  else box.innerHTML = `<div class="dayl"><div class="d"><b>First day</b><span>${esc(shortDate(wd[0]))}</span></div>${seg('first', [['full', 'Full day'], ['pm', 'Afternoon only']], lvFirst)}</div>
+    <div class="dayl"><div class="d"><b>Last day</b><span>${esc(shortDate(wd[wd.length - 1]))}</span></div>${seg('last', [['full', 'Full day'], ['am', 'Morning only']], lvLast)}</div>`;
   const chosen = lvChosen();
   const total = chosen.reduce((n, x) => n + dayValue(x.part), 0);
+  // summary sentence
+  let sum = '';
+  if (chosen.length) {
+    const inside = r ? datesFrom(r.from, r.to) : [];
+    const wkends = [], bh = [];
+    inside.forEach(d => { if (dow(d) === 6 && inside.includes(addDays(d, 1))) wkends.push(d); if (BANK_HOLIDAYS[d] || isShutdown(d)) bh.push(d); });
+    sum = `<b>${fmtDays(total)} day${total === 1 ? '' : 's'} off:</b> ${esc(shortDate(chosen[0].date))}${chosen.length > 1 ? ' – ' + esc(shortDate(chosen[chosen.length - 1].date)) : ''}.`;
+    if (wkends.length) sum += ` Includes the weekend${wkends.length > 1 ? 's' : ''} of ${wkends.map(d => esc(parseISO(d).getDate() + '–' + parseISO(addDays(d, 1)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))).join(', ')}.`;
+    if (bh.length) sum += ` ${bh.length} bank holiday or shutdown day${bh.length === 1 ? '' : 's'} not counted.`;
+  }
+  $('lvSummary').innerHTML = sum;
   $('lvTotal').textContent = fmtDays(total);
   $('lvSumFrom').textContent = chosen.length ? shortDate(chosen[0].date) : '—';
   $('lvSumTo').textContent = chosen.length ? shortDate(chosen[chosen.length - 1].date) : '—';
-  const oc = chosen.length ? oncallDuring(chosen[0].date, chosen[chosen.length - 1].date, ME.email) : [];
-  $('lvSumOncall').textContent = chosen.length ? String(oc.length) : '—';
-  $('lvOncall').innerHTML = !chosen.length ? '<div class="none-note">Pick your dates first.</div>'
-    : !oc.length ? '<div class="none-note">None — you\'re not on call in this time.</div>'
-    : oc.map(x => `<div class="shift"><span class="when">${esc(shortDate(x.date))}</span><span class="t">${esc(x.label)}</span></div>`).join('') + '<div class="none-note" style="font-size:13.5px">These go on the printed sheet so someone can cover them.</div>';
+  // on-call box
+  const ob = $('lvOncallBox');
+  if (!chosen.length) { ob.innerHTML = ''; $('lvSumOncall').textContent = '—'; }
+  else {
+    const inside = oncallInside(r.from, r.to, ME.email);
+    const adj = oncallAdjacent(r.from, r.to, ME.email);
+    const all = lvOncallAll();
+    $('lvSumOncall').textContent = String(all.length);
+    const q = (key, a, words) => !a ? '' : `<div class="oc-q"><div>You're also on call <b>${words}</b> (${esc(whenText(a.start, a.end))}). <b>Are you away then too?</b></div>
+      <div class="acts"><button type="button" class="mini ${lvAdj[key] === true ? 'red' : ''}" data-adj="${key}" data-v="1">Yes, I'm away</button><button type="button" class="mini ${lvAdj[key] === false ? 'red' : ''}" data-adj="${key}" data-v="0">No, I'm around</button></div></div>`;
+    const qs = q('before', adj.before, 'the weekend straight before') + q('after', adj.after, 'the weekend straight after');
+    ob.innerHTML = all.length || qs
+      ? `<div class="card oc-alert"><h2><i class="ti ti-phone-call"></i> ${all.length ? 'You\'re on call while you\'re away' : 'On-call'}</h2>
+        ${all.length ? all.map(x => `<div class="shift"><span class="when">${esc(shortDate(x.date))}</span><span class="t">${esc(x.label)}</span></div>`).join('') + '<p class="oc-note">These go on the printed sheet so someone can cover them. Or swap them yourself.</p>' : ''}${qs}</div>`
+      : '<div class="card"><h2>On-call</h2><div class="none-note">You\'re not on call while you\'re off.</div></div>';
+  }
   if (lvTried) showErrs('lvErrs', lvValidate());
 }
 function lvValidate() {
@@ -821,8 +870,23 @@ function lvValidate() {
   }
   return errs;
 }
+// Ask about the weekend either side (if they're on call then and haven't said).
+async function askAdjacent() {
+  const r = lvRange(); if (!r) return true;
+  const adj = oncallAdjacent(r.from, r.to, ME.email);
+  for (const [key, words] of [['before', 'the weekend straight before your holiday'], ['after', 'the weekend straight after your holiday']]) {
+    if (!adj[key] || lvAdj[key] !== null) continue;
+    const v = await modal({ title: 'Are you away that weekend too?', body: `<p>You're on call ${words}: <b>${esc(whenText(adj[key].start, adj[key].end))}</b>.</p><p>If you're away, it goes on the sheet so someone can cover it.</p>`,
+      buttons: [{ label: 'No, I\'m around', value: 'no' }, { label: 'Yes, I\'m away', value: 'yes', primary: true }] });
+    if (!v) return false;
+    lvAdj[key] = v === 'yes';
+    renderLeave();
+  }
+  return true;
+}
 function showErrs(id, errs) { $(id).hidden = !errs.length; $(id).innerHTML = errs.map(e => `<li>${esc(e)}</li>`).join(''); }
 function lvStatus(cls, html) { $('lvStatus').innerHTML = cls ? `<div class="status ${cls}">${html}</div>` : ''; }
+function lvReset() { lvFirst = 'full'; lvLast = 'full'; lvSingle = 'full'; lvAdj = { before: null, after: null }; }
 
 async function loadLogo() {
   try {
@@ -963,6 +1027,7 @@ async function onLeaveSend() {
   lvTried = true;
   const errs = lvValidate(); showErrs('lvErrs', errs);
   if (errs.length) return;
+  if (!(await askAdjacent())) return;
   const chosen = lvChosen();
   const ref = doc(collection(db, 'leave'));
   const from = chosen[0].date, to = chosen[chosen.length - 1].date;
@@ -970,11 +1035,11 @@ async function onLeaveSend() {
     email: ME.email, name: ME.name, type: 'holiday', status: 'pending',
     from, to, startTs: Timestamp.fromDate(new Date(Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10)))),
     days: chosen, total: chosen.reduce((n, x) => n + dayValue(x.part), 0), year: +from.slice(0, 4),
-    note: $('lvNote').value.trim(), oncall: oncallDuring(from, to, ME.email),
+    note: $('lvNote').value.trim(), oncall: lvOncallAll(),
     createdBy: ME.email, createdAt: serverTimestamp(), ref: ref.id.slice(0, 6).toUpperCase()
   };
   if (TEST) rec.testData = true;
-  const ok = await modal({ title: 'Send this request?', body: `<p><b>${fmtDays(rec.total)} day${rec.total === 1 ? '' : 's'}</b>: ${esc(shortDate(from))}${to !== from ? ' – ' + esc(shortDate(to)) : ''}.</p>${rec.oncall.length ? `<p>${rec.oncall.length} on-call shift${rec.oncall.length === 1 ? '' : 's'} will need cover.</p>` : ''}`,
+  const ok = await modal({ title: 'Send this request?', body: `<p><b>${fmtDays(rec.total)} day${rec.total === 1 ? '' : 's'}</b>: ${esc(shortDate(from))}${to !== from ? ' – ' + esc(shortDate(to)) : ''}.</p>${rec.oncall.length ? `<p style="color:var(--red-dark)"><b>You're on call while you're away.</b> Someone will need to cover:<br>${rec.oncall.map(x => esc(shortDate(x.date) + ' ' + x.label)).join('<br>')}</p>` : ''}`,
     buttons: [{ label: 'Not yet', value: false }, { label: 'Send', value: true, primary: true }] });
   if (!ok) return;
   let token;
@@ -991,7 +1056,7 @@ async function onLeaveSend() {
   }
   const local = Object.assign({ id: ref.id }, rec, { createdAt: { seconds: Date.now() / 1000 } });
   MYLEAVE.unshift(local);
-  lvParts = {}; lvTried = false;
+  lvReset(); lvTried = false;
   $('lvFrom').value = ''; $('lvTo').value = ''; $('lvNote').value = '';
   renderLeave();
   await deliverLeave(local, token);
@@ -1210,14 +1275,13 @@ function rotaCalendarHTML(monthISO, opts) {
   return `<div class="rcal">${h}</div>`;
 }
 
-// "Add my call-out days to my calendar": puts my upcoming on-call time into my
-// own Outlook calendar (with a reminder the day before), and tidies away any
-// it added before that have since changed. Run it again after a swap.
-const CAL_TAG = 'S&W on call';
-function myCalendarShifts() {
-  const today = todayISO(), end = addDays(today, SWAP_AHEAD), out = [];
+// "Download my on-call days": a calendar file (.ics) for their own phone or
+// personal calendar. A snapshot: if the rota changes, download it again.
+// The reminder the day before is only added if they tick the box.
+function myCalendarShifts(untilISO) {
+  const today = todayISO(), out = [];
   [...ROTA.keys()].sort().forEach(d => {
-    if (d < addDays(today, -1) || d > end) return;
+    if (d < addDays(today, -1) || (untilISO && d > untilISO)) return;
     heldBy(ROTA.get(d), ME.email).forEach(x => out.push({ start: shiftTime(d, x.s), end: shiftTime(d, x.e) }));
   });
   // join back-to-back pieces (e.g. a whole weekend becomes one entry)
@@ -1227,39 +1291,34 @@ function myCalendarShifts() {
   return merged.filter(x => x.end > nowStr);
 }
 function calStatus(cls, html) { $('calStatus').innerHTML = cls ? `<div class="status ${cls}" style="margin:0 0 12px">${html}</div>` : ''; }
-async function syncCalendar() {
-  let token;
-  try { token = storedToken('lv-graph-cal') || await tokenInteractive(true); } catch (err) { calStatus('bad', esc(err.message)); return; }
-  if (!token) return;
-  const want = myCalendarShifts();
-  calStatus('sending', 'Updating your calendar…');
-  try {
-    const tz = { Prefer: 'outlook.timezone="Europe/London"' };
-    const startFrom = isoOf(new Date()) + 'T00:00:00';
-    let url = `/me/events?$filter=${encodeURIComponent(`categories/any(c:c eq '${CAL_TAG}') and end/dateTime ge '${startFrom}'`)}&$select=id,start,end&$top=100`;
-    const have = [];
-    while (url) {
-      const r = await graph(token, 'GET', url, null, tz);
-      (r.value || []).forEach(ev => have.push({ id: ev.id, start: String(ev.start.dateTime).slice(0, 19), end: String(ev.end.dateTime).slice(0, 19) }));
-      url = r['@odata.nextLink'] ? r['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '') : null;
-    }
-    const key = x => x.start + '|' + x.end;
-    const wantKeys = new Set(want.map(key)), haveKeys = new Set(have.map(key));
-    const toDelete = have.filter(x => !wantKeys.has(key(x)));
-    const toAdd = want.filter(x => !haveKeys.has(key(x)));
-    for (const ev of toDelete) await graph(token, 'DELETE', '/me/events/' + encodeURIComponent(ev.id));
-    for (const x of toAdd) {
-      await graph(token, 'POST', '/me/events', {
-        subject: 'On call', categories: [CAL_TAG], showAs: 'free',
-        isReminderOn: true, reminderMinutesBeforeStart: 1440,
-        body: { contentType: 'Text', content: 'Simpson & Wood on-call. Added from the Leave & on-call app — if the rota changes, tap "Add my call-out days to my calendar" again.' },
-        start: { dateTime: x.start, timeZone: 'Europe/London' }, end: { dateTime: x.end, timeZone: 'Europe/London' }
-      });
-    }
-    calStatus('ok', want.length ? `<b>Done.</b> ${want.length} on-call ${want.length === 1 ? 'entry is' : 'entries are'} in your calendar${toAdd.length || toDelete.length ? ` (${toAdd.length} added${toDelete.length ? ', ' + toDelete.length + ' old ones removed' : ''})` : ''}, with a reminder the day before.` : '<b>Done.</b> You\'re not on call in the next few months, so there\'s nothing to add.');
-  } catch (err) {
-    calStatus('bad', `<b>Your calendar wasn't updated:</b> ${esc(err.message)}`);
-  }
+const icsTime = s => s.replace(/[-:]/g, '').slice(0, 15);     // 2026-11-13T16:30:00 -> 20261113T163000
+function buildICS(list, remind) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Simpson & Wood//Leave and on-call//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:S&W on call',
+    'BEGIN:VTIMEZONE', 'TZID:Europe/London',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0000', 'TZOFFSETTO:+0100', 'TZNAME:BST', 'DTSTART:19700329T010000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0000', 'TZNAME:GMT', 'DTSTART:19701025T020000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+    'END:VTIMEZONE'];
+  list.forEach(x => {
+    L.push('BEGIN:VEVENT', `UID:oncall-${icsTime(x.start)}-${ME.email.replace(/[^a-z0-9]/g, '')}@simpsonandwood.co.uk`, `DTSTAMP:${stamp}`,
+      `DTSTART;TZID=Europe/London:${icsTime(x.start)}`, `DTEND;TZID=Europe/London:${icsTime(x.end)}`,
+      'SUMMARY:On call (Simpson & Wood)', 'TRANSP:TRANSPARENT');
+    if (remind) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:On call tomorrow', 'TRIGGER:-P1D', 'END:VALARM');
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.join('\r\n') + '\r\n';
+}
+function downloadCalendar() {
+  const v = $('calRange').value, today = todayISO();
+  const until = v === 'all' ? null : (() => { const d = parseISO(today); d.setMonth(d.getMonth() + +v); return isoOf(d); })();
+  const list = myCalendarShifts(until);
+  if (!list.length) { calStatus('ok', 'You\'re not on call in that time, so there\'s nothing to download.'); return; }
+  const blob = new Blob([buildICS(list, $('calRemind').checked)], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `On call - ${String(ME.name).replace(/[^\w .-]+/g, '')}.ics`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  calStatus('ok', `<b>Downloaded</b> ${list.length} on-call ${list.length === 1 ? 'entry' : 'entries'}. Open the file to add ${list.length === 1 ? 'it' : 'them'} to your calendar.`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1352,15 +1411,17 @@ function showTab(name) {
   if (name === 'swap') { renderIncoming(); renderSwapPicks(); }
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-$('lvFrom').addEventListener('change', () => { if (!$('lvTo').value || $('lvTo').value < $('lvFrom').value) $('lvTo').value = $('lvFrom').value; renderLeave(); });
-$('lvTo').addEventListener('change', renderLeave);
+$('lvFrom').addEventListener('change', () => { if (!$('lvTo').value || $('lvTo').value < $('lvFrom').value) $('lvTo').value = $('lvFrom').value; lvReset(); renderLeave(); });
+$('lvTo').addEventListener('change', () => { lvReset(); renderLeave(); });
 $('lvSend').addEventListener('click', onLeaveSend);
 $('swWith').addEventListener('change', () => { swTake = {}; renderSwapPicks(); });
 $('swSend').addEventListener('click', onSwapSend);
-$('calBtn').addEventListener('click', syncCalendar);
+$('calBtn').addEventListener('click', downloadCalendar);
 document.addEventListener('click', async e => {
-  const lp = e.target.closest('[data-lvday] [data-part]');
-  if (lp) { lvParts[lp.closest('[data-lvday]').dataset.lvday] = lp.dataset.part; renderLeave(); return; }
+  const sg = e.target.closest('[data-lvseg] [data-v]');
+  if (sg) { const w = sg.closest('[data-lvseg]').dataset.lvseg; if (w === 'single') lvSingle = sg.dataset.v; else if (w === 'first') lvFirst = sg.dataset.v; else lvLast = sg.dataset.v; renderLeave(); return; }
+  const aj = e.target.closest('[data-adj]');
+  if (aj) { lvAdj[aj.dataset.adj] = aj.dataset.v === '1'; renderLeave(); return; }
   const w = e.target.closest('[data-pkw] [data-w]');
   if (w) { const box = w.closest('[data-pkw]'); const st = (box.dataset.pkw === 'give' ? swGive : swTake); st[box.dataset.date] = Object.assign(st[box.dataset.date] || {}, { whole: w.dataset.w === '1' }); renderSwapPicks(); return; }
   const mv = e.target.closest('[data-rmove]');
@@ -1416,20 +1477,23 @@ async function loadAll() {
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   all: [
-    'The <b>Rota</b> tab is now a calendar. It starts from yesterday, and your days are in red.',
+    '<b>Booking holiday is simpler:</b> pick the first and last day. Half days can only be the first day (afternoon) or the last day (morning).',
+    'If you\'re on call while you\'re off, it shows in <b>red</b>. If you\'re on call the weekend either side, it asks if you\'re away then too.',
+    'The <b>Rota</b> tab is now a calendar. <b>Download my on-call days</b> gives you a file for your own phone calendar (a reminder the day before is optional).',
     'There\'s a <b>Help</b> button at the top of the page if you get stuck.'
   ]
 };
 const HELP = [
-  { tab: 'Book leave', q: 'How do I book holiday?', a: '<p>Pick your <b>first day off</b> and your <b>last day off</b>. Every working day in between shows up.</p><p>Each day is a <b>full day</b> unless you tap <b>AM</b> or <b>PM</b> for a half day, or <b>Not off</b> for a day you\'re working.</p><p>Press <b>Send request</b>. It goes to the office from your own email, and you get an email back when it\'s approved.</p>' },
-  { tab: 'Book leave', q: 'Why do some days say "not needed"?', a: '<p>Weekends, bank holidays and the Christmas shutdown are already days off, so you don\'t need to book them.</p>' },
-  { tab: 'Book leave', q: 'What is "Your on-call in this time"?', a: '<p>It lists any on-call shifts you have while you\'re off. They go on the printed sheet so someone can offer to cover them.</p><p>You can also sort it yourself with a <b>swap</b>.</p>' },
+  { tab: 'Book leave', q: 'How do I book holiday?', a: '<p>Pick your <b>first day off</b> and your <b>last day off</b>. Weekends, bank holidays and the Christmas shutdown in between aren\'t counted.</p><p>Press <b>Send request</b>. It goes to the office from your own email, and you get an email back when it\'s approved.</p>' },
+  { tab: 'Book leave', q: 'Can I book a half day?', a: '<p>Yes. For one day, pick <b>Morning only</b> or <b>Afternoon only</b>.</p><p>For longer, the <b>first day</b> can be afternoon only (you start after lunch) and the <b>last day</b> can be morning only (you\'re back after lunch).</p>' },
+  { tab: 'Book leave', q: 'I\'m working a day in the middle', a: '<p>Then it\'s two holidays. Send two requests.</p>' },
+  { tab: 'Book leave', q: 'What\'s the red on-call box?', a: '<p>It shows the on-call you have while you\'re off. It goes on the printed sheet so someone can offer to cover it, or you can swap it yourself.</p><p>If you\'re on call the weekend straight before or after, it asks if you\'re away then too. Say yes and that goes on the sheet as well.</p>' },
   { tab: 'Book leave', q: 'Can I cancel my holiday?', a: '<p>Yes, from <b>My requests</b>, up to a week before it starts. Closer than that, ring the office.</p><p>If someone was covering your on-call, it stays with them, so swap it back if you need to.</p>' },
   { tab: 'Swap on-call', q: 'How do I swap on-call with someone?', a: '<p>1. Pick <b>who</b> you\'re swapping with.</p><p>2. Tick the shifts you\'re <b>giving</b> them.</p><p>3. If they\'re doing one of yours in return, tick what you\'re <b>taking back</b>.</p><p>4. Press <b>Send swap request</b>.</p><p>They accept it, then the office approves it. The rota changes after that.</p>' },
   { tab: 'Swap on-call', q: 'Can I swap just part of a shift?', a: '<p>Yes. Tick the shift, press <b>Part of it</b>, then pick the times. It goes in half hours, and it has to be at least 2 hours.</p>' },
   { tab: 'Swap on-call', q: 'Someone has asked me to swap', a: '<p>It\'s at the top of the <b>Swap on-call</b> tab under "Waiting for you". Press <b>Accept</b> or <b>Decline</b>, and they get an email either way.</p>' },
   { tab: 'Rota', q: 'How do I read the rota?', a: '<p>Each day shows who\'s on call. Your days are in red.</p><p>Weekdays run <b>4:30pm to 8am</b>. Weekends run <b>Friday 4:30pm to Monday 8am</b>. Bank holidays run <b>8am to 8am</b>.</p><p>If a day shows two names with times, it\'s been split between them.</p>' },
-  { tab: 'Rota', q: 'Can I get my on-call days in my calendar?', a: '<p>Yes. Press <b>Add my call-out days to my calendar</b>. They go into your Outlook calendar with a reminder the day before.</p><p>If anything changes (a swap, cover for holiday), press it again and it tidies itself up.</p>' },
+  { tab: 'Rota', q: 'Can I get my on-call days in my own calendar?', a: '<p>Yes. Pick how far ahead, tick <b>Remind me the day before</b> if you want a reminder, and press <b>Download my on-call days</b>.</p><p>On a phone, open the file and it goes into your calendar. On a PC, open it or import it into Google or Outlook.</p><p>It\'s a one-off copy, so if the rota changes (a swap, cover for holiday), download it again. Some calendars might show the old ones twice: just delete them.</p>' },
   { tab: 'My requests', q: 'What do the coloured labels mean?', a: '<p><b>Waiting</b>: the office hasn\'t looked at it yet. <b>Approved</b>: it\'s booked. <b>Declined</b>: it isn\'t, and the reason is underneath.</p><p>For swaps, <b>Waiting for the other person</b> means they haven\'t accepted yet.</p>' },
   { tab: 'My requests', q: 'It says the email didn\'t go', a: '<p>Your request is saved, but the office may not have seen it. Press <b>Send the email</b> to try again.</p>' }
 ];
@@ -1457,7 +1521,7 @@ onAuthStateChanged(auth, async user => {
 });
 
 // Test hooks (used only by Claude's automatic checks; harmless otherwise).
-window.__lv = { segmentsOf, shiftLabel, oncallDuring, buildLeavePDF, myCalendarShifts, swValidate, lvChosen, get ROTA() { return ROTA; }, get SETTINGS() { return SETTINGS; } };
+window.__lv = { segmentsOf, shiftLabel, oncallInside, oncallAdjacent, lvOncallAll, buildLeavePDF, myCalendarShifts, buildICS, swValidate, lvChosen, lvAdj: () => lvAdj, get ROTA() { return ROTA; }, get SETTINGS() { return SETTINGS; } };
 </script>
 <script>
 if ("serviceWorker" in navigator) {

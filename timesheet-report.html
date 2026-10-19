@@ -1583,7 +1583,9 @@ function renderLeaveTab() {
 }
 function leaveCard(l) {
   const email = personEmail(l), own = email === ME.email, open = lvOpen.has(l.id);
-  const oc = email ? oncallDuring(l.from, l.to, email) : [];
+  // What the engineer said needs cover (they're asked about the weekend either
+  // side), still held by them now; older requests fall back to working it out.
+  const oc = !email ? [] : Array.isArray(l.oncall) ? l.oncall.filter(x => coversRange(ROTA.get(x.date), email, x.s, x.e)) : oncallDuring(l.from, l.to, email);
   const off = alsoOff(l);
   const asked = tsOf(l.createdAt) ? new Date(tsOf(l.createdAt)).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const parts = (l.days || []).filter(x => x.part !== 'full');
