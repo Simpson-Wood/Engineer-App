@@ -175,6 +175,8 @@
   .oc-q{background:#fff; border:1px solid #f1c4c6; border-radius:10px; padding:10px 12px; margin-top:10px; font-size:15px;}
   .oc-q .acts{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
   .calbox{display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:12px;}
+  .calbox.flash{animation:calflash 2s ease-out 1;}
+  @keyframes calflash{0%,50%{box-shadow:0 0 0 3px var(--red);}100%{box-shadow:0 0 0 0 transparent;}}
   .calbox select{width:auto; padding:8px 32px 8px 10px; font-size:15px;}
   .tickl{display:inline-flex; gap:7px; align-items:center; font-size:15px; cursor:pointer;}
   .tickl input{width:18px; height:18px;}
@@ -574,7 +576,7 @@ const redirectDone = getRedirectResult(auth).then(r => {
 // ═══════════════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'v1.1';
+const VERSION = 'v1.2';
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const OWNER_EMAIL = 'rob.rose@simpsonandwood.co.uk';   // always gets swap emails
 const MAX_LEAVE_SPAN = 62;       // days between first and last day off
@@ -1477,9 +1479,10 @@ async function loadAll() {
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   all: [
+    'You can now <b>accept or decline a swap</b> straight from the home page. It brings you here to confirm.',
+    'The home page also shows your next on-call, with a shortcut to <b>Download my on-call days</b>.',
     '<b>Booking holiday is simpler:</b> pick the first and last day. Half days can only be the first day (afternoon) or the last day (morning).',
     'If you\'re on call while you\'re off, it shows in <b>red</b>. If you\'re on call the weekend either side, it asks if you\'re away then too.',
-    'The <b>Rota</b> tab is now a calendar. <b>Download my on-call days</b> gives you a file for your own phone calendar (a reminder the day before is optional).',
     'There\'s a <b>Help</b> button at the top of the page if you get stuck.'
   ]
 };
@@ -1491,7 +1494,7 @@ const HELP = [
   { tab: 'Book leave', q: 'Can I cancel my holiday?', a: '<p>Yes, from <b>My requests</b>, up to a week before it starts. Closer than that, ring the office.</p><p>If someone was covering your on-call, it stays with them, so swap it back if you need to.</p>' },
   { tab: 'Swap on-call', q: 'How do I swap on-call with someone?', a: '<p>1. Pick <b>who</b> you\'re swapping with.</p><p>2. Tick the shifts you\'re <b>giving</b> them.</p><p>3. If they\'re doing one of yours in return, tick what you\'re <b>taking back</b>.</p><p>4. Press <b>Send swap request</b>.</p><p>They accept it, then the office approves it. The rota changes after that.</p>' },
   { tab: 'Swap on-call', q: 'Can I swap just part of a shift?', a: '<p>Yes. Tick the shift, press <b>Part of it</b>, then pick the times. It goes in half hours, and it has to be at least 2 hours.</p>' },
-  { tab: 'Swap on-call', q: 'Someone has asked me to swap', a: '<p>It\'s at the top of the <b>Swap on-call</b> tab under "Waiting for you". Press <b>Accept</b> or <b>Decline</b>, and they get an email either way.</p>' },
+  { tab: 'Swap on-call', q: 'Someone has asked me to swap', a: '<p>It\'s on the home page, and at the top of the <b>Swap on-call</b> tab under "Waiting for you". Press <b>Accept</b> or <b>Decline</b>, and they get an email either way.</p>' },
   { tab: 'Rota', q: 'How do I read the rota?', a: '<p>Each day shows who\'s on call. Your days are in red.</p><p>Weekdays run <b>4:30pm to 8am</b>. Weekends run <b>Friday 4:30pm to Monday 8am</b>. Bank holidays run <b>8am to 8am</b>.</p><p>If a day shows two names with times, it\'s been split between them.</p>' },
   { tab: 'Rota', q: 'Can I get my on-call days in my own calendar?', a: '<p>Yes. Pick how far ahead, tick <b>Remind me the day before</b> if you want a reminder, and press <b>Download my on-call days</b>.</p><p>On a phone, open the file and it goes into your calendar. On a PC, open it or import it into Google or Outlook.</p><p>It\'s a one-off copy, so if the rota changes (a swap, cover for holiday), download it again. Some calendars might show the old ones twice: just delete them.</p>' },
   { tab: 'My requests', q: 'What do the coloured labels mean?', a: '<p><b>Waiting</b>: the office hasn\'t looked at it yet. <b>Approved</b>: it\'s booked. <b>Declined</b>: it isn\'t, and the reason is underneath.</p><p>For swaps, <b>Waiting for the other person</b> means they haven\'t accepted yet.</p>' },
@@ -1517,8 +1520,28 @@ onAuthStateChanged(auth, async user => {
   SW = Object.assign(SW, { page: 'leave', version: VERSION, level: acc.level, news: NEWS, help: HELP });
   SW.tab = () => ({ leave: 'Book leave', swap: 'Swap on-call', rota: 'Rota', mine: 'My requests' })[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '';
   swExtrasStart();
+  homeLink();
   await redirectDone;
 });
+// v1.2: links from the home page. ?tab=rota|swap|mine|leave opens that tab,
+// #cal goes to "Download my on-call days", and ?swap=<id>&answer=accepted|declined
+// asks them to confirm straight away (the same as pressing the button here).
+function homeLink() {
+  const qp = new URLSearchParams(location.search), tab = qp.get('tab'), id = qp.get('swap'), ans = qp.get('answer'), cal = location.hash === '#cal';
+  if (!tab && !id && !cal) return;
+  history.replaceState(null, '', location.pathname + (TEST ? '?test=1' : ''));
+  if (['leave', 'swap', 'rota', 'mine'].includes(tab)) showTab(tab);
+  if (cal) {
+    showTab('rota');
+    const c = document.querySelector('.calbox');
+    if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); }
+  }
+  if (id && ['accepted', 'declined'].includes(ans)) {
+    showTab('swap');
+    if (waitingForMe().some(s => s.id === id)) answerSwap(id, ans);
+    else toast('That swap has already been answered or cancelled.');
+  }
+}
 
 // Test hooks (used only by Claude's automatic checks; harmless otherwise).
 window.__lv = { segmentsOf, shiftLabel, oncallInside, oncallAdjacent, lvOncallAll, buildLeavePDF, myCalendarShifts, buildICS, swValidate, lvChosen, lvAdj: () => lvAdj, get ROTA() { return ROTA; }, get SETTINGS() { return SETTINGS; } };

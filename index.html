@@ -94,6 +94,57 @@
     .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
   }
 
+  /* ---- home boxes (v2.8) ---- */
+  .home-boxes{width:100%; display:flex; flex-direction:column; gap:12px;}
+  .home-boxes:empty{display:none;}
+  .feed{width:100%; margin-top:22px;}
+  .feed:empty{display:none;}
+  .feed .activity-list{max-height:none; overflow:visible; max-width:none;}
+  .hb-date{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:600; color:var(--ink); line-height:1.1;}
+  .hb-notice{display:flex; gap:9px; align-items:flex-start; background:#eef3fb; border:1px solid #c9d8ef; color:#1f4f8a; border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.4;}
+  .hb-notice i{font-size:18px; flex-shrink:0;}
+  .hb-notice.bad{background:#fbe9e9; border-color:#efc4c4; color:#a32d2d;}
+  .hb-card{background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:14px 16px; color:var(--ink); font-size:14.5px; line-height:1.4;}
+  .hb-card h3{margin:0 0 8px; font-size:18px; font-weight:600; display:flex; align-items:center; gap:8px;}
+  .hb-card h3 i{color:var(--red); font-size:20px;}
+  .hb-alert{border-left:4px solid var(--red);}
+  .hb-row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:7px 0; border-top:1px solid #efede8; color:var(--ink); text-decoration:none;}
+  .hb-card h3 + .hb-row{border-top:none;}
+  .hb-row .w{color:var(--grey);}
+  .hb-row .w b{color:var(--ink); margin-right:4px;}
+  .hb-row .n{font-weight:600; text-align:right; white-space:nowrap;}
+  .hb-row.now{background:#fbf1f1; margin:0 -8px; padding:7px 8px; border-radius:8px; border-top-color:transparent;}
+  .hb-row.mine .n{color:var(--red);}
+  .hb-row i{color:var(--red); margin-right:4px;}
+  a.hb-row:hover{color:var(--red);}
+  .hb-red{color:#a32d2d; font-weight:600;}
+  .hb-big{font-size:17px; font-weight:600;}
+  .hb-sub{color:var(--grey); font-size:13.5px; margin-top:2px;}
+  .hb-sub b{color:var(--ink);}
+  .hb-empty{color:var(--grey);}
+  .hb-link{display:inline-flex; align-items:center; gap:3px; margin-top:8px; color:var(--red); font-weight:600; text-decoration:none; font-size:14px;}
+  .hb-acts{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .hb-btn{display:inline-flex; align-items:center; gap:6px; background:var(--red); color:#fff; border:1px solid var(--red); border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; text-decoration:none;}
+  .hb-btn:hover{background:var(--red-dark);}
+  .hb-btn.ghost{background:#fff; color:var(--ink); border-color:var(--line);}
+  .hb-btn.ghost:hover{border-color:var(--red);}
+  .hb-swap{padding:8px 0; border-top:1px solid #efede8;}
+  .hb-card h3 + .hb-swap{border-top:none; padding-top:0;}
+  .hb-pill{font-size:12px; font-weight:600; padding:2px 9px; border-radius:20px; background:#f1efe9; color:var(--ink); white-space:nowrap;}
+  .hb-pill.red{background:#fbe9e9; color:#a32d2d;}
+  .hb-pill.amber{background:#fdf1d8; color:#8a5a00;}
+  .hb-pill.green{background:#eaf3de; color:#3b6d11;}
+  @media (max-width:899px){
+    .layout{display:flex; flex-direction:column;}
+    .content-pane{display:block; order:-1; padding:16px 16px 0;}
+    .content-pane-inner{max-width:none;}
+    .feed{display:none;}
+    .tool-nav{grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px; padding:16px;}
+    .tile{padding:10px 6px; gap:6px; border-radius:10px;}
+    .tile i{font-size:20px;}
+    .tile span{font-size:12px;}
+  }
+
   /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
   .sw-hbox{display:flex; gap:6px; margin-left:auto;}
   .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
@@ -163,7 +214,7 @@
   </header>
   <div class="layout">
     <nav class="tool-nav" id="tool-nav"></nav>
-    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner">Select a tool from the menu.</div></div>
+    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner"><div class="home-boxes" id="homeBoxes"></div><div class="feed" id="feed"></div></div></div>
   </div>
 </div>
 
@@ -176,10 +227,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit, setDoc
+  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, where, orderBy, limit, setDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.7";
+const VERSION = "v2.8";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -333,13 +384,13 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 // old file (alwaysLive); once it has one, the panel decides (off = off).
 const TOOLS = [
   { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet.html", pairKey: "timesheet", alwaysLive: true },
+  { section: "Daily tools", id: "holiday", name: "Leave & on-call", icon: "ti-calendar-event", href: "leave.html", pairKey: "holiday" },
   { section: "Reference", id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame", href: "fire-toolkit.html", pairKey: "firetoolkit" },
   { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
   { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-window", href: "aov-test.html", pairKey: "aov" },
   { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
   { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
   { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor", href: "pfc-service.html", pairKey: "pfc" },
-  { section: "Admin & compliance", id: "holiday", name: "Leave & on-call", icon: "ti-calendar-event", href: "leave.html", pairKey: "holiday" },
   { section: "Admin & compliance", id: "vancheck", name: "Van check", icon: "ti-truck", href: "van-check.html", pairKey: "vancheck" },
   { section: "Admin & compliance", id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs", href: "ladder-check.html", pairKey: "laddercheck" },
   { section: "Admin & compliance", id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit", href: "first-aid-check.html", pairKey: "firstaid" },
@@ -453,9 +504,9 @@ function renderTools(tools, isManager, isOffice){
 }
 
 async function renderActivityFeed(reportEntries){
-  const pane = document.getElementById('content-pane-inner');
+  const pane = document.getElementById('feed');
   if (reportEntries.length === 0){
-    pane.innerHTML = 'Select a tool from the menu.';
+    pane.innerHTML = '';
     return;
   }
   pane.innerHTML = 'Loading recent activity…';
@@ -496,6 +547,7 @@ async function renderActivityFeed(reportEntries){
     const badge = document.querySelector('[data-count-id="' + id + '"]');
     if (badge){ badge.textContent = countsByTool[id] > 99 ? '99+' : String(countsByTool[id]); badge.hidden = false; }
   });
+  homeQS(countsByTool, reportEntries);
 
   if (pending.length === 0 && recent.length === 0){
     pane.innerHTML = 'No recent activity yet.';
@@ -582,34 +634,353 @@ getRedirectResult(auth).catch(err => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  HOME BOXES (v2.8). Dates, bank holidays, shift times and rota pieces are
+//  copied from leave.html (keep in step).
+// ═══════════════════════════════════════════════════════════════════════════
+// England & Wales bank holidays, from gov.uk/bank-holidays (checked 10 Oct 2026).
+// Same list as timesheet.html: add the next year each autumn (on the to-do list).
+const BANK_HOLIDAYS = {
+  '2026-01-01': "New Year's Day", '2026-04-03': 'Good Friday', '2026-04-06': 'Easter Monday',
+  '2026-05-04': 'Early May bank holiday', '2026-05-25': 'Spring bank holiday', '2026-08-31': 'Summer bank holiday',
+  '2026-12-25': 'Christmas Day', '2026-12-28': 'Boxing Day (substitute day)',
+  '2027-01-01': "New Year's Day", '2027-03-26': 'Good Friday', '2027-03-29': 'Easter Monday',
+  '2027-05-03': 'Early May bank holiday', '2027-05-31': 'Spring bank holiday', '2027-08-30': 'Summer bank holiday',
+  '2027-12-27': 'Christmas Day (substitute day)', '2027-12-28': 'Boxing Day (substitute day)',
+  '2028-01-03': "New Year's Day (substitute day)", '2028-04-14': 'Good Friday', '2028-04-17': 'Easter Monday',
+  '2028-05-01': 'Early May bank holiday', '2028-05-29': 'Spring bank holiday', '2028-08-28': 'Summer bank holiday',
+  '2028-12-25': 'Christmas Day', '2028-12-26': 'Boxing Day'
+};
+const BH_LAST_YEAR = 2028;
+const SHIFT_DAY_START = 16 * 60 + 30;   // weekday on-call starts 4:30pm
+const SHIFT_OFF_START = 8 * 60;         // weekend / bank holiday / shutdown day starts 8am
+const SHIFT_END = 8 * 60;               // every shift ends 8am the next morning
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return isoOf(d); }
+function todayISO() { return isoOf(new Date()); }
+function dow(s) { return parseISO(s).getDay(); }
+function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+function longDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function shortDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+function shortDateY(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+const firstName = n => String(n || '').split(/[\s@.]/)[0] || n;
+
+let SETTINGS = { shutdown: {}, swapEmails: [], nameMap: {}, infoEmail: 'info@simpsonandwood.co.uk' };
+let STAFF = new Map();   // email -> { name, position }
+function isShutdown(d) { return (SETTINGS.shutdown[d.slice(0, 4)] || []).includes(d); }
+function isOffDay(d) { const w = dow(d); return w === 0 || w === 6 || !!BANK_HOLIDAYS[d] || isShutdown(d); }
+function dayNote(d) { return BANK_HOLIDAYS[d] ? BANK_HOLIDAYS[d] : isShutdown(d) ? 'Christmas shutdown' : (dow(d) === 0 || dow(d) === 6) ? 'Weekend' : ''; }
+function shiftStart(d) { return isOffDay(d) ? SHIFT_OFF_START : SHIFT_DAY_START; }
+function shiftLen(d) { return 1440 - shiftStart(d) + SHIFT_END; }
+// 990 -> "4:30pm", 480 -> "8am"
+function clock(min) {
+  min = ((min % 1440) + 1440) % 1440;
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0 && m === 0) return 'midnight';
+  if (h === 12 && m === 0) return 'midday';
+  return (h % 12 || 12) + (m ? ':' + pad(m) : '') + (h < 12 ? 'am' : 'pm');
+}
+function partLabel(d, s, e) { return clock(shiftStart(d) + s) + ' – ' + clock(shiftStart(d) + e); }
+function shiftLabel(d) { return partLabel(d, 0, shiftLen(d)); }
+// The real date and time an offset into a shift falls on: "YYYY-MM-DDTHH:MM:00".
+function nowLocal() { const n = new Date(); return isoOf(n) + 'T' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':00'; }
+function shiftTime(d, off) { const t = shiftStart(d) + off; return addDays(d, Math.floor(t / 1440)) + 'T' + pad(Math.floor((t % 1440) / 60)) + ':' + pad(t % 60) + ':00'; }
+function staffName(email) { const s = STAFF.get(email); return (s && s.name) || ''; }
+function nameOf(email) { return staffName(email) || email || ''; }
+// Rota names from the old spreadsheet ("Mike") are matched to staff emails in
+// the Settings tab of the Timesheets & leave page (leaveSettings/main.nameMap).
+function emailForName(n) { return (n && SETTINGS.nameMap[n]) || ''; }
+function holderOf(day) {
+  const email = String(day.email || emailForName(day.name) || '').toLowerCase();
+  return { email, name: (email && staffName(email)) || day.name || '' };
+}
+// A rota day as a list of pieces covering the whole shift: [{ s, e, email, name }]
+// (s and e are minutes from the shift's start). "parts" are the bits someone
+// else covers (part swaps); the main person has the rest.
+function segmentsOf(day) {
+  const len = shiftLen(day.date), main = holderOf(day);
+  const parts = (day.parts || []).filter(p => p.e > p.s).slice().sort((a, b) => a.s - b.s);
+  const out = []; let t = 0;
+  parts.forEach(p => {
+    const s = Math.max(p.s, t), e = Math.min(p.e, len);
+    if (s > t) out.push({ s: t, e: s, email: main.email, name: main.name });
+    if (e > s) { const em = String(p.email || emailForName(p.name) || '').toLowerCase(); out.push({ s, e, email: em, name: (em && staffName(em)) || p.name || '' }); }
+    t = Math.max(t, e);
+  });
+  if (t < len) out.push({ s: t, e: len, email: main.email, name: main.name });
+  return out;
+}
+function heldBy(day, email) { return segmentsOf(day).filter(x => x.email && x.email === email); }
+function coversRange(day, email, s, e) {
+  let t = s;
+  for (const x of heldBy(day, email)) { if (x.s <= t && x.e > t) t = x.e; }
+  return t >= e;
+}
+
+
+// What the home page loaded. "my*" are the signed-in person's own; the rest
+// are only loaded for Office and management.
+const H = { me: '', level: 'engineer', tools: {}, rota: new Map(), myLeave: [], mySwaps: [], myTs: [], leave: [], swaps: [], ts: [], qs: null, failed: 0 };
+const SWAP_LATE_HOURS = 48;   // same as Timesheets & leave: unanswered after this, or the shift is this close
+const LOOKBACK_DAYS = 31;     // same as the timesheet pages: how far back "missing" looks
+const HB_AHEAD = 31;          // "and N more" on My next on-call counts this far ahead
+
+const tsOf = v => v && typeof v.seconds === 'number' ? v.seconds * 1000 : (typeof v === 'number' ? v : 0);
+const real = list => list.filter(x => !x.testData);
+// A swap still "waiting" after its first shift has gone is stale: not worth showing.
+const swapLive = s => (s.firstShift || '9') >= addDays(todayISO(), -1);
+const itemText = x => `${shortDate(x.date)} ${partLabel(x.date, x.s, x.e)}`;
+const rangeText = l => shortDate(l.from) + (l.to && l.to !== l.from ? ' – ' + shortDate(l.to) : '');
+const hbClock = s => clock(+s.slice(11, 13) * 60 + +s.slice(14, 16));   // "2026-10-23T16:30:00" -> "4:30pm"
+function hbWhen(a, b) {   // "4:30pm – 8am" (overnight), or "4:30pm – Mon 26 Oct, 8am" when it runs longer
+  const t = hbClock;
+  const da = a.slice(0, 10), db = b.slice(0, 10);
+  if (db === da || db === addDays(da, 1)) return `${t(a)} – ${t(b)}`;
+  return `${t(a)} – ${shortDate(db)}, ${t(b)}`;
+}
+
+async function loadHome(email, level) {
+  const me = email.toLowerCase(), today = todayISO();
+  H.me = me; H.level = level;
+  const docs = snap => { const out = []; snap.forEach(d => out.push(Object.assign({ id: d.id }, d.data()))); return out; };
+  const jobs = [
+    getDocs(collection(db, 'staff')).then(snap => { STAFF = new Map(); snap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', fills: x.fillsTimesheets !== false }); }); }),
+    getDoc(doc(db, 'leaveSettings', 'main')).then(s => { if (s.exists()) SETTINGS = Object.assign(SETTINGS, s.data()); }),
+    getDocs(query(collection(db, 'oncall'), where('date', '>=', addDays(today, -1)))).then(snap => { H.rota = new Map(); snap.forEach(d => H.rota.set(d.id, Object.assign({ date: d.id }, d.data()))); }),
+    getDocs(query(collection(db, 'leave'), where('email', '==', me))).then(snap => { H.myLeave = real(docs(snap)); }),
+    Promise.all([getDocs(query(collection(db, 'oncallSwaps'), where('aEmail', '==', me))), getDocs(query(collection(db, 'oncallSwaps'), where('bEmail', '==', me)))])
+      .then(([a, b]) => { H.mySwaps = real([...docs(a), ...docs(b)]); }),
+    getDocs(query(collection(db, 'timesheets'), where('engineerEmail', '==', me))).then(snap => { H.myTs = real(docs(snap)); })
+  ];
+  if (level !== 'engineer') jobs.push(
+    getDocs(query(collection(db, 'leave'), where('to', '>=', addDays(today, -62)))).then(snap => { H.leave = real(docs(snap)); }),
+    getDocs(query(collection(db, 'oncallSwaps'), where('firstShift', '>=', addDays(today, -31)))).then(snap => { H.swaps = real(docs(snap)); }),
+    // Two months is enough to work out the last 31 days (the report page loads them all).
+    getDocs(query(collection(db, 'timesheets'), where('date', '>=', addDays(today, -62)))).then(snap => { H.ts = real(docs(snap)); })
+  );
+  const res = await Promise.allSettled(jobs);
+  H.failed = res.filter(r => r.status === 'rejected').length;
+  res.filter(r => r.status === 'rejected').forEach(r => console.error('Home box data:', r.reason));
+}
+
+// ---- the rota as one timeline: back-to-back pieces for the same person joined up
+function rotaBlocks() {
+  const out = [];
+  [...H.rota.keys()].sort().forEach(d => {
+    segmentsOf(H.rota.get(d)).forEach(x => {
+      const start = shiftTime(d, x.s), end = shiftTime(d, x.e), last = out[out.length - 1];
+      if (last && last.end === start && last.email === x.email && last.name === x.name) last.end = end;
+      else out.push({ start, end, email: x.email, name: x.name || 'Not set' });
+    });
+  });
+  return out;
+}
+// The end of the coming weekend (or this one, if it's the weekend now):
+// the Monday at 8am, pushed on past a bank holiday Monday.
+function weekendEnd() {
+  const today = todayISO(); let sat = today;
+  while (dow(sat) !== 6) sat = addDays(sat, dow(sat) === 0 ? -1 : 1);
+  let mon = addDays(sat, 2);
+  while (isOffDay(mon)) mon = addDays(mon, 1);
+  return mon + 'T08:00:00';
+}
+
+// ---- Office / management: what needs doing
+function swapLate(s) {
+  const items = [...(s.aGives || []), ...(s.bGives || [])];
+  const firstStart = items.map(x => shiftTime(x.date, x.s)).sort()[0];
+  if (Date.now() - tsOf(s.createdAt) > SWAP_LATE_HOURS * 3600000) return true;
+  return !!(firstStart && (new Date(firstStart) - Date.now()) < SWAP_LATE_HOURS * 3600000);
+}
+function approvedFullOff(list, email, date) {
+  return list.some(l => l.status === 'approved' && (l.email || '').toLowerCase() === email && (l.days || []).some(x => x.date === date && x.part === 'full'));
+}
+// Same rules as Timesheets & leave: from their first timesheet, weekdays only,
+// not bank holidays, shutdown or a full day of approved leave, not today.
+function missingFor(email, recs, leaveList) {
+  if (!recs.length) return [];
+  const have = new Set(recs.map(r => r.date)), today = todayISO();
+  let from = recs.reduce((m, r) => r.date < m ? r.date : m, recs[0].date);
+  if (from < addDays(today, -LOOKBACK_DAYS)) from = addDays(today, -LOOKBACK_DAYS);
+  const out = [];
+  for (let d = from; d < today; d = addDays(d, 1)) {
+    if (isOffDay(d) || approvedFullOff(leaveList, email, d)) continue;
+    if (!have.has(d)) out.push(d);
+  }
+  return out;
+}
+function teamMissing() {
+  const by = new Map();
+  H.ts.forEach(r => { const e = (r.engineerEmail || '').toLowerCase(); if (!by.has(e)) by.set(e, []); by.get(e).push(r); });
+  let people = 0, days = 0;
+  by.forEach((recs, e) => { const s = STAFF.get(e); if (s && !s.fills) return; const n = missingFor(e, recs, H.leave).length; if (n) { people++; days += n; } });
+  return { people, days };
+}
+function diaryCount() {
+  const today = todayISO();
+  const add = [...H.leave.filter(l => l.status === 'approved' && l.type === 'holiday' && l.to >= today), ...H.swaps.filter(s => s.status === 'approved' && (s.firstShift || '') >= addDays(today, -3))]
+    .filter(x => x.infoCal && x.infoCal.status === 'failed').length;
+  const rm = [...H.leave, ...H.swaps].filter(x => ['cancelled', 'declined', 'rejected'].includes(x.status) && x.infoCal && (x.infoCal.ids || []).length).length;
+  return add + rm;
+}
+
+// ---- the boxes
+const hbLeaveLink = (tab, extra) => `leave.html?tab=${tab}${extra || ''}`;
+function hbDate() {
+  const today = todayISO(), end = addDays(today, 7), notes = [];
+  const yr = today.slice(0, 4), shut = [...(SETTINGS.shutdown[yr] || []), ...(SETTINGS.shutdown[String(+yr + 1)] || [])].sort();
+  const inWeek = shut.filter(d => d >= today && d <= end);
+  let sFrom = '', sTo = '';
+  if (inWeek.length) {
+    const y = inWeek[0].slice(0, 4), all = (SETTINGS.shutdown[y] || []).slice().sort();
+    sFrom = all[0]; sTo = all[all.length - 1];
+    notes.push(`<i class="ti ti-christmas-tree"></i><span><b>Christmas shutdown</b> ${today >= sFrom ? 'until' : 'from'} ${esc(shortDate(today >= sFrom ? sTo : sFrom))}${today >= sFrom ? '' : ' to ' + esc(shortDate(sTo))}.</span>`);
+  }
+  for (let d = today; d <= end; d = addDays(d, 1)) {
+    if (!BANK_HOLIDAYS[d] || (sFrom && d >= sFrom && d <= sTo)) continue;
+    notes.push(`<i class="ti ti-calendar-star"></i><span><b>Bank holiday</b> ${d === today ? 'today' : 'on ' + esc(shortDate(d))}: ${esc(BANK_HOLIDAYS[d])}.</span>`);
+  }
+  return `<div class="hb-date">${esc(parseISO(today).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>` +
+    notes.map(n => `<div class="hb-notice">${n}</div>`).join('');
+}
+function hbOnCallNow(blocks) {
+  if (!blocks.length) return `<div class="hb-card"><h3><i class="ti ti-phone-call"></i> On call</h3><div class="hb-empty">The rota isn't in the app yet.</div></div>`;
+  const now = nowLocal(), until = weekendEnd();
+  // Up to the end of the coming weekend, but always at least the next three.
+  const ahead = blocks.filter(b => b.end > now), within = ahead.filter(b => b.start < until);
+  const rows = (within.length >= 3 ? within : ahead.slice(0, 3)).slice(0, 6).map(b => {
+    const isNow = b.start <= now, sd = b.start.slice(0, 10), ed = b.end.slice(0, 10);
+    const day = isNow ? 'Now' : sd === todayISO() ? (+b.start.slice(11, 13) >= 12 ? 'Tonight' : 'Today') : shortDate(sd);
+    const span = isNow ? 'until ' + (ed <= addDays(todayISO(), 1) ? hbClock(b.end) : shortDate(ed) + ', ' + hbClock(b.end)) : hbWhen(b.start, b.end);
+    return `<div class="hb-row${isNow ? ' now' : ''}${b.email === H.me ? ' mine' : ''}"><span class="w"><b>${esc(day)}</b> ${esc(span)}</span><span class="n">${esc(b.email === H.me ? 'You' : b.name)}</span></div>`;
+  });
+  return `<div class="hb-card"><h3><i class="ti ti-phone-call"></i> On call</h3>${rows.join('') || '<div class="hb-empty">Nobody\'s on the rota for this week yet.</div>'}
+    <a class="hb-link" href="${hbLeaveLink('rota')}">The whole rota <i class="ti ti-chevron-right"></i></a></div>`;
+}
+function hbMyOnCall(blocks, always) {
+  const now = nowLocal(), mine = blocks.filter(b => b.email === H.me && b.end > now);
+  if (!mine.length && !always) return '';
+  const horizon = addDays(todayISO(), HB_AHEAD) + 'T23:59:00';
+  const first = mine[0], more = mine.slice(1).filter(b => b.start <= horizon).length;
+  const body = !first ? '<div class="hb-empty">You\'re not on the rota coming up.</div>'
+    : `<div class="hb-big">${first.start <= now ? 'Now, until ' + esc(shortDate(first.end.slice(0, 10))) + ', ' + esc(hbClock(first.end))
+      : esc(shortDate(first.start.slice(0, 10))) + ', ' + esc(hbWhen(first.start, first.end))}</div>
+      ${more ? `<div class="hb-sub">and ${more} more in the next month</div>` : ''}
+      <div class="hb-acts"><a class="hb-btn ghost" href="${hbLeaveLink('rota', '#cal')}"><i class="ti ti-download"></i> Add to my phone calendar</a></div>`;
+  return `<div class="hb-card"><h3><i class="ti ti-calendar-event"></i> My next on-call</h3>${body}</div>`;
+}
+function hbNudge() {
+  const s = STAFF.get(H.me);
+  if (s && !s.fills) return '';
+  const miss = missingFor(H.me, H.myTs, H.myLeave);
+  if (!miss.length) return '';
+  const ts = H.tools.timesheet || {}, href = ts.href || (TOOLS.find(t => t.id === 'timesheet') || {}).href;
+  const list = miss.slice(-4).map(d => esc(shortDate(d))).join(' · ') + (miss.length > 4 ? ` and ${miss.length - 4} more` : '');
+  return `<div class="hb-card hb-alert"><h3><i class="ti ti-clock-exclamation"></i> ${miss.length} day${miss.length === 1 ? '' : 's'} without a timesheet</h3>
+    <div class="hb-sub">${list}</div><div class="hb-acts"><a class="hb-btn" href="${esc(href)}">Fill them in</a></div></div>`;
+}
+function hbWaitingForMe() {
+  const list = H.mySwaps.filter(s => s.status === 'waiting' && (s.bEmail || '').toLowerCase() === H.me && swapLive(s));
+  if (!list.length) return '';
+  return `<div class="hb-card hb-alert"><h3><i class="ti ti-arrows-exchange"></i> Swap${list.length === 1 ? '' : 's'} waiting for you</h3>` + list.map(s => {
+    const who = firstName(s.aName || nameOf(s.aEmail));
+    return `<div class="hb-swap"><div><b>${esc(s.aName || nameOf(s.aEmail))}</b> wants to swap.</div>
+      <div class="hb-sub"><b>You</b> cover: ${(s.aGives || []).map(x => esc(itemText(x))).join('; ') || 'nothing'}</div>
+      <div class="hb-sub"><b>${esc(who)}</b> covers: ${(s.bGives || []).map(x => esc(itemText(x))).join('; ') || 'nothing'}</div>
+      ${s.note ? `<div class="hb-sub">Note: ${esc(s.note)}</div>` : ''}
+      <div class="hb-acts"><a class="hb-btn" href="${hbLeaveLink('swap', '&swap=' + encodeURIComponent(s.id) + '&answer=accepted')}"><i class="ti ti-check"></i> Accept</a><a class="hb-btn ghost" href="${hbLeaveLink('swap', '&swap=' + encodeURIComponent(s.id) + '&answer=declined')}">Decline</a></div></div>`;
+  }).join('') + '</div>';
+}
+function hbMyRequests(always) {
+  const today = todayISO(), rows = [];
+  H.myLeave.filter(l => (l.status === 'pending' || l.status === 'approved' || l.status === 'declined') && (l.to || l.from) >= today)
+    .sort((a, b) => a.from.localeCompare(b.from)).forEach(l => {
+      const pill = l.status === 'pending' ? '<span class="hb-pill amber">Waiting</span>' : l.status === 'approved' ? '<span class="hb-pill green">Approved</span>' : '<span class="hb-pill red">Declined</span>';
+      rows.push({ k: l.from, h: `<div class="hb-row"><span><b>${esc((l.type === 'holiday' || !l.type) ? 'Holiday' : l.type[0].toUpperCase() + l.type.slice(1))}</b> <span class="w">${esc(rangeText(l))}</span></span>${pill}</div>` });
+    });
+  H.mySwaps.filter(s => (s.aEmail || '').toLowerCase() === H.me && ['waiting', 'accepted'].includes(s.status) && swapLive(s)).forEach(s => {
+    rows.push({ k: s.firstShift || '', h: `<div class="hb-row"><span><b>Swap</b> <span class="w">with ${esc(firstName(s.bName || nameOf(s.bEmail)))}</span></span><span class="hb-pill amber">${s.status === 'waiting' ? 'Waiting for ' + esc(firstName(s.bName || nameOf(s.bEmail))) : 'Waiting for the office'}</span></div>` });
+  });
+  if (!rows.length && !always) return '';
+  rows.sort((a, b) => a.k.localeCompare(b.k));
+  return `<div class="hb-card"><h3><i class="ti ti-list-check"></i> My requests</h3>${rows.slice(0, 5).map(r => r.h).join('') || '<div class="hb-empty">Nothing booked or waiting.</div>'}
+    <a class="hb-link" href="${hbLeaveLink(rows.length ? 'mine' : 'leave')}">${rows.length ? 'All my requests' : 'Book holiday'} <i class="ti ti-chevron-right"></i></a></div>`;
+}
+function hbTodo() {
+  const rows = [];
+  const add = (n, icon, text, tab, red) => { if (n) rows.push(`<a class="hb-row hb-go" href="timesheet-report.html" data-trtab="${tab}"><span><i class="ti ${icon}"></i> ${text}</span><span class="hb-pill${red ? ' red' : ''}">${n}</span></a>`); };
+  add(H.leave.filter(l => l.status === 'pending').length, 'ti-beach', 'Holiday to approve', 'leave');
+  add(H.swaps.filter(s => s.status === 'accepted' && swapLive(s)).length, 'ti-arrows-exchange', 'Swaps to approve', 'rota');
+  const wait = H.swaps.filter(s => s.status === 'waiting' && swapLive(s)), late = wait.filter(swapLate).length;
+  if (wait.length) rows.push(`<a class="hb-row hb-go${late ? ' late' : ''}" href="timesheet-report.html" data-trtab="rota"><span><i class="ti ti-hourglass"></i> Swaps not answered yet${late ? ` <span class="hb-red">(${late} overdue)</span>` : ''}</span><span class="hb-pill${late ? ' red' : ''}">${wait.length}</span></a>`);
+  const m = teamMissing();
+  if (m.people) rows.push(`<a class="hb-row hb-go" href="timesheet-report.html" data-trtab="ts"><span><i class="ti ti-clock-exclamation"></i> Missing timesheets <span class="w">(${m.people} ${m.people === 1 ? 'person' : 'people'})</span></span><span class="hb-pill">${m.days} day${m.days === 1 ? '' : 's'}</span></a>`);
+  add(diaryCount(), 'ti-calendar-x', 'Work diary to sort', 'leave', true);
+  (H.qs || []).forEach(q => rows.push(`<a class="hb-row" href="${esc(q.href)}"><span><i class="ti ${q.icon}"></i> ${esc(q.name)}: ready for QS</span><span class="hb-pill red">${q.n}</span></a>`));
+  return `<div class="hb-card hb-todo" id="hbTodo"><h3><i class="ti ti-checklist"></i> To do</h3>${rows.join('') || '<div class="hb-empty">All clear: nothing to approve or chase.</div>'}</div>`;
+}
+function renderHome() {
+  const box = document.getElementById('homeBoxes'); if (!box) return;
+  const blocks = rotaBlocks(), eng = H.level === 'engineer';
+  let h = hbDate();
+  if (H.failed) h += '<div class="hb-notice bad"><i class="ti ti-wifi-off"></i><span>Some of this didn\'t load. Check your signal and reload.</span></div>';
+  if (!eng) h += hbTodo();
+  h += hbNudge() + hbWaitingForMe();
+  h += eng ? hbMyOnCall(blocks, true) + hbOnCallNow(blocks) + hbMyRequests(true)
+           : hbOnCallNow(blocks) + hbMyOnCall(blocks, false) + hbMyRequests(false);
+  box.innerHTML = h;
+}
+// Called by the activity feed once it has the "Ready for QS" counts (management only).
+function homeQS(countsByTool, reportEntries) {
+  if (H.level !== 'management') return;
+  H.qs = reportEntries.filter(x => countsByTool[x.tool.id]).map(x => ({ name: x.tool.name, icon: x.tool.icon, href: x.entry.reportHref, n: countsByTool[x.tool.id] }));
+  const t = document.getElementById('hbTodo'); if (t) t.outerHTML = hbTodo();
+}
+// The to-do rows open Timesheets & leave on the right tab.
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-trtab]');
+  if (a) { try { sessionStorage.setItem('tr-tab', a.dataset.trtab); } catch (err) {} }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   engineer: [
-    '<b>Leave &amp; on-call</b> is here: book holiday, swap on-call and see the rota.',
-    'Every page now has a <b>Help</b> button at the top if you get stuck.',
-    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
+    'The home page now shows <b>your next on-call</b>, <b>who\'s on call</b> tonight and this weekend, and <b>your requests</b>.',
+    'If someone asks to swap on-call with you, you can <b>Accept</b> or <b>Decline</b> it right from the home page.',
+    'If you\'ve missed a timesheet, it tells you.',
+    'Bank holidays and the Christmas shutdown show up a week before.',
+    '<b>Timesheet</b> and <b>Leave &amp; on-call</b> are together at the top. Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
   ],
   office: [
-    '<b>Timesheets &amp; leave</b> is in the <b>Office</b> section: timesheets, holiday approvals and the on-call rota.',
-    'Every page now has a <b>Help</b> button at the top.',
-    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
+    'The home page now has a <b>To do</b> box: holiday and swaps to approve, swaps nobody has answered, missing timesheets and the work diary. Tap a line to go straight there.',
+    'It also shows who\'s on call tonight and this weekend.',
+    'Bank holidays and the Christmas shutdown show up a week before.',
+    'Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
   ],
   management: [
-    '<b>Timesheets &amp; leave</b> (under QS &amp; Reporting) now covers holiday approvals and the on-call rota.',
-    'Directors now have the same access as managers.',
-    'Every page now has a <b>Help</b> button at the top.',
-    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
+    'The home page now has a <b>To do</b> box: holiday and swaps to approve, swaps nobody has answered, missing timesheets, the work diary and <b>Ready for QS</b>. Tap a line to go straight there.',
+    'It also shows who\'s on call tonight and this weekend. The recent test results are underneath.',
+    'Bank holidays and the Christmas shutdown show up a week before.',
+    'Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
   ]
 };
 const HELP = [
-  { q: 'How do I open a tool?', a: '<p>Tap its tile on the left (or at the top on a phone).</p>' },
+  { q: 'How do I open a tool?', a: '<p>Tap it in the list on the left. On a phone, the tools are under the boxes.</p>' },
   { q: 'Where are the other tools?', a: '<p>Tools that aren\'t ready yet are in the <b>Coming soon</b> line at the bottom. Tap it to see the list. Each one moves up into its proper place as soon as it\'s switched on.</p>' },
+  { q: 'What does the On call box show?', a: '<p>Who\'s on call now, then everyone up to the end of the coming weekend. Your own shifts say <b>You</b> in red.</p><p>Tap <b>The whole rota</b> to see further ahead.</p>' },
+  { levels: ['engineer'], q: 'How do I answer a swap?', a: '<p>Press <b>Accept</b> or <b>Decline</b> on the home page. Leave &amp; on-call opens and asks you to confirm, and the other person gets an email.</p>' },
+  { levels: ['engineer'], q: 'How do I get my on-call in my phone calendar?', a: '<p>Press <b>Add to my phone calendar</b> under My next on-call. It takes you to the download in Leave &amp; on-call.</p>' },
+  { q: 'It says I\'ve days without a timesheet', a: '<p>Those are weekdays in the last month with no timesheet sent. Weekends, bank holidays, the shutdown and booked holiday don\'t count. Press <b>Fill them in</b>.</p>' },
   { q: 'Can I use the apps with no signal?', a: '<p>Yes, they open with no signal and save your work. It goes up when you\'re back in signal, so don\'t clear the app until it has.</p>' },
-  { levels: ['office', 'management'], q: 'What\'s the list on the right?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>.</p>' },
-  { levels: ['office'], q: 'Where do I approve holiday?', a: '<p>Open <b>Timesheets &amp; leave</b> in the Office section, then the <b>Leave</b> tab.</p>' },
-  { levels: ['management'], q: 'Where do I approve holiday or check timesheets?', a: '<p>Open <b>Timesheets &amp; leave</b> under QS &amp; Reporting.</p>' },
-  { levels: ['management'], q: 'What\'s the red number on a report tile?', a: '<p>How many test results are waiting to be QSed for that tool.</p>' },
+  { levels: ['office', 'management'], q: 'What\'s in the To do box?', a: '<p>Everything waiting for the office: holiday and swaps to approve, swaps the other person hasn\'t answered (red when it\'s been 48 hours or the shift is close), missing timesheets and the work diary.</p><p>Tap a line and Timesheets &amp; leave opens on the right tab. When there\'s nothing to do, it says so.</p>' },
+  { levels: ['office', 'management'], q: 'What\'s the list under the boxes?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>. It only shows on a computer.</p>' },
+  { levels: ['management'], q: 'What\'s the red number on a report tile?', a: '<p>How many test results are waiting to be QSed for that tool. The same counts are in the To do box.</p>' },
   { levels: ['management'], q: 'Where do I add staff or change someone\'s position?', a: '<p>Press the <b>cog</b> at the top right to open Management.</p>' }
 ];
 
@@ -634,6 +1005,8 @@ onAuthStateChanged(auth, async (user) => {
 
   const tools = await loadTools();
   renderTools(tools, isManager, isOffice);
+  H.tools = tools || {};
+  loadHome(va ? va.email : user.email, isManager ? 'management' : isOffice ? 'office' : 'engineer').then(renderHome);
 
   if (isManager || isOffice){
     const reportEntries = REPORT_TOOLS
