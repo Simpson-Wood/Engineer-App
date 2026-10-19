@@ -83,6 +83,47 @@
     .tile.disabled span{display:flex; align-items:center;}
     .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
   }
+
+  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
+  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
+  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .sw-hbtn i{font-size:17px;}
+  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
+  .topbar-right .sw-hbtn{margin-right:6px;}
+  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
+  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
+  .sw-vabar i{font-size:18px;}
+  .sw-vabar span{flex:1; min-width:180px;}
+  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
+  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
+  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
+  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
+  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
+  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
+  .sw-news li{margin-bottom:8px;}
+  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
+  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
+  .sw-people{display:grid; gap:6px;}
+  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
+  .sw-people button:hover{background:#fbe9ea;}
+  .sw-people small{color:#5c5c5c;}
+  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
+  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
+  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
+  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
+  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
+  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
+  .sw-help summary::-webkit-details-marker{display:none;}
+  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
+  .sw-help details[open] summary::before{content:'–';}
+  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
+  .sw-help details > div p{margin:0 0 8px;}
+  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
+  @media (max-width:640px){ .sw-help{max-width:none;} }
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -125,10 +166,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit
+  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, orderBy, limit, setDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.6";
+const VERSION = "v2.7";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -143,6 +184,136 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// Raw Firestore functions for the shared block below (this page saves
+// nothing else, so there's nothing for "View as" to guard).
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = setDoc;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index, timesheet, leave, timesheet-report and
+//  management — keep in step): access level · View as (Rob only) ·
+//  What's New · Help.   Standards §15: any page changed from now on gets
+//  this block too.
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
+const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
+let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
+let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
+const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
+const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
+// Wrap anything that saves, so "View as" can never change real data.
+function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
+function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
+(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
+  const f = window.fetch.bind(window);
+  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
+})();
+// Who someone is: 'management' (Manager / QS / Director, or the console-only
+// managers list), 'office' or 'engineer'.
+async function swAccess(email) {
+  let managers = false, position = '', staff = null;
+  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
+  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
+  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
+  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+}
+function swHeaderButton(id, icon, label, onClick) {
+  if (document.getElementById(id)) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
+  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
+  b.addEventListener('click', onClick);
+  const right = document.querySelector('.topbar-right');
+  if (right) right.prepend(b);
+  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
+}
+function swModal(html, cls) {
+  const bg = document.createElement('div');
+  bg.className = 'sw-modal-bg ' + (cls || '');
+  bg.innerHTML = html;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
+  document.body.appendChild(bg);
+  return bg;
+}
+
+// ---- View as (Rob only) ----------------------------------------------------
+// Rob picks a person and every page shows what they'd see, read-only. The
+// choice lasts for this browser tab (all pages) until he presses Stop. Data is
+// still read with Rob's own access, so it shows screens, not the database rules.
+async function swViewAsInit(user) {
+  const real = String(user.email || '').toLowerCase();
+  if (real !== SW_OWNER) return null;
+  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
+  let v = null;
+  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
+  if (!v) return null;
+  let name = v, position = '';
+  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
+  VIEW_AS = { email: v, name, position };
+  const bar = document.createElement('div');
+  bar.className = 'sw-vabar';
+  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-va]'); if (!b) return;
+    if (b.dataset.va === 'change') swPickViewAs();
+    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
+  });
+  document.body.prepend(bar);
+  document.body.classList.add('sw-va-on');
+  return VIEW_AS;
+}
+async function swPickViewAs() {
+  let people = [];
+  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
+  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
+  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
+  const draw = () => {
+    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
+    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
+  };
+  m.querySelector('[data-q]').addEventListener('input', draw);
+  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
+  draw(); m.querySelector('[data-q]').focus();
+}
+
+// ---- What's New + Help -------------------------------------------------------
+// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
+// (questions; each with the tab it belongs to and, if not everyone, the
+// levels it's for), then calls swExtrasStart().
+function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
+function swShowNews() {
+  const items = swNewsItems();
+  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+async function swNewsCheck() {
+  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
+  const key = 'seen_' + SW.page;
+  try {
+    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
+    const snap = await swGetDoc(ref);
+    if (snap.exists() && snap.data()[key] === SW.version) return;
+    swShowNews();
+    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
+  } catch (e) { console.warn('What\'s new check failed', e); }
+}
+function swShowHelp() {
+  const tab = SW.tab() || '';
+  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
+  const groups = new Map();
+  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
+  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
+  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
+    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
+    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
+  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
+}
+function swExtrasStart() {
+  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
+  swNewsCheck();
+}
+
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
@@ -339,7 +510,8 @@ async function loadTools(){
 }
 
 // A manager is either in the console-only /managers failsafe list, or a
-// staff record whose position is Manager or QS — position alone is now the
+// staff record whose position is Manager, QS or Director (Director added
+// 19 Oct 2026) — position alone is now the
 // normal way to grant/revoke management access, self-service from
 // management.html's Staff list. Office is a separate, narrower tier: it
 // only unlocks the activity feed below, never the QS & Reporting tiles or
@@ -354,7 +526,7 @@ async function getAccessLevel(email){
     const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
     if (staffSnap.exists()){
       const pos = staffSnap.data().position;
-      if (pos === 'Manager' || pos === 'QS') isManager = true;
+      if (pos === 'Manager' || pos === 'QS' || pos === 'Director') isManager = true;
       if (pos === 'Office') isOffice = true;
     }
   } catch (e) { console.error('staff check failed', e); }
@@ -383,6 +555,35 @@ getRedirectResult(auth).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
+// ═══════════════════════════════════════════════════════════════════════════
+const NEWS = {
+  engineer: [
+    '<b>Leave &amp; on-call</b> is here: book holiday, swap on-call and see the rota.',
+    'Every page now has a <b>Help</b> button at the top if you get stuck.'
+  ],
+  office: [
+    '<b>Timesheets &amp; leave</b> is in the <b>Office</b> section: timesheets, holiday approvals and the on-call rota.',
+    'Every page now has a <b>Help</b> button at the top.'
+  ],
+  management: [
+    '<b>Timesheets &amp; leave</b> (under QS &amp; Reporting) now covers holiday approvals and the on-call rota.',
+    'Directors now have the same access as managers.',
+    'Every page now has a <b>Help</b> button at the top.'
+  ]
+};
+const HELP = [
+  { q: 'How do I open a tool?', a: '<p>Tap its tile on the left (or at the top on a phone).</p>' },
+  { q: 'Why does a tile say "Coming soon"?', a: '<p>That tool isn\'t switched on yet. It appears as soon as it\'s ready.</p>' },
+  { q: 'Can I use the apps with no signal?', a: '<p>Yes, they open with no signal and save your work. It goes up when you\'re back in signal, so don\'t clear the app until it has.</p>' },
+  { levels: ['office', 'management'], q: 'What\'s the list on the right?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>.</p>' },
+  { levels: ['office'], q: 'Where do I approve holiday?', a: '<p>Open <b>Timesheets &amp; leave</b> in the Office section, then the <b>Leave</b> tab.</p>' },
+  { levels: ['management'], q: 'Where do I approve holiday or check timesheets?', a: '<p>Open <b>Timesheets &amp; leave</b> under QS &amp; Reporting.</p>' },
+  { levels: ['management'], q: 'What\'s the red number on a report tile?', a: '<p>How many test results are waiting to be QSed for that tool.</p>' },
+  { levels: ['management'], q: 'Where do I add staff or change someone\'s position?', a: '<p>Press the <b>cog</b> at the top right to open Management.</p>' }
+];
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     document.getElementById('signinScreen').hidden = false;
@@ -391,11 +592,12 @@ onAuthStateChanged(auth, async (user) => {
   }
   document.getElementById('signinScreen').hidden = true;
   document.getElementById('appRoot').hidden = false;
-  document.getElementById('whoName').textContent = user.displayName || user.email;
+  const va = await swViewAsInit(user);
+  document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
 
   let isManager = false, isOffice = false;
   try {
-    ({ isManager, isOffice } = await getAccessLevel(user.email));
+    ({ isManager, isOffice } = await getAccessLevel(va ? va.email : user.email));
     document.getElementById('mgmtBtn').hidden = !isManager;
   } catch (e) {
     console.error('Access check failed:', e);
@@ -410,6 +612,8 @@ onAuthStateChanged(auth, async (user) => {
       .filter(x => x.entry.live && x.entry.reportHref);
     renderActivityFeed(reportEntries);
   }
+  SW = Object.assign(SW, { page: 'index', version: VERSION, level: isManager ? 'management' : isOffice ? 'office' : 'engineer', news: NEWS, help: HELP });
+  swExtrasStart();
 });
 
 document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });

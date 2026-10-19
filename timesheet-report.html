@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheets &amp; leave v2.0</title>
+<title>Simpson & Wood — Timesheets &amp; leave v3.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -236,6 +236,96 @@
   .log div{padding:3px 0;}
   .grid td.c.lv{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
   .warnline{color:var(--red-dark); font-weight:600;}
+  .lvn{display:block; width:100%; text-align:left; border:none; border-radius:5px; padding:2px 5px; margin-top:2px; font-size:13px; font-weight:700; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Barlow',sans-serif;}
+  .lvn.hol{background:var(--blue-bg); color:var(--blue);}
+  .lvn.pend{background:var(--amber-bg); color:var(--amber);}
+  .lvn.oth{background:#ecebe7; color:var(--grey);}
+  .lvn .short{display:none;}
+  @media (max-width:640px){ .lvn .full{display:none;} .lvn .short{display:inline;} .lvn{font-size:12px; padding:1px 3px;} }
+  .shut-cal{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; max-width:620px; margin:6px 0 12px;}
+  .sd-t{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; margin-bottom:6px;}
+  .sd-g{display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;}
+  .sd-dn{font-size:12px; font-weight:700; color:var(--grey); text-align:center;}
+  .sd{border:1px solid var(--line); background:#fff; border-radius:7px; padding:8px 0; font-size:14px; font-weight:600; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sd.off{background:#ecebe7; color:var(--grey);}
+  .sd.in{background:var(--red); border-color:var(--red); color:#fff;}
+  .sd.in.off{background:#e58c90; border-color:#e58c90;}
+  .sd.start{box-shadow:0 0 0 2px var(--ink);}
+
+  /* ---- rota calendar (shared with the other rota page) ---- */
+  .rcal{display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:6px;}
+  .rc-dn{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--grey); text-align:center; text-transform:uppercase;}
+  .rc{position:relative; min-height:88px; border-radius:9px; border:1px solid var(--line); background:#fff; padding:6px 8px; text-align:left; display:flex; flex-direction:column; gap:2px; font-family:'Barlow',sans-serif; color:var(--ink); min-width:0;}
+  button.rc{cursor:pointer;}
+  button.rc:hover{border-color:var(--red);}
+  .rc .n{font-weight:700; font-size:14px; display:flex; gap:6px; align-items:baseline;}
+  .rc .n em{font-style:normal; font-weight:600; font-size:11.5px; color:var(--grey); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rc .w{font-size:14.5px; font-weight:700; line-height:1.2; overflow:hidden; text-overflow:ellipsis;}
+  .rc .w small{display:block; font-weight:500; font-size:11.5px; color:var(--grey);}
+  .rc .w.none{color:var(--grey-2); font-weight:500;}
+  .rc .w.me{color:var(--red-dark);}
+  .rc .short{display:none;}
+  .rc.pad{visibility:hidden;}
+  .rc.past{background:transparent; border-style:dashed; color:var(--grey-2); min-height:40px;}
+  .rc.off{background:#f3f2ee;}
+  .rc.mine{background:var(--red-tint); border-color:#f1c4c6;}
+  .rc.unset{border-style:dashed;}
+  .rc.yday{border:2px solid var(--red);}
+  .rc.yday .n, .rc.yday .n em{color:var(--red);}
+  .rc.today{box-shadow:0 0 0 2px var(--ink) inset;}
+  .rc-dot{position:absolute; top:8px; right:8px; width:9px; height:9px; border-radius:50%; background:#e8a317;}
+  @media (max-width:640px){
+    .rcal{gap:3px;}
+    .rc{min-height:62px; padding:4px 4px; border-radius:7px;}
+    .rc .n{font-size:12.5px;}
+    .rc .n em{display:none;}
+    .rc .full{display:none;}
+    .rc .short{display:inline;}
+    .rc .w{font-size:13.5px;}
+    .rc .w small{font-size:10.5px;}
+    .rc.past{min-height:30px;}
+  }
+
+  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
+  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
+  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .sw-hbtn i{font-size:17px;}
+  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
+  .topbar-right .sw-hbtn{margin-right:6px;}
+  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
+  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
+  .sw-vabar i{font-size:18px;}
+  .sw-vabar span{flex:1; min-width:180px;}
+  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
+  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
+  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
+  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
+  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
+  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
+  .sw-news li{margin-bottom:8px;}
+  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
+  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
+  .sw-people{display:grid; gap:6px;}
+  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
+  .sw-people button:hover{background:#fbe9ea;}
+  .sw-people small{color:#5c5c5c;}
+  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
+  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
+  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
+  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
+  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
+  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
+  .sw-help summary::-webkit-details-marker{display:none;}
+  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
+  .sw-help details[open] summary::before{content:'–';}
+  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
+  .sw-help details > div p{margin:0 0 8px;}
+  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
+  @media (max-width:640px){ .sw-help{max-width:none;} }
 </style>
 </head>
 <body>
@@ -261,7 +351,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheets &amp; leave</h1>
-        <p id="versionLabel">v2.0</p>
+        <p id="versionLabel">v3.0</p>
       </div>
     </a>
     <div class="who">
@@ -272,8 +362,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="ts"><i class="ti ti-clock"></i> Timesheets</button>
     <button class="tab" data-tab="leave"><i class="ti ti-beach"></i> Leave <span class="count" id="leaveCount" hidden>0</span></button>
-    <button class="tab" data-tab="rota"><i class="ti ti-calendar-week"></i> On-call rota</button>
-    <button class="tab" data-tab="bal"><i class="ti ti-scale"></i> Balances</button>
+    <button class="tab" data-tab="rota"><i class="ti ti-calendar-week"></i> On-call rota <span class="count" id="rotaCount" hidden>0</span></button>
     <button class="tab" data-tab="set"><i class="ti ti-settings"></i> Settings</button>
   </nav>
 
@@ -284,7 +373,7 @@
           <div class="wk"><button class="nav" data-wk="-1" aria-label="Previous week">‹</button><h2 id="wkTitle">—</h2><button class="nav" data-wk="1" aria-label="Next week">›</button></div>
           <button class="btn" id="thisWeek">This week</button>
           <span class="grow"></span>
-          <label class="tick"><input type="checkbox" id="showTest"> Show test</label>
+          <label class="tick" id="showTestBox" hidden><input type="checkbox" id="showTest"> Show test</label>
           <button class="btn red" id="remindBtn"><i class="ti ti-mail"></i> Send reminders</button>
         </div>
         <div class="gridwrap" id="grid"><div class="empty">Loading…</div></div>
@@ -316,61 +405,32 @@
     </section>
 
     <section id="view-leave" hidden>
-      <div class="bar"><span class="grow"></span><label class="tick"><input type="checkbox" id="lvShowTest"> Show test</label><button class="btn" id="recordLeaveBtn"><i class="ti ti-plus"></i> Record leave</button></div>
+      <div class="bar"><span class="grow"></span><label class="tick" id="lvShowTestBox" hidden><input type="checkbox" id="lvShowTest"> Show test</label><button class="btn" id="recordLeaveBtn"><i class="ti ti-plus"></i> Record leave</button></div>
       <div id="leaveBox"><div class="empty">Loading…</div></div>
     </section>
 
     <section id="view-rota" hidden>
       <div id="rotaBanners"></div>
-      <div class="card">
+      <div id="swapsBox" hidden></div>
+      <div class="card" style="margin-top:14px">
         <div class="bar">
-          <div class="wk"><button class="nav" data-rmove="-1" aria-label="Previous month">‹</button><h2 id="rotaTitle">—</h2><button class="nav" data-rmove="1" aria-label="Next month">›</button></div>
+          <div class="wk"><button class="nav" data-rmove="-1" id="rotaPrev" aria-label="Previous month">‹</button><h2 id="rotaTitle">—</h2><button class="nav" data-rmove="1" aria-label="Next month">›</button></div>
           <button class="btn" id="rotaThisMonth">This month</button>
           <span class="grow"></span>
-          <button class="btn" id="copyFwdBtn"><i class="ti ti-copy"></i> Copy forward</button>
           <button class="btn" id="printRotaBtn"><i class="ti ti-printer"></i> Print rota</button>
         </div>
         <div id="rotaTable"><div class="empty">Loading…</div></div>
-        <div class="legend"><span><i style="background:#faf9f6"></i>Weekend / bank holiday / shutdown (8am start)</span><span><span class="tag warn" style="margin:0">Swapped</span> not the standard pattern</span><span>Tap a day to change it or see its history.</span></div>
-      </div>
-    </section>
-
-    <section id="view-bal" hidden>
-      <div class="card">
-        <div class="bar">
-          <div class="wk"><button class="nav" data-bmove="-1" aria-label="Previous year">‹</button><h2 id="balTitle">—</h2><button class="nav" data-bmove="1" aria-label="Next year">›</button></div>
-          <span class="grow"></span>
-        </div>
-        <div class="gridwrap" id="balTable"></div>
+        <div class="legend"><span><i style="background:#f3f2ee"></i>Weekend, bank holiday or shutdown (8am start)</span><span><i style="border:2px solid var(--red)"></i>Yesterday</span><span><i style="background:#e8a317;border-radius:50%"></i>Different from the rota spreadsheet</span><span>Tap a day to change it.</span></div>
       </div>
     </section>
 
     <section id="view-set" hidden>
-      <div class="setgrid">
-        <div class="card">
-          <h2>Christmas shutdown</h2>
-          <div class="bar"><div class="wk"><button class="nav" data-smove="-1" aria-label="Previous year">‹</button><h2 id="shutYear" style="min-width:90px">—</h2><button class="nav" data-smove="1" aria-label="Next year">›</button></div></div>
-          <div class="chips" id="shutChips"></div>
-          <div class="bar"><input type="date" class="inp" id="shutAdd" style="max-width:200px"><button class="btn" id="shutAddBtn">Add day</button></div>
-          <div id="shutNote" style="font-size:14px;color:var(--grey)"></div>
-        </div>
-        <div class="card">
-          <h2>Swap emails</h2>
-          <div class="chips" id="swapMailChips"></div>
-          <div class="bar"><select class="inp" id="swapMailAdd" style="max-width:280px"></select><button class="btn" id="swapMailAddBtn">Add</button></div>
-          <h2 style="margin-top:18px">Work diary</h2>
-          <div class="bar"><input class="inp" id="infoEmail" style="max-width:320px" autocomplete="off"><button class="btn" id="infoEmailSave">Save</button></div>
-        </div>
-        <div class="card">
-          <h2>Standard rota pattern</h2>
-          <div id="patternNote" style="font-size:14.5px;color:var(--grey);margin-bottom:10px"></div>
-          <div class="bar"><select class="inp" id="patternCycle" style="max-width:220px"></select><button class="btn" id="patternSave">Use this rota as the pattern</button></div>
-        </div>
-        <div class="card">
-          <h2>Names from the old spreadsheets</h2>
-          <div id="nameRows"></div>
-          <div class="bar" style="margin-top:12px"><span class="grow"></span><button class="btn red" id="namesSave">Save matches</button></div>
-        </div>
+      <div class="card">
+        <h2>Christmas shutdown</h2>
+        <div class="bar"><div class="wk"><button class="nav" data-smove="-1" aria-label="Previous year">‹</button><h2 id="shutYear" style="min-width:150px">—</h2><button class="nav" data-smove="1" aria-label="Next year">›</button></div></div>
+        <div class="shut-cal" id="shutCal"></div>
+        <p id="shutNote" style="font-size:15px;margin:0 0 10px"></p>
+        <div class="bar"><button class="btn red" id="shutSave" hidden>Save</button><button class="btn" id="shutUndo" hidden>Undo</button><button class="btn" id="shutClear" hidden>Clear it</button></div>
       </div>
     </section>
   </main>
@@ -380,11 +440,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
-  onAuthStateChanged, signOut, reauthenticateWithPopup, reauthenticateWithRedirect
+  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup, reauthenticateWithRedirect as _reauthRedirect
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, deleteDoc,
-  setDoc, updateDoc, writeBatch, query, where, serverTimestamp, Timestamp
+  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, deleteDoc as _deleteDoc,
+  setDoc as _setDoc, updateDoc as _updateDoc, writeBatch as _writeBatch, query, where, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -399,6 +459,139 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// Raw Firestore functions for the shared block below; everything else saves
+// through the guarded versions, so "View as" can never change real data.
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = _setDoc;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index, timesheet, leave, timesheet-report and
+//  management — keep in step): access level · View as (Rob only) ·
+//  What's New · Help.   Standards §15: any page changed from now on gets
+//  this block too.
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
+const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
+let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
+let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
+const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
+const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
+// Wrap anything that saves, so "View as" can never change real data.
+function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
+function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
+(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
+  const f = window.fetch.bind(window);
+  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
+})();
+// Who someone is: 'management' (Manager / QS / Director, or the console-only
+// managers list), 'office' or 'engineer'.
+async function swAccess(email) {
+  let managers = false, position = '', staff = null;
+  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
+  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
+  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
+  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+}
+function swHeaderButton(id, icon, label, onClick) {
+  if (document.getElementById(id)) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
+  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
+  b.addEventListener('click', onClick);
+  const right = document.querySelector('.topbar-right');
+  if (right) right.prepend(b);
+  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
+}
+function swModal(html, cls) {
+  const bg = document.createElement('div');
+  bg.className = 'sw-modal-bg ' + (cls || '');
+  bg.innerHTML = html;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
+  document.body.appendChild(bg);
+  return bg;
+}
+
+// ---- View as (Rob only) ----------------------------------------------------
+// Rob picks a person and every page shows what they'd see, read-only. The
+// choice lasts for this browser tab (all pages) until he presses Stop. Data is
+// still read with Rob's own access, so it shows screens, not the database rules.
+async function swViewAsInit(user) {
+  const real = String(user.email || '').toLowerCase();
+  if (real !== SW_OWNER) return null;
+  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
+  let v = null;
+  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
+  if (!v) return null;
+  let name = v, position = '';
+  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
+  VIEW_AS = { email: v, name, position };
+  const bar = document.createElement('div');
+  bar.className = 'sw-vabar';
+  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-va]'); if (!b) return;
+    if (b.dataset.va === 'change') swPickViewAs();
+    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
+  });
+  document.body.prepend(bar);
+  document.body.classList.add('sw-va-on');
+  return VIEW_AS;
+}
+async function swPickViewAs() {
+  let people = [];
+  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
+  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
+  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
+  const draw = () => {
+    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
+    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
+  };
+  m.querySelector('[data-q]').addEventListener('input', draw);
+  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
+  draw(); m.querySelector('[data-q]').focus();
+}
+
+// ---- What's New + Help -------------------------------------------------------
+// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
+// (questions; each with the tab it belongs to and, if not everyone, the
+// levels it's for), then calls swExtrasStart().
+function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
+function swShowNews() {
+  const items = swNewsItems();
+  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+async function swNewsCheck() {
+  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
+  const key = 'seen_' + SW.page;
+  try {
+    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
+    const snap = await swGetDoc(ref);
+    if (snap.exists() && snap.data()[key] === SW.version) return;
+    swShowNews();
+    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
+  } catch (e) { console.warn('What\'s new check failed', e); }
+}
+function swShowHelp() {
+  const tab = SW.tab() || '';
+  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
+  const groups = new Map();
+  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
+  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
+  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
+    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
+    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
+  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
+}
+function swExtrasStart() {
+  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
+  swNewsCheck();
+}
+
+const setDoc = swGuard(_setDoc), updateDoc = swGuard(_updateDoc), deleteDoc = swGuard(_deleteDoc), writeBatch = swGuardBatch(_writeBatch);
+const reauthenticateWithPopup = swGuard(_reauthPopup), reauthenticateWithRedirect = swGuard(_reauthRedirect);
+
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 // Same as timesheet.html: Mail.Send lets a manager send reminder emails from
@@ -444,7 +637,7 @@ getRedirectResult(auth).then(r => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
 
-// Standards §1.2 — must match the rules' isManager() exactly.
+// Standards §1.2 — must match the rules' isManager() exactly (Director added 19 Oct 2026).
 async function checkManager(email){
   try {
     const mgrSnap = await getDoc(doc(db, 'managers', email));
@@ -454,7 +647,7 @@ async function checkManager(email){
     const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
     if (staffSnap.exists()){
       const pos = staffSnap.data().position;
-      if (pos === 'Manager' || pos === 'QS') return true;
+      if (pos === 'Manager' || pos === 'QS' || pos === 'Director') return true;
     }
   } catch (e) { console.error('staff check failed', e); }
   return false;
@@ -472,7 +665,7 @@ async function checkOffice(email){
 // ═══════════════════════════════════════════════════════════════════════════
 //  SHARED WITH timesheet.html (copied, keep in step): settings, helpers, PDF
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'report v2.0';   // shown in PDF footers made from this page
+const VERSION = 'report v3.0';   // shown in PDF footers made from this page
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -760,7 +953,7 @@ async function graphSend(token, message) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  TIMESHEETS (managers) — view-only
 // ═══════════════════════════════════════════════════════════════════════════
-const REPORT_VERSION = 'v2.0';
+const REPORT_VERSION = 'v3.0';
 const APP_LINK = 'https://app.simpsonandwood.co.uk/timesheet.html';
 let ME = null;            // { email, rawEmail, name }
 let STAFF = new Map();    // email -> { name, position, fills }
@@ -1080,6 +1273,57 @@ function oncallDuring(from, to, email) {
 }
 // ---- end of shared block ----
 
+// ---- SHARED WITH leave.html / timesheet-report.html (keep in step): rota calendar ----
+// Short names for the rota calendar on phones: first + last initial (Scott
+// Brown → SB). If two people would share them, the surname's second letter is
+// added (Adam Carr → ACa, Alex Collins → ACo). A "short" field on the staff
+// record (set in management) overrides it.
+let SHORT = new Map();
+function buildShortNames() {
+  SHORT = new Map();
+  const base = new Map(), count = new Map();
+  STAFF.forEach((s, e) => {
+    const parts = String(s.name || '').trim().split(/\s+/).filter(Boolean);
+    const f = parts[0] || '', l = parts.length > 1 ? parts[parts.length - 1] : '';
+    const b = (f[0] || '').toUpperCase() + (l[0] || '').toUpperCase();
+    base.set(e, { f, l, b }); count.set(b, (count.get(b) || 0) + 1);
+  });
+  base.forEach((v, e) => {
+    const s = STAFF.get(e);
+    const auto = count.get(v.b) > 1 && v.l.length > 1 ? (v.f[0] || '').toUpperCase() + v.l[0].toUpperCase() + v.l[1].toLowerCase() : v.b;
+    SHORT.set(e, (s.short && String(s.short).trim()) || auto || s.name || e);
+  });
+}
+function shortOf(email, name) { return (email && SHORT.get(email)) || String(name || '').split(/\s+/).map(w => (w[0] || '').toUpperCase()).join('') || '?'; }
+// A month of the rota, Monday first. Days before yesterday are left blank
+// (nobody needs them); yesterday is marked in red.
+function rotaCalendarHTML(monthISO, opts) {
+  const [y, m] = monthISO.split('-').map(Number);
+  const days = new Date(y, m, 0).getDate();
+  const today = todayISO(), yday = addDays(today, -1);
+  // Start from the week yesterday is in (whole weeks before that are left off).
+  const ydayMon = addDays(yday, -((parseISO(yday).getDay() + 6) % 7));
+  const startDay = ydayMon.slice(0, 7) === monthISO ? +ydayMon.slice(8) : 1;
+  const lead = (new Date(y, m - 1, startDay).getDay() + 6) % 7;
+  let h = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<div class="rc-dn">${d}</div>`).join('');
+  for (let k = 0; k < lead; k++) h += '<div class="rc pad"></div>';
+  for (let d = startDay; d <= days; d++) {
+    const date = `${y}-${pad(m)}-${pad(d)}`;
+    if (date < yday) { h += `<div class="rc past"><span class="n">${d}</span></div>`; continue; }
+    const day = ROTA.get(date), segs = day ? segmentsOf(day) : [];
+    const set = segs.some(x => x.email || x.name);
+    const mine = !!opts.me && segs.some(x => x.email === opts.me);
+    const cls = ['rc', isOffDay(date) ? 'off' : '', mine ? 'mine' : '', date === yday ? 'yday' : '', date === today ? 'today' : '', set ? '' : 'unset', opts.clickable ? 'click' : ''].join(' ');
+    const names = !set ? '<span class="w none">Not set</span>' : segs.map(x => `<span class="w ${opts.me && x.email === opts.me ? 'me' : ''}"><span class="full">${esc(x.name || 'Not set')}</span><span class="short">${esc(x.name || x.email ? shortOf(x.email, x.name) : '—')}</span>${segs.length > 1 ? `<small>${esc(clock(shiftStart(date) + x.s))}</small>` : ''}</span>`).join('');
+    const note = date === yday ? 'Yesterday' : BANK_HOLIDAYS[date] ? 'Bank hol' : isShutdown(date) ? 'Shutdown' : '';
+    const mark = opts.marks && day && isSwapped(day) ? '<span class="rc-dot" title="Changed from the rota spreadsheet"></span>' : '';
+    const tag = opts.clickable ? 'button' : 'div';
+    h += `<${tag} ${opts.clickable ? `type="button" data-rday="${date}"` : ''} class="${cls}" aria-label="${esc(longDate(date))}"><span class="n">${d}${note ? `<em>${esc(note)}</em>` : ''}</span>${names}${mark}</${tag}>`;
+  }
+  return `<div class="rcal">${h}</div>`;
+}
+
+
 let ROTA = new Map();      // date -> rota day
 let LEAVE = [];            // every leave record
 let SWAPS = [];            // every swap request
@@ -1170,8 +1414,10 @@ async function graphCall(token, method, path, body) {
 }
 const addr = list => [...new Set(list.filter(Boolean).map(x => x.toLowerCase()))].map(a => ({ emailAddress: { address: a } }));
 const mailWrap = html => `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.45">${html}</div>`;
-function swapWatchers() { return [OWNER_EMAIL, ...(SETTINGS.swapEmails || [])]; }
-function infoMailbox() { return (SETTINGS.infoEmail || 'info@simpsonandwood.co.uk').trim(); }
+// Fixed (agreed 19 Oct): swap emails go to Rob and info@; the work diary is info@.
+const INFO_EMAIL = 'info@simpsonandwood.co.uk';
+function swapWatchers() { return [OWNER_EMAIL, INFO_EMAIL]; }
+function infoMailbox() { return INFO_EMAIL; }
 async function diaryAdd(token, ev) {
   const r = await graphCall(token, 'POST', `/users/${encodeURIComponent(infoMailbox())}/events`, Object.assign({ showAs: 'free', isReminderOn: false }, ev));
   return r && r.id;
@@ -1266,26 +1512,7 @@ function isSwapped(day) {
   return (day.parts && day.parts.length > 0) || (pe ? h.email !== pe : (h.name || '') !== day.planned);
 }
 
-// ---- balances ----
-function allowanceFor(email, year) { return ALLOW.find(a => +a.year === year && personEmail(a) === email) || null; }
-function shutdownDaysIn(year) { return (SETTINGS.shutdown[String(year)] || []).filter(d => d.slice(0, 4) === String(year) && dow(d) !== 0 && dow(d) !== 6 && !BANK_HOLIDAYS[d]); }
-function balanceFor(email, year) {
-  const a = allowanceFor(email, year), today = todayISO();
-  const allowance = a ? +a.allowance || 0 : 0, carry = a ? +a.carry || 0 : 0, adjust = a ? +a.adjust || 0 : 0;
-  const shut = (!a || a.shutdownDeducted !== false) ? shutdownDaysIn(year).length : 0;
-  const b = { a, allowance, carry, adjust, shut, taken: 0, booked: 0, waiting: 0, sick: 0, training: 0, other: 0 };
-  LEAVE.filter(l => !l.testData && personEmail(l) === email && ['approved', 'pending'].includes(l.status)).forEach(l => (l.days || []).forEach(x => {
-    if (x.date.slice(0, 4) !== String(year)) return;
-    const v = dayValue(x.part);
-    if (l.type === 'holiday') { if (l.status === 'pending') b.waiting += v; else if (x.date <= today) b.taken += v; else b.booked += v; }
-    else if (l.status === 'approved') b[l.type in b ? l.type : 'other'] += v;
-  }));
-  b.left = allowance + carry + adjust - shut - b.taken - b.booked;
-  return b;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
-//  LEAVE TAB
 // ═══════════════════════════════════════════════════════════════════════════
 function staffOptions(selected, blankLabel) {
   const list = [...STAFF.entries()].map(([e, s]) => ({ e, n: s.name || e })).sort((a, b) => a.n.localeCompare(b.n));
@@ -1317,63 +1544,100 @@ function swapValid(s) {
   (s.bGives || []).forEach(x => { if (!coversRange(ROTA.get(x.date), s.bEmail, x.s, x.e)) bad.push(itemText(x)); });
   return bad;
 }
-function pendingCount() { return LEAVE.filter(l => l.status === 'pending' && !l.testData).length + SWAPS.filter(s => s.status === 'accepted' && !s.testData).length; }
-function renderLeaveTab() {
+const pendingLeave = () => LEAVE.filter(l => l.status === 'pending' && realmT(l));
+const pendingSwaps = () => SWAPS.filter(s => s.status === 'accepted' && realmT(s));
+function updateLeaveCount() {
+  const n = LEAVE.filter(l => l.status === 'pending' && !l.testData).length, m = SWAPS.filter(s => s.status === 'accepted' && !s.testData).length;
+  $('leaveCount').hidden = !n; $('leaveCount').textContent = n;
+  $('rotaCount').hidden = !m; $('rotaCount').textContent = m;
+}
+function diaryToSort() {
   const today = todayISO();
-  const pend = LEAVE.filter(l => l.status === 'pending' && realmT(l)).sort((a, b) => a.from.localeCompare(b.from));
-  const swAcc = SWAPS.filter(s => s.status === 'accepted' && realmT(s)).sort((a, b) => (a.firstShift || '').localeCompare(b.firstShift || ''));
-  const swWait = SWAPS.filter(s => s.status === 'waiting' && realmT(s)).sort((a, b) => (a.firstShift || '').localeCompare(b.firstShift || ''));
-  const diaryAddList = [...LEAVE.filter(l => l.status === 'approved' && l.type === 'holiday' && l.to >= today).map(x => ['leave', x]), ...SWAPS.filter(s => s.status === 'approved' && (s.firstShift || '') >= addDays(today, -3)).map(x => ['oncallSwaps', x])]
+  const add = [...LEAVE.filter(l => l.status === 'approved' && l.type === 'holiday' && l.to >= today).map(x => ['leave', x]), ...SWAPS.filter(s => s.status === 'approved' && (s.firstShift || '') >= addDays(today, -3)).map(x => ['oncallSwaps', x])]
     .filter(([, x]) => !x.testData && x.infoCal && x.infoCal.status === 'failed');
-  const diaryRemoveList = [...LEAVE.map(x => ['leave', x]), ...SWAPS.map(x => ['oncallSwaps', x])]
+  const rm = [...LEAVE.map(x => ['leave', x]), ...SWAPS.map(x => ['oncallSwaps', x])]
     .filter(([, x]) => !x.testData && ['cancelled', 'declined', 'rejected'].includes(x.status) && x.infoCal && (x.infoCal.ids || []).length);
-  const upcoming = LEAVE.filter(l => l.status === 'approved' && realmT(l) && l.to >= addDays(today, -14)).sort((a, b) => a.from.localeCompare(b.from));
-
+  return { add, rm };
+}
+let lvMonth = todayISO().slice(0, 7);
+const lvOpen = new Set();   // approval cards opened to show the details
+function renderLeaveTab() {
+  const pend = pendingLeave().sort((a, b) => a.from.localeCompare(b.from));
+  const { add, rm } = diaryToSort();
   let h = '';
-  h += `<div class="sec-h">Leave to approve ${pend.length ? `<span class="n">${pend.length}</span>` : ''}</div>`;
-  h += pend.length ? `<div class="reqs">${pend.map(leaveCard).join('')}</div>` : '<div class="empty">Nothing waiting.</div>';
-  h += `<div class="sec-h">Swaps to approve ${swAcc.length ? `<span class="n">${swAcc.length}</span>` : ''}</div>`;
-  h += swAcc.length ? `<div class="reqs">${swAcc.map(s => swapCard(s, true)).join('')}</div>` : '<div class="empty">Nothing waiting.</div>';
-  if (swWait.length) h += `<div class="sec-h">Swaps waiting for the other engineer</div><div class="reqs">${swWait.map(s => swapCard(s, false)).join('')}</div>`;
-  if (diaryAddList.length || diaryRemoveList.length) {
+  if (pend.length) h += `<div class="sec-h">To approve <span class="n">${pend.length}</span></div><div class="reqs">${pend.map(leaveCard).join('')}</div>`;
+  if (add.length || rm.length) {
     h += `<div class="sec-h">Work diary to sort</div><div class="reqs">` +
-      diaryAddList.map(([col, x]) => `<div class="req"><div class="h"><b>${esc(col === 'leave' ? personName(x) + ': ' + dateRangeText(x) : 'Swap: ' + x.aName + ' / ' + x.bName)}</b><span class="tag bad">Not in the diary</span></div><div class="b">${esc(x.infoCal.error || '')}</div><div class="acts"><button class="mini red" data-diary-add="${col}|${esc(x.id)}">Add to the work diary</button></div></div>`).join('') +
-      diaryRemoveList.map(([col, x]) => `<div class="req"><div class="h"><b>${esc(col === 'leave' ? personName(x) + ': ' + dateRangeText(x) : 'Swap: ' + x.aName + ' / ' + x.bName)}</b><span class="tag">Cancelled</span></div><div class="b">Still in the work diary.</div><div class="acts"><button class="mini red" data-diary-rm="${col}|${esc(x.id)}">Take it out of the diary</button></div></div>`).join('') + '</div>';
+      add.map(([col, x]) => `<div class="req"><div class="h"><b>${esc(col === 'leave' ? personName(x) + ': ' + dateRangeText(x) : 'Swap: ' + x.aName + ' / ' + x.bName)}</b><span class="tag bad">Not in the diary</span></div><div class="b">${esc(x.infoCal.error || '')}</div><div class="acts"><button class="mini red" data-diary-add="${col}|${esc(x.id)}">Add to the work diary</button></div></div>`).join('') +
+      rm.map(([col, x]) => `<div class="req"><div class="h"><b>${esc(col === 'leave' ? personName(x) + ': ' + dateRangeText(x) : 'Swap: ' + x.aName + ' / ' + x.bName)}</b><span class="tag">Cancelled</span></div><div class="b">Still in the work diary.</div><div class="acts"><button class="mini red" data-diary-rm="${col}|${esc(x.id)}">Take it out of the diary</button></div></div>`).join('') + '</div>';
   }
-  h += `<div class="sec-h">Approved leave (recent and coming up)</div>`;
-  h += upcoming.length ? `<div class="card" style="padding:6px 10px"><table class="rt"><thead><tr><th>Who</th><th>What</th><th>Dates</th><th class="num">Days</th><th class="hide-m">Approved by</th><th></th></tr></thead><tbody>${upcoming.map(l => `<tr><td><b>${esc(personName(l))}</b>${l.testData ? ' <span class="tag test">Test</span>' : ''}</td><td>${esc(LEAVE_TYPES[l.type] || l.type)}</td><td>${esc(dateRangeText(l))}${(l.days || []).some(x => x.part !== 'full') ? ' <small>(part days)</small>' : ''}</td><td class="num">${fmtDays(l.total)}</td><td class="hide-m">${esc(l.decidedByName || (l.source === 'spreadsheet' ? 'Spreadsheet' : ''))}</td><td style="text-align:right"><button class="mini" data-lv-cancel="${esc(l.id)}">Cancel</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">None.</div>';
+  // booked leave calendar
+  const minMonth = todayISO().slice(0, 7);
+  if (lvMonth < minMonth) lvMonth = minMonth;
+  h += `<div class="sec-h" style="margin-top:${pend.length ? 22 : 0}px">Booked</div><div class="card"><div class="bar">
+    <div class="wk"><button class="nav" data-lvmove="-1" ${lvMonth <= minMonth ? 'disabled' : ''} aria-label="Previous month">‹</button><h2>${esc(parseISO(lvMonth + '-01').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }))}</h2><button class="nav" data-lvmove="1" aria-label="Next month">›</button></div></div>
+    ${leaveCalendarHTML(lvMonth)}
+    <div class="legend"><span><i style="background:var(--blue-bg)"></i>Holiday</span><span><i style="background:var(--amber-bg)"></i>Waiting for approval</span><span><i style="background:#ecebe7"></i>Sick / training / other</span><span>Tap a name for the details or to cancel it.</span></div></div>`;
   $('leaveBox').innerHTML = h;
   updateLeaveCount();
 }
-function updateLeaveCount() { const n = pendingCount(); $('leaveCount').hidden = !n; $('leaveCount').textContent = n; }
 function leaveCard(l) {
-  const email = personEmail(l), own = email === ME.email;
-  const yr = +l.from.slice(0, 4), bal = email ? balanceFor(email, yr) : null;
-  const after = bal ? bal.left - (l.type === 'holiday' ? l.total : 0) : null;
+  const email = personEmail(l), own = email === ME.email, open = lvOpen.has(l.id);
   const oc = email ? oncallDuring(l.from, l.to, email) : [];
   const off = alsoOff(l);
   const asked = tsOf(l.createdAt) ? new Date(tsOf(l.createdAt)).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const parts = (l.days || []).filter(x => x.part !== 'full');
-  return `<div class="req" data-card="${esc(l.id)}"><div class="h"><b>${esc(personName(l))}</b><span>${l.testData ? '<span class="tag test">Test</span>' : ''}<span class="tag warn">${esc(LEAVE_TYPES[l.type] || l.type)}</span></span></div>
-    <div class="b"><div><b>${esc(dateRangeText(l))}</b> · ${fmtDays(l.total)} day${l.total === 1 ? '' : 's'}${parts.length ? ' (' + parts.map(x => esc(shortDate(x.date) + ' ' + (PARTS[x.part] || '').toLowerCase())).join(', ') + ')' : ''}</div>
-    ${l.note ? `<div>Note: ${esc(l.note)}</div>` : ''}${asked ? `<div>Asked ${esc(asked)}${l.ref ? ' · ref ' + esc(l.ref) : ''}</div>` : ''}
-    ${l.mail && l.mail.status === 'failed' ? '<div class="warnline">The email to the office didn\'t go, so it may not have been printed.</div>' : ''}
-    ${bal ? `<div><span class="bal">${fmtDays(bal.left)} left now</span><span class="bal ${after < 0 ? 'neg' : ''}">${fmtDays(after)} left after this</span>${!bal.a ? '<span class="bal neg">No allowance set for ' + yr + '</span>' : ''}</div>` : '<div class="warnline">This name isn\'t matched to the staff list (Settings).</div>'}
-    ${off.length ? `<div>Also off: ${off.map(([n, c]) => `${esc(n)} (${c} day${c === 1 ? '' : 's'})`).join(', ')}</div>` : ''}
-    ${oc.length ? `<div style="margin-top:6px"><b>On-call cover</b> <small>(from the printed sheet)</small></div><div class="cov">${oc.map(x => `<span>${esc(itemText(x))}</span><select class="inp" data-cov="${x.date}|${x.s}|${x.e}">${staffOptions('', 'No change (' + firstName(personName(l)) + ')')}</select>`).join('')}</div>` : '<div>Not on call in this time.</div>'}
-    </div><div class="acts">${own ? '<span class="warnline">Someone else has to approve your own.</span>' : `<button class="mini red" data-lv-approve="${esc(l.id)}"><i class="ti ti-check"></i> Approve</button><button class="mini" data-lv-decline="${esc(l.id)}">Decline</button>`}</div></div>`;
+  const summary = `${esc(dateRangeText(l))} · ${fmtDays(l.total)} day${l.total === 1 ? '' : 's'}${oc.length ? ` · ${oc.length} on-call shift${oc.length === 1 ? '' : 's'}` : ''}`;
+  return `<div class="req" data-card="${esc(l.id)}"><div class="h"><b>${esc(personName(l))}</b><span>${l.testData ? '<span class="tag test">Test</span>' : ''}${off.length ? '<span class="tag warn">Others off</span>' : ''}</span></div>
+    <div class="b"><div><b>${summary}</b></div>
+    <div ${open ? '' : 'hidden'} data-more>
+      ${parts.length ? `<div>Part days: ${parts.map(x => esc(shortDate(x.date) + ' ' + (PARTS[x.part] || '').toLowerCase())).join(', ')}</div>` : ''}
+      ${l.note ? `<div>Note: ${esc(l.note)}</div>` : ''}${asked ? `<div>Asked ${esc(asked)}${l.ref ? ' · ref ' + esc(l.ref) : ''}</div>` : ''}
+      ${l.mail && l.mail.status === 'failed' ? '<div class="warnline">The email to the office didn\'t go, so it may not have been printed.</div>' : ''}
+      ${!email ? '<div class="warnline">This name isn\'t linked to anyone on the staff list yet (Management → Names to match).</div>' : ''}
+      ${off.length ? `<div>Also off: ${off.map(([n, c]) => `${esc(n)} (${c} day${c === 1 ? '' : 's'})`).join(', ')}</div>` : ''}
+      ${oc.length ? `<div style="margin-top:6px"><b>Who's covering the on-call?</b> <small>(from the printed sheet)</small></div><div class="cov">${oc.map(x => `<span>${esc(itemText(x))}</span><select class="inp" data-cov="${x.date}|${x.s}|${x.e}">${staffOptions('', 'No change (' + firstName(personName(l)) + ')')}</select>`).join('')}</div>` : ''}
+    </div></div>
+    <div class="acts">${own ? '<span class="warnline">Someone else has to approve your own.</span>' : `<button class="mini red" data-lv-approve="${esc(l.id)}"><i class="ti ti-check"></i> Approve</button><button class="mini" data-lv-decline="${esc(l.id)}">Decline</button>`}
+      <button class="mini" data-lv-more="${esc(l.id)}">${open ? 'Less' : (oc.length ? 'Details and cover' : 'Details')}</button></div></div>`;
 }
-function swapCard(s, toApprove) {
-  const party = s.aEmail === ME.email || s.bEmail === ME.email;
-  const late = !toApprove ? swapLate(s) : '';
-  const bad = toApprove ? swapValid(s) : [];
-  const list = items => (items || []).map(x => esc(itemText(x))).join('<br>') || 'nothing';
-  return `<div class="req ${late ? 'late' : ''}"><div class="h"><b>${esc(s.aName)} ⇄ ${esc(s.bName)}</b><span>${s.testData ? '<span class="tag test">Test</span>' : ''}${toApprove ? '<span class="tag green">Both agreed</span>' : `<span class="tag warn">Waiting for ${esc(firstName(s.bName))}</span>`}</span></div>
-    <div class="b"><div><b>${esc(s.bName)}</b> covers:<br>${list(s.aGives)}</div><div style="margin-top:4px"><b>${esc(s.aName)}</b> covers:<br>${list(s.bGives)}</div>${s.note ? `<div>Note: ${esc(s.note)}</div>` : ''}
-    ${late ? `<div class="warnline">${esc(late)}.</div>` : ''}${bad.length ? `<div class="warnline">The rota has changed since this was asked (${bad.map(esc).join('; ')}). Check with them, then decline it or change the rota by hand.</div>` : ''}</div>
-    <div class="acts">${toApprove
-      ? (party ? '<span class="warnline">You\'re part of this swap, so someone else has to approve it.</span>' : `<button class="mini red" data-sw-approve="${esc(s.id)}" ${bad.length ? 'disabled' : ''}><i class="ti ti-check"></i> Approve</button><button class="mini" data-sw-reject="${esc(s.id)}">Decline</button>`)
-      : `<button class="mini" data-sw-cancel="${esc(s.id)}">Cancel it</button>`}</div></div>`;
+// Who's off each day, as a month calendar (today onwards).
+function leaveCalendarHTML(monthISO) {
+  const [y, m] = monthISO.split('-').map(Number);
+  const days = new Date(y, m, 0).getDate(), today = todayISO();
+  const todayMon = addDays(today, -((parseISO(today).getDay() + 6) % 7));   // start from this week
+  const startDay = todayMon.slice(0, 7) === monthISO ? +todayMon.slice(8) : 1;
+  const lead = (new Date(y, m - 1, startDay).getDay() + 6) % 7;
+  const byDate = new Map();
+  LEAVE.filter(l => realmT(l) && ['approved', 'pending'].includes(l.status)).forEach(l => (l.days || []).forEach(x => {
+    if (x.date.slice(0, 7) !== monthISO) return;
+    if (!byDate.has(x.date)) byDate.set(x.date, []);
+    byDate.get(x.date).push({ l, part: x.part });
+  }));
+  let h = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<div class="rc-dn">${d}</div>`).join('');
+  for (let k = 0; k < lead; k++) h += '<div class="rc pad"></div>';
+  for (let d = startDay; d <= days; d++) {
+    const date = `${y}-${pad(m)}-${pad(d)}`;
+    if (date < today) { h += `<div class="rc past"><span class="n">${d}</span></div>`; continue; }
+    const list = (byDate.get(date) || []).sort((a, b) => personName(a.l).localeCompare(personName(b.l)));
+    const note = BANK_HOLIDAYS[date] ? 'Bank hol' : isShutdown(date) ? 'Shutdown' : '';
+    h += `<div class="rc ${isOffDay(date) ? 'off' : ''} ${date === today ? 'today' : ''}"><span class="n">${d}${note ? `<em>${esc(note)}</em>` : ''}</span>${list.map(({ l, part }) => {
+      const cls = l.status === 'pending' ? 'pend' : l.type === 'holiday' ? 'hol' : 'oth';
+      const p = part === 'am' ? ' AM' : part === 'pm' ? ' PM' : part === 'half' ? ' ½' : '';
+      return `<button type="button" class="lvn ${cls}" data-lvshow="${esc(l.id)}" title="${esc(personName(l) + ' · ' + (LEAVE_TYPES[l.type] || '') + (l.status === 'pending' ? ' (waiting)' : ''))}"><span class="full">${esc(personName(l))}</span><span class="short">${esc(shortOf(personEmail(l), personName(l)))}</span>${p}</button>`;
+    }).join('')}</div>`;
+  }
+  return `<div class="rcal">${h}</div>`;
+}
+async function showLeave(id) {
+  const l = LEAVE.find(x => x.id === id); if (!l) return;
+  const oc = (l.cover || []).map(c => `${esc(itemText(c))}: ${esc(c.name || nameOf(c.email))}`);
+  const v = await modal({ title: `${personName(l)}: ${LEAVE_TYPES[l.type] || 'Leave'}`, body: `<p><b>${esc(dateRangeText(l))}</b> · ${fmtDays(l.total)} day${l.total === 1 ? '' : 's'}${l.status === 'pending' ? ' · <b>waiting for approval</b>' : ''}</p>
+    ${(l.days || []).some(x => x.part !== 'full') ? `<p>Part days: ${l.days.filter(x => x.part !== 'full').map(x => esc(shortDate(x.date) + ' ' + (PARTS[x.part] || '').toLowerCase())).join(', ')}</p>` : ''}
+    ${l.note ? `<p>Note: ${esc(l.note)}</p>` : ''}${oc.length ? `<p>On-call cover:<br>${oc.join('<br>')}</p>` : ''}
+    <p style="color:var(--grey)">${l.decidedByName ? 'Approved by ' + esc(l.decidedByName) : l.source === 'spreadsheet' ? 'From the holiday spreadsheet' : ''}</p>`,
+    buttons: l.status === 'approved' ? [{ label: 'Cancel this leave', value: 'cancel' }, { label: 'Close', value: null, primary: true }] : [{ label: 'Close', value: null, primary: true }] });
+  if (v === 'cancel') cancelLeaveByOffice(id);
 }
 
 async function approveLeave(id) {
@@ -1509,7 +1773,7 @@ async function rejectOrCancelSwap(id, cancel) {
   const upd = { status: cancel ? 'cancelled' : 'rejected', decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp(), rejectReason: reason };
   try { await updateDoc(doc(db, 'oncallSwaps', id), upd); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
   Object.assign(s, upd);
-  renderLeaveTab();
+  renderLeaveTab(); renderRotaTab();
   try {
     await graphSend(token, { subject: `${s.testData ? 'TEST ' : ''}On-call swap ${cancel ? 'cancelled' : 'not approved'} — ${s.aName} / ${s.bName}`,
       toRecipients: addr(s.testData ? [ME.email] : [s.aEmail, s.bEmail]), ccRecipients: s.testData ? [] : addr(swapWatchers().filter(x => ![s.aEmail, s.bEmail, ME.email].includes(x))),
@@ -1586,42 +1850,13 @@ async function recordLeave() {
     bg.remove();
     if (token) { const err = await addToDiary(token, 'leave', local, leaveDiaryEvents(local)); if (err) toast('Saved, but the work diary wasn\'t updated: ' + err); else toast('Saved and put in the work diary'); }
     else toast(own ? 'Saved — someone else has to approve your own' : 'Saved');
-    renderLeaveTab(); renderBalTab(); renderGrid();
+    renderLeaveTab(); renderGrid();
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ON-CALL ROTA TAB
+//  ON-CALL ROTA: editing a day, printing
 // ═══════════════════════════════════════════════════════════════════════════
-function unmatchedNames() {
-  const names = new Map();
-  const note = (n, where) => { if (!n || emailForName(n)) return; names.set(n, (names.get(n) || new Set()).add(where)); };
-  ROTA.forEach(d => { if (!d.email) note(d.name, 'rota'); (d.parts || []).forEach(p => { if (!p.email) note(p.name, 'rota'); }); if (d.planned && !d.plannedEmail) note(d.planned, 'rota'); });
-  ALLOW.forEach(a => { if (!a.email) note(a.name, 'allowances'); });
-  LEAVE.forEach(l => { if (!l.email) note(l.name, 'past leave'); });
-  return names;
-}
-function renderRotaTab() {
-  const [y, m] = rotaMonth.split('-').map(Number);
-  const first = `${y}-${pad(m)}-01`, last = isoOf(new Date(y, m, 0)), today = todayISO();
-  $('rotaTitle').textContent = parseISO(first).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  const un = unmatchedNames();
-  const b = [];
-  if (un.size) b.push(`<div class="banner bad"><i class="ti ti-user-question"></i><div><b>${un.size} name${un.size === 1 ? '' : 's'} from the old spreadsheets ${un.size === 1 ? 'isn\'t' : 'aren\'t'} matched to the staff list</b> (${[...un.keys()].map(esc).join(', ')}). Engineers won't see their own shifts until ${un.size === 1 ? 'it is' : 'they are'}. <a data-goto="set">Match them in Settings</a></div></div>`);
-  if (!SETTINGS.pattern) b.push('<div class="banner warn"><i class="ti ti-info-circle"></i><div>No standard pattern is set yet, so Copy forward won\'t work. <a data-goto="set">Set it in Settings</a></div></div>');
-  const lastDay = [...ROTA.keys()].sort().pop();
-  if (lastDay && daysBetween(today, lastDay) < 42) b.push(`<div class="banner warn"><i class="ti ti-calendar-due"></i><div>The rota runs out on <b>${esc(shortDateY(lastDay))}</b>. Use Copy forward to add the next 9 weeks.</div></div>`);
-  $('rotaBanners').innerHTML = b.join('');
-  let rows = '';
-  for (let d = first; d <= last; d = addDays(d, 1)) {
-    const day = ROTA.get(d), segs = day ? segmentsOf(day) : [];
-    const who = !day || segs.every(x => !x.name && !x.email) ? '<span style="color:var(--grey)">Not set</span>'
-      : segs.length === 1 ? `<b>${esc(segs[0].name || 'Not set')}</b>` : segs.map(x => `<span class="part"><b>${esc(x.name || 'Not set')}</b> ${esc(partLabel(d, x.s, x.e))}</span>`).join('');
-    const tags = day ? (isSwapped(day) ? `<span class="tag warn" title="${esc(day.swapNote || '')}">Swapped</span>` : '') + (day.cycle ? `<small class="hide-m" style="color:var(--grey)">Rota ${esc(day.cycle)}</small>` : '') : '';
-    rows += `<tr class="click ${dow(d) === 1 ? 'wk-start' : ''} ${isOffDay(d) ? 'off' : ''} ${d === today ? 'today' : ''}" data-rday="${d}"><td class="dt">${esc(shortDate(d))}<small>${esc(dayNote(d))}</small></td><td class="hide-m">${esc(shiftLabel(d))}</td><td>${who}</td><td>${tags}</td></tr>`;
-  }
-  $('rotaTable').innerHTML = `<table class="rt"><thead><tr><th>Date</th><th class="hide-m">Shift</th><th>On call</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
-}
 async function editRotaDay(date) {
   const day = ROTA.get(date) || blankDay(date), len = shiftLen(date);
   const segs = segmentsOf(day);
@@ -1672,33 +1907,6 @@ function shutdownBlockDays(from, to) {
   }
   return out;
 }
-async function copyForward() {
-  const pat = SETTINGS.pattern;
-  if (!pat || !Array.isArray(pat.days) || pat.days.length !== PATTERN_DAYS) { modal({ title: 'No standard pattern yet', body: '<p>Set the standard pattern in Settings first (pick a rota with no swaps in it, e.g. 143).</p>', buttons: [{ label: 'OK', value: true, primary: true }] }); return; }
-  const dates = [...ROTA.keys()].sort();
-  const start = dates.length ? addDays(dates[dates.length - 1], 1) : pat.start;
-  const end = addDays(start, PATTERN_DAYS - 1);
-  const cycles = [...ROTA.values()].map(d => +d.cycle).filter(n => Number.isFinite(n) && n > 0);
-  const cycle = cycles.length ? Math.max(...cycles) + 1 : (pat.cycle || 0) + 1;
-  const blank = shutdownBlockDays(start, end);
-  const blankIn = [...blank].filter(d => d >= start && d <= end).sort();
-  const offset = d => ((daysBetween(pat.start, d) % PATTERN_DAYS) + PATTERN_DAYS) % PATTERN_DAYS;
-  const ok = await modal({ title: `Copy forward: rota ${cycle}`, body: `<p><b>${esc(shortDateY(start))}</b> to <b>${esc(shortDateY(end))}</b>, using the standard pattern (rota ${esc(pat.cycle)}), with no swaps.</p>${blankIn.length ? `<p>Left blank for Christmas: ${esc(shortDate(blankIn[0]))} – ${esc(shortDate(blankIn[blankIn.length - 1]))} (fill these in by hand).</p>` : ''}${!SETTINGS.shutdown[String(+end.slice(0, 4))] && end.slice(5) >= '12-20' ? '<p class="warnline">No Christmas shutdown days are set for ' + end.slice(0, 4) + ' yet — add them in Settings first if this rota reaches Christmas.</p>' : ''}`,
-    buttons: [{ label: 'Cancel', value: false }, { label: 'Add these 9 weeks', value: true, primary: true }] });
-  if (!ok) return;
-  const batch = writeBatch(db), made = [];
-  for (let i = 0; i < PATTERN_DAYS; i++) {
-    const d = addDays(start, i), p = pat.days[offset(d)] || { name: '', email: '' };
-    const rec = { date: d, cycle, planned: p.name || '', plannedEmail: p.email || '', parts: [], updatedAt: serverTimestamp(), updatedBy: ME.email,
-      name: blank.has(d) ? '' : (p.name || ''), email: blank.has(d) ? '' : (p.email || '') };
-    batch.set(doc(db, 'oncall', d), rec);
-    made.push(Object.assign({}, rec, { updatedAt: { seconds: Date.now() / 1000 } }));
-  }
-  batch.set(doc(collection(db, 'oncallLog')), { date: start, at: serverTimestamp(), by: ME.email, byName: ME.name, before: 'Nothing', after: `Rota ${cycle} added (${shortDate(start)} – ${shortDate(end)})`, reason: 'Copy forward', ref: '' });
-  try { await batch.commit(); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
-  made.forEach(r => ROTA.set(r.date, r));
-  rotaMonth = start.slice(0, 7); renderRotaTab(); toast(`Rota ${cycle} added`);
-}
 async function printRota() {
   const cycles = [...new Set([...ROTA.values()].map(d => d.cycle).filter(c => c != null))].sort((a, b) => b - a);
   if (!cycles.length) { toast('Nothing to print yet.'); return; }
@@ -1740,84 +1948,51 @@ async function printRota() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  BALANCES TAB
+//  ON-CALL ROTA TAB (v3.0): swaps to approve, then the rota as a calendar
 // ═══════════════════════════════════════════════════════════════════════════
-function balPeople(year) {
-  const set = new Map();
-  STAFF.forEach((s, e) => set.set(e, s.name || e));
-  ALLOW.filter(a => +a.year === year).forEach(a => { const e = personEmail(a); if (e) { if (!set.has(e)) set.set(e, personName(a)); } else set.set('name:' + a.name, a.name + ' (not matched)'); });
-  return [...set.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+function unmatchedNames() {
+  const names = new Set();
+  ROTA.forEach(d => { if (d.date < addDays(todayISO(), -1)) return; if (!d.email && d.name && !emailForName(d.name)) names.add(d.name); (d.parts || []).forEach(p => { if (!p.email && p.name && !emailForName(p.name)) names.add(p.name); }); });
+  return names;
 }
-function renderBalTab() {
-  $('balTitle').textContent = balYear;
-  const people = balPeople(balYear);
-  const hasAny = ALLOW.some(a => +a.year === balYear);
-  const prevAny = ALLOW.some(a => +a.year === balYear - 1);
-  const shut = shutdownDaysIn(balYear).length;
+function renderRotaTab() {
+  const today = todayISO(), minMonth = addDays(today, -1).slice(0, 7);
+  if (rotaMonth < minMonth) rotaMonth = minMonth;
+  $('rotaPrev').disabled = rotaMonth <= minMonth;
+  $('rotaTitle').textContent = parseISO(rotaMonth + '-01').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const b = [];
+  const un = unmatchedNames();
+  if (un.size) b.push(`<div class="banner bad"><i class="ti ti-user-question"></i><div><b>${un.size} name${un.size === 1 ? '' : 's'} on the rota ${un.size === 1 ? 'isn\'t' : 'aren\'t'} linked to anyone on the staff list</b> (${[...un].map(esc).join(', ')}), so ${un.size === 1 ? 'they don\'t' : 'they don\'t'} see their own shifts. Match ${un.size === 1 ? 'it' : 'them'} in <a href="management.html">Management → Names to match</a>.</div></div>`);
+  const lastDay = [...ROTA.keys()].sort().pop();
+  if (lastDay && daysBetween(today, lastDay) < 42) b.push(`<div class="banner warn"><i class="ti ti-calendar-due"></i><div>The rota runs out on <b>${esc(shortDateY(lastDay))}</b>. Add the next one from the rota spreadsheet: Management → Data import → On-call rota.</div></div>`);
+  $('rotaBanners').innerHTML = b.join('');
+  // swaps
+  const acc = pendingSwaps().sort((a, b) => (a.firstShift || '').localeCompare(b.firstShift || ''));
+  const wait = SWAPS.filter(s => s.status === 'waiting' && realmT(s)).sort((a, b) => (a.firstShift || '').localeCompare(b.firstShift || ''));
   let h = '';
-  if (!hasAny && prevAny) h += `<div class="banner warn"><i class="ti ti-info-circle"></i><div>No allowances set for ${balYear} yet. <a data-copyallow="1">Copy them from ${balYear - 1}</a> (no carry-over), then change any that are different.</div></div>`;
-  h += `<p style="font-size:14px;color:var(--grey);margin:0 0 8px">Christmas shutdown ${balYear}: <b>${shut} day${shut === 1 ? '' : 's'}</b> off everyone's allowance (unless unticked for someone). Bank holidays never count. Tap a name for their leave, or Edit to change the allowance.</p>`;
-  h += `<table class="rt"><thead><tr><th>Name</th><th class="num">Allowance</th><th class="num hide-m">Carried over</th><th class="num hide-m">Adjust</th><th class="num hide-m">Christmas</th><th class="num">Taken</th><th class="num">Booked</th><th class="num hide-m">Waiting</th><th class="num">Left</th><th class="num hide-m">Sick</th><th></th></tr></thead><tbody>` +
-    people.map(([key, name]) => {
-      const email = key.startsWith('name:') ? '' : key;
-      const b = email ? balanceFor(email, balYear) : null;
-      if (!b) return `<tr><td>${esc(name)}</td><td colspan="10" style="color:var(--grey)">Match this name in Settings first.</td></tr>`;
-      if (!b.a && !b.taken && !b.booked && !b.waiting) return `<tr><td>${esc(name)}</td><td class="num" style="color:var(--grey)">—</td><td class="hide-m"></td><td class="hide-m"></td><td class="hide-m"></td><td></td><td></td><td class="hide-m"></td><td></td><td class="hide-m"></td><td style="text-align:right"><button class="mini" data-baledit="${esc(email)}">Set</button></td></tr>`;
-      return `<tr><td><a style="cursor:pointer;font-weight:700;text-decoration:underline" data-balwho="${esc(email)}">${esc(name)}</a></td><td class="num">${b.a ? fmtDays(b.allowance) : '<span class="tag bad">Not set</span>'}</td><td class="num hide-m">${b.carry ? fmtDays(b.carry) : ''}</td><td class="num hide-m">${b.adjust ? fmtDays(b.adjust) : ''}</td><td class="num hide-m">${b.shut ? '−' + b.shut : (b.a && b.a.shutdownDeducted === false ? '<small>not taken</small>' : '')}</td><td class="num">${fmtDays(b.taken)}</td><td class="num">${fmtDays(b.booked)}</td><td class="num hide-m">${b.waiting ? fmtDays(b.waiting) : ''}</td><td class="num"><b style="color:${b.left < 0 ? 'var(--red-dark)' : 'inherit'}">${fmtDays(b.left)}</b></td><td class="num hide-m">${b.sick ? fmtDays(b.sick) : ''}</td><td style="text-align:right"><button class="mini" data-baledit="${esc(email)}">Edit</button></td></tr>`;
-    }).join('') + '</tbody></table>';
-  $('balTable').innerHTML = h;
+  if (acc.length) h += `<div class="sec-h">Swaps to approve <span class="n">${acc.length}</span></div><div class="reqs">${acc.map(s => swapCard(s, true)).join('')}</div>`;
+  if (wait.length) h += `<div class="sec-h">Swaps waiting for the other engineer</div><div class="reqs">${wait.map(s => swapCard(s, false)).join('')}</div>`;
+  $('swapsBox').innerHTML = h;
+  $('swapsBox').hidden = !h;
+  const any = [...ROTA.keys()].some(d => d.slice(0, 7) === rotaMonth);
+  $('rotaTable').innerHTML = any ? rotaCalendarHTML(rotaMonth, { clickable: true, marks: true }) : '<div class="empty">Nothing on the rota for this month yet.</div>';
+  updateLeaveCount();
 }
-async function editAllowance(email) {
-  const a = allowanceFor(email, balYear);
-  const bg = document.createElement('div');
-  bg.className = 'modal-bg';
-  bg.innerHTML = `<div class="modal"><h3>${esc(nameOf(email))} · ${balYear}</h3><div class="mbody">
-    <div class="row2"><div class="field2"><label>Allowance (days)</label><input class="inp" type="number" step="0.5" min="0" data-f="allowance" value="${a ? esc(a.allowance) : ''}"></div>
-    <div class="field2"><label>Carried over</label><input class="inp" type="number" step="0.5" data-f="carry" value="${a && a.carry ? esc(a.carry) : ''}"></div></div>
-    <div class="row2"><div class="field2"><label>Adjustment (+/−)</label><input class="inp" type="number" step="0.5" data-f="adjust" value="${a && a.adjust ? esc(a.adjust) : ''}"></div>
-    <div class="field2"><label>Why (adjustment)</label><input class="inp" data-f="adjustNote" value="${a && a.adjustNote ? esc(a.adjustNote) : ''}"></div></div>
-    <label class="tick"><input type="checkbox" data-f="shut" ${!a || a.shutdownDeducted !== false ? 'checked' : ''}> Christmas shutdown comes off their allowance</label>
-    <div data-f="msg" class="warnline"></div></div>
-    <div class="mbtns"><button type="button" class="btn-ghost" data-x>Cancel</button><button type="button" class="btn-primary" data-ok>Save</button></div></div>`;
-  document.body.appendChild(bg);
-  const q = f => bg.querySelector(`[data-f="${f}"]`);
-  bg.addEventListener('click', async e => {
-    if (e.target === bg || e.target.closest('[data-x]')) { bg.remove(); return; }
-    if (!e.target.closest('[data-ok]')) return;
-    const allowance = parseFloat(q('allowance').value);
-    if (!(allowance >= 0)) { q('msg').textContent = 'Put in the allowance.'; return; }
-    const id = a ? a.id : `${balYear}_${email.replace(/[^a-z0-9]+/g, '-')}`;
-    const rec = { year: balYear, name: a ? a.name : nameOf(email), email, allowance, carry: parseFloat(q('carry').value) || 0,
-      adjust: parseFloat(q('adjust').value) || 0, adjustNote: q('adjustNote').value.trim(), shutdownDeducted: q('shut').checked, updatedAt: serverTimestamp(), updatedBy: ME.email };
-    try { await setDoc(doc(db, 'leaveAllowances', id), rec, { merge: true }); } catch (err) { q('msg').textContent = `Couldn't save (${err.code || err.message}).`; return; }
-    const local = Object.assign({}, a || {}, rec, { id });
-    ALLOW = ALLOW.filter(x => x.id !== id).concat([local]);
-    bg.remove(); renderBalTab(); toast('Saved');
-  });
-}
-async function copyAllowances() {
-  const prev = ALLOW.filter(a => +a.year === balYear - 1);
-  const ok = await modal({ title: `Copy ${balYear - 1} allowances to ${balYear}?`, body: `<p>${prev.length} people. Carry-over and adjustments start at 0.</p>`, buttons: [{ label: 'Cancel', value: false }, { label: 'Copy', value: true, primary: true }] });
-  if (!ok) return;
-  const batch = writeBatch(db), made = [];
-  prev.forEach(a => {
-    const email = personEmail(a);
-    const id = email ? `${balYear}_${email.replace(/[^a-z0-9]+/g, '-')}` : `${balYear}_${String(a.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    const rec = { year: balYear, name: a.name, email, allowance: +a.allowance || 0, carry: 0, adjust: 0, adjustNote: '', shutdownDeducted: a.shutdownDeducted !== false, updatedAt: serverTimestamp(), updatedBy: ME.email };
-    batch.set(doc(db, 'leaveAllowances', id), rec); made.push(Object.assign({ id }, rec));
-  });
-  try { await batch.commit(); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
-  ALLOW = ALLOW.concat(made); renderBalTab(); toast('Copied');
-}
-function showPersonLeave(email) {
-  const list = LEAVE.filter(l => !l.testData && personEmail(l) === email && (l.days || []).some(x => x.date.slice(0, 4) === String(balYear))).sort((a, b) => a.from.localeCompare(b.from));
-  const b = balanceFor(email, balYear);
-  modal({ title: `${nameOf(email)} · ${balYear}`, body: `<p>${b.a && b.a.adjustNote ? 'Adjustment: ' + esc(b.a.adjustNote) + '<br>' : ''}Sick ${fmtDays(b.sick)} · Training ${fmtDays(b.training)} · Other ${fmtDays(b.other)}</p>` + (list.length ? `<table class="rt"><tbody>${list.map(l => `<tr><td>${esc(LEAVE_TYPES[l.type] || l.type)}</td><td>${esc(dateRangeText(l))}</td><td class="num">${fmtDays(l.total)}</td><td>${esc({ pending: 'Waiting', approved: 'Approved', declined: 'Declined', cancelled: 'Cancelled' }[l.status] || l.status)}</td></tr>`).join('')}</tbody></table>` : '<p>No leave recorded.</p>'),
-    buttons: [{ label: 'Close', value: true, primary: true }] });
+function swapCard(s, toApprove) {
+  const party = s.aEmail === ME.email || s.bEmail === ME.email;
+  const late = !toApprove ? swapLate(s) : '';
+  const bad = toApprove ? swapValid(s) : [];
+  const list = items => (items || []).map(x => esc(itemText(x))).join('<br>') || 'nothing';
+  return `<div class="req ${late ? 'late' : ''}"><div class="h"><b>${esc(s.aName)} ⇄ ${esc(s.bName)}</b><span>${s.testData ? '<span class="tag test">Test</span>' : ''}${toApprove ? '<span class="tag green">Both agreed</span>' : `<span class="tag warn">Waiting for ${esc(firstName(s.bName))}</span>`}</span></div>
+    <div class="b"><div><b>${esc(s.bName)}</b> covers:<br>${list(s.aGives)}</div><div style="margin-top:4px"><b>${esc(s.aName)}</b> covers:<br>${list(s.bGives)}</div>${s.note ? `<div>Note: ${esc(s.note)}</div>` : ''}
+    ${late ? `<div class="warnline">${esc(late)}.</div>` : ''}${bad.length ? `<div class="warnline">The rota has changed since this was asked (${bad.map(esc).join('; ')}). Check with them, then decline it or change the rota by hand.</div>` : ''}</div>
+    <div class="acts">${toApprove
+      ? (party ? '<span class="warnline">You\'re part of this swap, so someone else has to approve it.</span>' : `<button class="mini red" data-sw-approve="${esc(s.id)}" ${bad.length ? 'disabled' : ''}><i class="ti ti-check"></i> Approve</button><button class="mini" data-sw-reject="${esc(s.id)}">Decline</button>`)
+      : `<button class="mini" data-sw-cancel="${esc(s.id)}">Cancel it</button>`}</div></div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SETTINGS TAB
+//  SETTINGS TAB (v3.0): just the Christmas shutdown, on a Dec / Jan calendar
 // ═══════════════════════════════════════════════════════════════════════════
 async function saveSettings(patch) {
   try { await updateDoc(doc(db, 'leaveSettings', 'main'), patch); }
@@ -1827,92 +2002,78 @@ async function saveSettings(patch) {
   }
   Object.assign(SETTINGS, patch);
 }
-const NICK = { mike: ['michael'], dan: ['daniel'], danny: ['daniel'], sam: ['samuel', 'samantha'], ben: ['benjamin'], alex: ['alexander', 'alexandra'], tony: ['anthony'], chris: ['christopher', 'christina', 'christine'], rob: ['robert'], jim: ['james'], tom: ['thomas'], matt: ['matthew'], nick: ['nicholas'], jon: ['jonathan'], steve: ['stephen', 'steven'], dave: ['david'], andy: ['andrew'], will: ['william'], ange: ['angela'], jan: ['janet', 'janice'] };
-function suggestFor(n) {
-  const low = n.toLowerCase().trim();
-  const firsts = [...STAFF.entries()].map(([e, s]) => [e, String(s.name || '').toLowerCase().split(/\s+/)[0]]);
-  let hit = firsts.filter(([, f]) => f === low);
-  if (!hit.length && NICK[low]) hit = firsts.filter(([, f]) => NICK[low].includes(f));
-  return hit.length === 1 ? hit[0][0] : '';
+// The shutdown runs from Christmas into the new year: shutYear is the December.
+let shutPick = null;    // { a, b } while choosing; null = showing what's saved
+function shutSaved(y) {
+  const dec = (SETTINGS.shutdown[String(y)] || []).filter(d => d.slice(5, 7) === '12');
+  const jan = (SETTINGS.shutdown[String(y + 1)] || []).filter(d => d.slice(5, 7) === '01');
+  return [...dec, ...jan].sort();
+}
+function shutRange() {
+  if (shutPick && shutPick.a) { const a = shutPick.a, b = shutPick.b || shutPick.a; return a <= b ? [a, b] : [b, a]; }
+  const s = shutSaved(shutYear); return s.length ? [s[0], s[s.length - 1]] : null;
+}
+function monthGrid(y, m, range) {
+  const first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  let h = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="sd-dn">${d}</div>`).join('');
+  for (let k = 0; k < lead; k++) h += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    const date = `${y}-${pad(m)}-${pad(d)}`, inR = range && date >= range[0] && date <= range[1];
+    const off = dow(date) === 0 || dow(date) === 6 || BANK_HOLIDAYS[date];
+    h += `<button type="button" class="sd ${inR ? 'in' : ''} ${off ? 'off' : ''} ${shutPick && shutPick.a === date ? 'start' : ''}" data-sd="${date}" title="${esc(BANK_HOLIDAYS[date] || '')}">${d}</button>`;
+  }
+  return `<div class="sd-m"><div class="sd-t">${esc(first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }))}</div><div class="sd-g">${h}</div></div>`;
 }
 function renderSetTab() {
-  $('shutYear').textContent = shutYear;
-  const days = (SETTINGS.shutdown[String(shutYear)] || []).slice().sort();
-  $('shutChips').innerHTML = days.length ? days.map(d => `<span class="chip">${esc(shortDate(d))}<button data-shutrm="${d}" aria-label="Remove">×</button></span>`).join('') : '<span style="color:var(--grey)">None set.</span>';
-  const block = [...shutdownBlockDays(`${shutYear}-12-01`, `${shutYear}-12-31`)].sort();
-  const counted = shutdownDaysIn(shutYear).length;
-  $('shutNote').innerHTML = days.length ? `${counted} day${counted === 1 ? '' : 's'} off everyone's ${shutYear} allowance.${block.length ? ` Copy forward leaves the rota blank ${esc(shortDate(block[0]))} – ${esc(shortDate(block[block.length - 1]))}.` : ''}` : '';
-  const mails = SETTINGS.swapEmails || [];
-  $('swapMailChips').innerHTML = `<span class="chip">${esc(nameOf(OWNER_EMAIL))} (always)</span>` + mails.map(m => `<span class="chip">${esc(nameOf(m))}<button data-mailrm="${esc(m)}" aria-label="Remove">×</button></span>`).join('');
-  $('swapMailAdd').innerHTML = staffOptions('', 'Add someone');
-  $('infoEmail').value = infoMailbox();
-  const cycles = [...new Set([...ROTA.values()].map(d => d.cycle).filter(c => c != null))].sort((a, b) => b - a);
-  const pat = SETTINGS.pattern;
-  $('patternNote').innerHTML = pat ? `Now: <b>rota ${esc(pat.cycle)}</b>, starting ${esc(shortDateY(pat.start))}. Copy forward repeats it.` : 'Not set yet. Pick a rota with no swaps in it (143 from the spreadsheet).';
-  $('patternCycle').innerHTML = cycles.map(c => `<option value="${c}" ${pat && pat.cycle === c ? 'selected' : ''}>Rota ${c}</option>`).join('');
-  const un = unmatchedNames();
-  const all = new Map(Object.entries(SETTINGS.nameMap || {}).map(([n, e]) => [n, e]));
-  un.forEach((_, n) => { if (!all.has(n)) all.set(n, ''); });
-  const where = n => [...(un.get(n) || [])].join(', ');
-  $('nameRows').innerHTML = all.size ? [...all.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([n, e]) => {
-    const sug = !e ? suggestFor(n) : '';
-    return `<div class="namerow"><span><b>${esc(n)}</b><small>${e ? 'Matched' : 'Not matched'}${where(n) ? ' · ' + esc(where(n)) : ''}${sug ? ' · suggestion picked' : ''}</small></span><select class="inp" data-nm="${esc(n)}">${staffOptions(e || sug, 'Not matched')}</select></div>`;
-  }).join('') : '<div style="color:var(--grey)">Nothing to match.</div>';
+  $('shutYear').textContent = `Christmas ${shutYear}`;
+  const r = shutRange();
+  $('shutCal').innerHTML = monthGrid(shutYear, 12, r) + monthGrid(shutYear + 1, 1, r);
+  const working = r ? (() => { let n = 0; for (let d = r[0]; d <= r[1]; d = addDays(d, 1)) if (!(dow(d) === 0 || dow(d) === 6 || BANK_HOLIDAYS[d])) n++; return n; })() : 0;
+  $('shutNote').innerHTML = shutPick
+    ? (shutPick.b ? `<b>${esc(shortDate(r[0]))} – ${esc(shortDate(r[1]))}</b>: ${working} working day${working === 1 ? '' : 's'} off. Press <b>Save</b> to keep it.` : 'Now tap the <b>last</b> day of the shutdown.')
+    : r ? `Shutdown: <b>${esc(shortDate(r[0]))} – ${esc(shortDate(r[1]))}</b> (${working} working day${working === 1 ? '' : 's'}). Tap a day to choose it again.` : 'Not set. Tap the <b>first</b> day of the shutdown, then the <b>last</b>.';
+  $('shutSave').hidden = !(shutPick && shutPick.b);
+  $('shutUndo').hidden = !shutPick;
+  $('shutClear').hidden = !!shutPick || !r;
+}
+async function saveShutdown(range) {
+  const y = shutYear, map = Object.assign({}, SETTINGS.shutdown);
+  const keep = (yr, mon) => (map[String(yr)] || []).filter(d => d.slice(5, 7) !== mon);
+  const dec = [], jan = [];
+  if (range) for (let d = range[0]; d <= range[1]; d = addDays(d, 1)) {
+    if (dow(d) === 0 || dow(d) === 6 || BANK_HOLIDAYS[d]) continue;   // only working days are stored
+    (d.slice(0, 4) === String(y) ? dec : jan).push(d);
+  }
+  map[String(y)] = [...keep(y, '12'), ...dec].sort();
+  map[String(y + 1)] = [...keep(y + 1, '01'), ...jan].sort();
+  try { await saveSettings({ shutdown: map }); shutPick = null; renderSetTab(); toast(range ? 'Christmas shutdown saved' : 'Christmas shutdown cleared'); }
+  catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  TABS + WIRING (v2.0)
+//  TABS + WIRING (v3.0)
 // ═══════════════════════════════════════════════════════════════════════════
+const TAB_NAMES = { ts: 'Timesheets', leave: 'Leave', rota: 'On-call rota', set: 'Settings' };
 function showTab(name) {
+  if (!TAB_NAMES[name]) name = 'ts';
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $('view-main').hidden = name !== 'ts'; $('view-tidy').hidden = true;
-  ['leave', 'rota', 'bal', 'set'].forEach(v => { $('view-' + v).hidden = v !== name; });
+  ['leave', 'rota', 'set'].forEach(v => { $('view-' + v).hidden = v !== name; });
   if (name === 'leave') renderLeaveTab();
   if (name === 'rota') renderRotaTab();
-  if (name === 'bal') renderBalTab();
   if (name === 'set') renderSetTab();
   try { sessionStorage.setItem('tr-tab', name); } catch (e) {}
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-$('lvShowTest').addEventListener('change', e => { lvShowTest = e.target.checked; renderLeaveTab(); });
+$('lvShowTest').addEventListener('change', e => { lvShowTest = e.target.checked; renderLeaveTab(); renderRotaTab(); });
 $('recordLeaveBtn').addEventListener('click', recordLeave);
 $('rotaThisMonth').addEventListener('click', () => { rotaMonth = todayISO().slice(0, 7); renderRotaTab(); });
-$('copyFwdBtn').addEventListener('click', copyForward);
 $('printRotaBtn').addEventListener('click', printRota);
-$('shutAddBtn').addEventListener('click', async () => {
-  const d = $('shutAdd').value; if (!d) return;
-  if (isOffDay(d) && !isShutdown(d)) { toast('That\'s already a weekend or bank holiday.'); return; }
-  const y = d.slice(0, 4), map = Object.assign({}, SETTINGS.shutdown);
-  map[y] = [...new Set([...(map[y] || []), d])].sort();
-  try { await saveSettings({ shutdown: map }); shutYear = +y; $('shutAdd').value = ''; renderSetTab(); toast('Added'); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
-});
-$('swapMailAddBtn').addEventListener('click', async () => {
-  const e = $('swapMailAdd').value; if (!e || e === OWNER_EMAIL) return;
-  try { await saveSettings({ swapEmails: [...new Set([...(SETTINGS.swapEmails || []), e])] }); renderSetTab(); toast('Added'); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
-});
-$('infoEmailSave').addEventListener('click', async () => {
-  const v = $('infoEmail').value.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast('That isn\'t an email address.'); return; }
-  try { await saveSettings({ infoEmail: v }); toast('Saved'); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
-});
-$('patternSave').addEventListener('click', async () => {
-  const c = +$('patternCycle').value;
-  const days = [...ROTA.values()].filter(d => +d.cycle === c).sort((a, b) => a.date.localeCompare(b.date));
-  if (days.length !== PATTERN_DAYS || daysBetween(days[0].date, days[days.length - 1].date) !== PATTERN_DAYS - 1) { toast(`Rota ${c} isn't a full 9 weeks, so it can't be the pattern.`); return; }
-  const pat = { cycle: c, start: days[0].date, days: days.map(d => {
-    const n = d.planned || holderOf(d).name || '';
-    const e = String(d.plannedEmail || emailForName(n) || (d.planned ? '' : holderOf(d).email) || '').toLowerCase();
-    return { name: (e && staffName(e)) || n, email: e };
-  }) };
-  const gaps = pat.days.filter(x => !x.name).length;
-  const ok = await modal({ title: `Use rota ${c} as the standard pattern?`, body: `<p>Copy forward will repeat it every 9 weeks.</p>${gaps ? `<p class="warnline">${gaps} day${gaps === 1 ? ' is' : 's are'} blank in it.</p>` : ''}${pat.days.some(x => x.name && !x.email) ? '<p class="warnline">Some names aren\'t matched to the staff list yet — match them first so engineers see their shifts.</p>' : ''}`, buttons: [{ label: 'Cancel', value: false }, { label: 'Use it', value: true, primary: true }] });
-  if (!ok) return;
-  try { await saveSettings({ pattern: pat }); renderSetTab(); renderRotaTab(); toast('Pattern saved'); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
-});
-$('namesSave').addEventListener('click', async () => {
-  const map = Object.assign({}, SETTINGS.nameMap || {});
-  document.querySelectorAll('[data-nm]').forEach(sel => { if (sel.value) map[sel.dataset.nm] = sel.value; else delete map[sel.dataset.nm]; });
-  try { await saveSettings({ nameMap: map }); indexLeave(); renderSetTab(); toast('Matches saved'); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
+$('shutSave').addEventListener('click', () => saveShutdown(shutRange()));
+$('shutUndo').addEventListener('click', () => { shutPick = null; renderSetTab(); });
+$('shutClear').addEventListener('click', async () => {
+  const ok = await modal({ title: `Clear the Christmas ${shutYear} shutdown?`, body: '<p>Those days go back to being normal working days.</p>', buttons: [{ label: 'Keep it', value: false }, { label: 'Clear it', value: true, primary: true }] });
+  if (ok) saveShutdown(null);
 });
 document.addEventListener('click', async e => {
   const t = e.target;
@@ -1920,6 +2081,13 @@ document.addEventListener('click', async e => {
   if ((x = t.closest('[data-lv-approve]'))) return approveLeave(x.dataset.lvApprove);
   if ((x = t.closest('[data-lv-decline]'))) return declineLeave(x.dataset.lvDecline);
   if ((x = t.closest('[data-lv-cancel]'))) return cancelLeaveByOffice(x.dataset.lvCancel);
+  if ((x = t.closest('[data-lv-more]'))) {
+    const id = x.dataset.lvMore; lvOpen.has(id) ? lvOpen.delete(id) : lvOpen.add(id);
+    const card = x.closest('[data-card]'); card.querySelector('[data-more]').hidden = !lvOpen.has(id);
+    x.textContent = lvOpen.has(id) ? 'Less' : 'Details'; return;
+  }
+  if ((x = t.closest('[data-lvshow]'))) return showLeave(x.dataset.lvshow);
+  if ((x = t.closest('[data-lvmove]'))) { const d = parseISO(lvMonth + '-01'); d.setMonth(d.getMonth() + +x.dataset.lvmove); lvMonth = isoOf(d).slice(0, 7); return renderLeaveTab(); }
   if ((x = t.closest('[data-sw-approve]'))) return approveSwap(x.dataset.swApprove);
   if ((x = t.closest('[data-sw-reject]'))) return rejectOrCancelSwap(x.dataset.swReject, false);
   if ((x = t.closest('[data-sw-cancel]'))) return rejectOrCancelSwap(x.dataset.swCancel, true);
@@ -1927,29 +2095,48 @@ document.addEventListener('click', async e => {
   if ((x = t.closest('[data-diary-rm]'))) return diaryFix('rm', x.dataset.diaryRm);
   if ((x = t.closest('[data-rday]'))) return editRotaDay(x.dataset.rday);
   if ((x = t.closest('[data-rmove]'))) { const d = parseISO(rotaMonth + '-01'); d.setMonth(d.getMonth() + +x.dataset.rmove); rotaMonth = isoOf(d).slice(0, 7); return renderRotaTab(); }
-  if ((x = t.closest('[data-bmove]'))) { balYear += +x.dataset.bmove; return renderBalTab(); }
-  if ((x = t.closest('[data-smove]'))) { shutYear += +x.dataset.smove; return renderSetTab(); }
-  if ((x = t.closest('[data-baledit]'))) return editAllowance(x.dataset.baledit);
-  if ((x = t.closest('[data-balwho]'))) return showPersonLeave(x.dataset.balwho);
-  if ((x = t.closest('[data-copyallow]'))) return copyAllowances();
-  if ((x = t.closest('[data-goto]'))) return showTab(x.dataset.goto);
-  if ((x = t.closest('[data-shutrm]'))) {
-    const d = x.dataset.shutrm, y = d.slice(0, 4), map = Object.assign({}, SETTINGS.shutdown);
-    map[y] = (map[y] || []).filter(v => v !== d);
-    try { await saveSettings({ shutdown: map }); renderSetTab(); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
-    return;
-  }
-  if ((x = t.closest('[data-mailrm]'))) {
-    try { await saveSettings({ swapEmails: (SETTINGS.swapEmails || []).filter(m => m !== x.dataset.mailrm) }); renderSetTab(); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
+  if ((x = t.closest('[data-smove]'))) { shutYear += +x.dataset.smove; shutPick = null; return renderSetTab(); }
+  if ((x = t.closest('[data-sd]'))) {
+    const d = x.dataset.sd;
+    if (!shutPick || shutPick.b) shutPick = { a: d, b: null }; else shutPick.b = d;
+    return renderSetTab();
   }
 });
+// ═══════════════════════════════════════════════════════════════════════════
+//  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
+// ═══════════════════════════════════════════════════════════════════════════
+const NEWS = {
+  all: [
+    '<b>Leave</b>: holiday to approve is at the top, kept short. Tap <b>Details</b> to see more and pick who covers the on-call. Booked holiday is now shown on a calendar.',
+    '<b>On-call rota</b> is now a calendar from yesterday onwards, and <b>swaps</b> are approved here. On a phone it uses short names (e.g. SB).',
+    '<b>Balances</b> have gone for now: they stay on the holiday spreadsheet.',
+    '<b>Settings</b> is just the Christmas shutdown: tap the first and last day.',
+    'There\'s a <b>Help</b> button at the top of every page.'
+  ]
+};
+const HELP = [
+  { tab: 'Timesheets', q: 'What do the colours on the week mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. A <b>blue dot</b> means it\'s been changed since it was first sent. An <b>orange dot</b> means the email didn\'t go.</p>' },
+  { tab: 'Timesheets', q: 'How do I see someone\'s timesheet?', a: '<p>Tap their box for that day. You can download the office copy from there too.</p>' },
+  { tab: 'Timesheets', q: 'How do I chase missing timesheets?', a: '<p>Press <b>Send reminders</b>. You see who\'s missing which days first, and each person gets their own email from you.</p>' },
+  { tab: 'Timesheets', q: 'Why isn\'t someone on the list?', a: '<p>Only people with <b>Fills in timesheets</b> ticked in Management are shown.</p>' },
+  { tab: 'Leave', q: 'How do I approve holiday?', a: '<p>It\'s at the top under <b>To approve</b>.</p><p>If they\'re on call in that time, press <b>Details and cover</b> and pick who\'s covering each shift (from the printed sheet). Leave it as "No change" if they sorted it themselves.</p><p>Press <b>Approve</b>. The rota changes, it goes in the work diary, and they get an email.</p>' },
+  { tab: 'Leave', q: 'Why can\'t I approve my own?', a: '<p>Nobody can approve their own holiday. Someone else in the office or management has to.</p>' },
+  { tab: 'Leave', q: 'How do I put in sick, training or holiday for someone?', a: '<p>Press <b>Record leave</b>, pick the person, what it is and the days, then Save. Holiday goes straight in the work diary.</p>' },
+  { tab: 'Leave', q: 'How do I cancel someone\'s holiday?', a: '<p>Tap their name on the calendar, then <b>Cancel this leave</b>. They get an email. The on-call rota doesn\'t change back by itself.</p>' },
+  { tab: 'Leave', q: 'What\'s "Work diary to sort"?', a: '<p>Something didn\'t go into (or come out of) the info@ calendar. Press the button on it to try again.</p>' },
+  { tab: 'On-call rota', q: 'How do I change who\'s on call?', a: '<p>Tap the day. Pick who, and either the <b>whole shift</b> or <b>part of it</b>, then Save. Every change is kept, so you can see the history at the bottom.</p>' },
+  { tab: 'On-call rota', q: 'How do I approve a swap?', a: '<p>Swaps both engineers have agreed are at the top under <b>Swaps to approve</b>. Press <b>Approve</b>: the rota changes, it goes in the diary, and both of them get an email.</p><p>Swaps still waiting for the other engineer go <b>red</b> after 48 hours, or when the shift is less than 48 hours away.</p>' },
+  { tab: 'On-call rota', q: 'What do the colours mean?', a: '<p><b>Grey</b>: a weekend, bank holiday or shutdown day (8am to 8am). <b>Red border</b>: yesterday. An <b>orange dot</b>: it\'s different from the rota spreadsheet (a swap, or cover for holiday).</p>' },
+  { tab: 'On-call rota', q: 'How do I add the next rota?', a: '<p>Do it from the rota spreadsheet: <b>Management → Data import → On-call rota</b>. Only new days are added, so nothing here is overwritten.</p>' },
+  { tab: 'On-call rota', q: 'How do I print it?', a: '<p>Press <b>Print rota</b> and pick which rota.</p>' },
+  { tab: 'Settings', q: 'How do I set the Christmas shutdown?', a: '<p>Tap the <b>first</b> day, then the <b>last</b> day, and press <b>Save</b>. Weekends and bank holidays inside it are skipped automatically.</p><p>To change it, just tap the first and last days again.</p>' }
+];
 async function loadLeaveData() {
   const res = await Promise.allSettled([
     getDoc(doc(db, 'leaveSettings', 'main')).then(s => { if (s.exists()) SETTINGS = Object.assign(SETTINGS, s.data()); }),
     getDocs(collection(db, 'oncall')).then(snap => { ROTA = new Map(); snap.forEach(d => ROTA.set(d.id, Object.assign({ date: d.id }, d.data()))); }),
     getDocs(collection(db, 'leave')).then(snap => { LEAVE = []; snap.forEach(d => LEAVE.push(Object.assign({ id: d.id }, d.data()))); }),
-    getDocs(collection(db, 'oncallSwaps')).then(snap => { SWAPS = []; snap.forEach(d => SWAPS.push(Object.assign({ id: d.id }, d.data()))); }),
-    getDocs(collection(db, 'leaveAllowances')).then(snap => { ALLOW = []; snap.forEach(d => ALLOW.push(Object.assign({ id: d.id }, d.data()))); })
+    getDocs(collection(db, 'oncallSwaps')).then(snap => { SWAPS = []; snap.forEach(d => SWAPS.push(Object.assign({ id: d.id }, d.data()))); })
   ]);
   const bad = res.filter(r => r.status === 'rejected');
   if (bad.length) {
@@ -1991,17 +2178,23 @@ let started = false;
 onAuthStateChanged(auth, async user => {
   const show = id => ['signinScreen', 'notAuthorised', 'appRoot'].forEach(x => { $(x).style.display = x === id ? (x === 'appRoot' ? 'block' : 'flex') : 'none'; });
   if (!user) { show('signinScreen'); return; }
-  const isMgr = await checkManager(user.email || '');
-  IS_OFFICE = !isMgr && await checkOffice(user.email || '');
-  if (!isMgr && !IS_OFFICE) { $('notAuthEmail').textContent = user.email; show('notAuthorised'); return; }
+  const va = await swViewAsInit(user);
+  const who = va ? va.email : (user.email || '');
+  const isMgr = await checkManager(who);
+  IS_OFFICE = !isMgr && await checkOffice(who);
+  if (!isMgr && !IS_OFFICE) { $('notAuthEmail').textContent = who; show('notAuthorised'); return; }
   show('appRoot');
   if (started) return;
   started = true;
-  const raw = user.email || '';
+  const raw = who;
   ME = { email: raw.toLowerCase(), rawEmail: raw, name: raw };
+  // "Show test" is Rob's only (agreed 19 Oct).
+  const isRob = !va && String(user.email || '').toLowerCase() === OWNER_EMAIL;
+  $('showTestBox').hidden = !isRob; $('lvShowTestBox').hidden = !isRob;
   try {
     const sSnap = await getDocs(collection(db, 'staff'));
-    sSnap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', fills: x.fillsTimesheets !== false }); });
+    sSnap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', short: x.short || '', fills: x.fillsTimesheets !== false }); });
+    buildShortNames();
   } catch (e) { console.error('staff not loaded', e); }
   if (STAFF.has(ME.email)) ME.name = STAFF.get(ME.email).name;
   $('whoName').textContent = ME.name;
@@ -2014,11 +2207,14 @@ onAuthStateChanged(auth, async user => {
   updateLeaveCount();
   loadLogo();
   let tab = 'ts';
-  try { tab = sessionStorage.getItem('tr-tab') || (pendingCount() ? 'leave' : 'ts'); } catch (e) {}
+  try { tab = sessionStorage.getItem('tr-tab') || (pendingLeave().length ? 'leave' : pendingSwaps().length ? 'rota' : 'ts'); } catch (e) {}
   showTab(tab);
+  SW = Object.assign(SW, { page: 'timesheet-report', version: REPORT_VERSION, level: isMgr ? 'management' : 'office', news: NEWS, help: HELP });
+  SW.tab = () => TAB_NAMES[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '';
+  swExtrasStart();
 });
 
-window.__tr = { peopleFor, missingFor, balanceFor, segmentsOf, packDay, reassign, shutdownBlockDays, leaveDiaryEvents, swapValid, get RECS() { return RECS; }, get ROTA() { return ROTA; }, get LEAVE() { return LEAVE; }, get SETTINGS() { return SETTINGS; } };
+window.__tr = { peopleFor, missingFor, segmentsOf, packDay, reassign, shutdownBlockDays, leaveDiaryEvents, swapValid, SHORT: () => SHORT, get RECS() { return RECS; }, get ROTA() { return ROTA; }, get LEAVE() { return LEAVE; }, get SETTINGS() { return SETTINGS; } };
 
 </script>
 <script>

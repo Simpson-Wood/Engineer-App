@@ -177,7 +177,7 @@
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v16.0 · Management</p>
+        <p id="versionLabel">v16.1 · Management</p>
       </div>
     </a>
     <div class="who">
@@ -510,7 +510,7 @@ import {
   query, where, orderBy, serverTimestamp, FieldPath, deleteField
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v16.0";
+const VERSION = "v16.1";
 document.getElementById('versionLabel').textContent = VERSION + ' · Management';
 
 const firebaseConfig = {
@@ -919,7 +919,7 @@ async function checkManager(email){
     const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
     if (staffSnap.exists()){
       const pos = staffSnap.data().position;
-      if (pos === 'Manager' || pos === 'QS') return true;
+      if (pos === 'Manager' || pos === 'QS' || pos === 'Director') return true;   // Director added v16.1 (19 Oct 2026)
     }
   } catch (e) { console.error('staff check failed', e); }
   return false;

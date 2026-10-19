@@ -107,6 +107,58 @@
   .sg-tabs button{background:var(--bg); border:none; border-radius:16px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer;}
   .sg-tabs button.active{background:var(--ink); color:#fff;}
   @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);} }
+  .more-link{margin:26px 0 10px; font-size:13.5px;}
+  .more-link a{color:var(--grey); cursor:pointer; text-decoration:underline; display:inline-flex; gap:6px; align-items:center;}
+  .live-btns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:14px;}
+  .btn-light{background:#fff; border:1.5px solid var(--line); color:var(--ink); padding:9px 14px; border-radius:7px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
+  .btn-light:disabled{opacity:.45; cursor:not-allowed;}
+  .info-i{background:none; border:1.5px solid var(--grey); color:var(--grey); border-radius:50%; width:20px; height:20px; font-size:12px; font-weight:700; line-height:1; cursor:pointer; margin-left:6px; padding:0; vertical-align:middle; font-family:Georgia,serif;}
+  .status-row.changed{background:#fff4dd;}
+  .name-row{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:10px; align-items:center; padding:7px 4px; border-bottom:1px solid var(--line);}
+  .name-row span{display:block; color:var(--grey); font-size:12px;}
+  .name-row select{font-size:13px; padding:6px 8px;}
+  .short-in{width:64px; font-size:12.5px; padding:6px 7px;}
+
+  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
+  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
+  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .sw-hbtn i{font-size:17px;}
+  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
+  .topbar-right .sw-hbtn{margin-right:6px;}
+  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
+  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
+  .sw-vabar i{font-size:18px;}
+  .sw-vabar span{flex:1; min-width:180px;}
+  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
+  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
+  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
+  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
+  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
+  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
+  .sw-news li{margin-bottom:8px;}
+  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
+  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
+  .sw-people{display:grid; gap:6px;}
+  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
+  .sw-people button:hover{background:#fbe9ea;}
+  .sw-people small{color:#5c5c5c;}
+  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
+  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
+  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
+  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
+  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
+  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
+  .sw-help summary::-webkit-details-marker{display:none;}
+  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
+  .sw-help details[open] summary::before{content:'–';}
+  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
+  .sw-help details > div p{margin:0 0 8px;}
+  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
+  @media (max-width:640px){ .sw-help{max-width:none;} }
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -144,28 +196,34 @@
   </header>
 
   <div class="wrap">
-    <div class="card" id="liveAppsCard" hidden>
-      <h2>Live apps</h2>
-      <p class="sub">Switch a tool on once it's ready, and set the engineer file and the report file it should link to — engineers see the change on the homepage immediately, no redeploy needed. Only visible to you.</p>
-      <div id="statusList"></div>
-    </div>
-
     <div class="card" id="importCard" hidden>
       <h2>Data import</h2>
-      <p class="sub">Load a prepared data file into the database. You'll always see a preview first — nothing is written until you confirm, and nothing is ever deleted automatically. Only visible to you. Data files stay in OneDrive and never go on GitHub.</p>
+      <p class="sub">Load a prepared data file into the database. You'll always see a preview first — nothing is written until you confirm, and nothing is ever deleted automatically.</p>
       <div class="imp-row">
         <div>
-          <label for="impType">What are you importing?</label>
+          <label for="impType">What are you importing? <button type="button" class="info-i" id="impInfo" hidden aria-label="What is this?">i</button></label>
           <select id="impType"></select>
         </div>
         <div>
-          <label for="impFile">Data file (.json)</label>
+          <label for="impFile" id="impFileLabel">Data file (.json)</label>
           <input type="file" id="impFile" accept=".json,application/json">
         </div>
-        <button type="button" class="btn-dark" id="impPreviewBtn">Preview</button>
+        <div id="impTabBox" hidden>
+          <label for="impTab">Which rota (tab)?</label>
+          <select id="impTab"></select>
+        </div>
+        <button type="button" class="btn-dark" id="impPreviewBtn" disabled>Preview</button>
+        <button type="button" class="btn-light" id="impExportBtn" disabled><i class="ti ti-download"></i> Export</button>
       </div>
-      <div id="impTypeNote" class="imp-msg info"></div>
+      <div id="impTypeNote" class="imp-msg info" hidden></div>
       <div id="impResult"></div>
+    </div>
+
+    <div class="card" id="namesCard" hidden>
+      <h2>Names to match</h2>
+      <p class="sub">These names came in from a data import (the on-call rota). The app knows people by their email, so it needs telling once who each one is. Best guesses are already picked: check them and press Save.</p>
+      <div id="nameRows"></div>
+      <button type="button" class="save-meta-btn" id="namesSave" style="width:auto;margin-top:12px">Save</button>
     </div>
 
     <div class="card" id="suggestCard">
@@ -191,7 +249,7 @@
           <input type="text" id="newStaffEmail">
         </div>
         <div>
-          <label>Position <span style="font-weight:400;text-transform:none;">(Manager and QS get management access automatically — no separate step)</span></label>
+          <label>Position <span style="font-weight:400;text-transform:none;">(Manager, QS and Director get management access automatically)</span></label>
           <select id="newStaffPosition">
             <option value="" disabled selected>Select</option>
             <option>Apprentice electrician</option>
@@ -209,8 +267,16 @@
 
     <div class="card">
       <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
-      <p class="sub">Changing someone's position to Manager or QS grants management access immediately; changing it away removes it. Office sees the homepage activity feed and the Timesheets &amp; leave page (timesheets, leave approvals, the on-call rota), but not this page.</p>
+      <p class="sub">Manager, QS and Director get management access straight away; changing it away removes it. Office sees the homepage activity feed and Timesheets &amp; leave, but not this page. "Short" is the name on the on-call calendar on phones (leave it blank to use their initials).</p>
       <div id="staffList"><div class="empty-note">Loading…</div></div>
+    </div>
+
+    <div class="more-link" id="liveAppsLinkBox" hidden><a id="liveAppsLink"><i class="ti ti-toggle-right"></i> Live apps (only you)</a></div>
+    <div class="card" id="liveAppsCard" hidden>
+      <h2>Live apps</h2>
+      <p class="sub">Switch a tool on and set the files it links to. Nothing changes until you press Save.</p>
+      <div id="statusList"></div>
+      <div class="live-btns"><button type="button" class="btn-light" id="liveClose">Close</button><button type="button" class="btn-light" id="liveCancel" disabled>Undo changes</button><button type="button" class="save-meta-btn" id="liveSave" disabled style="width:auto">Save changes</button></div>
     </div>
   </div>
 </div>
@@ -224,10 +290,10 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, where
+  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, writeBatch as _writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.7";
+const VERSION = "v3.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -242,6 +308,138 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// Raw Firestore functions for the shared block below; everything else saves
+// through the guarded versions, so "View as" can never change real data.
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = _setDoc;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index, timesheet, leave, timesheet-report and
+//  management — keep in step): access level · View as (Rob only) ·
+//  What's New · Help.   Standards §15: any page changed from now on gets
+//  this block too.
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
+const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
+let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
+let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
+const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
+const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
+// Wrap anything that saves, so "View as" can never change real data.
+function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
+function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
+(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
+  const f = window.fetch.bind(window);
+  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
+})();
+// Who someone is: 'management' (Manager / QS / Director, or the console-only
+// managers list), 'office' or 'engineer'.
+async function swAccess(email) {
+  let managers = false, position = '', staff = null;
+  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
+  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
+  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
+  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+}
+function swHeaderButton(id, icon, label, onClick) {
+  if (document.getElementById(id)) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
+  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
+  b.addEventListener('click', onClick);
+  const right = document.querySelector('.topbar-right');
+  if (right) right.prepend(b);
+  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
+}
+function swModal(html, cls) {
+  const bg = document.createElement('div');
+  bg.className = 'sw-modal-bg ' + (cls || '');
+  bg.innerHTML = html;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
+  document.body.appendChild(bg);
+  return bg;
+}
+
+// ---- View as (Rob only) ----------------------------------------------------
+// Rob picks a person and every page shows what they'd see, read-only. The
+// choice lasts for this browser tab (all pages) until he presses Stop. Data is
+// still read with Rob's own access, so it shows screens, not the database rules.
+async function swViewAsInit(user) {
+  const real = String(user.email || '').toLowerCase();
+  if (real !== SW_OWNER) return null;
+  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
+  let v = null;
+  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
+  if (!v) return null;
+  let name = v, position = '';
+  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
+  VIEW_AS = { email: v, name, position };
+  const bar = document.createElement('div');
+  bar.className = 'sw-vabar';
+  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-va]'); if (!b) return;
+    if (b.dataset.va === 'change') swPickViewAs();
+    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
+  });
+  document.body.prepend(bar);
+  document.body.classList.add('sw-va-on');
+  return VIEW_AS;
+}
+async function swPickViewAs() {
+  let people = [];
+  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
+  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
+  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
+  const draw = () => {
+    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
+    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
+  };
+  m.querySelector('[data-q]').addEventListener('input', draw);
+  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
+  draw(); m.querySelector('[data-q]').focus();
+}
+
+// ---- What's New + Help -------------------------------------------------------
+// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
+// (questions; each with the tab it belongs to and, if not everyone, the
+// levels it's for), then calls swExtrasStart().
+function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
+function swShowNews() {
+  const items = swNewsItems();
+  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+async function swNewsCheck() {
+  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
+  const key = 'seen_' + SW.page;
+  try {
+    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
+    const snap = await swGetDoc(ref);
+    if (snap.exists() && snap.data()[key] === SW.version) return;
+    swShowNews();
+    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
+  } catch (e) { console.warn('What\'s new check failed', e); }
+}
+function swShowHelp() {
+  const tab = SW.tab() || '';
+  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
+  const groups = new Map();
+  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
+  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
+  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
+    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
+    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
+  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
+}
+function swExtrasStart() {
+  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
+  swNewsCheck();
+}
+
+const setDoc = swGuard(_setDoc), updateDoc = swGuard(_updateDoc), deleteDoc = swGuard(_deleteDoc), writeBatch = swGuardBatch(_writeBatch);
+
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
@@ -273,82 +471,41 @@ function showToast(msg){
 
 async function renderStatusList(){
   const list = document.getElementById('statusList');
-  let tools = {};
   try {
     const snap = await getDoc(doc(db, 'config', 'homepage'));
-    if (snap.exists()) tools = snap.data().tools || {};
+    liveTools = snap.exists() ? (snap.data().tools || {}) : {};
   } catch (e) {
     console.error('Could not load tool config', e);
+    list.innerHTML = '<div class="empty-note">Couldn\'t load — ' + escapeHtml(e.code || e.message) + '</div>';
+    return;
   }
-
-  list.innerHTML = '';
-  TOOL_PAIRS.forEach(tool => {
-    // The timesheet was always live before it had a row here, so with no
-    // saved entry yet its switch shows on (matching what the homepage does).
-    const entry = tools[tool.id] || (tool.id === 'timesheet' ? { live: true } : {});
-    const row = document.createElement('div');
-    row.className = 'status-row';
-    row.style.flexWrap = 'wrap';
-    row.innerHTML =
+  const val = id => Object.assign({}, liveEntry(id), liveDraft[id] || {});
+  list.innerHTML = TOOL_PAIRS.map(tool => {
+    const v = val(tool.id), changed = !!liveChanges().find(c => c.id === tool.id);
+    return '<div class="status-row ' + (changed ? 'changed' : '') + '" style="flex-wrap:wrap">' +
       '<div class="name"><i class="ti ' + tool.icon + '" aria-hidden="true"></i>' + tool.name + '</div>' +
       '<div style="display:flex; align-items:center; gap:8px;">' +
-      '<input type="text" data-href-id="' + tool.id + '" placeholder="engineer file" value="' + (entry.href || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
-      '<input type="text" data-report-href-id="' + tool.id + '" placeholder="report file" value="' + (entry.reportHref || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
-      '<label class="switch"><input type="checkbox" data-live-id="' + tool.id + '" ' + (entry.live ? 'checked' : '') + '><span class="track"></span></label>' +
-      '</div>';
-    list.appendChild(row);
-  });
-
-  async function saveTool(id){
-    const href = list.querySelector('[data-href-id="' + id + '"]').value.trim();
-    const reportHref = list.querySelector('[data-report-href-id="' + id + '"]').value.trim();
-    const live = list.querySelector('[data-live-id="' + id + '"]').checked;
-    const field = 'tools.' + id;
-    // updateDoc treats a dotted key as a real nested path (tools.isolator, not
-    // a literal field named "tools.isolator") — setDoc+merge does NOT do this,
-    // it was writing a flat field with a dot in its name that nothing ever
-    // read. updateDoc throws if the doc doesn't exist yet, hence the fallback.
-    try {
-      await updateDoc(doc(db, 'config', 'homepage'), { [field]: { live, href, reportHref } });
-    } catch (err) {
-      if (err.code === 'not-found') {
-        await setDoc(doc(db, 'config', 'homepage'), { tools: { [id]: { live, href, reportHref } } }, { merge: true });
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  list.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', async (e) => {
-      const id = e.target.dataset.liveId;
-      try {
-        await saveTool(id);
-        showToast(TOOL_PAIRS.find(t => t.id === id).name + (e.target.checked ? ' is now live' : ' switched back to coming soon'));
-      } catch (err) {
-        console.error(err);
-        showToast("Couldn't save — try again");
-        e.target.checked = !e.target.checked;
-      }
+      '<input type="text" data-href-id="' + tool.id + '" placeholder="engineer file" value="' + escapeHtml(v.href || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
+      '<input type="text" data-report-href-id="' + tool.id + '" placeholder="report file" value="' + escapeHtml(v.reportHref || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
+      '<label class="switch"><input type="checkbox" data-live-id="' + tool.id + '" ' + (v.live ? 'checked' : '') + '><span class="track"></span></label>' +
+      '</div></div>';
+  }).join('');
+  const draftOf = id => (liveDraft[id] = liveDraft[id] || Object.assign({}, liveEntry(id)));
+  list.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener(inp.type === 'checkbox' ? 'change' : 'input', e => {
+      const t = e.target, id = t.dataset.liveId || t.dataset.hrefId || t.dataset.reportHrefId;
+      const d = draftOf(id);
+      if (t.dataset.liveId) d.live = t.checked; else if (t.dataset.hrefId) d.href = t.value.trim(); else d.reportHref = t.value.trim();
+      t.closest('.status-row').classList.toggle('changed', !!liveChanges().find(c => c.id === id));
+      updateLiveButtons();
     });
   });
-  list.querySelectorAll('input[type=text]').forEach(inp => {
-    inp.addEventListener('change', async (e) => {
-      const id = e.target.dataset.hrefId || e.target.dataset.reportHrefId;
-      try {
-        await saveTool(id);
-        showToast('Link updated for ' + TOOL_PAIRS.find(t => t.id === id).name);
-      } catch (err) {
-        console.error(err);
-        showToast("Couldn't save — try again");
-      }
-    });
-  });
+  updateLiveButtons();
 }
 
 // Matches index.html's getAccessLevel(): a manager is either in the
 // console-only /managers failsafe list, or a staff record whose position
-// is Manager or QS.
+// is Manager, QS or Director (Director added 19 Oct 2026).
 async function checkManager(email){
   try {
     const mgrSnap = await getDoc(doc(db, 'managers', email));
@@ -358,7 +515,7 @@ async function checkManager(email){
     const staffSnap = await getDoc(doc(db, 'staff', email.toLowerCase()));
     if (staffSnap.exists()){
       const pos = staffSnap.data().position;
-      if (pos === 'Manager' || pos === 'QS') return true;
+      if (pos === 'Manager' || pos === 'QS' || pos === 'Director') return true;
     }
   } catch (e) { console.error('staff check failed', e); }
   return false;
@@ -383,6 +540,7 @@ async function renderStaffList() {
           <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; white-space:nowrap; cursor:pointer;" title="Expected to fill in a timesheet every weekday">
             <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'}> Fills in timesheets
           </label>
+          <input class="short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" title="Short name on the on-call calendar (phones). Blank = initials.">
           <select class="position-select" data-email="${r.id}" style="font-size:12.5px; padding:6px 8px;">
             ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
           </select>
@@ -400,6 +558,13 @@ async function renderStaffList() {
         } catch (err) {
           showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
         }
+      });
+    });
+    list.querySelectorAll('[data-short]').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const email = e.target.dataset.short, v = e.target.value.trim();
+        try { await setDoc(doc(db, 'staff', email), { short: v }, { merge: true }); showToast(v ? 'Short name saved' : 'Short name cleared (initials used)'); }
+        catch (err) { showToast('Could not update — ' + (err.message || err.code || 'unknown error')); }
       });
     });
     list.querySelectorAll('.fills-ts').forEach(cb => {
@@ -461,7 +626,7 @@ const IMPORT_TYPES = [
     label: 'Fire toolkit reference data',
     collection: 'fireToolkit',
     testRecords: false,
-    note: 'Writes to the fireToolkit collection. Every entry needs an id, a kind (' + FIRE_TOOLKIT_KINDS.join(', ') + ') and a title. Readable by all staff once imported.',
+    note: 'The fire toolkit\'s fault guides, troubleshooting, contacts and panel codes.',
     validateEntry(e) {
       const errs = [];
       if (!FIRE_TOOLKIT_KINDS.includes(e.kind)) errs.push('kind "' + e.kind + '" is not one of: ' + FIRE_TOOLKIT_KINDS.join(', '));
@@ -474,7 +639,7 @@ const IMPORT_TYPES = [
     label: 'Timesheet materials list',
     collection: 'timesheetGear',
     testRecords: false,
-    note: 'Writes to the timesheetGear collection: the materials that pop up as engineers type on their timesheets. Every entry needs an id and a name (category is optional). Items engineers have added themselves show as "not in file"; leave them unticked to keep them.',
+    note: 'The materials that pop up as engineers type on their timesheets. Items engineers added themselves show as "not in file": leave them unticked to keep them.',
     validateEntry(e) {
       const errs = [];
       if (typeof e.name !== 'string' || !e.name.trim()) errs.push('missing name');
@@ -488,7 +653,7 @@ const IMPORT_TYPES = [
     label: 'Timesheet test data',
     collection: 'timesheets',
     testRecords: true,
-    note: 'Writes made-up timesheets to the timesheets collection, every one marked testData. They only show on the Timesheets page with "Show test" ticked, never count towards anyone\'s missing days, and are never emailed. Only test records are compared or removable here; real timesheets are never touched.',
+    note: 'Made-up timesheets for testing, all marked as test data. They only show with "Show test" ticked and never count as anyone\'s real timesheets. Real timesheets are never touched here.',
     validateEntry(e) {
       const errs = [];
       if (typeof e.engineerEmail !== 'string' || !e.engineerEmail.endsWith('.invalid')) errs.push('engineerEmail must be a made-up address ending .invalid');
@@ -497,51 +662,15 @@ const IMPORT_TYPES = [
       return errs;
     }
   }
-  // --- Added v2.7 (18 Oct 2026): leave and on-call rota ---
+  // --- v3.0 (19 Oct 2026): the on-call rota straight from the rota spreadsheet ---
   ,{
     id: 'oncallRota',
-    label: 'On-call rota',
+    label: 'On-call rota (from the rota spreadsheet)',
     collection: 'oncall',
     testRecords: false,
-    note: 'Writes to the oncall collection: one entry per day (id = the date). Each needs date, name (as written on the rota), cycle (the rota number) and planned (who the standard pattern has). Names are matched to staff in Timesheets & leave → Settings. Re-importing a day the office has since changed overwrites that change, so only import once.',
-    validateEntry(e) {
-      const errs = [];
-      if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errs.push('date must be YYYY-MM-DD');
-      else if (e.id !== e.date) errs.push('id must be the same as date');
-      if (typeof e.name !== 'string') errs.push('name must be text (it can be empty)');
-      if (!Number.isInteger(e.cycle)) errs.push('cycle must be a whole number');
-      return errs;
-    }
-  }
-  ,{
-    id: 'leaveAllowances',
-    label: 'Holiday allowances',
-    collection: 'leaveAllowances',
-    testRecords: false,
-    note: 'Writes to the leaveAllowances collection: one entry per person per year (allowance, carried over, whether the Christmas shutdown comes off it). Only the office can see these.',
-    validateEntry(e) {
-      const errs = [];
-      if (!Number.isInteger(e.year)) errs.push('year must be a whole number');
-      if (typeof e.name !== 'string' || !e.name.trim()) errs.push('missing name');
-      if (typeof e.allowance !== 'number' || e.allowance < 0) errs.push('allowance must be a number');
-      return errs;
-    }
-  }
-  ,{
-    id: 'leaveHistory',
-    label: 'Past leave (from the holiday spreadsheet)',
-    collection: 'leave',
-    testRecords: false,
-    note: 'Writes past leave to the leave collection, all marked approved, so this year\'s balances are right. Leave asked for in the app is shown as "not in file" — leave those unticked.',
-    validateEntry(e) {
-      const errs = [];
-      if (!['holiday', 'sick', 'training', 'other'].includes(e.type)) errs.push('type must be holiday, sick, training or other');
-      if (e.status !== 'approved') errs.push('status must be approved');
-      if (!Array.isArray(e.days) || !e.days.length) errs.push('days missing');
-      else e.days.forEach(d => { if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !['full', 'am', 'pm', 'half'].includes(d.part)) errs.push('a day is not { date, part }'); });
-      if (typeof e.from !== 'string' || typeof e.to !== 'string') errs.push('from / to missing');
-      return errs;
-    }
+    xlsx: true,
+    note: 'Choose the rota spreadsheet and the tab for the rota you want to add. Only days that aren\'t already in the app are added: once a day is in the app, the app\'s version (with its swaps) is the true one. Export downloads the rota as it is in the app now.',
+    validateEntry() { return []; }
   }
   // Future import types are added here, one at a time, as a deliberate
   // versioned change (e.g. isolator test data with testRecords: true).
@@ -604,15 +733,29 @@ function initImportPanel() {
   if (importPanelReady) return;   // only wire up once, even if sign-in state fires again
   importPanelReady = true;
   const sel = document.getElementById('impType');
-  sel.innerHTML = IMPORT_TYPES.map(t => '<option value="' + t.id + '">' + escapeHtml(t.label) + '</option>').join('');
-  const showNote = () => {
+  sel.innerHTML = '<option value="" selected>Select what to import</option>' + IMPORT_TYPES.map(t => '<option value="' + t.id + '">' + escapeHtml(t.label) + '</option>').join('');
+  const info = document.getElementById('impInfo'), note = document.getElementById('impTypeNote');
+  const onType = () => {
     const t = IMPORT_TYPES.find(x => x.id === sel.value);
-    document.getElementById('impTypeNote').textContent = t ? t.note : '';
+    info.hidden = !t; info.title = t ? t.note : ''; note.textContent = t ? t.note : ''; note.hidden = true;
+    document.getElementById('impPreviewBtn').disabled = !t;
+    document.getElementById('impExportBtn').disabled = !t;
+    const f = document.getElementById('impFile');
+    f.value = ''; f.accept = t && t.xlsx ? '.xlsx,.xls' : '.json,application/json';
+    document.getElementById('impFileLabel').textContent = t && t.xlsx ? 'Rota spreadsheet (.xlsx)' : 'Data file (.json)';
+    document.getElementById('impTabBox').hidden = true; rotaBook = null;
+    impState = null; rotaPreview = null; document.getElementById('impResult').innerHTML = '';
   };
-  sel.addEventListener('change', () => { showNote(); impState = null; document.getElementById('impResult').innerHTML = ''; });
-  document.getElementById('impFile').addEventListener('change', () => { impState = null; document.getElementById('impResult').innerHTML = ''; });
+  sel.addEventListener('change', onType);
+  info.addEventListener('click', () => { note.hidden = !note.hidden; });
+  document.getElementById('impFile').addEventListener('change', () => {
+    impState = null; rotaPreview = null; document.getElementById('impResult').innerHTML = '';
+    const t = IMPORT_TYPES.find(x => x.id === sel.value); if (t && t.xlsx) rotaPickFile();
+  });
+  document.getElementById('impTab').addEventListener('change', () => { rotaPreview = null; document.getElementById('impResult').innerHTML = ''; });
   document.getElementById('impPreviewBtn').addEventListener('click', runImportPreview);
-  showNote();
+  document.getElementById('impExportBtn').addEventListener('click', runExport);
+  onType();
 }
 
 function impMsg(kind, html) {
@@ -621,6 +764,8 @@ function impMsg(kind, html) {
 
 async function runImportPreview() {
   const type = IMPORT_TYPES.find(x => x.id === document.getElementById('impType').value);
+  if (!type) return;
+  if (type.xlsx) return runRotaPreview();
   const file = document.getElementById('impFile').files[0];
   impState = null;
   if (!file) { impMsg('err', 'Choose a data file first.'); return; }
@@ -880,28 +1025,325 @@ getRedirectResult(auth).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  v3.0 (19 Oct 2026): Live apps behind a link with Save; Export; rota
+//  straight from the rota spreadsheet; names from imports; short names
+// ═══════════════════════════════════════════════════════════════════════════
+let LEAVE_SETTINGS = { nameMap: {} };
+let STAFF_ROWS = [];        // [{ id, name, position, short }]
+async function loadLeaveSettings() {
+  try { const s = await getDoc(doc(db, 'leaveSettings', 'main')); if (s.exists()) LEAVE_SETTINGS = Object.assign({ nameMap: {} }, s.data()); } catch (e) { console.warn('leave settings not loaded', e); }
+}
+async function loadStaffRows() {
+  try { const snap = await getDocs(collection(db, 'staff')); STAFF_ROWS = []; snap.forEach(d => STAFF_ROWS.push(Object.assign({ id: d.id.toLowerCase() }, d.data()))); }
+  catch (e) { console.warn('staff not loaded', e); }
+  STAFF_ROWS.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+}
+// Match a name from a rota spreadsheet to a staff email: a saved match first,
+// then the full name, then a first name only one person has (Mike → Michael).
+const NICK = { mike: ['michael', 'micheal'], dan: ['daniel'], danny: ['daniel'], sam: ['samuel', 'samantha'], ben: ['benjamin'], alex: ['alexander', 'alexandra'], kev: ['kevin'], tony: ['anthony'], chris: ['christopher', 'christina', 'christine'], rob: ['robert'], jim: ['james'], tom: ['thomas'], matt: ['matthew'], nick: ['nicholas'], jon: ['jonathan'], steve: ['stephen', 'steven'], dave: ['david'], andy: ['andrew'], will: ['william'] };
+function matchName(n) {
+  const raw = String(n || '').trim(); if (!raw) return '';
+  if (LEAVE_SETTINGS.nameMap && LEAVE_SETTINGS.nameMap[raw]) return LEAVE_SETTINGS.nameMap[raw];
+  const low = raw.toLowerCase();
+  const full = STAFF_ROWS.filter(s => String(s.name || '').trim().toLowerCase() === low);
+  if (full.length === 1) return full[0].id;
+  const firsts = STAFF_ROWS.map(s => [s.id, String(s.name || '').toLowerCase().split(/\s+/)[0]]);
+  let hit = firsts.filter(([, f]) => f === low);
+  if (!hit.length && NICK[low]) hit = firsts.filter(([, f]) => NICK[low].includes(f));
+  return hit.length === 1 ? hit[0][0] : '';
+}
+function staffOptionsHTML(selected, blank) {
+  return `<option value="">${escapeHtml(blank)}</option>` + STAFF_ROWS.map(s => `<option value="${escapeHtml(s.id)}" ${s.id === selected ? 'selected' : ''}>${escapeHtml(s.name || s.id)}</option>`).join('');
+}
+
+// ---- Names that came in from a data import (rota spreadsheet) ----
+// The rota spreadsheet used to say "Mike" where the app knows people by their
+// email. Matching is done once; this card only shows while something's left.
+async function renderNamesCard() {
+  const card = document.getElementById('namesCard');
+  const names = new Map();
+  try {
+    const snap = await getDocs(collection(db, 'oncall'));
+    snap.forEach(d => {
+      const x = d.data();
+      const note = n => { n = String(n || '').trim(); if (n && !(LEAVE_SETTINGS.nameMap || {})[n]) names.set(n, (names.get(n) || 0) + 1); };
+      if (!x.email) note(x.name);
+      if (x.planned && !x.plannedEmail) note(x.planned);
+      (x.parts || []).forEach(p => { if (!p.email) note(p.name); });
+    });
+  } catch (e) { card.hidden = true; return; }
+  if (!names.size) { card.hidden = true; return; }
+  card.hidden = false;
+  document.getElementById('nameRows').innerHTML = [...names.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([n, c]) => {
+    const sug = matchName(n);
+    return `<div class="name-row"><div><b>${escapeHtml(n)}</b><span>on ${c} rota day${c === 1 ? '' : 's'}${sug ? ' · best guess picked' : ''}</span></div><select data-nm="${escapeHtml(n)}">${staffOptionsHTML(sug, 'Not matched yet')}</select></div>`;
+  }).join('');
+}
+async function saveNames() {
+  const map = Object.assign({}, LEAVE_SETTINGS.nameMap || {});
+  document.querySelectorAll('[data-nm]').forEach(sel => { if (sel.value) map[sel.dataset.nm] = sel.value; });
+  try {
+    try { await updateDoc(doc(db, 'leaveSettings', 'main'), { nameMap: map }); }
+    catch (err) { if (err.code === 'not-found') await setDoc(doc(db, 'leaveSettings', 'main'), { nameMap: map }, { merge: true }); else throw err; }
+    LEAVE_SETTINGS.nameMap = map;
+    showToast('Names matched');
+    renderNamesCard();
+  } catch (e) { showToast('Could not save — ' + (e.code || e.message)); }
+}
+
+// ---- Live apps (Rob only): changes wait until Save ----
+let liveTools = {}, liveDraft = {};
+async function openLiveApps() {
+  const card = document.getElementById('liveAppsCard');
+  card.hidden = false;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await renderStatusList();
+}
+function liveEntry(id) {
+  return liveTools[id] || (id === 'timesheet' ? { live: true, href: '', reportHref: '' } : { live: false, href: '', reportHref: '' });
+}
+function liveChanges() {
+  const out = [];
+  Object.entries(liveDraft).forEach(([id, d]) => {
+    const was = liveEntry(id), tool = TOOL_PAIRS.find(t => t.id === id);
+    const bits = [];
+    if (!!d.live !== !!was.live) bits.push(d.live ? '<b>switch ON</b>' : '<b>switch OFF</b>');
+    if ((d.href || '') !== (was.href || '')) bits.push(`engineer file "${escapeHtml(was.href || '—')}" → "${escapeHtml(d.href || '—')}"`);
+    if ((d.reportHref || '') !== (was.reportHref || '')) bits.push(`report file "${escapeHtml(was.reportHref || '—')}" → "${escapeHtml(d.reportHref || '—')}"`);
+    if (bits.length) out.push({ id, name: tool ? tool.name : id, text: bits.join(', '), value: d });
+  });
+  return out;
+}
+function updateLiveButtons() {
+  const n = liveChanges().length;
+  document.getElementById('liveSave').disabled = !n;
+  document.getElementById('liveSave').textContent = n ? `Save ${n} change${n === 1 ? '' : 's'}` : 'Save changes';
+  document.getElementById('liveCancel').disabled = !n;
+}
+async function saveLiveApps() {
+  const ch = liveChanges(); if (!ch.length) return;
+  if (!confirm('Save these changes to the homepage?\n\n' + ch.map(c => '• ' + c.name + ': ' + c.text.replace(/<[^>]+>/g, '')).join('\n') + (ch.some(c => c.id === 'timesheet' && !c.value.live) ? '\n\nWARNING: switching the Timesheet off hides it from everyone.' : ''))) return;
+  try {
+    for (const c of ch) {
+      const v = { live: !!c.value.live, href: c.value.href || '', reportHref: c.value.reportHref || '' };
+      // updateDoc with a dotted path, never setDoc+merge (standards §2)
+      try { await updateDoc(doc(db, 'config', 'homepage'), { ['tools.' + c.id]: v }); }
+      catch (err) { if (err.code === 'not-found') await setDoc(doc(db, 'config', 'homepage'), { tools: { [c.id]: v } }, { merge: true }); else throw err; }
+      liveTools[c.id] = v;
+    }
+    liveDraft = {};
+    showToast('Saved — the homepage has changed');
+    renderStatusList();
+  } catch (e) { showToast('Couldn\'t save — ' + (e.code || e.message)); }
+}
+
+// ---- Export: what's in the database now, in the import layout ----
+function downloadFile(name, data, type) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function plainValue(v) {
+  if (v && typeof v === 'object' && typeof v.toDate === 'function') return v.toDate().toISOString();
+  if (Array.isArray(v)) return v.map(plainValue);
+  if (v && typeof v === 'object') { const o = {}; Object.keys(v).forEach(k => { o[k] = plainValue(v[k]); }); return o; }
+  return v;
+}
+async function runExport() {
+  const type = IMPORT_TYPES.find(x => x.id === document.getElementById('impType').value);
+  if (!type) return;
+  const btn = document.getElementById('impExportBtn');
+  btn.disabled = true;
+  try {
+    const snap = await getDocsFromServer(collection(db, type.collection));
+    const today = new Date().toISOString().slice(0, 10);
+    if (type.xlsx) { await exportRotaXlsx(snap, today); return; }
+    const entries = [];
+    snap.forEach(d => { const v = d.data(); if (type.testRecords && v.testData !== true) return; entries.push(Object.assign({ id: d.id }, plainValue(contentOf(v)))); });
+    entries.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    downloadFile(`${type.id}-export-${today}.json`, JSON.stringify({ importType: type.id, source: 'Export from the database ' + today, entries }, null, 1), 'application/json');
+    showToast(entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') + ' exported');
+  } catch (e) { showToast('Export failed — ' + (e.code || e.message)); }
+  finally { btn.disabled = false; }
+}
+
+// ---- On-call rota straight from the rota spreadsheet (.xlsx) ----
+// Each tab of the rota spreadsheet is one 9-week rota ("144 - 2027"). Column
+// B is the date, D the weekend person, E the weekday person (the same layout
+// Rob has always used). Only days NOT already in the app are added: once a
+// day is in the app, the app's version (with its swaps) is the true one.
+const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = XLSX_URL; s.onload = () => res(window.XLSX); s.onerror = () => rej(new Error('The spreadsheet reader didn\'t load. Check your signal.')); document.head.appendChild(s); });
+}
+let rotaBook = null;
+const isoDate = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function rotaRowsFromSheet(ws) {
+  const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+  const out = [];
+  rows.forEach(r => {
+    let d = r && r[1];
+    if (typeof d === 'number') d = new Date(Math.round((d - 25569) * 86400000));
+    if (!(d instanceof Date) || isNaN(d)) return;
+    d = new Date(d.getTime() + 12 * 3600000);   // dates can come through as 11pm the day before (BST), so go by midday
+    const wk = typeof r[3] === 'string' ? r[3].trim() : '', wd = typeof r[4] === 'string' ? r[4].trim() : '';
+    out.push({ date: isoDate(d), name: wk || wd });
+  });
+  return out;
+}
+async function rotaPickFile() {
+  const file = document.getElementById('impFile').files[0];
+  const tabSel = document.getElementById('impTab');
+  rotaBook = null; tabSel.innerHTML = ''; document.getElementById('impTabBox').hidden = true;
+  if (!file) return;
+  try {
+    const X = await loadXlsx();
+    rotaBook = X.read(await file.arrayBuffer(), { cellDates: true });
+    const names = rotaBook.SheetNames.slice().reverse();   // newest tab first
+    tabSel.innerHTML = names.map(n => `<option>${escapeHtml(n)}</option>`).join('');
+    document.getElementById('impTabBox').hidden = false;
+  } catch (e) { impMsg('err', 'Couldn\'t read that spreadsheet — ' + escapeHtml(e.message)); }
+}
+let rotaPreview = null;
+async function runRotaPreview() {
+  if (!rotaBook) { impMsg('err', 'Choose the rota spreadsheet first.'); return; }
+  const tab = document.getElementById('impTab').value;
+  const rows = rotaRowsFromSheet(rotaBook.Sheets[tab]);
+  if (!rows.length) { impMsg('err', 'No dates found on that tab. The rota needs dates in column B and names in D (weekend) or E (weekday).'); return; }
+  const cycle = parseInt((String(tab).match(/\d+/) || [])[0], 10);
+  impMsg('info', 'Comparing with the rota in the app…');
+  let have = new Set();
+  try { const snap = await getDocsFromServer(collection(db, 'oncall')); snap.forEach(d => have.add(d.id)); }
+  catch (e) { impMsg('err', 'Couldn\'t read the rota in the app — ' + escapeHtml(e.code || e.message)); return; }
+  const add = rows.filter(r => !have.has(r.date)), skip = rows.filter(r => have.has(r.date));
+  const names = [...new Set(add.map(r => r.name).filter(Boolean))].sort();
+  rotaPreview = { tab, cycle: Number.isFinite(cycle) ? cycle : null, add, skip };
+  document.getElementById('impResult').innerHTML =
+    `<div class="imp-msg info">Tab <b>${escapeHtml(tab)}</b>: ${escapeHtml(rows[0].date)} to ${escapeHtml(rows[rows.length - 1].date)}${rotaPreview.cycle ? ' · rota ' + rotaPreview.cycle : ''}</div>
+    <div class="imp-summary"><div><b>${add.length}</b><span>Days to add</span></div><div><b>${skip.length}</b><span>Already in the app (left alone)</span></div><div><b>${add.filter(r => !r.name).length}</b><span>Blank days</span></div><div><b>${names.length}</b><span>People</span></div></div>
+    ${names.length ? `<div class="imp-h">Who's who</div><div class="imp-list">${names.map(n => `<div class="name-row"><div><b>${escapeHtml(n)}</b></div><select data-rn="${escapeHtml(n)}">${staffOptionsHTML(matchName(n), 'Not matched — pick someone')}</select></div>`).join('')}</div>` : ''}
+    ${add.length ? `<button type="button" class="save-meta-btn" id="rotaImportBtn">Add ${add.length} day${add.length === 1 ? '' : 's'} to the rota</button>` : '<div class="imp-msg ok">Every day on this tab is already in the app. Nothing to add.</div>'}`;
+  const b = document.getElementById('rotaImportBtn'); if (b) b.addEventListener('click', runRotaImport);
+}
+async function runRotaImport() {
+  if (!rotaPreview) return;
+  const map = {}, unmatched = [];
+  document.querySelectorAll('[data-rn]').forEach(sel => { if (sel.value) map[sel.dataset.rn] = sel.value; else unmatched.push(sel.dataset.rn); });
+  if (unmatched.length) { showToast('Pick who ' + unmatched.join(', ') + ' is first'); return; }
+  const btn = document.getElementById('rotaImportBtn'); btn.disabled = true; btn.textContent = 'Adding…';
+  const nameOfEmail = e => { const s = STAFF_ROWS.find(x => x.id === e); return (s && s.name) || e; };
+  const who = auth.currentUser.email.toLowerCase();
+  try {
+    // remember spreadsheet names that aren't someone's full name, so next time they match straight away
+    const newMap = Object.assign({}, LEAVE_SETTINGS.nameMap || {});
+    Object.entries(map).forEach(([n, e]) => { if (String(nameOfEmail(e)).toLowerCase() !== n.toLowerCase()) newMap[n] = e; });
+    if (JSON.stringify(newMap) !== JSON.stringify(LEAVE_SETTINGS.nameMap || {})) {
+      try { await updateDoc(doc(db, 'leaveSettings', 'main'), { nameMap: newMap }); }
+      catch (err) { if (err.code === 'not-found') await setDoc(doc(db, 'leaveSettings', 'main'), { nameMap: newMap }, { merge: true }); else throw err; }
+      LEAVE_SETTINGS.nameMap = newMap;
+    }
+    const ops = rotaPreview.add.map(r => batch => {
+      const email = r.name ? map[r.name] : '';
+      const name = r.name ? nameOfEmail(email) : '';
+      batch.set(doc(db, 'oncall', r.date), { date: r.date, name, email, planned: name, plannedEmail: email, parts: [], cycle: rotaPreview.cycle,
+        importedAt: serverTimestamp(), importedBy: who, importSource: 'Rota spreadsheet tab ' + rotaPreview.tab, updatedAt: serverTimestamp(), updatedBy: who });
+    });
+    ops.push(batch => batch.set(doc(collection(db, 'oncallLog')), { date: rotaPreview.add[0].date, at: serverTimestamp(), by: who, byName: nameOfEmail(who),
+      before: 'Nothing', after: `Rota ${rotaPreview.cycle || rotaPreview.tab} added from the spreadsheet (${rotaPreview.add.length} days)`, reason: 'Imported', ref: '' }));
+    await commitInChunks(ops);
+    impMsg('ok', `<b>Done.</b> ${rotaPreview.add.length} days added to the rota.${rotaPreview.skip.length ? ' ' + rotaPreview.skip.length + ' days that were already in the app were left alone.' : ''}`);
+    rotaPreview = null; document.getElementById('impFile').value = ''; document.getElementById('impTabBox').hidden = true;
+    renderNamesCard();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Try again';
+    impMsg('err', 'Import failed — ' + escapeHtml(e.code || e.message));
+  }
+}
+async function exportRotaXlsx(snap, today) {
+  const X = await loadXlsx();
+  const days = []; snap.forEach(d => days.push(Object.assign({ date: d.id }, d.data())));
+  days.sort((a, b) => a.date.localeCompare(b.date));
+  const byCycle = new Map();
+  days.forEach(d => { const k = d.cycle != null ? String(d.cycle) : d.date.slice(0, 7); if (!byCycle.has(k)) byCycle.set(k, []); byCycle.get(k).push(d); });
+  const wb = X.utils.book_new();
+  const nameOf = d => { const e = d.email || (LEAVE_SETTINGS.nameMap || {})[d.name] || ''; const s = STAFF_ROWS.find(x => x.id === e); return (s && s.name) || d.name || ''; };
+  byCycle.forEach((list, k) => {
+    const aoa = [[`Simpson & Wood On Call Rota ${k}`], [], ['Day', 'Date', '', 'Weekend', 'Weekday', 'Part swaps']];
+    list.forEach(d => {
+      const dt = new Date(d.date + 'T12:00:00'), w = dt.getDay();
+      const weekendCol = w === 5 || w === 6 || w === 0;
+      const parts = (d.parts || []).map(p => `${p.name || p.email} (${p.s}–${p.e} min)`).join('; ');
+      aoa.push([dt.toLocaleDateString('en-GB', { weekday: 'long' }), dt, '', weekendCol ? nameOf(d) : '', weekendCol ? '' : nameOf(d), parts]);
+    });
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(aoa, { cellDates: true }), String(k).slice(0, 31));
+  });
+  const out = X.write(wb, { bookType: 'xlsx', type: 'array' });
+  downloadFile(`on-call-rota-export-${today}.xlsx`, new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  showToast('Rota exported (' + days.length + ' days, as it is in the app now)');
+}
+// ═══════════════════════════════════════════════════════════════════════════
+//  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
+// ═══════════════════════════════════════════════════════════════════════════
+const NEWS = {
+  management: [
+    '<b>Directors</b> now have the same access as managers.',
+    '<b>Data import</b> is open to managers, QS and directors. Pick a type first, then use <b>Export</b> to download what\'s there now and see how the file is laid out.',
+    'The <b>on-call rota</b> imports straight from the rota spreadsheet. It only adds days that aren\'t in the app yet.',
+    'There\'s a <b>Help</b> button at the top of every page.'
+  ]
+};
+const HELP = [
+  { q: 'How do I add someone?', a: '<p>Fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add</b>.</p>' },
+  { q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: the homepage list of recent tests, plus Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p>' },
+  { q: 'What\'s "Fills in timesheets"?', a: '<p>Tick it for anyone who does a timesheet every weekday. Untick it for office staff and anyone else who doesn\'t, so they\'re never chased for missing days.</p>' },
+  { q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
+  { q: 'How do I add the next on-call rota?', a: '<p>In <b>Data import</b>, pick <b>On-call rota</b>, choose the rota spreadsheet, then pick the tab (e.g. "144 - 2027") and press <b>Preview</b>.</p><p>Check who\'s who, then press <b>Add</b>. Only days that aren\'t already in the app are added, so swaps made in the app are never overwritten.</p>' },
+  { q: 'What does Export do?', a: '<p>It downloads what\'s in the database now for the type you\'ve picked, laid out the same way the import reads it. Use it to see the layout, or to add to the list and import it back.</p>' },
+  { q: 'What\'s "Names to match"?', a: '<p>Names that came in from a data import (like "Mike" on the rota) that the app hasn\'t linked to a person yet. Pick the right person and press <b>Save</b>, and it remembers for next time. The box goes away once there\'s nothing left to match.</p>' },
+  { q: 'What are fire toolkit corrections?', a: '<p>Suggestions engineers send from the fire toolkit. <b>Accept</b> means it goes into the content at the next update. <b>Dismiss</b> means it doesn\'t.</p>' }
+];
+
+document.getElementById('liveAppsLink').addEventListener('click', openLiveApps);
+document.getElementById('liveClose').addEventListener('click', () => {
+  if (liveChanges().length && !confirm('Close without saving your changes?')) return;
+  liveDraft = {}; document.getElementById('liveAppsCard').hidden = true;
+});
+document.getElementById('liveCancel').addEventListener('click', () => { liveDraft = {}; renderStatusList(); });
+document.getElementById('liveSave').addEventListener('click', saveLiveApps);
+document.getElementById('namesSave').addEventListener('click', saveNames);
+
 onAuthStateChanged(auth, async (user) => {
   document.getElementById('signinScreen').style.display = 'none';
   document.getElementById('notAuthorised').style.display = 'none';
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  const isManager = await checkManager(user.email);
+  const va = await swViewAsInit(user);
+  const isManager = await checkManager(va ? va.email : user.email);
 
   if (!isManager) {
-    document.getElementById('notAuthEmail').textContent = user.email;
+    document.getElementById('notAuthEmail').textContent = va ? va.email : user.email;
     document.getElementById('notAuthorised').style.display = 'flex';
     return;
   }
 
   document.getElementById('appRoot').style.display = 'block';
-  document.getElementById('whoName').textContent = user.displayName || user.email;
-  const isOwner = (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase());
-  document.getElementById('liveAppsCard').hidden = !isOwner;
-  document.getElementById('importCard').hidden = !isOwner;
-  if (isOwner) { renderStatusList(); initImportPanel(); }
+  document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  // Live apps: Rob only, and never while viewing as someone else.
+  const isOwner = !va && (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase());
+  document.getElementById('liveAppsLinkBox').hidden = !isOwner;
+  // Data import: everyone with management access (v3.0).
+  document.getElementById('importCard').hidden = false;
+  await Promise.all([loadLeaveSettings(), loadStaffRows()]);
+  initImportPanel();
   renderStaffList();
   renderSuggestions();
+  renderNamesCard();
+  SW = Object.assign(SW, { page: 'management', version: VERSION, level: 'management', news: NEWS, help: HELP });
+  swExtrasStart();
 });
 </script>
 <script>
