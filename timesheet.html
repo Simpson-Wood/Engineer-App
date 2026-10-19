@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheet v4.2</title>
+<title>Simpson & Wood — Timesheet v4.3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
@@ -244,7 +244,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheet</h1>
-        <p id="versionLabel">v4.2</p>
+        <p id="versionLabel">v4.3</p>
       </div>
     </a>
     <div class="who">
@@ -415,7 +415,7 @@ const redirectDone = getRedirectResult(auth).then(r => { if (r) keepToken(r); })
 // ═══════════════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'v4.2';
+const VERSION = 'v4.3';
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -480,6 +480,14 @@ let GEAR = [];          // materials list: [{ name, cat }]
 let LOGO = null;        // logo for PDFs
 let state = null;
 let lastStatus = null;  // what the send panel is showing
+// v4.3: approved leave (from the Leave & on-call app) and Christmas shutdown
+// days. A full day of either never counts as a missing timesheet.
+let MYLEAVE = new Map();   // date -> { type, part }
+let SHUTDOWN = {};         // year -> [dates]
+const isShutdown = d => (SHUTDOWN[d.slice(0, 4)] || []).includes(d);
+const LEAVE_LETTER = { holiday: 'H', sick: 'S', training: 'T', other: 'O' };
+const LEAVE_WORD = { holiday: 'Holiday', sick: 'Sick', training: 'Training', other: 'Other' };
+function bookedFull(date) { const l = MYLEAVE.get(date); return !!(l && l.part === 'full'); }
 
 function blankJob(start = '') {
   return { customer: '', start, end: '', afterMidnight: false, details: '', callout: 'No', dinner: '', testCert: '', status: '', materials: [] };
@@ -570,7 +578,7 @@ function missingDays() {
   const out = [];
   for (let d = from; d < today; d = addDays(d, 1)) {
     const w = dow(d);
-    if (w === 0 || w === 6 || BANK_HOLIDAYS[d]) continue;
+    if (w === 0 || w === 6 || BANK_HOLIDAYS[d] || isShutdown(d) || (!TEST && bookedFull(d))) continue;
     if (!have.has(d)) out.push(d);
   }
   return out;
@@ -850,6 +858,7 @@ function openDate(date) {
   const rec = recordFor(date);
   state = rec ? stateFromRecord(rec) : blankState(date);
   if (!rec && BANK_HOLIDAYS[date]) { state.mode = 'off'; state.offReason = 'bankHoliday'; }
+  else if (!rec && !TEST && bookedFull(date) && ['holiday', 'sick'].includes(MYLEAVE.get(date).type)) { state.mode = 'off'; state.offReason = MYLEAVE.get(date).type; }
   setStatus(null);
   renderAll();
 }
@@ -1491,8 +1500,13 @@ function renderCalendar() {
     } else if (r) {
       cls.push('done');
       parts.push(`<span class="v">${fmtNum(r.totals ? r.totals.totalMins : 0)}</span><span class="s">${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}</span>`);
+    } else if (!TEST && bookedFull(date)) {
+      const l = MYLEAVE.get(date);
+      cls.push('off'); parts.push(`<span class="v">${LEAVE_LETTER[l.type] || 'L'}</span><span class="s">${esc(LEAVE_WORD[l.type] || 'Leave')} (booked)</span>`);
     } else if (missing.has(date)) {
       cls.push('miss'); parts.push('<span class="v">!</span><span class="s">Missing</span>');
+    } else if (isShutdown(date)) {
+      cls.push('wkend'); parts.push('<span class="s">Shutdown</span>');
     } else if (t !== 'wk') {
       cls.push('wkend'); if (t === 'bh') parts.push('<span class="s">Bank hol</span>');
     }
@@ -1504,7 +1518,7 @@ function renderCalendar() {
   const label = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   return `<div class="cal-h"><button type="button" data-calmove="-1" aria-label="Previous month">‹</button><h3>${esc(label)}</h3><button type="button" data-calmove="1" aria-label="Next month">›</button></div>
     <div class="cal">${html}</div>
-    <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working (H holiday · S sick · D day off)</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>`;
+    <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working (H holiday · S sick · D day off) or booked leave</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>`;
 }
 function renderMine() {
   const box = $('mineList');
@@ -1586,6 +1600,17 @@ async function loadMine() {
   snap.forEach(d => MINE.push(Object.assign({ id: d.id }, d.data())));
   MINE.sort((a, b) => b.date.localeCompare(a.date));
 }
+async function loadLeave() {
+  try {
+    const [lv, st] = await Promise.all([
+      getDocs(query(collection(db, 'leave'), where('email', '==', ME.email))),
+      getDoc(doc(db, 'leaveSettings', 'main'))
+    ]);
+    MYLEAVE = new Map();
+    lv.forEach(d => { const l = d.data(); if (l.status === 'approved' && !l.testData) (l.days || []).forEach(x => MYLEAVE.set(x.date, { type: l.type, part: x.part })); });
+    if (st.exists()) SHUTDOWN = st.data().shutdown || {};
+  } catch (e) { console.warn('leave not loaded', e); }
+}
 async function loadCustomers() {
   const names = new Map();
   try {
@@ -1625,7 +1650,7 @@ onAuthStateChanged(auth, async user => {
   } catch (e) { console.error('staff lookup failed', e); }
   $('whoName').textContent = ME.name;
   try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); }
-  await Promise.all([loadCustomers(), loadGear(), loadLogo()]);
+  await Promise.all([loadCustomers(), loadGear(), loadLogo(), loadLeave()]);
   const draft = loadDraft();
   if (draft) {
     state = draft.state;

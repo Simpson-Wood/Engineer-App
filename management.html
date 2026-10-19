@@ -209,7 +209,7 @@
 
     <div class="card">
       <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
-      <p class="sub">Changing someone's position to Manager or QS grants management access immediately; changing it away removes it. Office sees the homepage activity feed but nothing else management-related.</p>
+      <p class="sub">Changing someone's position to Manager or QS grants management access immediately; changing it away removes it. Office sees the homepage activity feed and the Timesheets &amp; leave page (timesheets, leave approvals, the on-call rota), but not this page.</p>
       <div id="staffList"><div class="empty-note">Loading…</div></div>
     </div>
   </div>
@@ -227,7 +227,7 @@ import {
   initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.6";
+const VERSION = "v2.7";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -250,13 +250,14 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 const OWNER_EMAIL = 'rob.rose@simpsonandwood.co.uk';
 
 const TOOL_PAIRS = [
+  { id: "timesheet", name: "Timesheet", icon: "ti-clock" },
   { id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame" },
   { id: "isolator", name: "Isolator testing", icon: "ti-bolt" },
   { id: "aov", name: "AOV testing", icon: "ti-window" },
   { id: "gate", name: "Gate service", icon: "ti-fence" },
   { id: "cctv", name: "CCTV service", icon: "ti-video" },
   { id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor" },
-  { id: "holiday", name: "Holiday request", icon: "ti-calendar-event" },
+  { id: "holiday", name: "Leave & on-call", icon: "ti-calendar-event" },
   { id: "vancheck", name: "Van check", icon: "ti-truck" },
   { id: "laddercheck", name: "Step / ladder check", icon: "ti-stairs" },
   { id: "firstaid", name: "First aid kit check", icon: "ti-first-aid-kit" },
@@ -282,7 +283,9 @@ async function renderStatusList(){
 
   list.innerHTML = '';
   TOOL_PAIRS.forEach(tool => {
-    const entry = tools[tool.id] || {};
+    // The timesheet was always live before it had a row here, so with no
+    // saved entry yet its switch shows on (matching what the homepage does).
+    const entry = tools[tool.id] || (tool.id === 'timesheet' ? { live: true } : {});
     const row = document.createElement('div');
     row.className = 'status-row';
     row.style.flexWrap = 'wrap';
@@ -491,6 +494,52 @@ const IMPORT_TYPES = [
       if (typeof e.engineerEmail !== 'string' || !e.engineerEmail.endsWith('.invalid')) errs.push('engineerEmail must be a made-up address ending .invalid');
       if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errs.push('date must be YYYY-MM-DD');
       if (!['work', 'off'].includes(e.kind)) errs.push('kind must be work or off');
+      return errs;
+    }
+  }
+  // --- Added v2.7 (18 Oct 2026): leave and on-call rota ---
+  ,{
+    id: 'oncallRota',
+    label: 'On-call rota',
+    collection: 'oncall',
+    testRecords: false,
+    note: 'Writes to the oncall collection: one entry per day (id = the date). Each needs date, name (as written on the rota), cycle (the rota number) and planned (who the standard pattern has). Names are matched to staff in Timesheets & leave → Settings. Re-importing a day the office has since changed overwrites that change, so only import once.',
+    validateEntry(e) {
+      const errs = [];
+      if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errs.push('date must be YYYY-MM-DD');
+      else if (e.id !== e.date) errs.push('id must be the same as date');
+      if (typeof e.name !== 'string') errs.push('name must be text (it can be empty)');
+      if (!Number.isInteger(e.cycle)) errs.push('cycle must be a whole number');
+      return errs;
+    }
+  }
+  ,{
+    id: 'leaveAllowances',
+    label: 'Holiday allowances',
+    collection: 'leaveAllowances',
+    testRecords: false,
+    note: 'Writes to the leaveAllowances collection: one entry per person per year (allowance, carried over, whether the Christmas shutdown comes off it). Only the office can see these.',
+    validateEntry(e) {
+      const errs = [];
+      if (!Number.isInteger(e.year)) errs.push('year must be a whole number');
+      if (typeof e.name !== 'string' || !e.name.trim()) errs.push('missing name');
+      if (typeof e.allowance !== 'number' || e.allowance < 0) errs.push('allowance must be a number');
+      return errs;
+    }
+  }
+  ,{
+    id: 'leaveHistory',
+    label: 'Past leave (from the holiday spreadsheet)',
+    collection: 'leave',
+    testRecords: false,
+    note: 'Writes past leave to the leave collection, all marked approved, so this year\'s balances are right. Leave asked for in the app is shown as "not in file" — leave those unticked.',
+    validateEntry(e) {
+      const errs = [];
+      if (!['holiday', 'sick', 'training', 'other'].includes(e.type)) errs.push('type must be holiday, sick, training or other');
+      if (e.status !== 'approved') errs.push('status must be approved');
+      if (!Array.isArray(e.days) || !e.days.length) errs.push('days missing');
+      else e.days.forEach(d => { if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !['full', 'am', 'pm', 'half'].includes(d.part)) errs.push('a day is not { date, part }'); });
+      if (typeof e.from !== 'string' || typeof e.to !== 'string') errs.push('from / to missing');
       return errs;
     }
   }

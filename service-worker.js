@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v20';
+const CACHE_NAME = 'sw-engineer-apps-shell-v21';
 
 const APP_SHELL = [
   './',
@@ -27,6 +27,7 @@ const APP_SHELL = [
   'sw-timesheet.html',
   'timesheet.html',
   'timesheet-report.html',
+  'leave.html',
   'manifest.json',
   'sw-logo.png',
   'sw-logo-white.png',

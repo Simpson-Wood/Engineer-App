@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Simpson & Wood — Leave &amp; on-call v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<style>
+  :root{
+    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
+    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
+    --amber:#7a4f00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --blue:#1d3c63; --blue-bg:#eef3fa;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
+  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
+  [hidden]{display:none !important;}
+  button{font-family:inherit; color:inherit;}
+
+  #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinErr{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  #appRoot{display:none;}
+  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  header img{height:28px; display:block;}
+  header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
+  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
+  header .who{text-align:right; min-width:0;}
+  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  .tabs{display:flex; gap:4px; background:var(--card); border-bottom:1px solid var(--line); padding:6px 16px; position:sticky; top:0; z-index:20; overflow-x:auto;}
+  .tab{display:flex; align-items:center; gap:7px; background:none; border:none; padding:9px 14px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:16px; cursor:pointer; white-space:nowrap;}
+  .tab i{font-size:19px;}
+  .tab.active{background:var(--red-tint); color:var(--red);}
+  .tab .count{background:var(--red); color:#fff; border-radius:9px; font-size:12px; padding:0 6px; line-height:18px; font-family:'Barlow',sans-serif;}
+  .wrap{max-width:1320px; margin:0 auto; padding:20px 24px 40px;}
+  @media (max-width:640px){ .wrap{padding:14px 12px 30px;} .tabs{padding:6px 8px;} .tab{padding:9px 10px;} }
+
+  .banner{display:flex; gap:10px; align-items:flex-start; border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
+  .banner > i{font-size:20px; flex:0 0 auto; margin-top:1px;}
+  .banner.warn{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
+  .banner.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .banner.info{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
+  .banner.test{background:#e9e4f5; border-color:#d3c8ea; color:#3d2a63;}
+
+  .layout{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; align-items:start;}
+  .side{position:sticky; top:62px;}
+  @media (max-width:1000px){ .layout{grid-template-columns:1fr;} .side{position:static;} }
+  .cols2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start;}
+  @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
+  @media (max-width:640px){ .card{padding:14px;} }
+  .card h2{margin:0 0 12px; font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
+  .lbl{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin-bottom:6px;}
+  .inp{width:100%; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--ink); background:#fff; -webkit-appearance:none; appearance:none;}
+  select.inp{background-image:linear-gradient(45deg,transparent 50%,var(--grey) 50%),linear-gradient(135deg,var(--grey) 50%,transparent 50%); background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%; background-size:5px 5px; background-repeat:no-repeat; padding-right:32px;}
+  .inp:focus{outline:none; border-color:var(--red);}
+  textarea.inp{min-height:80px; resize:vertical; line-height:1.4;}
+  .field{margin-bottom:14px; min-width:0;}
+  .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;}
+  .seg{display:flex; border:1.5px solid var(--field); border-radius:8px; overflow:hidden; background:#fff;}
+  .seg button{flex:1; border:none; background:#fff; padding:9px 6px; font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); cursor:pointer; min-width:0;}
+  .seg button + button{border-left:1.5px solid var(--field);}
+  .seg button.on{background:var(--red); color:#fff;}
+  .seg button.on.none{background:var(--grey-2);}
+
+  .dayl{display:grid; grid-template-columns:150px minmax(0,1fr); gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line);}
+  .dayl:first-child{border-top:none;}
+  .dayl .d b{display:block; font-size:16px;}
+  .dayl .d span{font-size:12.5px; color:var(--grey);}
+  .dayl .x{color:var(--grey); font-size:14px;}
+  @media (max-width:520px){ .dayl{grid-template-columns:1fr; gap:6px;} }
+
+  .shift{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; padding:9px 0; border-top:1px solid var(--line); font-size:15px;}
+  .shift:first-child{border-top:none;}
+  .shift .when{font-weight:700; min-width:120px;}
+  .shift .t{color:var(--grey);}
+  .pick{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff;}
+  .pick.on{border-color:var(--red); box-shadow:0 0 0 2px var(--red-tint);}
+  .pick label.top{display:flex; gap:10px; align-items:center; cursor:pointer; font-size:15.5px;}
+  .pick label.top input{width:20px; height:20px; margin:0;}
+  .pick .t{color:var(--grey); font-size:14px;}
+  .pick .more{display:grid; grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr); gap:8px; align-items:center; margin-top:10px;}
+  .pick .more .seg{grid-column:1 / -1;}
+  .pick .more select{padding:8px 10px; font-size:15px;}
+  @media (max-width:520px){ .pick .more{grid-template-columns:auto minmax(0,1fr);} .pick .more .seg{grid-column:1 / -1;} }
+
+  .sum .big{font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; line-height:1;}
+  .sum .sub{color:var(--grey); font-size:13.5px; margin:2px 0 12px;}
+  .kv{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:15px;}
+  .kv span{color:var(--grey);}
+  .kv b{text-align:right;}
+  .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:10px; padding:15px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn-primary:disabled{background:var(--field); color:#fff; cursor:not-allowed;}
+  .btn-ghost{background:#fff; border:1.5px solid var(--field); border-radius:10px; padding:12px 16px; font-weight:700; font-size:15px; cursor:pointer;}
+  .mini{background:#fff; border:1px solid currentColor; color:inherit; border-radius:7px; padding:6px 11px; font-size:14px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
+  .mini.red{background:var(--red); border-color:var(--red); color:#fff;}
+  .mini:disabled{opacity:.5; cursor:not-allowed;}
+  .errs{background:var(--red-tint); color:#7d1418; border-radius:8px; padding:10px 12px 10px 30px; margin:12px 0 0; font-size:14px; line-height:1.4;}
+  .status{border-radius:10px; padding:12px 14px; margin-top:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
+  .status.sending{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
+  .status.ok{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
+  .status.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .status .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .none-note{color:var(--grey); font-size:15px; padding:6px 0;}
+
+  .req{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .req .h{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;}
+  .req .h b{font-size:17px;}
+  .req .b{font-size:14.5px; color:var(--grey); margin-top:6px; line-height:1.5;}
+  .req .b div{padding:1px 0;}
+  .req .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .req.mine-wait{border-color:var(--red); box-shadow:0 0 0 2px var(--red-tint);}
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); vertical-align:middle; white-space:nowrap; margin:2px 4px 2px 0;}
+  .tag.ok{background:var(--green-bg); color:var(--green);}
+  .tag.bad{background:var(--red-tint); color:var(--red-dark);}
+  .tag.warn{background:var(--amber-bg); color:var(--amber);}
+  .tag.test{background:#e9e4f5; color:#5a3d8a;}
+  .tag.blue{background:var(--blue-bg); color:var(--blue);}
+  .sec-h{font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:18px 0 8px;}
+  .sec-h:first-child{margin-top:0;}
+  .empty{color:var(--grey); font-size:15px; text-align:center; padding:30px 10px; background:#fff; border:1px solid var(--line); border-radius:12px;}
+
+  /* rota */
+  .rota-h{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .rota-h h2{margin:0; font-size:24px; font-weight:700; min-width:190px; text-align:center;}
+  .rota-h .nav{background:#fff; border:1px solid var(--line); border-radius:8px; width:42px; height:40px; font-size:20px; cursor:pointer;}
+  .rota-h .grow{flex:1;}
+  table.rota{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:15px;}
+  .rota th{text-align:left; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; color:var(--grey); font-size:14px; padding:8px 12px; border-bottom:1.5px solid var(--line); background:var(--soft);}
+  .rota td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .rota tr.wk-start td{border-top:2px solid #cfcdc6;}
+  .rota tr.off td{background:#faf9f6;}
+  .rota tr.me td{background:var(--red-tint);}
+  .rota tr.today td:first-child{box-shadow:inset 4px 0 0 var(--ink);}
+  .rota .who b{font-size:15.5px;}
+  .rota .who .part{font-size:13.5px; color:var(--grey); display:block;}
+  .rota .who .part.me, .rota .who b.me{color:var(--red-dark);}
+  .rota td.dt{white-space:nowrap; font-weight:700;}
+  .rota td.dt small{display:block; color:var(--grey); font-weight:500; font-size:12.5px;}
+  @media (max-width:640px){ .rota th:nth-child(2), .rota td:nth-child(2){display:none;} .rota td, .rota th{padding:8px;} }
+  .legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--grey); margin:8px 0 0;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{display:inline-block; width:14px; height:14px; border-radius:4px; border:1px solid var(--line);}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:100; padding:16px;}
+  .modal{background:#fff; border-radius:14px; width:100%; max-width:520px; max-height:92vh; overflow:auto; padding:20px;}
+  .modal h3{margin:0 0 10px; font-size:22px; font-weight:700;}
+  .modal .mbody{font-size:15.5px; line-height:1.5;}
+  .modal .mbody p{margin:0 0 10px;}
+  .modal .mbtns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px;}
+  .modal .mbtns .btn-primary{width:auto; margin:0; padding:12px 18px; font-size:17px;}
+  @media (max-width:640px){
+    .modal-bg{align-items:flex-end; padding:0;}
+    .modal{border-radius:16px 16px 0 0; max-width:none; padding:18px 14px calc(18px + env(safe-area-inset-bottom));}
+    .modal .mbtns > *{flex:1;}
+  }
+  .notes{margin-top:26px; color:var(--grey); font-size:13.5px; line-height:1.5;}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:9px; font-size:14px; z-index:300;}
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Leave &amp; on-call</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
+      <div>
+        <h1>Leave &amp; on-call</h1>
+        <p id="versionLabel">v1.0</p>
+      </div>
+    </a>
+    <div class="who">
+      <div class="name" id="whoName">—</div>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+  <nav class="tabs">
+    <button class="tab active" data-tab="leave"><i class="ti ti-beach"></i> Book leave</button>
+    <button class="tab" data-tab="swap"><i class="ti ti-arrows-exchange"></i> Swap on-call <span class="count" id="swapCount" hidden>0</span></button>
+    <button class="tab" data-tab="rota"><i class="ti ti-calendar-week"></i> Rota</button>
+    <button class="tab" data-tab="mine"><i class="ti ti-list-details"></i> My requests</button>
+  </nav>
+
+  <main class="wrap">
+    <div id="banners"></div>
+
+    <!-- ===== BOOK LEAVE ===== -->
+    <section id="view-leave">
+      <div class="layout">
+        <div>
+          <div class="card">
+            <h2>Holiday</h2>
+            <div class="row2">
+              <div class="field"><label class="lbl" for="lvFrom">First day off</label><input type="date" class="inp" id="lvFrom"></div>
+              <div class="field"><label class="lbl" for="lvTo">Last day off</label><input type="date" class="inp" id="lvTo"></div>
+            </div>
+            <div id="lvDays"></div>
+          </div>
+          <div class="card">
+            <h2>Your on-call in this time</h2>
+            <div id="lvOncall"><div class="none-note">Pick your dates first.</div></div>
+          </div>
+          <div class="card">
+            <div class="field" style="margin:0"><label class="lbl" for="lvNote">Note for the office (optional)</label><textarea class="inp" id="lvNote"></textarea></div>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="card sum">
+            <div class="big" id="lvTotal">0</div>
+            <div class="sub">days of holiday</div>
+            <div class="kv"><span>From</span><b id="lvSumFrom">—</b></div>
+            <div class="kv"><span>To</span><b id="lvSumTo">—</b></div>
+            <div class="kv"><span>On-call shifts</span><b id="lvSumOncall">—</b></div>
+            <ul class="errs" id="lvErrs" hidden></ul>
+            <button type="button" class="btn-primary" id="lvSend"><i class="ti ti-send"></i> Send request</button>
+            <div id="lvStatus"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== SWAP ===== -->
+    <section id="view-swap" hidden>
+      <div id="swapIncoming"></div>
+      <div class="cols2">
+        <div class="card">
+          <h2>Swap with</h2>
+          <div class="field"><select class="inp" id="swWith"></select></div>
+          <span class="lbl">Shifts you give them</span>
+          <div id="swGive"><div class="none-note">—</div></div>
+        </div>
+        <div class="card">
+          <h2>Shifts you take back <small style="font-weight:500;text-transform:none;color:var(--grey);font-size:15px">(optional)</small></h2>
+          <div id="swTake"><div class="none-note">Pick who you're swapping with first.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="field"><label class="lbl" for="swNote">Note (optional)</label><textarea class="inp" id="swNote" style="min-height:60px"></textarea></div>
+        <ul class="errs" id="swErrs" hidden></ul>
+        <button type="button" class="btn-primary" id="swSend" style="max-width:420px"><i class="ti ti-send"></i> Send swap request</button>
+        <div id="swStatus"></div>
+      </div>
+    </section>
+
+    <!-- ===== ROTA ===== -->
+    <section id="view-rota" hidden>
+      <div class="rota-h">
+        <button class="nav" data-rmove="-1" aria-label="Previous month">‹</button><h2 id="rotaTitle">—</h2><button class="nav" data-rmove="1" aria-label="Next month">›</button>
+        <span class="grow"></span>
+        <button type="button" class="mini" id="calBtn"><i class="ti ti-calendar-plus"></i> Add my call-out days to my calendar</button>
+      </div>
+      <div id="calStatus"></div>
+      <div id="rotaBox"></div>
+      <div class="legend"><span><i style="background:var(--red-tint)"></i>You</span><span><i style="background:#faf9f6"></i>Weekend / bank holiday / shutdown (8am start)</span></div>
+    </section>
+
+    <!-- ===== MY REQUESTS ===== -->
+    <section id="view-mine" hidden>
+      <div id="mineBox"></div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut, reauthenticateWithPopup, reauthenticateWithRedirect
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, query, where,
+  setDoc, updateDoc, serverTimestamp, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+// Same as timesheet.html: Mail.Send lets the engineer send their request from
+// their own account (Microsoft Graph). Already consented in Entra.
+msProvider.addScope('Mail.Send');
+// The calendar permission is asked for separately, only when someone taps
+// "Add my call-out days to my calendar", so sign-in never depends on it.
+const calProvider = new OAuthProvider('microsoft.com');
+calProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+calProvider.addScope('Mail.Send');
+calProvider.addScope('Calendars.ReadWrite');
+
+// Keep the Microsoft access token from a sign-in. Kept for this browser tab
+// only, and for less than its real lifetime, so a stale one is never used.
+function keepToken(result, key) {
+  try {
+    const cred = OAuthProvider.credentialFromResult(result);
+    if (cred && cred.accessToken) {
+      sessionStorage.setItem(key || 'ts-graph', JSON.stringify({
+        t: cred.accessToken, exp: Date.now() + 50 * 60000,
+        who: ((result.user && result.user.email) || '').toLowerCase()
+      }));
+    }
+  } catch (e) { console.warn('token not kept', e); }
+}
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).then(r => keepToken(r)).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+const clearTokens = () => { sessionStorage.removeItem('ts-graph'); sessionStorage.removeItem('lv-graph-cal'); };
+document.getElementById('signOutBtn').addEventListener('click', () => { clearTokens(); signOut(auth); });
+const redirectDone = getRedirectResult(auth).then(r => {
+  if (r) keepToken(r, sessionStorage.getItem('lv-want-cal') ? 'lv-graph-cal' : 'ts-graph');
+  sessionStorage.removeItem('lv-want-cal');
+}).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════
+const VERSION = 'v1.0';
+const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
+const OWNER_EMAIL = 'rob.rose@simpsonandwood.co.uk';   // always gets swap emails
+const MAX_LEAVE_SPAN = 62;       // days between first and last day off
+const CANCEL_DAYS = 7;           // can't cancel your own in the week before it starts
+const SWAP_AHEAD = 120;          // how far ahead swap / calendar shifts are listed (days)
+// Test mode: open the page as leave.html?test=1. Requests are marked as test
+// data, emails come to you, and an approved test swap never changes the rota.
+const TEST = new URLSearchParams(location.search).get('test') === '1';
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED WITH timesheet-report.html (copied, keep in step): dates, bank
+//  holidays, shift times, rota segments
+// ═══════════════════════════════════════════════════════════════════════════
+// England & Wales bank holidays, from gov.uk/bank-holidays (checked 10 Oct 2026).
+// Same list as timesheet.html: add the next year each autumn (on the to-do list).
+const BANK_HOLIDAYS = {
+  '2026-01-01': "New Year's Day", '2026-04-03': 'Good Friday', '2026-04-06': 'Easter Monday',
+  '2026-05-04': 'Early May bank holiday', '2026-05-25': 'Spring bank holiday', '2026-08-31': 'Summer bank holiday',
+  '2026-12-25': 'Christmas Day', '2026-12-28': 'Boxing Day (substitute day)',
+  '2027-01-01': "New Year's Day", '2027-03-26': 'Good Friday', '2027-03-29': 'Easter Monday',
+  '2027-05-03': 'Early May bank holiday', '2027-05-31': 'Spring bank holiday', '2027-08-30': 'Summer bank holiday',
+  '2027-12-27': 'Christmas Day (substitute day)', '2027-12-28': 'Boxing Day (substitute day)',
+  '2028-01-03': "New Year's Day (substitute day)", '2028-04-14': 'Good Friday', '2028-04-17': 'Easter Monday',
+  '2028-05-01': 'Early May bank holiday', '2028-05-29': 'Spring bank holiday', '2028-08-28': 'Summer bank holiday',
+  '2028-12-25': 'Christmas Day', '2028-12-26': 'Boxing Day'
+};
+const BH_LAST_YEAR = 2028;
+const SHIFT_DAY_START = 16 * 60 + 30;   // weekday on-call starts 4:30pm
+const SHIFT_OFF_START = 8 * 60;         // weekend / bank holiday / shutdown day starts 8am
+const SHIFT_END = 8 * 60;               // every shift ends 8am the next morning
+const LEAVE_TYPES = { holiday: 'Holiday', sick: 'Sick', training: 'Training', other: 'Other' };
+const PARTS = { full: 'Full day', am: 'Morning', pm: 'Afternoon', half: 'Half day' };
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return isoOf(d); }
+function todayISO() { return isoOf(new Date()); }
+function dow(s) { return parseISO(s).getDay(); }
+function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+function longDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function shortDate(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+function shortDateY(s) { return parseISO(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+const firstName = n => String(n || '').split(/[\s@.]/)[0] || n;
+
+let SETTINGS = { shutdown: {}, swapEmails: [], nameMap: {}, infoEmail: 'info@simpsonandwood.co.uk' };
+let STAFF = new Map();   // email -> { name, position }
+function isShutdown(d) { return (SETTINGS.shutdown[d.slice(0, 4)] || []).includes(d); }
+function isOffDay(d) { const w = dow(d); return w === 0 || w === 6 || !!BANK_HOLIDAYS[d] || isShutdown(d); }
+function dayNote(d) { return BANK_HOLIDAYS[d] ? BANK_HOLIDAYS[d] : isShutdown(d) ? 'Christmas shutdown' : (dow(d) === 0 || dow(d) === 6) ? 'Weekend' : ''; }
+function shiftStart(d) { return isOffDay(d) ? SHIFT_OFF_START : SHIFT_DAY_START; }
+function shiftLen(d) { return 1440 - shiftStart(d) + SHIFT_END; }
+// 990 -> "4:30pm", 480 -> "8am"
+function clock(min) {
+  min = ((min % 1440) + 1440) % 1440;
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0 && m === 0) return 'midnight';
+  if (h === 12 && m === 0) return 'midday';
+  return (h % 12 || 12) + (m ? ':' + pad(m) : '') + (h < 12 ? 'am' : 'pm');
+}
+function partLabel(d, s, e) { return clock(shiftStart(d) + s) + ' – ' + clock(shiftStart(d) + e); }
+function shiftLabel(d) { return partLabel(d, 0, shiftLen(d)); }
+// The real date and time an offset into a shift falls on: "YYYY-MM-DDTHH:MM:00".
+function nowLocal() { const n = new Date(); return isoOf(n) + 'T' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':00'; }
+function shiftTime(d, off) { const t = shiftStart(d) + off; return addDays(d, Math.floor(t / 1440)) + 'T' + pad(Math.floor((t % 1440) / 60)) + ':' + pad(t % 60) + ':00'; }
+function staffName(email) { const s = STAFF.get(email); return (s && s.name) || ''; }
+function nameOf(email) { return staffName(email) || email || ''; }
+// Rota names from the old spreadsheet ("Mike") are matched to staff emails in
+// the Settings tab of the Timesheets & leave page (leaveSettings/main.nameMap).
+function emailForName(n) { return (n && SETTINGS.nameMap[n]) || ''; }
+function holderOf(day) {
+  const email = String(day.email || emailForName(day.name) || '').toLowerCase();
+  return { email, name: (email && staffName(email)) || day.name || '' };
+}
+// A rota day as a list of pieces covering the whole shift: [{ s, e, email, name }]
+// (s and e are minutes from the shift's start). "parts" are the bits someone
+// else covers (part swaps); the main person has the rest.
+function segmentsOf(day) {
+  const len = shiftLen(day.date), main = holderOf(day);
+  const parts = (day.parts || []).filter(p => p.e > p.s).slice().sort((a, b) => a.s - b.s);
+  const out = []; let t = 0;
+  parts.forEach(p => {
+    const s = Math.max(p.s, t), e = Math.min(p.e, len);
+    if (s > t) out.push({ s: t, e: s, email: main.email, name: main.name });
+    if (e > s) { const em = String(p.email || emailForName(p.name) || '').toLowerCase(); out.push({ s, e, email: em, name: (em && staffName(em)) || p.name || '' }); }
+    t = Math.max(t, e);
+  });
+  if (t < len) out.push({ s: t, e: len, email: main.email, name: main.name });
+  return out;
+}
+function heldBy(day, email) { return segmentsOf(day).filter(x => x.email && x.email === email); }
+function coversRange(day, email, s, e) {
+  let t = s;
+  for (const x of heldBy(day, email)) { if (x.s <= t && x.e > t) t = x.e; }
+  return t >= e;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STATE + SMALL HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+let ME = null;            // { email (lowercase), rawEmail, name }
+let ROTA = new Map();     // date -> rota day
+let MYLEAVE = [];         // my leave requests
+let SWAPS = [];           // swaps I'm part of
+let LOGO = null;
+let rotaMonth = todayISO().slice(0, 7);
+
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2800); }
+function modal({ title, body, buttons }) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${esc(title)}</h3><div class="mbody">${body}</div>
+      <div class="mbtns">${buttons.map((b, i) => `<button type="button" class="${b.primary ? 'btn-primary' : 'btn-ghost'}" data-i="${i}">${esc(b.label)}</button>`).join('')}</div></div>`;
+    const close = v => { bg.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(undefined); };
+    bg.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b) close(buttons[+b.dataset.i].value); else if (e.target === bg) close(undefined);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+  });
+}
+function alertBox(msg) { return modal({ title: 'Something went wrong', body: `<p>${esc(msg)}</p>`, buttons: [{ label: 'OK', value: true, primary: true }] }); }
+const realm = list => list.filter(x => !!x.testData === TEST);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MICROSOFT (email + calendar)
+// ═══════════════════════════════════════════════════════════════════════════
+function storedToken(key) {
+  try {
+    const o = JSON.parse(sessionStorage.getItem(key || 'ts-graph') || 'null');
+    if (o && o.exp > Date.now() && o.who === ME.email) return o.t;
+  } catch (e) {}
+  return null;
+}
+// Ask Microsoft for a fresh token. Must be called straight from a tap.
+async function tokenInteractive(cal) {
+  const provider = cal ? calProvider : msProvider, key = cal ? 'lv-graph-cal' : 'ts-graph';
+  try {
+    const r = await reauthenticateWithPopup(auth.currentUser, provider);
+    keepToken(r, key);
+    return storedToken(key);
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      if (cal) sessionStorage.setItem('lv-want-cal', '1');
+      await reauthenticateWithRedirect(auth.currentUser, provider);
+      return null;
+    }
+    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
+    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
+  }
+}
+async function getToken(cal) {
+  const key = cal ? 'lv-graph-cal' : 'ts-graph';
+  return storedToken(key) || (cal ? null : storedToken('lv-graph-cal')) || await tokenInteractive(cal);
+}
+async function graph(token, method, path, body, extraHeaders) {
+  const res = await fetch('https://graph.microsoft.com/v1.0' + path, {
+    method, headers: Object.assign({ Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, extraHeaders || {}),
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 202 || res.status === 204) return null;
+  if (res.ok) return res.json();
+  let detail = '';
+  try { const j = await res.json(); detail = (j.error && (j.error.code + ': ' + j.error.message)) || ''; } catch (e) {}
+  const err = new Error(res.status === 403
+    ? 'Microsoft hasn\'t given the app permission for this yet (an Entra setting — tell Rob).'
+    : `Microsoft said ${res.status}${detail ? ' (' + detail + ')' : ''}.`);
+  err.status = res.status;
+  if (res.status === 401) clearTokens();
+  throw err;
+}
+const graphSend = (token, message) => graph(token, 'POST', '/me/sendMail', { message, saveToSentItems: true });
+const addr = list => [...new Set(list.filter(Boolean).map(x => x.toLowerCase()))].map(a => ({ emailAddress: { address: a } }));
+function mailWrap(html) { return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.45">${html}</div>`; }
+const APP_LINK = 'https://app.simpsonandwood.co.uk/leave.html';
+// Who gets told about swaps: Rob always, plus whoever is set in Settings (Jan).
+function swapWatchers() { return [OWNER_EMAIL, ...(SETTINGS.swapEmails || [])]; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BOOK LEAVE
+// ═══════════════════════════════════════════════════════════════════════════
+let lvParts = {};   // date -> 'full' | 'am' | 'pm' | 'none'
+let lvTried = false;
+let lvLastSent = null;
+function lvRange() {
+  const from = $('lvFrom').value, to = $('lvTo').value || from;
+  if (!from || to < from) return null;
+  return { from, to };
+}
+function lvDayList() {
+  const r = lvRange(); if (!r || daysBetween(r.from, r.to) > MAX_LEAVE_SPAN) return [];
+  const out = [];
+  for (let d = r.from; d <= r.to; d = addDays(d, 1)) out.push(d);
+  return out;
+}
+function lvChosen() {
+  return lvDayList().filter(d => !isOffDay(d) && (lvParts[d] || 'full') !== 'none').map(d => ({ date: d, part: lvParts[d] || 'full' }));
+}
+const dayValue = part => part === 'full' ? 1 : 0.5;
+const fmtDays = n => String(Math.round((n || 0) * 100) / 100);
+// On-call shifts I hold in the time I'm off: the leave dates plus any weekend /
+// bank holiday / shutdown days running straight on from either end.
+function oncallDuring(from, to, email) {
+  let a = from, b = to;
+  while (isOffDay(addDays(a, -1)) && daysBetween(addDays(a, -1), from) < 10) a = addDays(a, -1);
+  while (isOffDay(addDays(b, 1)) && daysBetween(to, addDays(b, 1)) < 10) b = addDays(b, 1);
+  const out = [];
+  for (let d = a; d <= b; d = addDays(d, 1)) {
+    const day = ROTA.get(d); if (!day) continue;
+    heldBy(day, email).forEach(x => out.push({ date: d, s: x.s, e: x.e, label: partLabel(d, x.s, x.e) }));
+  }
+  return out;
+}
+function renderLeave() {
+  const days = lvDayList(), r = lvRange();
+  const box = $('lvDays');
+  if (!r) box.innerHTML = $('lvFrom').value && $('lvTo').value ? '<div class="none-note" style="color:var(--red-dark)">The last day is before the first day.</div>' : '';
+  else if (daysBetween(r.from, r.to) > MAX_LEAVE_SPAN) box.innerHTML = `<div class="none-note" style="color:var(--red-dark)">That's more than ${MAX_LEAVE_SPAN} days. Send it as two requests.</div>`;
+  else box.innerHTML = days.filter(d => !(dow(d) === 0 || dow(d) === 6) || BANK_HOLIDAYS[d] || isShutdown(d)).map(d => {
+    if (isOffDay(d)) return `<div class="dayl"><div class="d"><b>${esc(shortDate(d))}</b></div><div class="x">${esc(dayNote(d))} — not needed</div></div>`;
+    const p = lvParts[d] || 'full';
+    return `<div class="dayl"><div class="d"><b>${esc(shortDate(d))}</b></div><div class="seg" data-lvday="${d}">${[['full', 'Full day'], ['am', 'AM'], ['pm', 'PM'], ['none', 'Not off']].map(([k, l]) => `<button type="button" data-part="${k}" class="${p === k ? 'on' + (k === 'none' ? ' none' : '') : ''}">${l}</button>`).join('')}</div></div>`;
+  }).join('') || '';
+  const chosen = lvChosen();
+  const total = chosen.reduce((n, x) => n + dayValue(x.part), 0);
+  $('lvTotal').textContent = fmtDays(total);
+  $('lvSumFrom').textContent = chosen.length ? shortDate(chosen[0].date) : '—';
+  $('lvSumTo').textContent = chosen.length ? shortDate(chosen[chosen.length - 1].date) : '—';
+  const oc = chosen.length ? oncallDuring(chosen[0].date, chosen[chosen.length - 1].date, ME.email) : [];
+  $('lvSumOncall').textContent = chosen.length ? String(oc.length) : '—';
+  $('lvOncall').innerHTML = !chosen.length ? '<div class="none-note">Pick your dates first.</div>'
+    : !oc.length ? '<div class="none-note">None — you\'re not on call in this time.</div>'
+    : oc.map(x => `<div class="shift"><span class="when">${esc(shortDate(x.date))}</span><span class="t">${esc(x.label)}</span></div>`).join('') + '<div class="none-note" style="font-size:13.5px">These go on the printed sheet so someone can cover them.</div>';
+  if (lvTried) showErrs('lvErrs', lvValidate());
+}
+function lvValidate() {
+  const errs = [], chosen = lvChosen();
+  if (!$('lvFrom').value) errs.push('Pick your first day off.');
+  else if (!chosen.length) errs.push('No working days picked.');
+  if (chosen.length && chosen[0].date < todayISO()) errs.push('The dates are in the past. Tell the office instead.');
+  if (chosen.length) {
+    const dates = new Set(chosen.map(x => x.date));
+    const clash = realm(MYLEAVE).find(l => ['pending', 'approved'].includes(l.status) && (l.days || []).some(x => dates.has(x.date)));
+    if (clash) errs.push(`You've already asked for some of these days (${shortDate(clash.from)}${clash.to !== clash.from ? ' – ' + shortDate(clash.to) : ''}).`);
+  }
+  return errs;
+}
+function showErrs(id, errs) { $(id).hidden = !errs.length; $(id).innerHTML = errs.map(e => `<li>${esc(e)}</li>`).join(''); }
+function lvStatus(cls, html) { $('lvStatus').innerHTML = cls ? `<div class="status ${cls}">${html}</div>` : ''; }
+
+async function loadLogo() {
+  try {
+    const img = new Image();
+    img.src = 'sw-logo.png';
+    await img.decode();
+    const W = 560, H = Math.round(W * img.naturalHeight / img.naturalWidth);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+    LOGO = { data: cv.toDataURL('image/jpeg', 0.9), ratio: H / W };
+  } catch (e) { LOGO = null; }
+}
+// The printable request: the office prints it so people can offer to cover
+// the on-call shifts, then Jan or Ange sign it off.
+function buildLeavePDF(rec) {
+  if (!window.jspdf) throw new Error('The PDF tool didn\'t load. Check your signal and reload the page.');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 14, CW = W - 2 * M, BOTTOM = 272;
+  const INK = [20, 20, 20], DARK = [50, 50, 50], MID = [90, 90, 90], LINE = [190, 190, 190], RED = [208, 34, 42], SOFT = [244, 243, 240], WHITE = [255, 255, 255];
+  const F = (style, size, col) => { pdf.setFont('helvetica', style); pdf.setFontSize(size); pdf.setTextColor(...(col || INK)); };
+  let y = 12;
+  const logoH = LOGO ? 50 * LOGO.ratio : 0;
+  if (LOGO) pdf.addImage(LOGO.data, 'JPEG', M, y, 50, logoH); else { F('bold', 16, RED); pdf.text('SIMPSON & WOOD', M, y + 9); }
+  F('bold', 13, RED); pdf.text('HOLIDAY REQUEST', W - M, y + 5, { align: 'right' });
+  if (rec.testData) { F('bold', 11, RED); pdf.text('TEST — NOT A REAL REQUEST', W - M, y + 11, { align: 'right' }); }
+  y += Math.max(logoH, 12) + 5;
+  pdf.setDrawColor(...RED); pdf.setLineWidth(0.8); pdf.line(M, y, W - M, y); pdf.setLineWidth(0.25);
+  y += 10;
+  F('bold', 21); pdf.text(rec.name || rec.email, M, y);
+  F('normal', 11, DARK); pdf.text('Asked ' + new Date().toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }), W - M, y, { align: 'right' });
+  y += 9;
+  // summary boxes
+  const boxes = [['First day off', shortDateY(rec.from)], ['Last day off', shortDateY(rec.to)], ['Days of holiday', fmtDays(rec.total)]];
+  const bw = CW / boxes.length, bh = 18;
+  boxes.forEach((b, k) => {
+    const x = M + k * bw;
+    pdf.setFillColor(...SOFT); pdf.setDrawColor(...LINE); pdf.rect(x, y, bw, bh, 'FD');
+    F('bold', 8.5, MID); pdf.text(b[0].toUpperCase(), x + bw / 2, y + 6, { align: 'center' });
+    F('bold', 14, INK); pdf.text(b[1], x + bw / 2, y + 14, { align: 'center' });
+  });
+  y += bh + 7;
+  const newPageIf = need => { if (y + need > BOTTOM) { pdf.addPage(); y = 18; } };
+  const head = (cols, xs) => { pdf.setFillColor(...SOFT); pdf.rect(M, y, CW, 7, 'F'); F('bold', 9, DARK); cols.forEach((c, i) => pdf.text(c, xs[i], y + 4.8)); y += 7; };
+  // days
+  F('bold', 9.5, MID); pdf.text('DAYS OFF', M, y); y += 3;
+  const nonFull = rec.days.filter(x => x.part !== 'full');
+  if (!nonFull.length && rec.days.length > 8) {
+    F('normal', 11.5); pdf.text(`Full days, every working day from ${longDate(rec.from)} to ${longDate(rec.to)} (${rec.days.length} days).`, M, y + 5, { maxWidth: CW }); y += 12;
+  } else {
+    head(['DATE', 'OFF'], [M + 3, M + 90]);
+    rec.days.forEach(x => {
+      newPageIf(7.5);
+      F('normal', 11.5); pdf.text(longDate(x.date), M + 3, y + 5.2); pdf.text(PARTS[x.part] || x.part, M + 90, y + 5.2);
+      y += 7.5; pdf.setDrawColor(...LINE); pdf.line(M, y, W - M, y);
+    });
+    y += 6;
+  }
+  if (rec.note) {
+    F('normal', 11.5); const lines = pdf.splitTextToSize(rec.note, CW);
+    newPageIf(10 + lines.length * 5.4);
+    F('bold', 9.5, MID); pdf.text('NOTE', M, y); y += 5.5;
+    F('normal', 11.5); lines.forEach(l => { pdf.text(l, M, y); y += 5.4; }); y += 4;
+  }
+  // on-call
+  newPageIf(30);
+  F('bold', 9.5, MID); pdf.text('ON-CALL SHIFTS THAT NEED COVER', M, y); y += 3;
+  if (!rec.oncall.length) { F('normal', 11.5); pdf.text('None — not on call in this time.', M, y + 5); y += 12; }
+  else {
+    const xs = [M + 3, M + 46, M + 92, M + 141];
+    head(['DATE', 'SHIFT', 'COVERED BY', 'SIGNED (COVERING)'], xs);
+    rec.oncall.forEach(x => {
+      newPageIf(11);
+      F('normal', 11.5); pdf.text(shortDateY(x.date), xs[0], y + 7); pdf.text(x.label, xs[1], y + 7);
+      pdf.setDrawColor(...LINE); pdf.line(xs[2], y + 8, xs[3] - 4, y + 8); pdf.line(xs[3], y + 8, W - M - 2, y + 8);
+      y += 11;
+    });
+    y += 4;
+  }
+  // approval
+  newPageIf(40);
+  y += 4;
+  pdf.setDrawColor(...INK); pdf.setLineWidth(0.4); pdf.rect(M, y, CW, 32); pdf.setLineWidth(0.25);
+  F('bold', 11, INK); pdf.text('APPROVAL (office)', M + 4, y + 7);
+  F('normal', 11, DARK);
+  pdf.text('Approved by', M + 4, y + 17); pdf.line(M + 30, y + 18, M + 95, y + 18);
+  pdf.text('Date', M + 103, y + 17); pdf.line(M + 114, y + 18, W - M - 4, y + 18);
+  pdf.text('Signed', M + 4, y + 27); pdf.line(M + 30, y + 28, M + 95, y + 28);
+  F('normal', 9, MID); pdf.text('Then press Approve in the app (Timesheets & leave) so the rota and diary update.', M + 103, y + 27, { maxWidth: CW - 107 });
+  y += 36;
+  // footer
+  const n = pdf.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    pdf.setPage(p);
+    pdf.setDrawColor(...LINE); pdf.line(M, 283, W - M, 283);
+    F('normal', 8.5, MID);
+    pdf.text(`Simpson & Wood Electrical Contractors  ·  Holiday request  ·  ${rec.name}  ·  ref ${rec.ref}`, M, 288);
+    pdf.text(`Page ${p} of ${n}`, W - M, 288, { align: 'right' });
+    pdf.text(`Leave & on-call app ${VERSION}`, M, 292);
+  }
+  return pdf;
+}
+const pdfB64 = pdf => pdf.output('datauristring').split(',')[1];
+function leavePdfName(rec) { return `Holiday request ${String(rec.name).replace(/[^\w .-]+/g, '')} ${rec.from}${rec.testData ? ' TEST' : ''}.pdf`; }
+function leaveEmail(rec) {
+  const days = rec.days.map(x => `<tr><td style="padding:3px 14px 3px 0">${esc(longDate(x.date))}</td><td>${esc(PARTS[x.part])}</td></tr>`).join('');
+  const oc = rec.oncall.length ? `<p><b>On-call shifts that need cover:</b><br>${rec.oncall.map(x => esc(shortDateY(x.date) + '  ' + x.label)).join('<br>')}</p>` : '<p>Not on call in this time.</p>';
+  return mailWrap(`${rec.testData ? '<p style="color:#D0222A"><b>TEST — not a real request.</b></p>' : ''}<p><b>${esc(rec.name)}</b> has asked for <b>${fmtDays(rec.total)} day${rec.total === 1 ? '' : 's'}</b> holiday.</p>
+    <table style="border-collapse:collapse;font-size:15px">${days}</table>${rec.note ? `<p><b>Note:</b> ${esc(rec.note)}</p>` : ''}${oc}
+    <p>The printable request is attached. Approve or decline it in the app: Timesheets &amp; leave → Leave.</p>`);
+}
+async function emailLeave(rec, token) {
+  const pdf = buildLeavePDF(rec);
+  const to = TEST ? ME.email : OFFICE_EMAIL;
+  await graphSend(token, {
+    subject: `${rec.testData ? 'TEST ' : ''}Holiday request — ${rec.name} — ${shortDate(rec.from)}${rec.to !== rec.from ? ' to ' + shortDate(rec.to) : ''}`,
+    body: { contentType: 'HTML', content: leaveEmail(rec) },
+    toRecipients: addr([to]),
+    attachments: [{ '@odata.type': '#microsoft.graph.fileAttachment', name: leavePdfName(rec), contentType: 'application/pdf', contentBytes: pdfB64(pdf) }]
+  });
+  return to;
+}
+async function deliverLeave(rec, token) {
+  lvStatus('sending', 'Emailing the office…');
+  try {
+    const to = await emailLeave(rec, token);
+    rec.mail = { status: 'sent', to, at: Date.now() };
+    try { await updateDoc(doc(db, 'leave', rec.id), { mail: rec.mail }); } catch (e) { console.warn('mail status not saved', e); }
+    lvStatus('ok', `<b>Sent.</b> Your request has gone to ${esc(to)}. You'll get an email when it's approved.`);
+  } catch (err) {
+    rec.mail = { status: 'failed', error: err.message, at: Date.now() };
+    try { await updateDoc(doc(db, 'leave', rec.id), { mail: rec.mail }); } catch (e) {}
+    lvStatus('bad', `<b>Saved, but the email didn't go:</b> ${esc(err.message)}<div class="acts"><button type="button" class="mini" data-resend="${esc(rec.id)}">Try the email again</button></div>`);
+  }
+  renderMine();
+}
+async function onLeaveSend() {
+  lvTried = true;
+  const errs = lvValidate(); showErrs('lvErrs', errs);
+  if (errs.length) return;
+  const chosen = lvChosen();
+  const ref = doc(collection(db, 'leave'));
+  const from = chosen[0].date, to = chosen[chosen.length - 1].date;
+  const rec = {
+    email: ME.email, name: ME.name, type: 'holiday', status: 'pending',
+    from, to, startTs: Timestamp.fromDate(new Date(Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10)))),
+    days: chosen, total: chosen.reduce((n, x) => n + dayValue(x.part), 0), year: +from.slice(0, 4),
+    note: $('lvNote').value.trim(), oncall: oncallDuring(from, to, ME.email),
+    createdBy: ME.email, createdAt: serverTimestamp(), ref: ref.id.slice(0, 6).toUpperCase()
+  };
+  if (TEST) rec.testData = true;
+  const ok = await modal({ title: 'Send this request?', body: `<p><b>${fmtDays(rec.total)} day${rec.total === 1 ? '' : 's'}</b>: ${esc(shortDate(from))}${to !== from ? ' – ' + esc(shortDate(to)) : ''}.</p>${rec.oncall.length ? `<p>${rec.oncall.length} on-call shift${rec.oncall.length === 1 ? '' : 's'} will need cover.</p>` : ''}`,
+    buttons: [{ label: 'Not yet', value: false }, { label: 'Send', value: true, primary: true }] });
+  if (!ok) return;
+  let token;
+  try { token = await getToken(false); } catch (err) { lvStatus('bad', esc(err.message)); return; }
+  if (!token) return;
+  $('lvSend').disabled = true;
+  lvStatus('sending', 'Saving…');
+  try {
+    await setDoc(ref, rec);
+  } catch (err) {
+    $('lvSend').disabled = false;
+    lvStatus('bad', `<b>Not sent:</b> couldn't save (${esc(err.code || err.message)}). Check your signal and try again.`);
+    return;
+  }
+  const local = Object.assign({ id: ref.id }, rec, { createdAt: { seconds: Date.now() / 1000 } });
+  MYLEAVE.unshift(local);
+  lvParts = {}; lvTried = false;
+  $('lvFrom').value = ''; $('lvTo').value = ''; $('lvNote').value = '';
+  renderLeave();
+  await deliverLeave(local, token);
+  $('lvSend').disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SWAPS
+// ═══════════════════════════════════════════════════════════════════════════
+// picks: key "date" -> { on, whole, s, e }
+let swGive = {}, swTake = {};
+let swTried = false;
+function upcomingShifts(email) {
+  const out = [], today = todayISO(), end = addDays(today, SWAP_AHEAD);
+  [...ROTA.keys()].sort().forEach(d => {
+    if (d < addDays(today, -1) || d > end) return;
+    const day = ROTA.get(d), held = heldBy(day, email);
+    if (!held.length) return;
+    // A shift that has already started can't be swapped.
+    if (shiftTime(d, held[0].s) <= nowLocal()) return;
+    out.push({ date: d, held });
+  });
+  return out;
+}
+function halfHourOptions(d, from, to, sel) {
+  let h = '';
+  for (let t = from; t <= to; t += 30) h += `<option value="${t}" ${t === sel ? 'selected' : ''}>${esc(clock(shiftStart(d) + t))}${t >= 1440 - shiftStart(d) ? ' (next day)' : ''}</option>`;
+  return h;
+}
+function pickHTML(side, sh, state) {
+  const d = sh.date, st = state[d] || {};
+  const a = sh.held[0].s, b = sh.held[sh.held.length - 1].e;
+  const whole = st.whole !== false;
+  const s = st.s ?? a, e = st.e ?? b;
+  const label = sh.held.map(x => partLabel(d, x.s, x.e)).join(', ');
+  return `<div class="pick ${st.on ? 'on' : ''}"><label class="top"><input type="checkbox" data-pk="${side}" data-date="${d}" ${st.on ? 'checked' : ''}><span><b>${esc(shortDate(d))}</b> <span class="t">${esc(label)}</span></span></label>
+    ${st.on ? `<div class="more"><div class="seg" data-pkw="${side}" data-date="${d}"><button type="button" data-w="1" class="${whole ? 'on' : ''}">Whole shift</button><button type="button" data-w="0" class="${!whole ? 'on' : ''}">Part of it</button></div>
+      ${!whole ? `<span class="t">From</span><select class="inp" data-pks="${side}" data-date="${d}">${halfHourOptions(d, a, b - 120, s)}</select><span class="t">to</span><select class="inp" data-pke="${side}" data-date="${d}">${halfHourOptions(d, a + 120, b, e)}</select>` : ''}</div>` : ''}</div>`;
+}
+function renderSwapForm() {
+  const sel = $('swWith'), cur = sel.value;
+  const people = [...STAFF.entries()].filter(([e]) => e !== ME.email).map(([e, s]) => ({ email: e, name: s.name || e }));
+  // anyone on the rota who isn't on the staff list (yet)
+  ROTA.forEach(day => segmentsOf(day).forEach(x => { if (x.email && x.email !== ME.email && !people.some(p => p.email === x.email)) people.push({ email: x.email, name: x.name || x.email }); }));
+  people.sort((a, b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">Choose someone</option>' + people.map(p => `<option value="${esc(p.email)}">${esc(p.name)}</option>`).join('');
+  sel.value = people.some(p => p.email === cur) ? cur : '';
+  renderSwapPicks();
+}
+function renderSwapPicks() {
+  const mine = upcomingShifts(ME.email);
+  $('swGive').innerHTML = mine.length ? mine.map(sh => pickHTML('give', sh, swGive)).join('') : '<div class="none-note">You\'re not on the rota in the next few months.</div>';
+  const other = $('swWith').value;
+  $('swTake').innerHTML = !other ? '<div class="none-note">Pick who you\'re swapping with first.</div>'
+    : (() => { const list = upcomingShifts(other); return list.length ? list.map(sh => pickHTML('take', sh, swTake)).join('') : `<div class="none-note">${esc(firstName(nameOf(other)))} isn't on the rota in the next few months.</div>`; })();
+  if (swTried) showErrs('swErrs', swValidate());
+}
+function swItems(state, email) {
+  return Object.entries(state).filter(([, st]) => st.on).map(([d, st]) => {
+    const day = ROTA.get(d); const held = day ? heldBy(day, email) : [];
+    if (!held.length) return null;
+    const a = held[0].s, b = held[held.length - 1].e;
+    return st.whole === false ? { date: d, s: st.s ?? a, e: st.e ?? b } : { date: d, s: a, e: b, whole: true };
+  }).filter(Boolean).sort((x, y) => x.date.localeCompare(y.date));
+}
+function swValidate() {
+  const errs = [], other = $('swWith').value;
+  if (!other) errs.push('Pick who you\'re swapping with.');
+  const give = swItems(swGive, ME.email), take = other ? swItems(swTake, other) : [];
+  if (!give.length && !take.length) errs.push('Tick at least one shift.');
+  [...give.map(x => [x, ME.email]), ...take.map(x => [x, other])].forEach(([x, em]) => {
+    if (x.e - x.s < 120) errs.push(`${shortDate(x.date)}: a part swap must be at least 2 hours.`);
+    else if (!coversRange(ROTA.get(x.date), em, x.s, x.e)) errs.push(`${shortDate(x.date)}: ${em === ME.email ? 'you' : firstName(nameOf(em))} isn't on call for all of ${partLabel(x.date, x.s, x.e)}.`);
+  });
+  return errs;
+}
+const itemText = x => `${shortDate(x.date)} ${partLabel(x.date, x.s, x.e)}`;
+function swStatus(cls, html) { $('swStatus').innerHTML = cls ? `<div class="status ${cls}">${html}</div>` : ''; }
+async function onSwapSend() {
+  swTried = true;
+  const errs = swValidate(); showErrs('swErrs', errs);
+  if (errs.length) return;
+  const other = $('swWith').value;
+  const give = swItems(swGive, ME.email), take = swItems(swTake, other);
+  const all = [...give, ...take].map(x => x.date).sort();
+  const rec = {
+    aEmail: ME.email, aName: ME.name, bEmail: other, bName: nameOf(other),
+    aGives: give, bGives: take, status: 'waiting', note: $('swNote').value.trim(),
+    firstShift: all[0], createdAt: serverTimestamp()
+  };
+  if (TEST) rec.testData = true;
+  const ok = await modal({ title: 'Send this swap request?', body: `<p><b>${esc(rec.bName)}</b> takes:<br>${give.map(x => esc(itemText(x))).join('<br>') || 'nothing'}</p><p><b>You</b> take:<br>${take.map(x => esc(itemText(x))).join('<br>') || 'nothing'}</p><p>${esc(firstName(rec.bName))} has to accept it, then the office approves it.</p>`,
+    buttons: [{ label: 'Not yet', value: false }, { label: 'Send', value: true, primary: true }] });
+  if (!ok) return;
+  let token;
+  try { token = await getToken(false); } catch (err) { swStatus('bad', esc(err.message)); return; }
+  if (!token) return;
+  $('swSend').disabled = true;
+  const ref = doc(collection(db, 'oncallSwaps'));
+  try { await setDoc(ref, rec); }
+  catch (err) { $('swSend').disabled = false; swStatus('bad', `<b>Not sent:</b> couldn't save (${esc(err.code || err.message)}).`); return; }
+  const local = Object.assign({ id: ref.id }, rec, { createdAt: { seconds: Date.now() / 1000 } });
+  SWAPS.unshift(local);
+  swGive = {}; swTake = {}; swTried = false; $('swNote').value = '';
+  renderSwapPicks(); renderMine();
+  try {
+    await graphSend(token, {
+      subject: `${TEST ? 'TEST ' : ''}On-call swap request from ${ME.name}`,
+      body: { contentType: 'HTML', content: swapMail(local, `<p>Hi ${esc(firstName(local.bName))},</p><p><b>${esc(ME.name)}</b> has asked to swap on-call with you.</p>`, `<p>Accept or decline it in the app: <a href="${APP_LINK}">${APP_LINK}</a> (Swap on-call).</p>`) },
+      toRecipients: addr([TEST ? ME.email : other]),
+      ccRecipients: TEST ? [] : addr(swapWatchers().filter(x => x !== other && x !== ME.email))
+    });
+    swStatus('ok', `<b>Sent.</b> ${esc(firstName(local.bName))} has been emailed to accept it.`);
+  } catch (err) {
+    swStatus('bad', `<b>Saved, but the email didn't go:</b> ${esc(err.message)} ${esc(firstName(local.bName))} will still see it in the app.`);
+  }
+  $('swSend').disabled = false;
+}
+function swapMail(sw, top, bottom) {
+  const list = (items) => items.length ? items.map(x => esc(itemText(x))).join('<br>') : 'nothing';
+  return mailWrap(`${sw.testData ? '<p style="color:#D0222A"><b>TEST — not a real swap.</b></p>' : ''}${top}
+    <p><b>${esc(sw.bName)}</b> covers:<br>${list(sw.aGives || [])}</p><p><b>${esc(sw.aName)}</b> covers:<br>${list(sw.bGives || [])}</p>
+    ${sw.note ? `<p><b>Note:</b> ${esc(sw.note)}</p>` : ''}${bottom}`);
+}
+// Swaps waiting for me to answer
+function waitingForMe() { return realm(SWAPS).filter(s => s.status === 'waiting' && s.bEmail === ME.email); }
+function renderIncoming() {
+  const list = waitingForMe();
+  $('swapCount').hidden = !list.length; $('swapCount').textContent = list.length;
+  $('swapIncoming').innerHTML = list.length ? `<div class="sec-h">Waiting for you</div>` + list.map(s => `<div class="req mine-wait"><div class="h"><b>${esc(s.aName)} wants to swap</b>${s.testData ? '<span class="tag test">Test</span>' : ''}</div>
+    <div class="b"><div><b>You</b> cover: ${(s.aGives || []).map(x => esc(itemText(x))).join('; ') || 'nothing'}</div><div><b>${esc(firstName(s.aName))}</b> covers: ${(s.bGives || []).map(x => esc(itemText(x))).join('; ') || 'nothing'}</div>${s.note ? `<div>Note: ${esc(s.note)}</div>` : ''}</div>
+    <div class="acts"><button type="button" class="mini red" data-swans="accepted" data-id="${esc(s.id)}"><i class="ti ti-check"></i> Accept</button><button type="button" class="mini" data-swans="declined" data-id="${esc(s.id)}">Decline</button></div></div>`).join('') : '';
+}
+async function answerSwap(id, answer) {
+  const s = SWAPS.find(x => x.id === id); if (!s) return;
+  const ok = await modal({ title: answer === 'accepted' ? 'Accept this swap?' : 'Decline this swap?', body: answer === 'accepted' ? '<p>The office then approves it and the rota changes.</p>' : `<p>${esc(firstName(s.aName))} gets an email to say no.</p>`,
+    buttons: [{ label: 'Cancel', value: false }, { label: answer === 'accepted' ? 'Accept' : 'Decline', value: true, primary: true }] });
+  if (!ok) return;
+  let token = null;
+  try { token = await getToken(false); } catch (err) { toast(err.message); }
+  try { await updateDoc(doc(db, 'oncallSwaps', id), { status: answer, respondedAt: serverTimestamp() }); }
+  catch (err) { alertBox(`Couldn't save (${err.code || err.message}).`); return; }
+  s.status = answer;
+  renderIncoming(); renderMine();
+  toast(answer === 'accepted' ? 'Accepted — waiting for the office' : 'Declined');
+  if (!token) return;
+  try {
+    await graphSend(token, {
+      subject: `${s.testData ? 'TEST ' : ''}On-call swap ${answer === 'accepted' ? 'accepted' : 'declined'} by ${ME.name}`,
+      body: { contentType: 'HTML', content: swapMail(s, `<p><b>${esc(ME.name)}</b> has ${answer === 'accepted' ? 'accepted' : 'declined'} the on-call swap.</p>`, answer === 'accepted' ? '<p>It now needs approving in Timesheets &amp; leave → Leave.</p>' : '') },
+      toRecipients: addr([s.testData ? ME.email : s.aEmail]),
+      ccRecipients: s.testData ? [] : addr(swapWatchers().filter(x => x !== s.aEmail && x !== ME.email))
+    });
+  } catch (err) { toast('Saved, but the email didn\'t go: ' + err.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ROTA
+// ═══════════════════════════════════════════════════════════════════════════
+function renderRota() {
+  const [y, m] = rotaMonth.split('-').map(Number);
+  const first = `${y}-${pad(m)}-01`, last = isoOf(new Date(y, m, 0));
+  $('rotaTitle').textContent = parseISO(first).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const today = todayISO();
+  let rows = '';
+  for (let d = first; d <= last; d = addDays(d, 1)) {
+    const day = ROTA.get(d);
+    const segs = day ? segmentsOf(day) : [];
+    const mine = segs.some(x => x.email === ME.email);
+    const cls = [dow(d) === 1 ? 'wk-start' : '', isOffDay(d) ? 'off' : '', mine ? 'me' : '', d === today ? 'today' : ''].join(' ');
+    let who;
+    if (!day || !segs.length || segs.every(x => !x.name && !x.email)) who = '<span style="color:var(--grey)">Not set</span>';
+    else if (segs.length === 1) who = `<b class="${segs[0].email === ME.email ? 'me' : ''}">${esc(segs[0].name || 'Not set')}</b>`;
+    else who = segs.map(x => `<span class="part ${x.email === ME.email ? 'me' : ''}"><b>${esc(x.name || 'Not set')}</b> ${esc(partLabel(d, x.s, x.e))}</span>`).join('');
+    rows += `<tr class="${cls}"><td class="dt">${esc(shortDate(d))}<small>${esc(dayNote(d))}</small></td><td>${esc(shiftLabel(d))}</td><td class="who">${who}</td></tr>`;
+  }
+  const any = [...ROTA.keys()].some(d => d >= first && d <= last);
+  $('rotaBox').innerHTML = any ? `<table class="rota"><thead><tr><th>Date</th><th>Shift</th><th>On call</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty">The rota for this month isn\'t done yet.</div>';
+}
+// "Add my call-out days to my calendar": puts my upcoming on-call time into my
+// own Outlook calendar (with a reminder the day before), and tidies away any
+// it added before that have since changed. Run it again after a swap.
+const CAL_TAG = 'S&W on call';
+function myCalendarShifts() {
+  const today = todayISO(), end = addDays(today, SWAP_AHEAD), out = [];
+  [...ROTA.keys()].sort().forEach(d => {
+    if (d < addDays(today, -1) || d > end) return;
+    heldBy(ROTA.get(d), ME.email).forEach(x => out.push({ start: shiftTime(d, x.s), end: shiftTime(d, x.e) }));
+  });
+  // join back-to-back pieces (e.g. a whole weekend becomes one entry)
+  const merged = [];
+  out.forEach(x => { const l = merged[merged.length - 1]; if (l && l.end === x.start) l.end = x.end; else merged.push({ ...x }); });
+  const nowStr = nowLocal();
+  return merged.filter(x => x.end > nowStr);
+}
+function calStatus(cls, html) { $('calStatus').innerHTML = cls ? `<div class="status ${cls}" style="margin:0 0 12px">${html}</div>` : ''; }
+async function syncCalendar() {
+  let token;
+  try { token = storedToken('lv-graph-cal') || await tokenInteractive(true); } catch (err) { calStatus('bad', esc(err.message)); return; }
+  if (!token) return;
+  const want = myCalendarShifts();
+  calStatus('sending', 'Updating your calendar…');
+  try {
+    const tz = { Prefer: 'outlook.timezone="Europe/London"' };
+    const startFrom = isoOf(new Date()) + 'T00:00:00';
+    let url = `/me/events?$filter=${encodeURIComponent(`categories/any(c:c eq '${CAL_TAG}') and end/dateTime ge '${startFrom}'`)}&$select=id,start,end&$top=100`;
+    const have = [];
+    while (url) {
+      const r = await graph(token, 'GET', url, null, tz);
+      (r.value || []).forEach(ev => have.push({ id: ev.id, start: String(ev.start.dateTime).slice(0, 19), end: String(ev.end.dateTime).slice(0, 19) }));
+      url = r['@odata.nextLink'] ? r['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0', '') : null;
+    }
+    const key = x => x.start + '|' + x.end;
+    const wantKeys = new Set(want.map(key)), haveKeys = new Set(have.map(key));
+    const toDelete = have.filter(x => !wantKeys.has(key(x)));
+    const toAdd = want.filter(x => !haveKeys.has(key(x)));
+    for (const ev of toDelete) await graph(token, 'DELETE', '/me/events/' + encodeURIComponent(ev.id));
+    for (const x of toAdd) {
+      await graph(token, 'POST', '/me/events', {
+        subject: 'On call', categories: [CAL_TAG], showAs: 'free',
+        isReminderOn: true, reminderMinutesBeforeStart: 1440,
+        body: { contentType: 'Text', content: 'Simpson & Wood on-call. Added from the Leave & on-call app — if the rota changes, tap "Add my call-out days to my calendar" again.' },
+        start: { dateTime: x.start, timeZone: 'Europe/London' }, end: { dateTime: x.end, timeZone: 'Europe/London' }
+      });
+    }
+    calStatus('ok', want.length ? `<b>Done.</b> ${want.length} on-call ${want.length === 1 ? 'entry is' : 'entries are'} in your calendar${toAdd.length || toDelete.length ? ` (${toAdd.length} added${toDelete.length ? ', ' + toDelete.length + ' old ones removed' : ''})` : ''}, with a reminder the day before.` : '<b>Done.</b> You\'re not on call in the next few months, so there\'s nothing to add.');
+  } catch (err) {
+    calStatus('bad', `<b>Your calendar wasn't updated:</b> ${esc(err.message)}`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MY REQUESTS
+// ═══════════════════════════════════════════════════════════════════════════
+const STATUS_TAG = {
+  pending: '<span class="tag warn">Waiting for approval</span>', approved: '<span class="tag ok">Approved</span>',
+  declined: '<span class="tag bad">Declined</span>', cancelled: '<span class="tag">Cancelled</span>'
+};
+const SWAP_TAG = {
+  waiting: '<span class="tag warn">Waiting for the other person</span>', accepted: '<span class="tag blue">Accepted · waiting for the office</span>',
+  approved: '<span class="tag ok">Approved</span>', declined: '<span class="tag bad">Declined</span>', rejected: '<span class="tag bad">Not approved</span>', cancelled: '<span class="tag">Cancelled</span>'
+};
+function canCancelLeave(l) { return ['pending', 'approved'].includes(l.status) && daysBetween(todayISO(), l.from) >= CANCEL_DAYS; }
+function renderMine() {
+  const leave = realm(MYLEAVE).slice().sort((a, b) => b.from.localeCompare(a.from));
+  const swaps = realm(SWAPS).slice().sort((a, b) => (b.firstShift || '').localeCompare(a.firstShift || ''));
+  const recent = addDays(todayISO(), -120);
+  const lHTML = leave.filter(l => l.to >= recent || l.status === 'pending').map(l => {
+    const mailBad = l.status === 'pending' && l.mail && l.mail.status === 'failed';
+    const near = ['pending', 'approved'].includes(l.status) && !canCancelLeave(l) && l.to >= todayISO();
+    return `<div class="req"><div class="h"><b>${esc(LEAVE_TYPES[l.type] || l.type)}: ${esc(shortDate(l.from))}${l.to !== l.from ? ' – ' + esc(shortDate(l.to)) : ''}</b><span>${STATUS_TAG[l.status] || ''}${l.testData ? '<span class="tag test">Test</span>' : ''}</span></div>
+      <div class="b"><div>${fmtDays(l.total || 0)} day${l.total === 1 ? '' : 's'}${(l.days || []).some(x => x.part !== 'full') ? ' (' + l.days.filter(x => x.part !== 'full').map(x => shortDate(x.date) + ' ' + (PARTS[x.part] || '').toLowerCase()).join(', ') + ')' : ''}</div>
+      ${l.declineReason ? `<div>Reason: ${esc(l.declineReason)}</div>` : ''}${l.decidedByName ? `<div>${l.status === 'approved' ? 'Approved' : l.status === 'declined' ? 'Declined' : 'Done'} by ${esc(l.decidedByName)}</div>` : ''}
+      ${mailBad ? '<div style="color:var(--red-dark)"><b>The email to the office didn\'t go.</b></div>' : ''}${near ? '<div>Starts within a week — ask the office if you need to cancel.</div>' : ''}</div>
+      <div class="acts">${mailBad ? `<button type="button" class="mini red" data-resend="${esc(l.id)}">Send the email</button>` : ''}${canCancelLeave(l) ? `<button type="button" class="mini" data-lvcancel="${esc(l.id)}">Cancel</button>` : ''}</div></div>`;
+  }).join('');
+  const sHTML = swaps.filter(s => (s.firstShift || '') >= recent || ['waiting', 'accepted'].includes(s.status)).map(s => {
+    const iAmA = s.aEmail === ME.email, other = iAmA ? s.bName : s.aName;
+    const iCover = iAmA ? (s.bGives || []) : (s.aGives || []), theyCover = iAmA ? (s.aGives || []) : (s.bGives || []);
+    return `<div class="req"><div class="h"><b>Swap with ${esc(other)}</b><span>${SWAP_TAG[s.status] || ''}${s.testData ? '<span class="tag test">Test</span>' : ''}</span></div>
+      <div class="b"><div><b>You</b> cover: ${iCover.map(x => esc(itemText(x))).join('; ') || 'nothing'}</div><div><b>${esc(firstName(other))}</b> covers: ${theyCover.map(x => esc(itemText(x))).join('; ') || 'nothing'}</div>${s.rejectReason ? `<div>Reason: ${esc(s.rejectReason)}</div>` : ''}</div>
+      <div class="acts">${iAmA && ['waiting', 'accepted'].includes(s.status) ? `<button type="button" class="mini" data-swcancel="${esc(s.id)}">Cancel</button>` : ''}${!iAmA && s.status === 'waiting' ? '<span style="font-size:14px;color:var(--grey)">Answer it on the Swap on-call tab.</span>' : ''}</div></div>`;
+  }).join('');
+  $('mineBox').innerHTML = `<div class="sec-h">Leave</div>${lHTML || '<div class="empty">No leave requests yet.</div>'}<div class="sec-h">On-call swaps</div>${sHTML || '<div class="empty">No swaps yet.</div>'}`;
+}
+async function cancelLeave(id) {
+  const l = MYLEAVE.find(x => x.id === id); if (!l) return;
+  if (!canCancelLeave(l)) { alertBox('It starts within a week, so the office has to cancel it.'); return; }
+  const ok = await modal({ title: 'Cancel this leave?', body: `<p>${esc(shortDate(l.from))}${l.to !== l.from ? ' – ' + esc(shortDate(l.to)) : ''}. The office gets an email.</p>${l.status === 'approved' ? '<p>The rota doesn\'t change back by itself: if someone is covering your on-call, swap it back with them.</p>' : ''}`,
+    buttons: [{ label: 'Keep it', value: false }, { label: 'Cancel it', value: true, primary: true }] });
+  if (!ok) return;
+  let token = null;
+  try { token = await getToken(false); } catch (err) { toast(err.message); }
+  const upd = { status: 'cancelled', cancelledBy: ME.email, cancelledByName: ME.name, cancelledAt: serverTimestamp() };
+  // If it's in the work diary, flag it so the office's page offers to take it out.
+  if (l.infoCal && (l.infoCal.ids || []).length) upd.infoCal = Object.assign({}, l.infoCal, { remove: true });
+  try { await updateDoc(doc(db, 'leave', id), upd); }
+  catch (err) { alertBox(`Couldn't cancel it (${err.code || err.message}).`); return; }
+  const wasApproved = l.status === 'approved';
+  Object.assign(l, upd);
+  renderMine(); toast('Cancelled');
+  if (!token) return;
+  try {
+    await graphSend(token, {
+      subject: `${l.testData ? 'TEST ' : ''}Holiday cancelled — ${ME.name} — ${shortDate(l.from)}${l.to !== l.from ? ' to ' + shortDate(l.to) : ''}`,
+      body: { contentType: 'HTML', content: mailWrap(`<p><b>${esc(ME.name)}</b> has cancelled their ${wasApproved ? 'approved ' : ''}holiday: ${esc(longDate(l.from))}${l.to !== l.from ? ' to ' + esc(longDate(l.to)) : ''} (${fmtDays(l.total)} day${l.total === 1 ? '' : 's'}).</p>${wasApproved && (l.oncall || []).length ? '<p>Any on-call cover already arranged stays as it is unless they swap it back.</p>' : ''}`) },
+      toRecipients: addr([l.testData ? ME.email : OFFICE_EMAIL])
+    });
+  } catch (err) { toast('Cancelled, but the email didn\'t go: ' + err.message); }
+}
+async function cancelSwap(id) {
+  const s = SWAPS.find(x => x.id === id); if (!s) return;
+  const ok = await modal({ title: 'Cancel this swap request?', body: `<p>${esc(firstName(s.bName))} gets an email.</p>`, buttons: [{ label: 'Keep it', value: false }, { label: 'Cancel it', value: true, primary: true }] });
+  if (!ok) return;
+  let token = null;
+  try { token = await getToken(false); } catch (err) { toast(err.message); }
+  try { await updateDoc(doc(db, 'oncallSwaps', id), { status: 'cancelled', cancelledAt: serverTimestamp() }); }
+  catch (err) { alertBox(`Couldn't cancel it (${err.code || err.message}).`); return; }
+  s.status = 'cancelled'; renderMine(); renderIncoming(); toast('Cancelled');
+  if (!token) return;
+  try {
+    await graphSend(token, {
+      subject: `${s.testData ? 'TEST ' : ''}On-call swap cancelled by ${ME.name}`,
+      body: { contentType: 'HTML', content: swapMail(s, `<p><b>${esc(ME.name)}</b> has cancelled this swap request. The rota stays as it was.</p>`, '') },
+      toRecipients: addr([s.testData ? ME.email : s.bEmail]),
+      ccRecipients: s.testData ? [] : addr(swapWatchers().filter(x => x !== s.bEmail && x !== ME.email))
+    });
+  } catch (err) { toast('Cancelled, but the email didn\'t go.'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  WIRING
+// ═══════════════════════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  ['leave', 'swap', 'rota', 'mine'].forEach(v => { $('view-' + v).hidden = v !== name; });
+  if (name === 'rota') renderRota();
+  if (name === 'mine') renderMine();
+  if (name === 'swap') { renderIncoming(); renderSwapPicks(); }
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$('lvFrom').addEventListener('change', () => { if (!$('lvTo').value || $('lvTo').value < $('lvFrom').value) $('lvTo').value = $('lvFrom').value; renderLeave(); });
+$('lvTo').addEventListener('change', renderLeave);
+$('lvSend').addEventListener('click', onLeaveSend);
+$('swWith').addEventListener('change', () => { swTake = {}; renderSwapPicks(); });
+$('swSend').addEventListener('click', onSwapSend);
+$('calBtn').addEventListener('click', syncCalendar);
+document.addEventListener('click', async e => {
+  const lp = e.target.closest('[data-lvday] [data-part]');
+  if (lp) { lvParts[lp.closest('[data-lvday]').dataset.lvday] = lp.dataset.part; renderLeave(); return; }
+  const w = e.target.closest('[data-pkw] [data-w]');
+  if (w) { const box = w.closest('[data-pkw]'); const st = (box.dataset.pkw === 'give' ? swGive : swTake); st[box.dataset.date] = Object.assign(st[box.dataset.date] || {}, { whole: w.dataset.w === '1' }); renderSwapPicks(); return; }
+  const mv = e.target.closest('[data-rmove]');
+  if (mv) { const d = parseISO(rotaMonth + '-01'); d.setMonth(d.getMonth() + +mv.dataset.rmove); rotaMonth = isoOf(d).slice(0, 7); renderRota(); return; }
+  const an = e.target.closest('[data-swans]'); if (an) { answerSwap(an.dataset.id, an.dataset.swans); return; }
+  const lc = e.target.closest('[data-lvcancel]'); if (lc) { cancelLeave(lc.dataset.lvcancel); return; }
+  const sc = e.target.closest('[data-swcancel]'); if (sc) { cancelSwap(sc.dataset.swcancel); return; }
+  const rs = e.target.closest('[data-resend]');
+  if (rs) {
+    const rec = MYLEAVE.find(x => x.id === rs.dataset.resend); if (!rec) return;
+    let token; try { token = await getToken(false); } catch (err) { alertBox(err.message); return; }
+    if (!token) return;
+    showTab('leave'); await deliverLeave(rec, token);
+  }
+});
+document.addEventListener('change', e => {
+  const pk = e.target.closest('[data-pk]');
+  if (pk) { const st = pk.dataset.pk === 'give' ? swGive : swTake; st[pk.dataset.date] = Object.assign(st[pk.dataset.date] || {}, { on: pk.checked }); renderSwapPicks(); return; }
+  const ps = e.target.closest('[data-pks],[data-pke]');
+  if (ps) {
+    const side = ps.dataset.pks || ps.dataset.pke, st = side === 'give' ? swGive : swTake, d = ps.dataset.date;
+    st[d] = Object.assign(st[d] || {}, ps.dataset.pks ? { s: +ps.value } : { e: +ps.value });
+    if ((st[d].e ?? Infinity) - (st[d].s ?? 0) < 120) { if (ps.dataset.pks) st[d].e = st[d].s + 120; else st[d].s = st[d].e - 120; }
+    renderSwapPicks();
+  }
+});
+
+function renderBanners() {
+  const b = [];
+  if (TEST) b.push(`<div class="banner test"><i class="ti ti-flask"></i><div><b>Test mode.</b> Requests are marked as test data, emails come to you, and test swaps never change the rota. <a href="leave.html" style="color:inherit">Leave test mode</a></div></div>`);
+  if (ME && !STAFF.has(ME.email)) b.push(`<div class="banner bad"><i class="ti ti-user-question"></i><div><b>You're not on the staff list yet.</b> Ask the office to add you.</div></div>`);
+  if (+todayISO().slice(0, 4) + 1 > BH_LAST_YEAR) b.push(`<div class="banner info"><i class="ti ti-calendar-question"></i><div>The app's bank holiday list only goes up to ${BH_LAST_YEAR}. Tell Rob.</div></div>`);
+  $('banners').innerHTML = b.join('');
+}
+
+async function loadAll() {
+  const from = addDays(todayISO(), -31);
+  const tasks = [
+    getDocs(collection(db, 'staff')).then(snap => { STAFF = new Map(); snap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '' }); }); }),
+    getDoc(doc(db, 'leaveSettings', 'main')).then(s => { if (s.exists()) SETTINGS = Object.assign(SETTINGS, s.data()); }),
+    getDocs(query(collection(db, 'oncall'), where('date', '>=', from))).then(snap => { ROTA = new Map(); snap.forEach(d => ROTA.set(d.id, Object.assign({ date: d.id }, d.data()))); }),
+    getDocs(query(collection(db, 'leave'), where('email', '==', ME.email))).then(snap => { MYLEAVE = []; snap.forEach(d => MYLEAVE.push(Object.assign({ id: d.id }, d.data()))); }),
+    Promise.all([getDocs(query(collection(db, 'oncallSwaps'), where('aEmail', '==', ME.email))), getDocs(query(collection(db, 'oncallSwaps'), where('bEmail', '==', ME.email)))])
+      .then(([a, b]) => { SWAPS = []; a.forEach(d => SWAPS.push(Object.assign({ id: d.id }, d.data()))); b.forEach(d => SWAPS.push(Object.assign({ id: d.id }, d.data()))); })
+  ];
+  const res = await Promise.allSettled(tasks);
+  const failed = res.filter(r => r.status === 'rejected');
+  if (failed.length) { console.error(failed); toast('Some of the app didn\'t load. Check your signal and reload.'); }
+}
+
+let started = false;
+onAuthStateChanged(auth, async user => {
+  if (!user) { $('signinScreen').style.display = 'flex'; $('appRoot').style.display = 'none'; return; }
+  $('signinScreen').style.display = 'none'; $('appRoot').style.display = 'block';
+  if (started) return;
+  started = true;
+  const raw = user.email || '';
+  ME = { email: raw.toLowerCase(), rawEmail: raw, name: raw };
+  await loadAll();
+  if (STAFF.has(ME.email)) ME.name = STAFF.get(ME.email).name;
+  $('whoName').textContent = ME.name;
+  renderBanners(); renderLeave(); renderSwapForm(); renderIncoming(); renderMine();
+  if (waitingForMe().length) showTab('swap');
+  loadLogo();
+  await redirectDone;
+});
+
+// Test hooks (used only by Claude's automatic checks; harmless otherwise).
+window.__lv = { segmentsOf, shiftLabel, oncallDuring, buildLeavePDF, myCalendarShifts, swValidate, lvChosen, get ROTA() { return ROTA; }, get SETTINGS() { return SETTINGS; } };
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>
