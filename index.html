@@ -49,6 +49,12 @@
   .tile.disabled{opacity:0.45; cursor:default;}
   .tile.disabled i{color:var(--grey);}
   .tile.disabled .soon{display:block; font-size:10.5px; color:var(--grey); margin-top:-4px;}
+  .soon-wrap{grid-column:1/-1; margin-top:6px;}
+  .soon-btn{background:none; border:none; padding:6px 0; font-family:'Barlow',sans-serif; font-size:13px; color:var(--grey); cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .soon-btn i{font-size:15px;}
+  .soon-btn .chev{transition:transform .15s;}
+  .soon-btn[aria-expanded="true"] .chev{transform:rotate(180deg);}
+  .soon-list{font-size:12.5px; color:var(--grey); line-height:1.6; padding:2px 0 4px 21px;}
   .content-pane{display:none;}
   .icon-wrap{position:relative; display:inline-flex; align-items:center; justify-content:center;}
   .tile .icon-wrap .badge-check{position:absolute; bottom:-3px; right:-4px; font-size:10px !important; background:var(--card); border-radius:50%; color:#2e8b57 !important;}
@@ -81,6 +87,10 @@
     .tile span{font-size:13.5px; color:#e4e4e2;}
     .tile.disabled .soon{display:inline; margin:0 0 0 6px; font-size:10.5px;}
     .tile.disabled span{display:flex; align-items:center;}
+    .soon-wrap{margin-top:14px; padding:0 10px;}
+    .soon-btn{color:#8a8a86; font-size:12.5px;}
+    .soon-btn:hover{color:#cfcfcf;}
+    .soon-list{color:#8a8a86; padding-left:21px;}
     .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
   }
 
@@ -365,7 +375,21 @@ function renderTools(tools, isManager, isOffice){
   const nav = document.getElementById('tool-nav');
   nav.innerHTML = '';
   let lastSection = null;
+  // Tools that aren't switched on go in one "Coming soon" line at the bottom,
+  // not as greyed tiles in their sections (19 Oct 2026: the list was too long).
+  const toolLive = tool => { const en = (tools && tools[tool.pairKey]) || {}; return (tool.alwaysLive && !(tools && tools[tool.pairKey])) || !!en.live; };
+  const soon = TOOLS.filter(t => !toolLive(t));
+  const addSoon = () => {
+    if (!soon.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'soon-wrap';
+    wrap.innerHTML = '<button type="button" class="soon-btn" aria-expanded="false"><i class="ti ti-hourglass" aria-hidden="true"></i>Coming soon (' + soon.length + ')<i class="ti ti-chevron-down chev" aria-hidden="true"></i></button><div class="soon-list" hidden>' + soon.map(t => t.name).join('<br>') + '</div>';
+    const btn = wrap.querySelector('.soon-btn'), list = wrap.querySelector('.soon-list');
+    btn.addEventListener('click', () => { const open = list.hidden; list.hidden = !open; btn.setAttribute('aria-expanded', String(open)); });
+    nav.appendChild(wrap);
+  };
   TOOLS.forEach(tool => {
+    if (!toolLive(tool)) return;
     if (tool.section !== lastSection){
       const label = document.createElement('div');
       label.className = 'tool-section-label';
@@ -399,6 +423,7 @@ function renderTools(tools, isManager, isOffice){
       nav.appendChild(lab);
       nav.appendChild(timesheetsTile(tools));
     }
+    addSoon();
     return;
   }
 
@@ -424,6 +449,7 @@ function renderTools(tools, isManager, isOffice){
       '<span>' + tool.name + ' reports</span>';
     nav.appendChild(el);
   });
+  addSoon();
 }
 
 async function renderActivityFeed(reportEntries){
@@ -561,21 +587,24 @@ getRedirectResult(auth).catch(err => {
 const NEWS = {
   engineer: [
     '<b>Leave &amp; on-call</b> is here: book holiday, swap on-call and see the rota.',
-    'Every page now has a <b>Help</b> button at the top if you get stuck.'
+    'Every page now has a <b>Help</b> button at the top if you get stuck.',
+    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
   ],
   office: [
     '<b>Timesheets &amp; leave</b> is in the <b>Office</b> section: timesheets, holiday approvals and the on-call rota.',
-    'Every page now has a <b>Help</b> button at the top.'
+    'Every page now has a <b>Help</b> button at the top.',
+    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
   ],
   management: [
     '<b>Timesheets &amp; leave</b> (under QS &amp; Reporting) now covers holiday approvals and the on-call rota.',
     'Directors now have the same access as managers.',
-    'Every page now has a <b>Help</b> button at the top.'
+    'Every page now has a <b>Help</b> button at the top.',
+    'Tools that aren\'t ready yet are tucked into one <b>Coming soon</b> line at the bottom, so the list is shorter.'
   ]
 };
 const HELP = [
   { q: 'How do I open a tool?', a: '<p>Tap its tile on the left (or at the top on a phone).</p>' },
-  { q: 'Why does a tile say "Coming soon"?', a: '<p>That tool isn\'t switched on yet. It appears as soon as it\'s ready.</p>' },
+  { q: 'Where are the other tools?', a: '<p>Tools that aren\'t ready yet are in the <b>Coming soon</b> line at the bottom. Tap it to see the list. Each one moves up into its proper place as soon as it\'s switched on.</p>' },
   { q: 'Can I use the apps with no signal?', a: '<p>Yes, they open with no signal and save your work. It goes up when you\'re back in signal, so don\'t clear the app until it has.</p>' },
   { levels: ['office', 'management'], q: 'What\'s the list on the right?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>.</p>' },
   { levels: ['office'], q: 'Where do I approve holiday?', a: '<p>Open <b>Timesheets &amp; leave</b> in the Office section, then the <b>Leave</b> tab.</p>' },
