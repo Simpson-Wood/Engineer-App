@@ -6,6 +6,7 @@
 <title>Isolator / Interlock Reports — Simpson & Wood</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 <style>
   :root{
     --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
@@ -29,7 +30,8 @@
   .site-status{font-size:11.5px;color:var(--grey);margin-top:5px;}
 
   .tab-bar{display:flex;max-width:1600px;margin:0 auto;background:#fff;border-bottom:1px solid var(--line);}
-  .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:13px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
+  .tab-bar{overflow-x:auto;scrollbar-width:none;}   /* v17.0: five tabs scroll sideways on a phone instead of pushing the page wider */
+  .tab-bar button{flex:1 0 auto;white-space:nowrap;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:13px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
   .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
 
   main{max-width:1600px;margin:0 auto;padding:16px;}
@@ -142,6 +144,84 @@
   #notAuthorised{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
   #notAuthorised h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;color:var(--fail);margin:0 0 10px;}
   #notAuthorised p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 20px;}
+
+  [hidden]{display:none !important;}
+  /* v17.0: Tidy names */
+  .tidy-top{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px;align-items:end;}
+  @media (min-width:800px){ .tidy-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;} }
+  .tidy-top select, .tidy-top input[type=text]{width:100%;padding:9px 10px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;font-family:'Barlow',sans-serif;}
+  .tidy-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
+  @media (min-width:1000px){ .tidy-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} .tidy-panel{position:sticky;top:12px;} }
+  .tidy-list{border:1px solid var(--line);border-radius:8px;max-height:65vh;overflow:auto;}
+  .tidy-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f0f0f0;margin:0;cursor:pointer;font-size:14px;font-weight:500;}
+  .tidy-row:first-child{border-top:none;}
+  .tidy-row input{width:auto;margin:0;flex-shrink:0;}
+  .tidy-row .tv{flex:1;min-width:0;word-break:break-word;}
+  .tidy-row .tn{color:var(--grey);font-size:12px;white-space:nowrap;}
+  .tidy-row.on{background:#fff8f8;}
+  .tidy-alike{font-size:10.5px;font-weight:700;background:#fff3cd;color:#8a6d1a;border-radius:20px;padding:1px 7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .tidy-panel{border:1.5px solid var(--line);border-radius:10px;padding:14px;}
+  .tidy-empty{color:var(--grey);font-size:14px;padding:6px 0;}
+  .tidy-ticked{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .tidy-chip{background:#f2f1ee;border-radius:20px;padding:4px 10px;font-size:13px;font-weight:600;}
+  .tidy-chip small{color:var(--grey);font-weight:600;margin-left:3px;}
+  .tidy-sum{font-size:14px;margin:14px 0 10px;line-height:1.5;}
+  .tidy-ids{border:1px solid var(--line);border-radius:8px;max-height:40vh;overflow:auto;margin-bottom:12px;}
+  .tidy-id{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 10px;border-top:1px solid #f0f0f0;font-size:13px;}
+  .tidy-id:first-child{border-top:none;}
+  .tidy-id .arrow{color:var(--grey);}
+  .tidy-id.clash{background:#fff8e6;}
+  .tidy-join{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;width:100%;}
+  .tidy-join input{width:auto;margin:0;}
+  .tidy-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;}
+  .tidy-btns .save-meta-btn{width:100%;padding:12px;}
+
+  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
+  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
+  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .sw-hbtn i{font-size:17px;}
+  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
+  .topbar-right .sw-hbtn{margin-right:6px;}
+  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
+  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
+  .sw-vabar i{font-size:18px;}
+  .sw-vabar span{flex:1; min-width:180px;}
+  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
+  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
+  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
+  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
+  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
+  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
+  .sw-news li{margin-bottom:8px;}
+  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
+  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
+  .sw-people{display:grid; gap:6px;}
+  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
+  .sw-people button:hover{background:#fbe9ea;}
+  .sw-people small{color:#5c5c5c;}
+  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
+  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
+  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
+  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
+  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
+  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
+  .sw-help summary::-webkit-details-marker{display:none;}
+  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
+  .sw-help details[open] summary::before{content:'–';}
+  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
+  .sw-help details > div p{margin:0 0 8px;}
+  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
+  @media (max-width:640px){ .sw-help{max-width:none;} }
+  /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
+  .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
+  .swv-bar button{background:#D0222A; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .swv-bar.wait{background:#7a5c0e;}
+  body.swv-on{padding-bottom:76px;}
+  body.swv-on .undo-toast{bottom:86px;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -161,14 +241,6 @@
   <h2>Access restricted</h2>
   <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span> — if this should have access, contact whoever manages the Firebase project.</p>
   <button class="ms-btn" id="signOutBtn2">Sign out</button>
-</div>
-
-<div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
-    <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
-    <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
-  </div>
 </div>
 
 <div id="appRoot">
@@ -204,6 +276,7 @@
     <button id="tabReviewBtn">Review</button>
     <button id="tabScheduleBtn">Test schedule</button>
     <button id="tabFrontBtn">Front page & generate</button>
+    <button id="tabTidyBtn">Tidy names</button>
   </div>
 
   <main>
@@ -471,6 +544,33 @@
         <p class="hint" style="display:block;margin-top:10px;">Resolve pending deletions first for an accurate report.</p>
       </div>
     </div>
+    <div id="tidyTab" style="display:none;">
+      <div class="card">
+        <p class="section-label">Tidy names</p>
+        <p class="hint" style="display:block;margin:0 0 14px;">Merge different spellings of the same name on this site, e.g. "Press Line 4", "Pl4" and "Press line 4". Equipment IDs update to match, and you can undo a tidy-up.</p>
+        <div id="tidyNoSite" class="empty-note">Select a site first.</div>
+        <div id="tidyClosedNote" class="edit-warning" hidden>This site is marked Complete, so names can't be changed. Reopen it on the Sites tab first.</div>
+        <div id="tidyBody" hidden>
+          <div class="tidy-top">
+            <div><label for="tidyField">Which name?</label><select id="tidyField"></select></div>
+            <div><label for="tidySearch">Find</label><input type="text" id="tidySearch" placeholder="e.g. press line 4"></div>
+            <div><button type="button" class="save-meta-btn" id="tidyBackupBtn" style="margin-bottom:12px;">Export backup</button></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+            <span class="hint" id="tidyCount"></span>
+            <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;"><input type="checkbox" id="tidyAlikeOnly" style="width:auto;margin:0;">Only look-alikes</label>
+          </div>
+          <div class="tidy-layout">
+            <div class="tidy-list" id="tidyValues"></div>
+            <div class="tidy-panel" id="tidyPanel"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="section-label">Recent tidy-ups</p>
+        <div id="tidyHistory"><div class="empty-note">Select a site.</div></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -506,11 +606,12 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc,
+  updateDoc as fsUpdateDoc, deleteDoc as fsDeleteDoc, setDoc as fsSetDoc, writeBatch as fsWriteBatch, arrayUnion,
   query, where, orderBy, serverTimestamp, FieldPath, deleteField
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v16.1";
+const VERSION = "v17.0";
 document.getElementById('versionLabel').textContent = VERSION + ' · Management';
 
 const firebaseConfig = {
@@ -524,9 +625,151 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// v17.0: the multi-tab cache, so two tabs don't trip each other up.
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// Raw Firestore functions for the shared block below.
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = fsSetDoc;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index, timesheet, leave, timesheet-report,
+//  management, isolator-interlock-test and isolator-interlock-report — keep
+//  in step): access level · View as (Rob only) ·
+//  What's New · Help.   Standards §15: any page changed from now on gets
+//  this block too.
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
+const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
+let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
+let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
+const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
+const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
+// Wrap anything that saves, so "View as" can never change real data.
+function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
+function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
+(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
+  const f = window.fetch.bind(window);
+  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
+})();
+// Who someone is: 'management' (Manager / QS / Director, or the console-only
+// managers list), 'office' or 'engineer'.
+async function swAccess(email) {
+  let managers = false, position = '', staff = null;
+  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
+  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
+  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
+  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+}
+function swHeaderButton(id, icon, label, onClick) {
+  if (document.getElementById(id)) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
+  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
+  b.addEventListener('click', onClick);
+  const right = document.querySelector('.topbar-right');
+  if (right) right.prepend(b);
+  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
+}
+function swModal(html, cls) {
+  const bg = document.createElement('div');
+  bg.className = 'sw-modal-bg ' + (cls || '');
+  bg.innerHTML = html;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
+  document.body.appendChild(bg);
+  return bg;
+}
+
+// ---- View as (Rob only) ----------------------------------------------------
+// Rob picks a person and every page shows what they'd see, read-only. The
+// choice lasts for this browser tab (all pages) until he presses Stop. Data is
+// still read with Rob's own access, so it shows screens, not the database rules.
+async function swViewAsInit(user) {
+  const real = String(user.email || '').toLowerCase();
+  if (real !== SW_OWNER) return null;
+  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
+  let v = null;
+  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
+  if (!v) return null;
+  let name = v, position = '';
+  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
+  VIEW_AS = { email: v, name, position };
+  const bar = document.createElement('div');
+  bar.className = 'sw-vabar';
+  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-va]'); if (!b) return;
+    if (b.dataset.va === 'change') swPickViewAs();
+    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
+  });
+  document.body.prepend(bar);
+  document.body.classList.add('sw-va-on');
+  return VIEW_AS;
+}
+async function swPickViewAs() {
+  let people = [];
+  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
+  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
+  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
+  const draw = () => {
+    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
+    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
+  };
+  m.querySelector('[data-q]').addEventListener('input', draw);
+  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
+  draw(); m.querySelector('[data-q]').focus();
+}
+
+// ---- What's New + Help -------------------------------------------------------
+// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
+// (questions; each with the tab it belongs to and, if not everyone, the
+// levels it's for), then calls swExtrasStart().
+function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
+function swShowNews() {
+  const items = swNewsItems();
+  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+async function swNewsCheck() {
+  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
+  const key = 'seen_' + SW.page;
+  try {
+    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
+    const snap = await swGetDoc(ref);
+    if (snap.exists() && snap.data()[key] === SW.version) return;
+    swShowNews();
+    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
+  } catch (e) { console.warn('What\'s new check failed', e); }
+}
+function swShowHelp() {
+  const tab = SW.tab() || '';
+  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
+  const groups = new Map();
+  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
+  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
+  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
+    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
+    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
+  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
+}
+function swExtrasStart() {
+  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
+  swNewsCheck();
+}
+
+// "A new version is ready" bar (shared block at the bottom of the page): not in
+// the middle of an edit or a tidy-up.
+window.swUpdateBlocker = () => {
+  if (editingId) return 'Save or cancel the edit you\'re making, then tap Update.';
+  if (document.getElementById('tidyGoBtn') && document.getElementById('tidyGoBtn').textContent === 'Saving…') return 'Wait for the tidy-up to finish, then tap Update.';
+  return '';
+};
+
+// Everything this page saves goes through these, so "View as" can never change real data.
+const updateDoc = swGuard(fsUpdateDoc), deleteDoc = swGuard(fsDeleteDoc), setDoc = swGuard(fsSetDoc), writeBatch = swGuardBatch(fsWriteBatch);
 
 // Kept in sync by hand with the engineer tool's CATEGORIES object.
 const CATEGORIES = {
@@ -925,6 +1168,7 @@ async function checkManager(email){
   return false;
 }
 
+let booted = false;
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   document.getElementById('signinScreen').style.display = 'none';
@@ -932,57 +1176,48 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  const isManager = await checkManager(user.email);
+  const va = await swViewAsInit(user);
+  const isManager = await checkManager(va ? va.email : user.email);
 
   if (!isManager) {
-    document.getElementById('notAuthEmail').textContent = user.email;
+    document.getElementById('notAuthEmail').textContent = va ? va.email : user.email;
     document.getElementById('notAuthorised').style.display = 'flex';
     return;
   }
 
   document.getElementById('appRoot').style.display = 'block';
-  document.getElementById('whoName').textContent = user.displayName || user.email;
+  document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  if (booted) return;
+  booted = true;
+  SW = Object.assign(SW, { page: 'isolator-report', version: VERSION, level: 'management', news: NEWS, help: HELP, tab: currentTabName });
+  swExtrasStart();
   boot();
-  checkChangelog();
 });
 
-// ---- What's new / changelog ----
-// Shows on any sign-in where the current major version hasn't been
-// recorded as seen yet - including a brand new user's very first login,
-// deliberately: a one-time "here's what to keep an eye on" is a reasonable
-// welcome, and it never repeats once recorded. Only fires again on a
-// genuine future major bump - never on minor/decimal releases.
-const CHANGELOG_MAJOR = 16;
-const CHANGELOG_ITEMS = [
-  "Fixed: the site Status and the site details (certificate number, dates, limitations) weren't really being saved. They are now, and Complete actually locks the site.",
-  "Marking a site Complete asks for the certificate number and adds the report to the site's Report history. Use Reopen on the Sites tab to let engineers test again.",
-  "Report history on the \"Front page & generate\" tab. Add a past report by hand if one was issued before this existed.",
-  "Items show whether they're new since the last report: fixed, still failing, new fail, retested OK, new item or not retested yet. There's a filter for it in Report preview.",
-  "Two reports: a Progress report any time, and the Final certificate once the site is Complete.",
-  "Retests of failed items now record \"What was done\", shown in Report preview and the reports.",
-  "The JSON backup now includes the site record as well as the tests."
+// ═══════════════════════════════════════════════════════════════════════════
+//  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
+// ═══════════════════════════════════════════════════════════════════════════
+const NEWS = {
+  management: [
+    'New <b>Tidy names</b> tab: merge different spellings of the same name, e.g. "Press Line 4", "Pl4" and "Press line 4". Equipment IDs update to match, and every tidy-up can be undone.',
+    'Take a backup with <b>Export backup</b> on that tab before you merge.',
+    'Engineers can now see which tests haven\'t reached the office yet, and get asked before testing the same item twice on one day.',
+    'This page has a <b>Help</b> button at the top.',
+    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
+  ]
+};
+const HELP = [
+  { tab: 'Tidy names', q: 'How do I merge two spellings?', a: '<p>Pick the site, then on <b>Tidy names</b> pick which name (e.g. Mill location). Tick the spellings that mean the same thing. Check the name in <b>Change them all to</b>, press <b>Preview the changes</b>, then <b>Merge</b>.</p><p><b>Only look-alikes</b> shows names that only differ by capitals, spaces or dots.</p>' },
+  { tab: 'Tidy names', q: 'What happens to the Equipment IDs?', a: '<p>When you merge mill locations (or a motor isolator\'s equipment name), the IDs change to match, e.g. PL4S-A-SI becomes PL4-C-SI. Every test of that item changes together, so its history stays in one place.</p><p>The preview lists every ID before anything changes.</p>' },
+  { tab: 'Tidy names', q: 'It says some IDs would clash', a: '<p>Another item already has that ID. Unless you tick <b>Same item</b>, the clashing item keeps its old ID and only the name changes.</p><p>Only tick <b>Same item</b> if they really are the same piece of equipment. Their histories become one.</p>' },
+  { tab: 'Tidy names', q: 'How do I undo a tidy-up?', a: '<p>Press <b>Undo</b> next to it under <b>Recent tidy-ups</b>. Any test that\'s been changed again since is left alone.</p>' },
+  { tab: 'Tidy names', q: 'Why can\'t I tidy this site?', a: '<p>It\'s marked Complete. Reopen it on the <b>Sites</b> tab first.</p>' },
+  { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
+  { q: 'How do I take a backup of a site?', a: '<p>Press <b>Export JSON</b> next to the site on the <b>Sites</b> tab, or <b>Export backup</b> on Tidy names. It downloads everything for that site, photos included.</p>' },
+  { tab: 'Review', q: 'What does QSed mean?', a: '<p>You\'ve checked that test. Tick <b>QSed</b> on each item once you have. Engineers can\'t edit a test once it\'s QSed.</p>' },
+  { tab: 'Review', q: 'What are pending deletions?', a: '<p>Tests an engineer has flagged as wrong. <b>Restore</b> puts it back; <b>Confirm removal</b> deletes it for good.</p>' },
+  { tab: 'Front page & generate', q: 'Progress report or Final certificate?', a: '<p>The <b>Progress report</b> can be made any time. The <b>Final certificate</b> only once the site is marked Complete on the Sites tab.</p>' }
 ];
-async function checkChangelog() {
-  if (!currentUser) return;
-  try {
-    const prefRef = doc(db, 'userPrefs', currentUser.email);
-    const prefSnap = await getDoc(prefRef);
-    const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorReportMajorSeen : undefined;
-    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
-      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
-      document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
-      document.getElementById('changelogModal').style.display = 'flex';
-    }
-    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
-      await setDoc(prefRef, { isolatorReportMajorSeen: CHANGELOG_MAJOR }, { merge: true });
-    }
-  } catch (e) {
-    console.error('Changelog check failed:', e);
-  }
-}
-document.getElementById('changelogCloseBtn').addEventListener('click', () => {
-  document.getElementById('changelogModal').style.display = 'none';
-});
 
 function boot() {
   loadSites().then(() => applyDeepLink());
@@ -1024,11 +1259,18 @@ document.getElementById('tabSitesBtn').addEventListener('click', () => switchTab
 document.getElementById('tabReviewBtn').addEventListener('click', () => switchTab('review'));
 document.getElementById('tabScheduleBtn').addEventListener('click', () => switchTab('schedule'));
 document.getElementById('tabFrontBtn').addEventListener('click', () => switchTab('front'));
+document.getElementById('tabTidyBtn').addEventListener('click', () => switchTab('tidy'));
+function currentTabName() {
+  const on = document.querySelector('.tab-bar button.active');
+  return on ? on.textContent.trim().replace(/^Front page.*/, 'Front page & generate') : '';
+}
 function switchTab(which) {
   document.getElementById('sitesTab').style.display = which === 'sites' ? 'block' : 'none';
   document.getElementById('reviewTab').style.display = which === 'review' ? 'block' : 'none';
   document.getElementById('scheduleTab').style.display = which === 'schedule' ? 'block' : 'none';
   document.getElementById('frontTab').style.display = which === 'front' ? 'block' : 'none';
+  document.getElementById('tidyTab').style.display = which === 'tidy' ? 'block' : 'none';
+  document.getElementById('tabTidyBtn').classList.toggle('active', which === 'tidy');
   document.getElementById('tabSitesBtn').classList.toggle('active', which === 'sites');
   document.getElementById('tabReviewBtn').classList.toggle('active', which === 'review');
   document.getElementById('tabScheduleBtn').classList.toggle('active', which === 'schedule');
@@ -1036,10 +1278,11 @@ function switchTab(which) {
   if (which === 'schedule') renderSchedule();
   if (which === 'front') renderFront();
   if (which === 'review') renderStatsBar();
+  if (which === 'tidy') renderTidy();
 }
 
 document.getElementById('manageStaffLink').addEventListener('click', () => {
-  ['sitesTab','reviewTab','scheduleTab','frontTab'].forEach(id => document.getElementById(id).style.display = 'none');
+  ['sitesTab','reviewTab','scheduleTab','frontTab','tidyTab'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('staffTab').style.display = 'block';
   document.querySelector('.tab-bar').style.display = 'none';
 });
@@ -1154,16 +1397,7 @@ async function renderSitesList() {
         const original = btn.textContent;
         btn.disabled = true; btn.textContent = 'Exporting…';
         try {
-          const records = await fetchSiteTestRecords(ref);
-          // v16.0: the backup also carries the site record itself (status,
-          // certificate number, limitations, report history), not just the tests.
-          const siteSnap = await getDoc(doc(db, 'jobs', ref));
-          const backup = {
-            exportedAt: new Date().toISOString(), exportedBy: currentUser.email, siteRef: ref,
-            site: siteSnap.exists() ? { _id: ref, ...siteSnap.data() } : null,
-            tests: records
-          };
-          downloadBlob(ref + '-backup-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(backup, null, 2), 'application/json');
+          await exportSiteBackup(ref);
         } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
         btn.disabled = false; btn.textContent = original;
       });
@@ -1187,6 +1421,21 @@ async function renderSitesList() {
   } catch (e) {
     list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
   }
+}
+
+// v16.0: the backup also carries the site record itself (status, certificate
+// number, limitations, report history), not just the tests. v17.0: one
+// function, used by the Sites tab and by Tidy names.
+async function exportSiteBackup(ref) {
+  const records = await fetchSiteTestRecords(ref);
+  const siteSnap = await getDoc(doc(db, 'jobs', ref));
+  const backup = {
+    exportedAt: new Date().toISOString(), exportedBy: currentUser.email, siteRef: ref,
+    site: siteSnap.exists() ? { _id: ref, ...siteSnap.data() } : null,
+    tests: records
+  };
+  const stamp = new Date().toISOString().slice(0, 16).replace(':', '');
+  downloadBlob(ref + '-backup-' + stamp + '.json', JSON.stringify(backup, null, 2), 'application/json');
 }
 
 async function fetchSiteTestRecords(siteRef) {
@@ -1352,6 +1601,7 @@ async function loadSiteData() {
     buildLocFilterOptions();
     if (document.getElementById('scheduleTab').style.display !== 'none') renderSchedule();
     if (document.getElementById('frontTab').style.display !== 'none') renderFront();
+    if (document.getElementById('tidyTab').style.display !== 'none') renderTidy();
   } catch (e) {
     if (myToken === siteLoadToken) pendingList.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
   } finally {
@@ -1566,7 +1816,7 @@ function renderPreview() {
 
     if (!isEditing) {
       const isPass = overallPassOf(latest);
-      const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
+      const lastEdit = (latest.editLog || []).filter(e => e.checklistChanged).pop() || null;   // tidy-ups in the log aren't checklist edits
       const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
       return `
         <div class="preview-item ${isQsed ? 'qsed' : ''}">
@@ -2943,12 +3193,354 @@ async function generateReport(mode) {
   banner.textContent = 'Report generated: ' + filename;
   banner.style.display = 'block';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TIDY NAMES (v17.0). Merge different spellings of the same name on the
+//  selected site, e.g. "Press Line 4", "Pl4" and "Press line 4". Pick the
+//  field, tick the spellings that mean the same, choose the name to keep,
+//  preview, then merge. Agreed with Rob 20 Oct 2026:
+//  - Equipment IDs are regenerated when the location (or a motor isolator's
+//    equipment name) changes, and every test of an item moves together so
+//    its history stays linked.
+//  - Letter IDs (PL4-B-SI) keep their letter if it's free at the new
+//    location, otherwise take the next free one, so they never clash.
+//  - Name IDs (PL4-C1-MI) can land on an ID another item already has. Those
+//    are flagged: by default that item keeps its old ID (only the name
+//    changes); tick "Same item" to join the two histories.
+//  - Every change goes in the test's editLog with a tidyId, which is also how
+//    "Recent tidy-ups" is built and how Undo knows what to put back. Undo
+//    only reverts tests still exactly as the tidy-up left them.
+//  No rules change: Manager / QS / Director can already update isolatorTests
+//  on a site that isn't Complete.
+// ═══════════════════════════════════════════════════════════════════════════
+const TIDY_FIELDS = [
+  { key: 'millLocation', label: 'Mill location', ids: true },
+  { key: 'panelName', label: 'Panel name' },
+  { key: 'equipmentName', label: 'Equipment name (motor isolators)', ids: true },
+  { key: 'physicalLocation', label: 'Physical location' },
+  { key: 'relayLocation', label: 'Location of safety relay' },
+  { key: 'equipmentAffected', label: 'Equipment affected' },
+  { key: 'manufacturer', label: 'Manufacturer' },
+  { key: 'model', label: 'Model' }
+];
+let tidyTicked = new Set();
+let tidyPlan = null;
+let tidyToTyped = null;   // what the user typed in "Change them all to", if anything
+function tidyNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+function tidyClean(s) { return String(s == null ? '' : s).trim(); }
+function tidyField() { return document.getElementById('tidyField').value; }
+function tidyFieldDef() { return TIDY_FIELDS.find(f => f.key === tidyField()); }
+
+document.getElementById('tidyField').innerHTML = TIDY_FIELDS.map(f => `<option value="${f.key}">${f.label}</option>`).join('');
+document.getElementById('tidyField').addEventListener('change', () => { tidyTicked.clear(); tidyPlan = null; tidyToTyped = null; renderTidy(); });
+document.getElementById('tidySearch').addEventListener('input', () => renderTidyValues());
+document.getElementById('tidyAlikeOnly').addEventListener('change', () => renderTidyValues());
+document.getElementById('tidyBackupBtn').addEventListener('click', async (e) => {
+  const ref = document.getElementById('site').value;
+  if (!ref) return;
+  const btn = e.currentTarget, original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Exporting…';
+  try { await exportSiteBackup(ref); } catch (er) { alert('Could not export — ' + (er.message || er.code || 'unknown error')); }
+  btn.disabled = false; btn.textContent = original;
+});
+
+// Every spelling in use for the chosen field: how many tests and items use it.
+function tidyValues() {
+  const field = tidyField();
+  const map = new Map();
+  siteHistoryCache.forEach(t => {
+    const v = tidyClean(t[field]);
+    if (!v) return;
+    if (!map.has(v)) map.set(v, { value: v, norm: tidyNorm(v), tests: 0, items: new Set(), live: 0 });
+    const e = map.get(v);
+    e.tests++; e.items.add(t.equipmentId);
+    if (!t.deletedFlag) e.live++;
+  });
+  const list = [...map.values()];
+  const byNorm = {};
+  list.forEach(e => { byNorm[e.norm] = (byNorm[e.norm] || 0) + 1; });
+  list.forEach(e => { e.alike = byNorm[e.norm] > 1; });
+  return list.sort((a, b) => a.value.toLowerCase().localeCompare(b.value.toLowerCase()) || a.value.localeCompare(b.value));
+}
+
+function renderTidy() {
+  const ref = document.getElementById('site').value;
+  const closed = isSiteComplete();
+  document.getElementById('tidyNoSite').hidden = !!ref;
+  document.getElementById('tidyBody').hidden = !ref;
+  document.getElementById('tidyClosedNote').hidden = !(ref && closed);
+  if (!ref) return;
+  renderTidyValues();
+  renderTidyPanel();
+  renderTidyHistory();
+}
+
+function renderTidyValues() {
+  const box = document.getElementById('tidyValues');
+  const q = document.getElementById('tidySearch').value.trim().toLowerCase();
+  const nq = tidyNorm(q);
+  const alikeOnly = document.getElementById('tidyAlikeOnly').checked;
+  const all = tidyValues();
+  [...tidyTicked].forEach(v => { if (!all.some(e => e.value === v)) tidyTicked.delete(v); });
+  let list = all;
+  if (q) list = list.filter(e => e.value.toLowerCase().includes(q) || (nq && e.norm.includes(nq)) || tidyTicked.has(e.value));
+  if (alikeOnly) list = list.filter(e => e.alike || tidyTicked.has(e.value));
+  document.getElementById('tidyCount').textContent = all.length + ' different ' + (all.length === 1 ? 'name' : 'names') + ' on this site' +
+    (list.length !== all.length ? ' · showing ' + list.length : '');
+  if (!list.length) { box.innerHTML = '<div class="empty-note">Nothing matches.</div>'; return; }
+  box.innerHTML = list.map(e => `
+    <label class="tidy-row ${tidyTicked.has(e.value) ? 'on' : ''}">
+      <input type="checkbox" data-tidyval="${escHtml(e.value)}" ${tidyTicked.has(e.value) ? 'checked' : ''}>
+      <span class="tv">${escHtml(e.value)}${e.alike ? ' <span class="tidy-alike" title="Same letters and numbers as another name here, apart from capitals, spaces or punctuation">look-alike</span>' : ''}</span>
+      <span class="tn">${e.tests} test${e.tests === 1 ? '' : 's'} · ${e.items.size} item${e.items.size === 1 ? '' : 's'}</span>
+    </label>`).join('');
+  box.querySelectorAll('[data-tidyval]').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) tidyTicked.add(cb.dataset.tidyval); else tidyTicked.delete(cb.dataset.tidyval);
+    cb.closest('.tidy-row').classList.toggle('on', cb.checked);
+    tidyPlan = null;
+    renderTidyPanel();
+  }));
+}
+
+function renderTidyPanel() {
+  const panel = document.getElementById('tidyPanel');
+  const ticked = tidyValues().filter(e => tidyTicked.has(e.value));
+  if (!ticked.length) {
+    panel.innerHTML = '<div class="tidy-empty">Tick the names that mean the same thing. Then pick the one to keep.</div>';
+    return;
+  }
+  const best = [...ticked].sort((a, b) => b.tests - a.tests)[0].value;
+  const to = tidyToTyped != null ? tidyToTyped : best;   // default: the most-used of the ticked names
+  panel.innerHTML = `
+    <p class="section-label" style="margin-bottom:8px;">Merge ${ticked.length} name${ticked.length === 1 ? '' : 's'}</p>
+    <div class="tidy-ticked">${ticked.map(e => `<span class="tidy-chip">${escHtml(e.value)} <small>${e.tests}</small></span>`).join('')}</div>
+    <label for="tidyTo">Change them all to</label>
+    <input type="text" id="tidyTo" list="tidyToList" value="${escHtml(to)}">
+    <datalist id="tidyToList">${ticked.map(e => `<option value="${escHtml(e.value)}">`).join('')}</datalist>
+    <button type="button" class="save-meta-btn" id="tidyPreviewBtn" style="width:100%;">Preview the changes</button>
+    <div id="tidyPreview"></div>`;
+  document.getElementById('tidyTo').addEventListener('input', (e) => { tidyToTyped = e.target.value; tidyPlan = null; document.getElementById('tidyPreview').innerHTML = ''; });
+  document.getElementById('tidyPreviewBtn').addEventListener('click', () => {
+    const toVal = tidyClean(document.getElementById('tidyTo').value).replace(/\s+/g, ' ');
+    if (!toVal) { alert('Type the name to change them to.'); return; }
+    tidyPlan = planTidy(tidyField(), new Set(tidyTicked), toVal);
+    renderTidyPreview();
+  });
+  if (tidyPlan) renderTidyPreview();
+}
+
+// Works out every change before anything is written.
+function planTidy(field, fromSet, to) {
+  const def = TIDY_FIELDS.find(f => f.key === field);
+  const all = siteHistoryCache;
+  const changeText = t => fromSet.has(tidyClean(t[field])) && t[field] !== to;
+  const byItem = {};
+  all.forEach(t => { (byItem[t.equipmentId] = byItem[t.equipmentId] || []).push(t); });
+  Object.values(byItem).forEach(h => h.sort(compareTests));
+  const taken = new Set(Object.keys(byItem));
+  const idMoves = [];      // { eq, newId, clashWith, join }
+  if (def.ids) {
+    const assigned = new Map();   // newId -> eq already given it in this plan
+    Object.keys(byItem).sort().forEach(eq => {
+      const hist = byItem[eq];
+      const active = hist.filter(h => !h.deletedFlag);
+      const latest = active.length ? active[active.length - 1] : hist[hist.length - 1];
+      if (!fromSet.has(tidyClean(latest[field]))) return;
+      const cat = CATEGORIES[latest.category];
+      if (!cat) return;
+      if (field === 'equipmentName' && cat.idMode !== 'tag') return;
+      const after = { ...latest, [field]: to };
+      const oldCode = locationCode(latest.millLocation), newCode = locationCode(after.millLocation);
+      let newId = '';
+      if (cat.idMode === 'tag') {
+        // Only when the part of the ID this name feeds actually changes, so a
+        // merge never quietly "corrects" an older ID for some other reason.
+        const tagOf = r => tidyClean(r[cat.tagField]).toUpperCase().replace(/\s+/g, '');
+        if (field === 'millLocation' && oldCode === newCode) return;
+        if (field === 'equipmentName' && tagOf(latest) === tagOf(after)) return;
+        newId = computeTagId(latest.category, newCode, after[cat.tagField]);
+      } else {
+        if (oldCode === newCode) return;
+        const m = eq.match(new RegExp('-([A-Z]+)-' + cat.suffix + '$'));
+        const keep = m ? newCode + '-' + m[1] + '-' + cat.suffix : '';
+        if (keep && !taken.has(keep) && !assigned.has(keep)) newId = keep;
+        else { let i = 0; do { newId = newCode + '-' + letterFromIndex(i++) + '-' + cat.suffix; } while (taken.has(newId) || assigned.has(newId)); }
+      }
+      if (!newId || newId === eq) return;
+      const clashWith = (taken.has(newId) && newId !== eq) ? newId : (assigned.get(newId) || '');
+      idMoves.push({ eq, newId, clashWith, join: false, tests: hist.length });
+      if (!clashWith) assigned.set(newId, eq);
+    });
+  }
+  const textTests = all.filter(changeText);
+  return { field, from: [...fromSet], to, textTests, idMoves, byItem };
+}
+
+function renderTidyPreview() {
+  const box = document.getElementById('tidyPreview');
+  const p = tidyPlan;
+  if (!p) { box.innerHTML = ''; return; }
+  const moving = p.idMoves.filter(m => !m.clashWith || m.join);
+  const clashes = p.idMoves.filter(m => m.clashWith);
+  const touched = new Set(p.textTests.map(t => t._id));
+  moving.forEach(m => p.byItem[m.eq].forEach(t => touched.add(t._id)));
+  const items = new Set([...p.textTests.map(t => t.equipmentId), ...moving.map(m => m.eq)]);
+  const closed = isSiteComplete();
+  box.innerHTML = `
+    <div class="tidy-sum">${touched.size ? `This changes <b>${touched.size} test${touched.size === 1 ? '' : 's'}</b> on <b>${items.size} item${items.size === 1 ? '' : 's'}</b>.` : 'Nothing to change: they already all say that.'}
+      ${p.idMoves.length ? `<br><b>${moving.length}</b> Equipment ID${moving.length === 1 ? '' : 's'} will change.` : (tidyFieldDef().ids ? '<br>No Equipment IDs change.' : '')}</div>
+    ${clashes.length ? `<div class="edit-warning"><b>${clashes.length} would clash</b> with an ID that's already used. Unless you tick <b>Same item</b>, ${clashes.length === 1 ? 'it keeps its' : 'they keep their'} old ID and only the name changes.</div>` : ''}
+    ${p.idMoves.length ? `<div class="tidy-ids">${p.idMoves.map((m, i) => `
+      <div class="tidy-id ${m.clashWith ? 'clash' : ''}">
+        <span>${escHtml(m.eq)}</span><span class="arrow">→</span><span><b>${escHtml(m.newId)}</b></span>
+        ${m.clashWith ? `<label class="tidy-join"><input type="checkbox" data-join="${i}" ${m.join ? 'checked' : ''}>Same item: join the histories</label>` : ''}
+      </div>`).join('')}</div>` : ''}
+    ${closed ? '<div class="edit-warning">This site is marked Complete, so nothing can be changed. Reopen it on the Sites tab first.</div>' : ''}
+    <div class="tidy-btns">
+      <button type="button" class="save-meta-btn" id="tidyBackup2">Export backup first</button>
+      <button type="button" class="generate-btn" id="tidyGoBtn" style="margin-top:0;" ${!touched.size || closed ? 'disabled' : ''}>Merge</button>
+    </div>`;
+  box.querySelectorAll('[data-join]').forEach(cb => cb.addEventListener('change', () => { p.idMoves[+cb.dataset.join].join = cb.checked; renderTidyPreview(); }));
+  document.getElementById('tidyBackup2').addEventListener('click', () => document.getElementById('tidyBackupBtn').click());
+  document.getElementById('tidyGoBtn').addEventListener('click', () => runTidy(p));
+}
+
+async function runTidy(p) {
+  const ref = document.getElementById('site').value;
+  const moving = p.idMoves.filter(m => !m.clashWith || m.join);
+  const newIdOf = {};
+  moving.forEach(m => { newIdOf[m.eq] = m.newId; });
+  const fieldLabel = tidyFieldDef().label.toLowerCase();
+  if (!confirm(`Change ${p.from.length === 1 ? '"' + p.from[0] + '"' : p.from.length + ' names'} to "${p.to}" (${fieldLabel})` +
+    (moving.length ? `, and ${moving.length} Equipment ID${moving.length === 1 ? '' : 's'}` : '') +
+    '?\n\nYou can undo it from Recent tidy-ups.')) return;
+  const tidyId = 'tidy-' + Date.now().toString(36);
+  const who = { by: currentUser.displayName || currentUser.email, byEmail: currentUser.email, at: new Date().toISOString() };
+  const updates = [];
+  siteHistoryCache.forEach(t => {
+    const u = {}, log = { tidy: true, tidyId, ...who, field: p.field };
+    if (p.from.includes(tidyClean(t[p.field])) && t[p.field] !== p.to) { u[p.field] = p.to; log.from = t[p.field] == null ? '' : t[p.field]; log.to = p.to; }
+    if (newIdOf[t.equipmentId]) { u.equipmentId = newIdOf[t.equipmentId]; log.fromId = t.equipmentId; log.toId = newIdOf[t.equipmentId]; }
+    if (!Object.keys(u).length) return;
+    u.editLog = arrayUnion(log);
+    updates.push({ id: t._id, u });
+  });
+  const btn = document.getElementById('tidyGoBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await commitInBatches(updates);
+    showBanner('ok', `Done: ${updates.length} test${updates.length === 1 ? '' : 's'} changed to "${p.to}"` + (moving.length ? ` and ${moving.length} Equipment ID${moving.length === 1 ? '' : 's'} updated.` : '.') + ' Undo is under Recent tidy-ups.');
+    tidyTicked.clear(); tidyPlan = null; tidyToTyped = null;
+    await loadSiteData();
+    renderTidy();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Merge';
+    alert('Could not finish — ' + (e.message || e.code || 'unknown error') + '\n\nSome tests may have changed. Press Refresh and check Recent tidy-ups; you can undo what went through.');
+    await loadSiteData(); renderTidy();
+  }
+}
+async function commitInBatches(updates) {
+  for (let i = 0; i < updates.length; i += 400) {
+    const batch = writeBatch(db);
+    updates.slice(i, i + 400).forEach(x => batch.update(doc(db, 'isolatorTests', x.id), x.u));
+    await batch.commit();
+  }
+}
+
+// Recent tidy-ups, read back from the tests' edit logs.
+function tidyRuns() {
+  const runs = new Map();
+  siteHistoryCache.forEach(t => (t.editLog || []).forEach(e => {
+    if (!e || !e.tidyId) return;
+    if (!runs.has(e.tidyId)) runs.set(e.tidyId, { id: e.tidyId, tests: new Set(), from: new Set(), to: '', field: '', by: '', at: '', ids: 0, undone: null });
+    const r = runs.get(e.tidyId);
+    if (e.tidyUndo) { r.undone = e; return; }
+    r.tests.add(t._id); r.field = e.field; r.by = e.by; r.at = e.at;
+    if (e.to !== undefined) { r.to = e.to; r.from.add(e.from); }
+    if (e.toId) r.ids++;
+  }));
+  return [...runs.values()].filter(r => r.at).sort((a, b) => b.at.localeCompare(a.at));
+}
+function renderTidyHistory() {
+  const box = document.getElementById('tidyHistory');
+  const runs = tidyRuns();
+  if (!runs.length) { box.innerHTML = '<div class="empty-note">No tidy-ups on this site yet.</div>'; return; }
+  const closed = isSiteComplete();
+  box.innerHTML = runs.map(r => {
+    const f = TIDY_FIELDS.find(x => x.key === r.field);
+    return `<div class="site-item">
+      <div><div class="name">${[...r.from].map(v => '"' + escHtml(v) + '"').join(', ') || 'Equipment IDs only'} → "${escHtml(r.to)}"</div>
+      <div class="meta">${escHtml(f ? f.label : r.field)} · ${r.tests.size} test${r.tests.size === 1 ? '' : 's'}${r.ids ? ' · IDs changed' : ''} · ${escHtml(r.by)}, ${new Date(r.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${r.undone ? ' · <b>undone</b> by ' + escHtml(r.undone.by) : ''}</div></div>
+      ${r.undone || closed ? '' : `<button type="button" class="edit-btn" data-undo="${escHtml(r.id)}">Undo</button>`}
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-undo]').forEach(b => b.addEventListener('click', () => undoTidy(b.dataset.undo)));
+}
+async function undoTidy(tidyId) {
+  const who = { by: currentUser.displayName || currentUser.email, byEmail: currentUser.email, at: new Date().toISOString() };
+  const updates = [];
+  let skipped = 0;
+  siteHistoryCache.forEach(t => {
+    const e = (t.editLog || []).find(x => x && x.tidyId === tidyId && !x.tidyUndo);
+    if (!e) return;
+    const u = {};
+    if (e.to !== undefined && t[e.field] === e.to) u[e.field] = e.from;
+    if (e.toId && t.equipmentId === e.toId) u.equipmentId = e.fromId;
+    const wanted = (e.to !== undefined) + !!e.toId;
+    if (Object.keys(u).length < wanted) skipped++;
+    if (!Object.keys(u).length) return;
+    u.editLog = arrayUnion({ tidy: true, tidyUndo: true, tidyId, ...who, field: e.field });
+    updates.push({ id: t._id, u });
+  });
+  if (!updates.length) { alert('Nothing to undo: those tests have all been changed again since.'); return; }
+  if (!confirm(`Put back ${updates.length} test${updates.length === 1 ? '' : 's'} as they were before this tidy-up?` +
+    (skipped ? `\n\n${skipped} test${skipped === 1 ? ' has' : 's have'} been changed again since, so ${skipped === 1 ? 'it' : 'they'} will be left as ${skipped === 1 ? 'it is' : 'they are'}.` : ''))) return;
+  try {
+    await commitInBatches(updates);
+    showBanner('ok', 'Tidy-up undone: ' + updates.length + ' test' + (updates.length === 1 ? '' : 's') + ' put back.');
+  } catch (e) { alert('Could not undo — ' + (e.message || e.code || 'unknown error')); }
+  await loadSiteData();
+  renderTidy();
+}
+// ═══════════════════════════ end of TIDY NAMES ═════════════════════════════
 </script>
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (index, isolator-interlock-test and isolator-interlock-report so
+//  far — keep in step; every other page gets it when it's next changed):
+//  service worker + "A new version is ready" bar. Agreed 20 Oct 2026.
+//  After an upload (with CACHE_NAME bumped), the new service worker installs
+//  in the background and takes over; that's the moment the new files are
+//  saved on the device. The bar then asks to reload onto them. It never
+//  reloads by itself, and a page can stop it while something's unfinished
+//  by setting window.swUpdateBlocker = () => 'reason' (or '' when it's fine).
+//  Checks for an update when the app is opened or brought back to the
+//  front, and every 30 minutes.
+// ═══════════════════════════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
+  const swvHadController = !!navigator.serviceWorker.controller;   // first ever install isn't an "update"
+  window.swvShowBar = function () {
+    if (document.getElementById('swvBar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'swvBar'; bar.className = 'swv-bar';
+    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button">Update</button>';
+    bar.querySelector('button').addEventListener('click', () => {
+      const why = typeof window.swUpdateBlocker === 'function' ? window.swUpdateBlocker() : '';
+      if (why) { bar.querySelector('span').textContent = why; bar.classList.add('wait'); return; }
+      bar.querySelector('button').disabled = true;
+      location.reload();
+    });
+    document.body.appendChild(bar);
+    document.body.classList.add('swv-on');
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swvHadController) window.swvShowBar(); });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+    navigator.serviceWorker.register("service-worker.js").then(reg => {
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60000);
+    }).catch(err => console.error("Service worker registration failed:", err));
   });
 }
 </script>

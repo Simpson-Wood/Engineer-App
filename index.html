@@ -187,6 +187,27 @@
   .sw-help details > div p{margin:0 0 8px;}
   .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
   @media (max-width:640px){ .sw-help{max-width:none;} }
+  /* ---- SHARED (keep in step: index, isolator test): Not sent yet ---- */
+  .swu-bar{display:flex; align-items:center; gap:9px; width:100%; border:none; border-bottom:1px solid #f0dc9a; background:#fff3cd; color:#8a6d1a; padding:10px 16px; font-family:'Barlow',sans-serif; font-size:14.5px; font-weight:600; text-align:left; cursor:pointer; line-height:1.35;}
+  .swu-bar[hidden]{display:none !important;}
+  .swu-bar i{font-size:20px; flex-shrink:0;}
+  .swu-bar.bad{background:#fbe9e9; color:#a32d2d; border-bottom-color:#f0bcbe;}
+  .swu-list{display:grid; gap:6px;}
+  .swu-row{display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #e2e2e2; border-radius:9px; padding:9px 12px; font-size:15px;}
+  .swu-row.bad{border-color:#f0bcbe; background:#fff8f8;}
+  .swu-row small{display:block; color:#5c5c5c; font-size:13px; margin-top:1px;}
+  .swu-row .swu-why{color:#a32d2d;}
+  .swu-pill{font-size:12px; font-weight:700; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:2px 9px; white-space:nowrap;}
+  .swu-note{font-size:13.5px; color:#5c5c5c; margin:12px 0 0; line-height:1.45;}
+  .tile .unsent-pill{display:inline-block; margin-left:6px; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:1px 7px; font-size:10.5px; font-weight:600; white-space:nowrap;}
+  .tile .unsent-pill.bad{background:#fbe9e9; color:#a32d2d;}
+  @media (max-width:899px){ .tile .unsent-pill{display:block; margin:4px auto 0; width:max-content;} }
+  /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
+  .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
+  .swv-bar button{background:#D0222A; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .swv-bar.wait{background:#7a5c0e;}
+  body.swv-on{padding-bottom:76px;}
+  body.swv-on .undo-toast{bottom:86px;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -229,10 +250,11 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, collection, getDocs, query, where, orderBy, limit, setDoc
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocFromServer,
+  collection, getDocs, query, where, orderBy, limit, setDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.8";
+const VERSION = "v2.9";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -246,14 +268,17 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// v2.9: the multi-tab cache, so this page, the engineer apps and any second
+// tab share the phone's saved data and unsent queue safely.
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 // Raw Firestore functions for the shared block below (this page saves
 // nothing else, so there's nothing for "View as" to guard).
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = setDoc;
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = setDoc, swGetDocFromServer = getDocFromServer;
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report and
-//  management — keep in step): access level · View as (Rob only) ·
+//  SHARED (copied into index, timesheet, leave, timesheet-report,
+//  management, isolator-interlock-test and isolator-interlock-report — keep
+//  in step): access level · View as (Rob only) ·
 //  What's New · Help.   Standards §15: any page changed from now on gets
 //  this block too.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -377,6 +402,112 @@ function swExtrasStart() {
   swNewsCheck();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index and isolator-interlock-test — keep in step; add
+//  to timesheet and leave when they're next changed): NOT SENT YET.
+//  Every save made on this device is written down here (localStorage, which
+//  every page on the site shares) until the server copy is confirmed.
+//  Firestore keeps its own queue of unsent saves on the phone; this list is
+//  how we *show* it, and unlike the old in-page counter it survives the app
+//  being closed or reloaded. Every page that has this block checks the list
+//  against the server when it opens, when signal comes back and every minute,
+//  so anything that went up in the background clears itself.
+//  Needs: db, auth, swDoc, swGetDocFromServer, swModal, swEsc (§15 block).
+//  An item: { c: collection, id: doc id, label, app, site, at, by, failed?, why? }
+// ═══════════════════════════════════════════════════════════════════════════
+const SWU_KEY = 'sw-unsent-v1';
+const SWU_SLOW_MS = 30 * 60000;   // still not there after 30 min with signal: say so
+function swuMe() { return String((auth.currentUser && auth.currentUser.email) || '').toLowerCase(); }
+function swuAll() { try { const a = JSON.parse(localStorage.getItem(SWU_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function swuSave(a) { try { localStorage.setItem(SWU_KEY, JSON.stringify(a)); } catch (e) {} swuRender(); }
+function swuMine() { const me = swuMe(); return swuAll().filter(x => x.by === me); }
+function swuAdd(item) { const a = swuAll().filter(x => x.id !== item.id); a.push(Object.assign({ at: Date.now(), by: swuMe() }, item)); swuSave(a); }
+function swuSent(id) { const a = swuAll(); if (a.some(x => x.id === id)) swuSave(a.filter(x => x.id !== id)); }
+function swuFailed(id, why) { swuSave(swuAll().map(x => x.id === id ? Object.assign({}, x, { failed: true, why: String(why || '') }) : x)); }
+function swuWaiting(id) { return swuAll().some(x => x.id === id && !x.failed); }
+let swuChecking = false;
+async function swuCheck() {
+  if (swuChecking || !navigator.onLine || !auth.currentUser) return;
+  swuChecking = true;
+  try {
+    for (const x of swuMine().filter(x => !x.failed)) {
+      try {
+        const s = await swGetDocFromServer(swDoc(db, x.c, x.id));
+        if (s.exists()) swuSent(x.id);
+      } catch (e) { if (e && e.code === 'unavailable') break; }   // no real signal: try again later
+    }
+  } finally { swuChecking = false; swuRender(); }
+}
+function swuAgo(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' hr ago' : Math.round(m / 1440) + ' days ago';
+}
+function swuRender() {
+  const head = document.querySelector('#appRoot header');
+  if (!head) return;
+  let bar = document.getElementById('swuBar');
+  if (!bar) {
+    bar = document.createElement('button');
+    bar.type = 'button'; bar.id = 'swuBar'; bar.className = 'swu-bar'; bar.hidden = true;
+    bar.addEventListener('click', swuShowList);
+    head.insertAdjacentElement('afterend', bar);
+  }
+  const mine = swuMine(), bad = mine.filter(x => x.failed), wait = mine.filter(x => !x.failed);
+  document.dispatchEvent(new CustomEvent('swu-change', { detail: { waiting: wait, failed: bad } }));
+  if (!mine.length) { bar.hidden = true; return; }
+  bar.hidden = false;
+  bar.classList.toggle('bad', bad.length > 0);
+  const n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
+  bar.innerHTML = bad.length
+    ? `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${n(bad.length, 'test')} didn't save. Tap to see which, then log ${bad.length === 1 ? 'it' : 'them'} again.</span>`
+    : `<i class="ti ti-cloud-upload" aria-hidden="true"></i><span>${n(wait.length, 'test')} not sent yet. ` +
+      (navigator.onLine ? 'Sending… keep the app open.' : `No signal. ${wait.length === 1 ? 'It' : 'They'}'ll send when you're back in signal. Don't clear the app.`) + `</span>`;
+}
+function swuShowList() {
+  const mine = swuMine().sort((a, b) => b.at - a.at);
+  const slow = x => !x.failed && navigator.onLine && Date.now() - x.at > SWU_SLOW_MS;
+  const row = x => `<div class="swu-row ${x.failed ? 'bad' : ''}"><div><b>${swEsc(x.label || x.id)}</b>
+      <small>${swEsc([x.app, x.site].filter(Boolean).join(' · '))}${x.app || x.site ? ' · ' : ''}saved ${swuAgo(x.at)}</small>
+      ${x.failed ? `<small class="swu-why">Didn't save${x.why ? ' (' + swEsc(x.why) + ')' : ''}. Log it again, then press Remove.</small>` : ''}
+      ${slow(x) ? `<small class="swu-why">Still not sent. Open ${swEsc(x.app || 'the app')} with signal. If it stays here, tell the office.</small>` : ''}</div>
+      ${x.failed ? `<button type="button" class="sw-btn" data-swudrop="${swEsc(x.id)}">Remove</button>` : '<span class="swu-pill">Waiting</span>'}</div>`;
+  const m = swModal(`<div class="sw-modal"><h3>Not sent yet</h3>
+    ${mine.length ? `<div class="swu-list">${mine.map(row).join('')}</div>` : '<p>Everything has been sent.</p>'}
+    <p class="swu-note">Tests stay safe on this phone until the office has them. Keep the app open with signal and they go up on their own. Don't clear the app's data or uninstall it while anything is waiting.</p>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swucheck>Check again</button><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+  m.addEventListener('click', e => {
+    const d = e.target.closest('[data-swudrop]');
+    if (d) { swuSave(swuAll().filter(x => x.id !== d.dataset.swudrop)); m.remove(); swuShowList(); return; }
+    if (e.target.closest('[data-swucheck]')) { m.remove(); swuCheck().then(swuShowList); }
+  });
+}
+function swuStart() {
+  swuRender();
+  swuCheck();
+  window.addEventListener('online', () => { swuRender(); swuCheck(); });
+  window.addEventListener('offline', swuRender);
+  window.addEventListener('storage', e => { if (e.key === SWU_KEY) swuRender(); });
+  setInterval(swuCheck, 60000);
+}
+// ═══════════════════════════ end of NOT SENT YET ═══════════════════════════
+// "A new version is ready" bar (shared block at the bottom): wait for unsent tests.
+window.swUpdateBlocker = () => swuMine().some(x => !x.failed) ? 'Wait until your tests have sent (the yellow bar goes), then tap Update.' : '';
+
+// Homepage: the tool's tile says how many of its tests are still waiting.
+document.addEventListener('swu-change', e => {
+  const all = [...e.detail.waiting, ...e.detail.failed];
+  const byColl = {};
+  all.forEach(x => { (byColl[x.c] = byColl[x.c] || { n: 0, bad: 0 }).n++; if (x.failed) byColl[x.c].bad++; });
+  document.querySelectorAll('.tile[data-tool]').forEach(t => {
+    const c = byColl[t.dataset.tool + 'Tests'];
+    let pill = t.querySelector('.unsent-pill');
+    if (!c) { if (pill) pill.remove(); return; }
+    if (!pill) { pill = document.createElement('span'); pill.className = 'unsent-pill'; t.querySelector('span').appendChild(pill); }
+    pill.className = 'unsent-pill' + (c.bad ? ' bad' : '');
+    pill.textContent = c.bad ? c.bad + ' didn\'t save' : c.n + ' not sent';
+  });
+});
+
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
@@ -458,6 +589,7 @@ function renderTools(tools, isManager, isOffice){
       el = document.createElement('a');
       el.href = href;
       el.className = 'tile';
+      el.dataset.tool = tool.id;
     } else {
       el = document.createElement('div');
       el.className = 'tile disabled';
@@ -953,23 +1085,18 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   engineer: [
-    'The home page now shows <b>your next on-call</b>, <b>who\'s on call</b> tonight and this weekend, and <b>your requests</b>.',
-    'If someone asks to swap on-call with you, you can <b>Accept</b> or <b>Decline</b> it right from the home page.',
-    'If you\'ve missed a timesheet, it tells you.',
-    'Bank holidays and the Christmas shutdown show up a week before.',
-    '<b>Timesheet</b> and <b>Leave &amp; on-call</b> are together at the top. Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
+    'If any of your tests <b>haven\'t reached the office yet</b>, a yellow bar at the top of the home page says so, and the <b>Isolator testing</b> tool shows how many. Tap the bar to see which ones.',
+    'Keep the app open with signal and they go up on their own. Don\'t clear the app while the bar is showing.',
+    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
   ],
   office: [
-    'The home page now has a <b>To do</b> box: holiday and swaps to approve, swaps nobody has answered, missing timesheets and the work diary. Tap a line to go straight there.',
-    'It also shows who\'s on call tonight and this weekend.',
-    'Bank holidays and the Christmas shutdown show up a week before.',
-    'Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
+    'If any tests saved on this device <b>haven\'t reached the office yet</b>, a yellow bar at the top says so. Tap it to see which ones.',
+    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
   ],
   management: [
-    'The home page now has a <b>To do</b> box: holiday and swaps to approve, swaps nobody has answered, missing timesheets, the work diary and <b>Ready for QS</b>. Tap a line to go straight there.',
-    'It also shows who\'s on call tonight and this weekend. The recent test results are underneath.',
-    'Bank holidays and the Christmas shutdown show up a week before.',
-    'Tools that aren\'t ready yet are in one <b>Coming soon</b> line at the bottom.'
+    'If any tests saved on this device <b>haven\'t reached the office yet</b>, a yellow bar at the top says so, and the tool shows how many. Engineers see the same on their phones.',
+    'The isolator reports have a new <b>Tidy names</b> tab for merging different spellings of the same name.',
+    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
   ]
 };
 const HELP = [
@@ -980,6 +1107,8 @@ const HELP = [
   { levels: ['engineer'], q: 'How do I get my on-call in my phone calendar?', a: '<p>Press <b>Add to my phone calendar</b> under My next on-call. It takes you to the download in Leave &amp; on-call.</p>' },
   { q: 'It says I\'ve days without a timesheet', a: '<p>Those are weekdays in the last month with no timesheet sent. Weekends, bank holidays, the shutdown and booked holiday don\'t count. Press <b>Fill them in</b>.</p>' },
   { q: 'Can I use the apps with no signal?', a: '<p>Yes, they open with no signal and save your work. It goes up when you\'re back in signal, so don\'t clear the app until it has.</p>' },
+  { q: 'What\'s the yellow bar at the top?', a: '<p>Tests saved on this phone that haven\'t reached the office yet. Keep the app open with signal and it clears on its own. Tap it to see which ones.</p><p>Don\'t clear the app or uninstall it while it\'s showing. If it goes <b>red</b>, a test didn\'t save: log it again.</p>' },
+  { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
   { levels: ['office', 'management'], q: 'What\'s in the To do box?', a: '<p>Everything waiting for the office: holiday and swaps to approve, swaps the other person hasn\'t answered (red when it\'s been 48 hours or the shift is close), missing timesheets and the work diary.</p><p>Tap a line and Timesheets &amp; leave opens on the right tab. When there\'s nothing to do, it says so.</p>' },
   { levels: ['office', 'management'], q: 'What\'s the list under the boxes?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>. It only shows on a computer.</p>' },
   { levels: ['management'], q: 'What\'s the red number on a report tile?', a: '<p>How many test results are waiting to be QSed for that tool. The same counts are in the To do box.</p>' },
@@ -1018,14 +1147,47 @@ onAuthStateChanged(auth, async (user) => {
   }
   SW = Object.assign(SW, { page: 'index', version: VERSION, level: isManager ? 'management' : isOffice ? 'office' : 'engineer', news: NEWS, help: HELP });
   swExtrasStart();
+  swuStart();
 });
 
 document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
 </script>
 <script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (index, isolator-interlock-test and isolator-interlock-report so
+//  far — keep in step; every other page gets it when it's next changed):
+//  service worker + "A new version is ready" bar. Agreed 20 Oct 2026.
+//  After an upload (with CACHE_NAME bumped), the new service worker installs
+//  in the background and takes over; that's the moment the new files are
+//  saved on the device. The bar then asks to reload onto them. It never
+//  reloads by itself, and a page can stop it while something's unfinished
+//  by setting window.swUpdateBlocker = () => 'reason' (or '' when it's fine).
+//  Checks for an update when the app is opened or brought back to the
+//  front, and every 30 minutes.
+// ═══════════════════════════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
+  const swvHadController = !!navigator.serviceWorker.controller;   // first ever install isn't an "update"
+  window.swvShowBar = function () {
+    if (document.getElementById('swvBar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'swvBar'; bar.className = 'swv-bar';
+    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button">Update</button>';
+    bar.querySelector('button').addEventListener('click', () => {
+      const why = typeof window.swUpdateBlocker === 'function' ? window.swUpdateBlocker() : '';
+      if (why) { bar.querySelector('span').textContent = why; bar.classList.add('wait'); return; }
+      bar.querySelector('button').disabled = true;
+      location.reload();
+    });
+    document.body.appendChild(bar);
+    document.body.classList.add('swv-on');
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swvHadController) window.swvShowBar(); });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+    navigator.serviceWorker.register("service-worker.js").then(reg => {
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60000);
+    }).catch(err => console.error("Service worker registration failed:", err));
   });
 }
 </script>

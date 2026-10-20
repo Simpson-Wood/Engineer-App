@@ -6,6 +6,7 @@
 <title>Isolator / Interlock Test — Simpson & Wood</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 <style>
   :root{
     --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
@@ -13,37 +14,48 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);padding-bottom:40px;}
-  header{background:var(--ink);padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img{height:32px;display:block;}
-  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
+  [hidden]{display:none !important;}
+  header{background:var(--ink);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  header .brand{display:flex;align-items:center;gap:12px;min-width:0;}
+  header img{height:30px;display:block;}
+  header .title-block{min-width:0;}
+  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   header .title-block p{margin:2px 0 0;font-size:11.5px;color:#8f8f8f;}
-  header .who{text-align:right;}
+  header .who{text-align:right;flex-shrink:0;}
   header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
   header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
 
+  /* v18.0: the whole app uses the screen width (standards §5). Phone: one
+     column. Tablet: form fields in pairs, register two across. PC: full
+     width, fields three across, register as a grid. */
+  .wrap{max-width:1500px;margin:0 auto;}
   .site-bar{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;}
-  .site-bar-inner{max-width:640px;margin:0 auto;}
   .site-bar label{font-size:12px;font-weight:600;margin-bottom:5px;display:block;}
-  .site-bar select{width:100%;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-family:'Barlow',sans-serif;}
-  .site-status{font-size:11.5px;color:var(--grey);margin-top:5px;}
+  .site-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .site-row select{flex:1 1 260px;max-width:520px;width:100%;padding:10px 11px;font-size:16px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-family:'Barlow',sans-serif;margin:0;}
+  .site-btn{padding:9px 12px;font-size:13px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap;}
+  .site-btn.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .site-btn.dashed{border-style:dashed;color:var(--grey);}
+  .site-status{font-size:11.5px;color:var(--grey);margin:5px 0 0;}
+  .site-note{border-radius:7px;padding:10px 12px;font-size:13px;font-weight:600;margin-top:8px;}
+  .site-note.bad{background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;}
+  #addSiteForm{margin-top:12px;max-width:900px;}
 
-  .tab-bar{display:flex;max-width:640px;margin:0 auto;background:#fff;border-bottom:1px solid var(--line);}
-  .tab-bar button{flex:1;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:14px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
+  .tab-bar{background:#fff;border-bottom:1px solid var(--line);}
+  .tab-bar .wrap{display:flex;}
+  .tab-bar button{flex:1;max-width:320px;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:15px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
   .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
 
-  main{max-width:1200px;margin:0 auto;padding:16px;}
-  #logTab{max-width:640px;margin:0 auto;}
-  #regList{display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:10px;align-items:start;}
-  #regList .reg-item{margin-bottom:0;}
-  #regList .reg-item.editing-full{grid-column:1 / -1;}
-  .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
+  main{padding:16px;}
+  .log-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px;align-items:start;}
+  @media (min-width:1100px){ .log-layout{grid-template-columns:320px minmax(0,1fr);} .log-side{position:sticky;top:12px;} }
+  .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);min-width:0;}
   .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
   label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--ink);}
   label .req{color:var(--red);}
   label .hint{display:block;font-weight:400;color:var(--grey);font-size:11.5px;margin-top:2px;}
   input[type=text], input[type=date], select, textarea, input[type=file]{
-    width:100%;padding:10px 11px;font-family:'Barlow',sans-serif;font-size:15px;
+    width:100%;padding:10px 11px;font-family:'Barlow',sans-serif;font-size:16px;
     border:1.5px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);margin-bottom:14px;
   }
   textarea{resize:vertical;min-height:60px;}
@@ -51,39 +63,49 @@
   select:disabled option:disabled{color:#ccc;}
   .field-error{border-color:var(--red) !important;}
   .error-msg{color:var(--red);font-size:12px;margin:-10px 0 12px;display:none;}
-  .radio-row{display:flex;gap:6px;margin:0;flex-shrink:0;}
-  .radio-opt{border:1.5px solid var(--line);border-radius:6px;padding:6px 11px;text-align:center;font-weight:600;font-size:12px;cursor:pointer;user-select:none;color:var(--grey);min-width:50px;}
+
+  /* Form grid: label + box + error stay together in a .fld */
+  .fgrid{display:grid;grid-template-columns:minmax(0,1fr);column-gap:16px;}
+  .fgrid > .full{grid-column:1 / -1;}
+  .fgrid > .contents{display:contents;}
+  .fld{min-width:0;}
+  @media (min-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1300px){ .fgrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .checks-grid{display:grid;grid-template-columns:minmax(0,1fr);column-gap:28px;margin-bottom:6px;}
+  @media (min-width:1000px){ .checks-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .checks-grid .check-item:nth-child(2){border-top:none;padding-top:0;} }
+
+  .radio-row{display:flex;gap:6px;margin:0;flex-shrink:0;flex-wrap:wrap;}
+  .radio-opt{border:1.5px solid var(--line);border-radius:6px;padding:8px 12px;text-align:center;font-weight:600;font-size:13px;cursor:pointer;user-select:none;color:var(--grey);min-width:54px;}
   .radio-opt input{display:none;}
   .radio-opt.pass-sel{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
   .radio-opt.fail-sel{border-color:var(--fail);background:#fbe9e9;color:var(--fail);}
   .radio-opt.na-sel{border-color:var(--grey);background:#f0f0f0;color:var(--grey);}
-  .edit-panel{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+  .edit-panel{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;width:100%;}
   .edit-panel label{font-size:12px;font-weight:600;margin:0 0 4px;}
-  .edit-panel input, .edit-panel select, .edit-panel textarea{width:100%;padding:8px 9px;font-size:13.5px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
+  .edit-panel input, .edit-panel select, .edit-panel textarea{width:100%;padding:8px 9px;font-size:16px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
   .edit-panel .check-item{padding:6px 0;}
   .id-locked-note{font-size:11px;color:var(--grey);margin:0 0 12px;font-style:italic;}
   .edited-marker{font-size:10.5px;font-weight:700;color:#8a6d1a;background:#fff3cd;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
-  .btn-edit-own{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
-  .btn-save-edit{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .btn-cancel-edit{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .btn-edit-own{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .btn-save-edit{flex:1;background:var(--pass);color:#fff;border:none;padding:10px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;}
+  .btn-cancel-edit{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:10px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;}
   .reference-photo{max-width:160px;border-radius:6px;margin:6px 8px 6px 0;border:1px solid var(--line);}
-  .loading-spinner{display:flex;align-items:center;gap:8px;color:var(--grey);font-size:13px;padding:14px 0;}
+  .loading-spinner{display:flex;align-items:center;gap:8px;color:var(--grey);font-size:13px;padding:10px 0 0;}
   .loading-spinner .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite ease-in-out;}
   .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
   @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
 
-  .id-preview{background:#f2f2f2;border:1.5px dashed var(--line);border-radius:7px;padding:10px 11px;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;min-height:20px;letter-spacing:.02em;}
+  .id-preview{background:#f2f2f2;border:1.5px dashed var(--line);border-radius:7px;padding:10px 11px;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;min-height:20px;letter-spacing:.02em;word-break:break-word;}
   .id-preview.pending{color:var(--grey);font-weight:400;font-style:italic;font-size:13px;}
   .id-note{font-size:11px;color:var(--grey);margin:0 0 14px;}
   .id-note.retest{color:var(--red);font-weight:600;}
 
   .check-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:9px 0;flex-wrap:wrap;}
   .check-item:first-child{border-top:none;padding-top:0;}
-  .check-item .check-label{flex:1;min-width:160px;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .check-item .check-label{flex:1;min-width:160px;font-size:13px;font-weight:600;color:var(--ink);}
   .check-item .error-msg{width:100%;margin:2px 0 0;}
 
   .entry{border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden;}
-  .entry.saved{opacity:.6;}
   .entry-head{background:var(--ink);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .entry-head .tag{background:var(--red);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;padding:3px 9px;border-radius:4px;text-transform:uppercase;flex-shrink:0;}
   .entry-head .eq-id{font-weight:600;font-size:13px;flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -93,17 +115,22 @@
   .add-btn{width:100%;padding:13px;background:#fff;border:2px dashed var(--red);color:var(--red);border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-bottom:6px;}
   .empty-note{text-align:center;color:var(--grey);font-size:13.5px;padding:18px 0;}
 
-  .save-entry-btn{width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-top:6px;}
-  .save-entry-btn:disabled{background:#c9a3a5;cursor:not-allowed;}
+  .save-entry-btn{width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-top:6px;}
+  @media (min-width:1000px){ .save-entry-btn{max-width:420px;} }
 
-  .banner{display:none;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
+  .banner{display:none;padding:12px 14px;border-radius:8px;font-size:14px;font-weight:600;margin-bottom:14px;}
   .banner.ok{background:#eaf7ee;color:var(--pass);border:1px solid #b9e2c4;}
+  .banner.wait{background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;}
   .banner.bad{background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;}
+  .banner button{background:#fff;border:1.5px solid currentColor;color:inherit;border-radius:6px;padding:4px 10px;font-weight:700;font-size:12.5px;cursor:pointer;margin-left:8px;}
 
-  .today-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);}
+  .today-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);}
   .today-item:first-child{border-top:none;}
-  .today-item .id{font-weight:700;font-size:13.5px;}
-  .today-item .cat{font-size:11px;color:var(--grey);}
+  .today-item .id{font-weight:700;font-size:14px;word-break:break-word;}
+  .today-item .cat{font-size:11.5px;color:var(--grey);}
+  .sent-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .sent-tag.ok{background:#eaf7ee;color:var(--pass);}
+  .sent-tag.wait{background:#fff3cd;color:#8a6d1a;}
 
   #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
   #signinScreen img{height:44px;margin-bottom:28px;}
@@ -114,30 +141,57 @@
   #signinScreen .err{color:var(--fail);font-size:13px;margin-top:16px;max-width:320px;}
   #appRoot{display:none;}
 
+  /* Register */
+  .reg-count{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;margin:0 0 14px;}
+  .reg-count .n{font-size:24px;font-weight:700;line-height:1.1;}
+  .reg-count .l{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+  .reg-count .of{font-size:12.5px;color:var(--grey);font-weight:600;align-self:center;}
+  .reg-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px;}
+  @media (min-width:900px){ .reg-tools{grid-template-columns:minmax(0,2fr) minmax(0,3fr);} }
+  .reg-filters-btn{display:none;width:100%;padding:10px;margin-bottom:12px;background:#fff;border:1.5px solid var(--line);border-radius:7px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Barlow',sans-serif;}
+  .reg-filters{display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .reg-filters select{flex:1 1 200px;padding:8px 9px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;margin:0;}
+  .reg-filters label.tick{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin:0;}
+  .reg-filters label.tick input{width:auto;margin:0;}
+  @media (max-width:699px){
+    .reg-filters-btn{display:block;}
+    .reg-filters{display:none;}
+    .reg-filters.open{display:flex;}
+    .reg-filters select{flex-basis:100%;}
+  }
   .reg-subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
-  .reg-subtabs button{border:1.5px solid var(--line);background:#fff;color:var(--grey);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:20px;cursor:pointer;}
+  .reg-subtabs button{border:1.5px solid var(--line);background:#fff;color:var(--grey);font-size:13px;font-weight:600;padding:7px 12px;border-radius:20px;cursor:pointer;}
   .reg-subtabs button.active{border-color:var(--red);background:var(--red);color:#fff;}
+  #regList{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start;}
+  @media (min-width:700px){ #regList{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ #regList{grid-template-columns:repeat(auto-fill,minmax(330px,1fr));} }
+  #regList .reg-item.editing-full{grid-column:1 / -1;}
+  #regList > .history-empty, #regList > .loading-note{grid-column:1 / -1;}
 
-  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
+  .reg-item{border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0;background:#fff;}
   .reg-item.overdue{border-color:var(--fail);background:#fff8f8;}
   .reg-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
-  .reg-item .eq{font-weight:700;font-size:14.5px;word-break:break-word;overflow-wrap:anywhere;}
+  .reg-item .eq{font-weight:700;font-size:15px;word-break:break-word;overflow-wrap:anywhere;}
   .reg-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
-  .reg-item .meta{font-size:11.5px;color:var(--grey);margin-top:4px;}
+  .reg-item .meta{font-size:12px;color:var(--grey);margin-top:4px;}
   .reg-item .meta.overdue-text{color:var(--fail);font-weight:700;}
   .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
   .chip.pass{background:#eaf7ee;color:var(--pass);}
   .chip.fail{background:#fbe9e9;color:var(--fail);}
   .chip.overdue{background:var(--fail);color:#fff;}
-  .reg-item-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;}
-  .expand-btn{background:none;border:none;color:var(--grey);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;}
-  .retest-btn{background:#fff;border:1.5px solid var(--red);color:var(--red);font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .chip.wait{background:#fff3cd;color:#8a6d1a;}
+  .reg-item-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;flex-wrap:wrap;}
+  .expand-btn{background:none;border:none;color:var(--grey);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px 0;}
+  .retest-btn{background:#fff;border:1.5px solid var(--red);color:var(--red);font-size:13px;font-weight:700;padding:7px 12px;border-radius:6px;cursor:pointer;}
   .hist-list{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;}
-  .hist-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+  .hist-row{padding:8px 0;border-bottom:1px solid #f0f0f0;}
   .hist-row:last-child{border-bottom:none;}
-  .hist-date{font-size:12.5px;font-weight:600;display:flex;align-items:center;}
-  .hist-meta{font-size:11px;color:var(--grey);margin-top:1px;}
-  .del-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
+  .hist-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+  .hist-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .hist-date{font-size:13px;font-weight:600;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+  .hist-meta{font-size:11.5px;color:var(--grey);margin-top:1px;}
+  .del-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .restore-btn{background:#fff;border:1.5px solid var(--ink);color:var(--ink);font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;}
   .history-empty{color:var(--grey);font-size:13px;text-align:center;padding:16px 0;}
   .loading-note{color:var(--grey);font-size:13px;text-align:center;padding:6px 0;}
 
@@ -148,7 +202,7 @@
   .last-time .lt-row{margin:4px 0 0;}
   .last-time .lt-label{font-weight:700;color:var(--grey);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;display:block;}
   .last-time .lt-text{white-space:pre-wrap;}
-  .hist-detail{font-size:12px;color:var(--ink);margin-top:4px;line-height:1.45;}
+  .hist-detail{font-size:12.5px;color:var(--ink);margin-top:4px;line-height:1.45;}
   .hist-detail .lt-label{font-weight:700;color:var(--grey);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;display:block;margin-top:4px;}
   .hist-detail .lt-text{white-space:pre-wrap;}
   .since-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;display:inline-block;margin-top:5px;}
@@ -156,8 +210,88 @@
   .since-tag.newitem{background:#e8f0fb;color:#1f5fa8;}
   .since-tag.notyet{background:#f0f0f0;color:var(--grey);}
   .since-tag.notyet.was-fail{background:#fbe9e9;color:var(--fail);}
-  .retest-summary{display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px;cursor:pointer;}
-  .retest-summary .sub{display:block;font-weight:400;font-size:12px;margin-top:2px;}
+  .retest-summary{display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:8px;padding:10px 12px;font-size:13.5px;font-weight:600;margin-bottom:12px;cursor:pointer;}
+  .retest-summary .sub{display:block;font-weight:400;font-size:12.5px;margin-top:2px;}
+
+  .undo-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:400;display:flex;align-items:center;gap:12px;background:var(--ink);color:#fff;padding:11px 14px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 24px);}
+  .undo-toast button{background:#fff;color:var(--ink);border:none;border-radius:7px;padding:7px 14px;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0;}
+
+  /* v18.0: type-ahead suggestions */
+  .sug-box{position:absolute;z-index:300;background:#fff;border:1.5px solid var(--ink);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);max-height:300px;overflow:auto;font-family:'Barlow',sans-serif;}
+  .sug-head{font-size:11.5px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;padding:8px 12px 2px;}
+  .sug-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;font-size:15.5px;cursor:pointer;border-top:1px solid #f0f0f0;}
+  .sug-opt:first-child, .sug-head + .sug-opt{border-top:none;}
+  .sug-opt small{color:var(--grey);font-size:12px;white-space:nowrap;}
+  .sug-opt:hover, .sug-opt.on{background:#fbe9ea;}
+  .sug-note{position:absolute;z-index:300;background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:6px;font-family:'Barlow',sans-serif;}
+
+  @media (max-width:640px){
+    header .title-block h1{font-size:16px;}
+    header img{height:26px;}
+    header .who .name{display:none;}
+    main{padding:12px;}
+    .card{padding:14px;}
+  }
+
+  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
+  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
+  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .sw-hbtn i{font-size:17px;}
+  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
+  .topbar-right .sw-hbtn{margin-right:6px;}
+  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
+  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
+  .sw-vabar i{font-size:18px;}
+  .sw-vabar span{flex:1; min-width:180px;}
+  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
+  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
+  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
+  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
+  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
+  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
+  .sw-news li{margin-bottom:8px;}
+  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
+  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
+  .sw-people{display:grid; gap:6px;}
+  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
+  .sw-people button:hover{background:#fbe9ea;}
+  .sw-people small{color:#5c5c5c;}
+  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
+  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
+  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
+  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
+  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
+  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
+  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
+  .sw-help summary::-webkit-details-marker{display:none;}
+  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
+  .sw-help details[open] summary::before{content:'–';}
+  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
+  .sw-help details > div p{margin:0 0 8px;}
+  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
+  @media (max-width:640px){ .sw-help{max-width:none;} }
+
+  /* ---- SHARED (keep in step: index, isolator test): Not sent yet ---- */
+  .swu-bar{display:flex; align-items:center; gap:9px; width:100%; border:none; border-bottom:1px solid #f0dc9a; background:#fff3cd; color:#8a6d1a; padding:10px 16px; font-family:'Barlow',sans-serif; font-size:14.5px; font-weight:600; text-align:left; cursor:pointer; line-height:1.35;}
+  .swu-bar[hidden]{display:none !important;}
+  .swu-bar i{font-size:20px; flex-shrink:0;}
+  .swu-bar.bad{background:#fbe9e9; color:#a32d2d; border-bottom-color:#f0bcbe;}
+  .swu-list{display:grid; gap:6px;}
+  .swu-row{display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #e2e2e2; border-radius:9px; padding:9px 12px; font-size:15px;}
+  .swu-row.bad{border-color:#f0bcbe; background:#fff8f8;}
+  .swu-row small{display:block; color:#5c5c5c; font-size:13px; margin-top:1px;}
+  .swu-row .swu-why{color:#a32d2d;}
+  .swu-pill{font-size:12px; font-weight:700; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:2px 9px; white-space:nowrap;}
+  .swu-note{font-size:13.5px; color:#5c5c5c; margin:12px 0 0; line-height:1.45;}
+  /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
+  .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
+  .swv-bar button{background:#D0222A; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
+  .swv-bar.wait{background:#7a5c0e;}
+  body.swv-on{padding-bottom:76px;}
+  body.swv-on .undo-toast{bottom:86px;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -172,21 +306,13 @@
   <div class="err" id="signinErr"></div>
 </div>
 
-<div id="changelogModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:16px;color:var(--red);margin:0 0 14px;">What's new <span id="changelogVersion"></span></p>
-    <ul id="changelogList" style="margin:0 0 20px;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--ink);"></ul>
-    <button type="button" id="changelogCloseBtn" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Got it</button>
-  </div>
-</div>
-
 <div id="appRoot">
   <header>
     <a class="brand" href="index.html" style="text-decoration:none;">
       <img src="sw-logo-white.png" alt="Simpson & Wood">
       <div class="title-block">
         <h1>Isolator / Interlock Test</h1>
-        <p id="versionLabel">v17.0</p>
+        <p id="versionLabel">v18.0</p>
       </div>
     </a>
     <div class="who">
@@ -196,58 +322,63 @@
   </header>
 
   <div class="site-bar">
-    <div class="site-bar-inner">
-      <label>Site <span class="req">*</span></label>
-      <select id="site" required>
-        <option value="" disabled selected>Loading site list…</option>
-      </select>
+    <div class="wrap">
+      <label for="site">Site <span class="req">*</span></label>
+      <div class="site-row">
+        <select id="site" required>
+          <option value="" disabled selected>Loading site list…</option>
+        </select>
+        <button type="button" class="site-btn" id="refreshSiteBtn">↻ Refresh</button>
+        <button type="button" class="site-btn dark" id="readyForQsBtn" hidden>Mark ready for QS</button>
+        <button type="button" class="site-btn dashed" id="toggleAddSiteBtn">+ Add a new site</button>
+      </div>
       <p class="site-status" id="siteStatus"></p>
-      <div id="completeBanner" style="display:none;background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;">This site is marked Complete, so tests can't be added or changed. If you need to, ask a manager to reopen it.</div>
-      <div id="syncIndicator" style="display:none;background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:7px;padding:10px 12px;font-size:12.5px;font-weight:600;margin-top:8px;"></div>
-      <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
-      <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
-      <button type="button" id="readyForQsBtn" style="display:none;width:100%;margin-top:10px;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Mark ready for QS</button>
-      <button type="button" id="toggleAddSiteBtn" style="width:100%;margin-top:10px;padding:9px;background:#fff;border:1.5px dashed var(--line);color:var(--grey);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add a new site</button>
-      <div id="addSiteForm" style="display:none;margin-top:12px;">
-        <label>Site reference <span class="hint">(suggested automatically — edit if you need something different, can't be changed later)</span></label>
-        <input type="text" id="newSiteRef">
-        <label>Customer / site name</label>
-        <input type="text" id="newSiteName">
-        <label>Address line</label>
-        <input type="text" id="newSiteAddressLine">
-        <label>Postcode</label>
-        <input type="text" id="newSitePostcode" style="max-width:160px;text-transform:uppercase;">
-        <label>Agreed limitations <span class="hint">(what's out of scope, and why)</span></label>
-        <textarea id="newSiteLimitations" style="min-height:60px;"></textarea>
-        <label>Agreed with</label>
-        <input type="text" id="newSiteAgreedWith">
-        <button type="button" id="addSiteBtn" style="width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;">Add site</button>
+      <div id="completeBanner" class="site-note bad" hidden>This site is marked Complete, so tests can't be added or changed. If you need to, ask a manager to reopen it.</div>
+      <div id="siteLoadingIndicator" class="loading-spinner" hidden><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
+      <div id="addSiteForm" hidden>
+        <div class="fgrid">
+          <div class="fld"><label>Site reference <span class="hint">(suggested automatically — edit if you need something different, can't be changed later)</span></label>
+          <input type="text" id="newSiteRef"></div>
+          <div class="fld"><label>Customer / site name</label>
+          <input type="text" id="newSiteName"></div>
+          <div class="fld"><label>Address line</label>
+          <input type="text" id="newSiteAddressLine"></div>
+          <div class="fld"><label>Postcode</label>
+          <input type="text" id="newSitePostcode" style="text-transform:uppercase;"></div>
+          <div class="fld"><label>Agreed with</label>
+          <input type="text" id="newSiteAgreedWith"></div>
+          <div class="fld full"><label>Agreed limitations <span class="hint">(what's out of scope, and why)</span></label>
+          <textarea id="newSiteLimitations"></textarea></div>
+        </div>
+        <button type="button" class="save-entry-btn" id="addSiteBtn" style="margin-top:0;">Add site</button>
       </div>
     </div>
   </div>
 
   <div class="tab-bar">
-    <button id="tabLogBtn" class="active">Log Test</button>
-    <button id="tabRegBtn">Site Register</button>
+    <div class="wrap">
+      <button id="tabLogBtn" class="active">Log Test</button>
+      <button id="tabRegBtn">Site Register</button>
+    </div>
   </div>
 
   <main>
-
+    <div class="wrap">
     <div id="banner" class="banner"></div>
 
     <!-- LOG TEST TAB -->
-    <div id="logTab">
-      <div class="card">
-        <p class="section-label">Visit details</p>
-        <label>Date <span class="req">*</span></label>
-        <input type="date" id="visitDate" required>
+    <div id="logTab" class="log-layout">
+      <div class="log-side">
+        <div class="card">
+          <p class="section-label">Visit details</p>
+          <label for="visitDate">Date <span class="req">*</span></label>
+          <input type="date" id="visitDate" required style="margin-bottom:0;">
+        </div>
+        <div class="card" id="todayCard" hidden>
+          <p class="section-label">Your tests on this day</p>
+          <div id="todayList"></div>
+        </div>
       </div>
-
-      <div class="card" id="todayCard" style="display:none;">
-        <p class="section-label">Tests completed today</p>
-        <div id="todayList"></div>
-      </div>
-
       <div class="card">
         <p class="section-label">Log an isolator / interlock</p>
         <div id="entries"></div>
@@ -257,49 +388,38 @@
     </div>
 
     <!-- REGISTER TAB -->
-    <div id="regTab" style="display:none;">
+    <div id="regTab" hidden>
       <div class="card">
         <p class="section-label">Site register</p>
         <div class="retest-summary" id="retestSummary"></div>
-        <input type="text" id="regSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
-        <div class="reg-subtabs" id="regSubtabs"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-          <select id="regLocFilter" style="flex:1;min-width:140px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;"><option value="">All locations</option></select>
-          <select id="regPassFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+        <div class="reg-count" id="regCount"></div>
+        <div class="reg-tools">
+          <input type="text" id="regSearch" placeholder="Search by Equipment ID, location, manufacturer, model, notes…" style="margin-bottom:12px;">
+          <div class="reg-subtabs" id="regSubtabs"></div>
+        </div>
+        <button type="button" class="reg-filters-btn" id="regFiltersBtn">Filters</button>
+        <div class="reg-filters" id="regFilters">
+          <select id="regLocFilter" aria-label="Location"><option value="">All locations</option></select>
+          <select id="regPassFilter" aria-label="Pass or fail">
             <option value="">Pass or Fail</option>
             <option value="pass">Pass only</option>
             <option value="fail">Fail only</option>
           </select>
-        </div>
-        <div style="margin-bottom:14px;">
-          <label style="margin-bottom:4px;">Sort by</label>
-          <select id="regSortOrder" style="padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
-            <option value="equipmentId">Equipment ID (A–Z)</option>
-            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
-            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          <select id="regSortOrder" aria-label="Sort by">
+            <option value="equipmentId">Sort: Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Sort: Last tested (oldest first)</option>
+            <option value="lastTestedNewest">Sort: Last tested (newest first)</option>
           </select>
-        </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
-          <label id="regNotRetestedWrap" style="display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="regNotRetestedOnly" style="width:auto;margin:0;">Not retested since last report</label>
+          <label class="tick"><input type="checkbox" id="regOverdueOnly">Overdue only</label>
+          <label class="tick"><input type="checkbox" id="regLimitedOnly">Limitation only</label>
+          <label class="tick" id="regNotRetestedWrap" hidden><input type="checkbox" id="regNotRetestedOnly">Not retested since last report</label>
         </div>
         <div id="regList"><div class="loading-note">Select a site to view its register.</div></div>
       </div>
     </div>
-
+    </div>
   </main>
 </div>
-
-<datalist id="dl-panelName"></datalist>
-<datalist id="dl-millLocation"></datalist>
-<datalist id="dl-equipmentName"></datalist>
-<datalist id="dl-physicalLocation"></datalist>
-<datalist id="dl-relayLocation"></datalist>
-<datalist id="dl-equipmentAffected"></datalist>
-<datalist id="dl-manufacturer"></datalist>
-<datalist id="dl-model"></datalist>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
@@ -307,12 +427,13 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, addDoc, getDocs, doc, updateDoc, getDoc, setDoc,
-  query, where, orderBy, serverTimestamp
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
+  getDocs, getDocFromServer, doc, getDoc, query, where, orderBy, serverTimestamp,
+  setDoc as fsSetDoc, updateDoc as fsUpdateDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v17.0";
-document.getElementById('versionLabel').textContent = VERSION + ' · Log one or more tests for this visit';
+const VERSION = "v18.0";
+document.getElementById('versionLabel').textContent = VERSION;
 console.log('Isolator/Interlock tool', VERSION);
 
 const firebaseConfig = {
@@ -326,9 +447,243 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+// v18.0: the multi-tab cache, so a second tab (or the installed app and a
+// browser tab) can share the phone's saved data and unsent queue safely.
+// The single-tab version threw "failed-precondition" in the second tab.
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+// Raw Firestore functions for the shared blocks below; every save in this
+// page goes through the guarded versions, so "View as" can't change anything.
+const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = fsSetDoc, swGetDocFromServer = getDocFromServer;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index, timesheet, leave, timesheet-report,
+//  management, isolator-interlock-test and isolator-interlock-report — keep
+//  in step): access level · View as (Rob only) ·
+//  What's New · Help.   Standards §15: any page changed from now on gets
+//  this block too.
+// ═══════════════════════════════════════════════════════════════════════════
+const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
+const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
+let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
+let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
+const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
+const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
+// Wrap anything that saves, so "View as" can never change real data.
+function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
+function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
+(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
+  const f = window.fetch.bind(window);
+  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
+})();
+// Who someone is: 'management' (Manager / QS / Director, or the console-only
+// managers list), 'office' or 'engineer'.
+async function swAccess(email) {
+  let managers = false, position = '', staff = null;
+  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
+  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
+  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
+  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+}
+function swHeaderButton(id, icon, label, onClick) {
+  if (document.getElementById(id)) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
+  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
+  b.addEventListener('click', onClick);
+  const right = document.querySelector('.topbar-right');
+  if (right) right.prepend(b);
+  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
+}
+function swModal(html, cls) {
+  const bg = document.createElement('div');
+  bg.className = 'sw-modal-bg ' + (cls || '');
+  bg.innerHTML = html;
+  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
+  document.body.appendChild(bg);
+  return bg;
+}
+
+// ---- View as (Rob only) ----------------------------------------------------
+// Rob picks a person and every page shows what they'd see, read-only. The
+// choice lasts for this browser tab (all pages) until he presses Stop. Data is
+// still read with Rob's own access, so it shows screens, not the database rules.
+async function swViewAsInit(user) {
+  const real = String(user.email || '').toLowerCase();
+  if (real !== SW_OWNER) return null;
+  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
+  let v = null;
+  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
+  if (!v) return null;
+  let name = v, position = '';
+  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
+  VIEW_AS = { email: v, name, position };
+  const bar = document.createElement('div');
+  bar.className = 'sw-vabar';
+  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-va]'); if (!b) return;
+    if (b.dataset.va === 'change') swPickViewAs();
+    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
+  });
+  document.body.prepend(bar);
+  document.body.classList.add('sw-va-on');
+  return VIEW_AS;
+}
+async function swPickViewAs() {
+  let people = [];
+  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
+  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
+  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
+  const draw = () => {
+    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
+    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
+  };
+  m.querySelector('[data-q]').addEventListener('input', draw);
+  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
+  draw(); m.querySelector('[data-q]').focus();
+}
+
+// ---- What's New + Help -------------------------------------------------------
+// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
+// (questions; each with the tab it belongs to and, if not everyone, the
+// levels it's for), then calls swExtrasStart().
+function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
+function swShowNews() {
+  const items = swNewsItems();
+  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+async function swNewsCheck() {
+  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
+  const key = 'seen_' + SW.page;
+  try {
+    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
+    const snap = await swGetDoc(ref);
+    if (snap.exists() && snap.data()[key] === SW.version) return;
+    swShowNews();
+    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
+  } catch (e) { console.warn('What\'s new check failed', e); }
+}
+function swShowHelp() {
+  const tab = SW.tab() || '';
+  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
+  const groups = new Map();
+  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
+  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
+  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
+    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
+    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
+  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
+}
+function swExtrasStart() {
+  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
+  swNewsCheck();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (copied into index and isolator-interlock-test — keep in step; add
+//  to timesheet and leave when they're next changed): NOT SENT YET.
+//  Every save made on this device is written down here (localStorage, which
+//  every page on the site shares) until the server copy is confirmed.
+//  Firestore keeps its own queue of unsent saves on the phone; this list is
+//  how we *show* it, and unlike the old in-page counter it survives the app
+//  being closed or reloaded. Every page that has this block checks the list
+//  against the server when it opens, when signal comes back and every minute,
+//  so anything that went up in the background clears itself.
+//  Needs: db, auth, swDoc, swGetDocFromServer, swModal, swEsc (§15 block).
+//  An item: { c: collection, id: doc id, label, app, site, at, by, failed?, why? }
+// ═══════════════════════════════════════════════════════════════════════════
+const SWU_KEY = 'sw-unsent-v1';
+const SWU_SLOW_MS = 30 * 60000;   // still not there after 30 min with signal: say so
+function swuMe() { return String((auth.currentUser && auth.currentUser.email) || '').toLowerCase(); }
+function swuAll() { try { const a = JSON.parse(localStorage.getItem(SWU_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function swuSave(a) { try { localStorage.setItem(SWU_KEY, JSON.stringify(a)); } catch (e) {} swuRender(); }
+function swuMine() { const me = swuMe(); return swuAll().filter(x => x.by === me); }
+function swuAdd(item) { const a = swuAll().filter(x => x.id !== item.id); a.push(Object.assign({ at: Date.now(), by: swuMe() }, item)); swuSave(a); }
+function swuSent(id) { const a = swuAll(); if (a.some(x => x.id === id)) swuSave(a.filter(x => x.id !== id)); }
+function swuFailed(id, why) { swuSave(swuAll().map(x => x.id === id ? Object.assign({}, x, { failed: true, why: String(why || '') }) : x)); }
+function swuWaiting(id) { return swuAll().some(x => x.id === id && !x.failed); }
+let swuChecking = false;
+async function swuCheck() {
+  if (swuChecking || !navigator.onLine || !auth.currentUser) return;
+  swuChecking = true;
+  try {
+    for (const x of swuMine().filter(x => !x.failed)) {
+      try {
+        const s = await swGetDocFromServer(swDoc(db, x.c, x.id));
+        if (s.exists()) swuSent(x.id);
+      } catch (e) { if (e && e.code === 'unavailable') break; }   // no real signal: try again later
+    }
+  } finally { swuChecking = false; swuRender(); }
+}
+function swuAgo(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' hr ago' : Math.round(m / 1440) + ' days ago';
+}
+function swuRender() {
+  const head = document.querySelector('#appRoot header');
+  if (!head) return;
+  let bar = document.getElementById('swuBar');
+  if (!bar) {
+    bar = document.createElement('button');
+    bar.type = 'button'; bar.id = 'swuBar'; bar.className = 'swu-bar'; bar.hidden = true;
+    bar.addEventListener('click', swuShowList);
+    head.insertAdjacentElement('afterend', bar);
+  }
+  const mine = swuMine(), bad = mine.filter(x => x.failed), wait = mine.filter(x => !x.failed);
+  document.dispatchEvent(new CustomEvent('swu-change', { detail: { waiting: wait, failed: bad } }));
+  if (!mine.length) { bar.hidden = true; return; }
+  bar.hidden = false;
+  bar.classList.toggle('bad', bad.length > 0);
+  const n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
+  bar.innerHTML = bad.length
+    ? `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${n(bad.length, 'test')} didn't save. Tap to see which, then log ${bad.length === 1 ? 'it' : 'them'} again.</span>`
+    : `<i class="ti ti-cloud-upload" aria-hidden="true"></i><span>${n(wait.length, 'test')} not sent yet. ` +
+      (navigator.onLine ? 'Sending… keep the app open.' : `No signal. ${wait.length === 1 ? 'It' : 'They'}'ll send when you're back in signal. Don't clear the app.`) + `</span>`;
+}
+function swuShowList() {
+  const mine = swuMine().sort((a, b) => b.at - a.at);
+  const slow = x => !x.failed && navigator.onLine && Date.now() - x.at > SWU_SLOW_MS;
+  const row = x => `<div class="swu-row ${x.failed ? 'bad' : ''}"><div><b>${swEsc(x.label || x.id)}</b>
+      <small>${swEsc([x.app, x.site].filter(Boolean).join(' · '))}${x.app || x.site ? ' · ' : ''}saved ${swuAgo(x.at)}</small>
+      ${x.failed ? `<small class="swu-why">Didn't save${x.why ? ' (' + swEsc(x.why) + ')' : ''}. Log it again, then press Remove.</small>` : ''}
+      ${slow(x) ? `<small class="swu-why">Still not sent. Open ${swEsc(x.app || 'the app')} with signal. If it stays here, tell the office.</small>` : ''}</div>
+      ${x.failed ? `<button type="button" class="sw-btn" data-swudrop="${swEsc(x.id)}">Remove</button>` : '<span class="swu-pill">Waiting</span>'}</div>`;
+  const m = swModal(`<div class="sw-modal"><h3>Not sent yet</h3>
+    ${mine.length ? `<div class="swu-list">${mine.map(row).join('')}</div>` : '<p>Everything has been sent.</p>'}
+    <p class="swu-note">Tests stay safe on this phone until the office has them. Keep the app open with signal and they go up on their own. Don't clear the app's data or uninstall it while anything is waiting.</p>
+    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swucheck>Check again</button><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+  m.addEventListener('click', e => {
+    const d = e.target.closest('[data-swudrop]');
+    if (d) { swuSave(swuAll().filter(x => x.id !== d.dataset.swudrop)); m.remove(); swuShowList(); return; }
+    if (e.target.closest('[data-swucheck]')) { m.remove(); swuCheck().then(swuShowList); }
+  });
+}
+function swuStart() {
+  swuRender();
+  swuCheck();
+  window.addEventListener('online', () => { swuRender(); swuCheck(); });
+  window.addEventListener('offline', swuRender);
+  window.addEventListener('storage', e => { if (e.key === SWU_KEY) swuRender(); });
+  setInterval(swuCheck, 60000);
+}
+// ═══════════════════════════ end of NOT SENT YET ═══════════════════════════
+
+// "A new version is ready" bar (shared block at the bottom of the page): don't
+// reload onto the new version while a form is started or a test hasn't sent.
+window.swUpdateBlocker = () => {
+  if ([...document.querySelectorAll('#entries .entry')].some(w => w.dataset.dirty)) return 'Finish or cancel the test you\'re filling in, then tap Update.';
+  if (sessionPending.size || swuMine().some(x => !x.failed)) return 'Wait until your tests have sent (the yellow bar goes), then tap Update.';
+  return '';
+};
+
+// Everything this page saves goes through these, so "View as" can never change real data.
+const setDoc = swGuard(fsSetDoc), updateDoc = swGuard(fsUpdateDoc);
 
 const ALERT_FLOW_URL = "REPLACE_WITH_ALERT_FLOW_URL";
 const QS_NOTIFY_FLOW_URL = "REPLACE_WITH_QS_NOTIFY_FLOW_URL";
@@ -493,7 +848,6 @@ let currentUser = null;
 let entryCounter = 0;
 const entries = {};
 let siteHistoryCache = [];
-let todaysTests = []; // { equipmentId, category } - this session only
 let siteMeta = {};     // the selected site's jobs document (read-only here)
 
 // ---- Report history / "since last report" (v17.0) ----
@@ -599,60 +953,72 @@ document.getElementById('signOutBtn').addEventListener('click', () => signOut(au
 getRedirectResult(auth).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
-onAuthStateChanged(auth, (user) => {
+// Whose tests "Your tests on this day" shows, and whose own tests can be
+// edited: the person signed in, or the person Rob is viewing as.
+function meEmail() { return VIEW_AS ? VIEW_AS.email : String((currentUser && currentUser.email) || '').toLowerCase(); }
+function sameEmail(a, b) { return String(a || '').toLowerCase() === String(b || '').toLowerCase(); }
+let booted = false;
+onAuthStateChanged(auth, async (user) => {
   currentUser = user;
-  if (user) {
-    document.getElementById('signinScreen').style.display = 'none';
-    document.getElementById('appRoot').style.display = 'block';
-    document.getElementById('whoName').textContent = user.displayName || user.email;
-    boot();
-    checkChangelog();
-  } else {
+  if (!user) {
     document.getElementById('signinScreen').style.display = 'flex';
     document.getElementById('appRoot').style.display = 'none';
+    return;
   }
+  document.getElementById('signinScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  if (booted) return;
+  booted = true;
+  const va = await swViewAsInit(user);
+  document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  let level = 'engineer';
+  try { level = (await swAccess(va ? va.email : user.email)).level; } catch (e) {}
+  SW = Object.assign(SW, { page: 'isolator-test', version: VERSION, level, news: NEWS, help: HELP,
+    tab: () => document.getElementById('regTab').hidden ? 'Log Test' : 'Site Register' });
+  swExtrasStart();
+  swuStart();
+  boot();
 });
 
-// ---- What's new / changelog ----
-// Shows on any sign-in where the current major version hasn't been
-// recorded as seen yet - including a brand new user's very first login,
-// deliberately: a one-time "here's what to keep an eye on" is a reasonable
-// welcome, and it never repeats once recorded. Only fires again on a
-// genuine future major bump - never on minor/decimal releases.
-const CHANGELOG_MAJOR = 17;
-const CHANGELOG_ITEMS = [
-  "Retesting an item now shows what was found last time: the notes, which checks failed and the further action.",
-  "Opening an item's history in the Site Register now shows the notes from each past test.",
-  "If an item failed last time and passes now, say what was done (e.g. \"Interlock fitted\").",
-  "The Site Register shows what's still to retest since the last report, with a count you can tap and a filter.",
-  "If a site is marked Complete, ask a manager to reopen it before adding or changing tests."
+// ═══════════════════════════════════════════════════════════════════════════
+//  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
+// ═══════════════════════════════════════════════════════════════════════════
+const NEWS_ENGINEER = [
+  'If a test hasn\'t reached the office yet, a <b>yellow bar</b> at the top says so, even after you close the app and open it again. Tap it to see which ones.',
+  'When you save, it says <b>Saved on this phone</b>, then <b>Sent</b> once the office has it. Your tests for the day are listed with a tick when they\'ve gone.',
+  'Names come up <b>as you type</b> (locations, panels, makes). Pick one so everyone spells it the same.',
+  'Pressing <b>Retest</b> swaps out the empty form, so you can\'t fill in the wrong one.',
+  'If something has <b>already been tested that day</b>, it checks with you before saving another.',
+  'The Site Register shows how many items are <b>listed, passed, failed and limited</b>, and the numbers change with your filters.',
+  'The app now fits <b>phones and tablets</b> properly.',
+  'Flagged a test by mistake? Press <b>Undo</b> straight away, or <b>Restore</b> on the item.',
+  'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
 ];
-async function checkChangelog() {
-  if (!currentUser) return;
-  try {
-    const prefRef = doc(db, 'userPrefs', currentUser.email);
-    const prefSnap = await getDoc(prefRef);
-    const lastSeen = prefSnap.exists() ? prefSnap.data().isolatorTestMajorSeen : undefined;
-    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
-      document.getElementById('changelogVersion').textContent = 'in v' + CHANGELOG_MAJOR;
-      document.getElementById('changelogList').innerHTML = CHANGELOG_ITEMS.map(i => `<li>${i}</li>`).join('');
-      document.getElementById('changelogModal').style.display = 'flex';
-    }
-    if (lastSeen === undefined || lastSeen < CHANGELOG_MAJOR) {
-      await setDoc(prefRef, { isolatorTestMajorSeen: CHANGELOG_MAJOR }, { merge: true });
-    }
-  } catch (e) {
-    console.error('Changelog check failed:', e);
-  }
-}
-document.getElementById('changelogCloseBtn').addEventListener('click', () => {
-  document.getElementById('changelogModal').style.display = 'none';
-});
+const NEWS = {
+  engineer: NEWS_ENGINEER,
+  office: NEWS_ENGINEER,
+  management: [...NEWS_ENGINEER, 'Managers: the reports app has a new <b>Tidy names</b> tab for merging different spellings of the same name.']
+};
+const HELP = [
+  { tab: 'Log Test', q: 'How do I log a test?', a: '<p>Pick the site and the date, fill in the form and press <b>Save this test</b>. A fresh form opens for the next one.</p>' },
+  { tab: 'Log Test', q: 'What does "Saved on this phone" mean?', a: '<p>Your test is safe on your phone. It goes to the office as soon as there\'s signal, and then it says <b>Sent</b>. You don\'t have to do anything.</p>' },
+  { q: 'What\'s the yellow bar at the top?', a: '<p>Tests that haven\'t reached the office yet. Keep the app open with signal and it clears on its own.</p><p>Don\'t clear the app or uninstall it while the bar is showing, or those tests are lost.</p><p>If the bar goes <b>red</b>, a test didn\'t save. Tap it to see which, log that test again, then press <b>Remove</b>.</p>' },
+  { tab: 'Log Test', q: 'How do I retest something?', a: '<p>Go to <b>Site Register</b>, find the item and press <b>Retest</b>. Its form opens with last time\'s notes at the top.</p>' },
+  { tab: 'Log Test', q: 'Why does it ask if it\'s already been tested today?', a: '<p>That item already has a test on that date. Press OK only if you really mean to test it again. If it\'s the same test saved twice, press Cancel.</p>' },
+  { tab: 'Log Test', q: 'Names come up as I type', a: '<p>Tap one to use it. If you type a name that\'s already used but with different capitals or spaces, the app changes it to the usual spelling so the reports stay tidy.</p>' },
+  { tab: 'Site Register', q: 'What do the numbers at the top mean?', a: '<p>How many items are showing, and how many of those passed, failed or had a limitation. They change when you search, filter or pick a type.</p>' },
+  { tab: 'Site Register', q: 'Where are the filters on my phone?', a: '<p>Press <b>Filters</b> under the search box to open them.</p>' },
+  { tab: 'Site Register', q: 'I flagged a test for deletion by mistake', a: '<p>Press <b>Undo</b> on the message straight away. Later on, find the item and press <b>Restore</b>.</p>' },
+  { tab: 'Site Register', q: 'Can I change a test I\'ve done?', a: '<p>Open the item\'s history and press <b>Edit</b> on your own test. Once it\'s been QSed, ask the QS to untick it first.</p>' },
+  { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
+  { q: 'It says the site is Complete', a: '<p>The report has gone out, so tests are locked. Ask a manager to reopen the site.</p>' }
+];
 
+function localISO(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function boot() {
-  document.getElementById('visitDate').valueAsDate = new Date();
+  document.getElementById('visitDate').value = localISO();
   loadSites();
-  if (document.querySelectorAll('.entry').length === 0) addEntry();
+  if (document.querySelectorAll('.entry').length === 0) openEntry();
   buildRegSubtabs();
 }
 
@@ -660,12 +1026,13 @@ function boot() {
 document.getElementById('tabLogBtn').addEventListener('click', () => switchTab('log'));
 document.getElementById('tabRegBtn').addEventListener('click', () => switchTab('reg'));
 function switchTab(which) {
-  document.getElementById('logTab').style.display = which === 'log' ? 'block' : 'none';
-  document.getElementById('regTab').style.display = which === 'reg' ? 'block' : 'none';
+  document.getElementById('logTab').hidden = which !== 'log';
+  document.getElementById('regTab').hidden = which !== 'reg';
   document.getElementById('tabLogBtn').classList.toggle('active', which === 'log');
   document.getElementById('tabRegBtn').classList.toggle('active', which === 'reg');
-  if (which === 'reg') renderRegister();
+  if (which === 'reg') renderRegister(currentRegTab);
 }
+function regTabOpen() { return !document.getElementById('regTab').hidden; }
 
 // ---- Site list ----
 async function loadSites() {
@@ -691,94 +1058,93 @@ async function loadSites() {
     status.textContent = 'Could not load site list — ' + (e.message || e.code || 'unknown error');
   }
 }
-document.getElementById('site').addEventListener('change', () => {
-  todaysTests = [];
-  renderTodayList();
-  loadSiteData();
-});
-document.getElementById('refreshSiteBtn').addEventListener('click', async () => {
-  await loadSiteData();
-  if (document.getElementById('regTab').style.display !== 'none') renderRegister(currentRegTab);
-});
+document.getElementById('site').addEventListener('change', () => loadSiteData());
+document.getElementById('refreshSiteBtn').addEventListener('click', () => loadSiteData());
+document.getElementById('visitDate').addEventListener('change', renderTodayList);
 
 let currentJobStatus = '';
 
-// ---- Sync tracking ----
-// Firestore's addDoc() promise does NOT resolve just because a write was
-// accepted into the local offline queue - it waits for the server to
-// actually acknowledge the write. That's exactly what caused the "Saving…"
-// button to sit there frozen with no feedback while offline, only
-// completing once reconnected: the whole save flow was awaiting that
-// promise before showing anything to the engineer.
-//
-// The fix: never block the UI on this promise. The local persistent cache
-// has already safely got the data the instant addDoc() is called,
-// regardless of connectivity - so the UI treats the entry as saved
-// immediately, and uses the promise only in the background, to know once
-// it's genuinely synced (resolves) or has genuinely failed for a real
-// reason (rejects - offline alone never causes a rejection, only an actual
-// error does).
-let pendingWrites = [];   // equipment IDs still waiting on their write's promise
-let failedWrites = [];    // equipment IDs whose write genuinely rejected
-
-function updateSyncIndicator() {
-  const el = document.getElementById('syncIndicator');
-  if (!el) return;
-  if (failedWrites.length > 0) {
-    el.style.display = 'block';
-    el.style.background = '#fbe9e9'; el.style.color = 'var(--fail)'; el.style.borderColor = '#f0bcbe';
-    el.textContent = '⚠ ' + failedWrites.join(', ') + ' failed to save — the office has been notified. Please log ' +
-      (failedWrites.length === 1 ? 'this test' : 'these tests') + ' again when you can.';
-  } else if (pendingWrites.length > 0) {
-    el.style.display = 'block';
-    el.style.background = '#fff3cd'; el.style.color = '#8a6d1a'; el.style.borderColor = '#f0dc9a';
-    el.textContent = '⏳ ' + pendingWrites.length + (pendingWrites.length === 1 ? ' test' : ' tests') +
-      ' still syncing to the office — stay connected and keep this page open until this clears.';
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-function trackWrite(writePromise, equipmentId, context) {
-  pendingWrites.push(equipmentId);
-  updateSyncIndicator();
+// ---- Saving and "sent" tracking ----
+// A save is never held up waiting for signal. setDoc() puts the test in
+// Firestore's queue on the phone straight away; its promise only finishes
+// once the server has it (or rejects for a real reason; no signal alone
+// never rejects). So the screen says "Saved on this phone" at once, and the
+// promise is only used in the background to turn that into "Sent".
+// v18.0: each save is also written into the shared "not sent yet" list
+// (swuAdd), so the count survives the app being closed, and shows on the
+// homepage too. The old counter only lived in the open page.
+const sessionPending = new Set();   // doc ids saved in this page and not yet confirmed
+function trackWrite(writePromise, docId, context) {
+  sessionPending.add(docId);
   writePromise.then(() => {
-    pendingWrites = pendingWrites.filter(e => e !== equipmentId);
-    updateSyncIndicator();
+    sessionPending.delete(docId);
+    swuSent(docId);
+    const r = siteHistoryCache.find(h => h._id === docId);
+    if (r) r._pending = false;
+    showSentBanner(docId, context.equipmentId);
+    refreshSentMarks();
   }).catch((err) => {
-    pendingWrites = pendingWrites.filter(e => e !== equipmentId);
-    failedWrites.push(equipmentId);
-    updateSyncIndicator();
+    sessionPending.delete(docId);
+    swuFailed(docId, err && (err.code || err.message));
+    siteHistoryCache = siteHistoryCache.filter(h => h._id !== docId);   // it isn't in the database
     reportSubmissionFailure(err, context);
+    refreshSentMarks();
   });
 }
+// The "saved" banner turns into "sent" when the server confirms, as long as
+// it's still showing that test.
+function showSentBanner(docId, equipmentId) {
+  const banner = document.getElementById('banner');
+  if (banner.dataset.docId !== docId || banner.style.display === 'none') return;
+  banner.className = 'banner ok';
+  banner.innerHTML = '✓ ' + escHtml(equipmentId) + ' sent to the office.';
+}
+function isPendingTest(r) { return !!r && (r._pending || sessionPending.has(r._id) || swuWaiting(r._id)); }
+function refreshSentMarks() {
+  renderTodayList();
+  if (regTabOpen()) renderRegister(currentRegTab);
+}
+document.addEventListener('swu-change', () => { if (booted) renderTodayList(); });
 
 window.addEventListener('beforeunload', (e) => {
-  if (pendingWrites.length > 0) {
+  if (sessionPending.size > 0) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
 
-
+// v18.0: the old version emptied the list the moment a reload started and
+// never redrew the Site Register when the new data arrived, so the register
+// could show nothing (or an old list) straight after a save. Now the old list
+// stays until the new one is in, then everything is redrawn. Tests saved on
+// this phone that the read doesn't include yet are kept, marked "not sent".
 let siteLoadToken = 0;
+let loadedSiteRef = '';
 async function loadSiteData() {
   const myToken = ++siteLoadToken;
   const siteRef = document.getElementById('site').value;
-  siteHistoryCache = [];
-  siteMeta = {};
-  currentJobStatus = '';
+  if (siteRef !== loadedSiteRef) {
+    siteHistoryCache = []; siteMeta = {}; currentJobStatus = '';
+    loadedSiteRef = siteRef;
+    renderTodayList();
+    if (regTabOpen()) renderRegister(currentRegTab);
+  }
   if (!siteRef) { updateJobStatusUI(); return; }
   const spinner = document.getElementById('siteLoadingIndicator');
-  spinner.style.display = 'flex';
+  spinner.hidden = false;
   try {
     const q = query(collection(db, 'isolatorTests'), where('siteRef', '==', siteRef), orderBy('equipmentId'), orderBy('date'));
     const snap = await getDocs(q);
-    if (myToken !== siteLoadToken) return; // a newer site selection has since started - discard this stale result
-    snap.forEach(docSnap => siteHistoryCache.push({ _id: docSnap.id, ...docSnap.data() }));
+    if (myToken !== siteLoadToken) return; // a newer load has since started - discard this stale result
+    const fresh = [];
+    snap.forEach(docSnap => fresh.push({ _id: docSnap.id, ...docSnap.data(), _pending: docSnap.metadata.hasPendingWrites }));
+    siteHistoryCache.forEach(r => {
+      if (r._local && r.siteRef === siteRef && !fresh.some(f => f._id === r._id) && isPendingTest(r)) fresh.push(r);
+    });
     // Same-day retests: order by when they were saved, so "latest" and
     // "last time" are always the right test.
-    siteHistoryCache.sort(compareTests);
+    fresh.sort(compareTests);
+    siteHistoryCache = fresh;
     rebuildSuggestions();
 
     const jobSnap = await getDoc(doc(db, 'jobs', siteRef));
@@ -789,15 +1155,17 @@ async function loadSiteData() {
   } catch (e) {
     console.error('Site data load failed:', e);
   } finally {
-    if (myToken === siteLoadToken) spinner.style.display = 'none';
+    if (myToken === siteLoadToken) {
+      spinner.hidden = true;
+      renderTodayList();
+      if (regTabOpen()) renderRegister(currentRegTab);
+    }
   }
 }
 
 function updateJobStatusUI() {
-  const completeBanner = document.getElementById('completeBanner');
-  const readyBtn = document.getElementById('readyForQsBtn');
-  completeBanner.style.display = isClosedStatus(currentJobStatus) ? 'block' : 'none';
-  readyBtn.style.display = currentJobStatus === 'In Progress' ? 'block' : 'none';
+  document.getElementById('completeBanner').hidden = !isClosedStatus(currentJobStatus);
+  document.getElementById('readyForQsBtn').hidden = currentJobStatus !== 'In Progress';
 }
 
 document.getElementById('readyForQsBtn').addEventListener('click', async () => {
@@ -844,8 +1212,8 @@ async function suggestNextSiteRef() {
 
 document.getElementById('toggleAddSiteBtn').addEventListener('click', async () => {
   const form = document.getElementById('addSiteForm');
-  const opening = form.style.display === 'none';
-  form.style.display = opening ? 'block' : 'none';
+  const opening = form.hidden;
+  form.hidden = !opening;
   if (opening) {
     const refInput = document.getElementById('newSiteRef');
     if (!refInput.value.trim()) refInput.value = await suggestNextSiteRef();
@@ -867,7 +1235,7 @@ document.getElementById('addSiteBtn').addEventListener('click', async () => {
       }
     });
     ['newSiteRef','newSiteName','newSiteAddressLine','newSitePostcode','newSiteLimitations','newSiteAgreedWith'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('addSiteForm').style.display = 'none';
+    document.getElementById('addSiteForm').hidden = true;
     await loadSites();
     const banner = document.getElementById('banner');
     banner.className = 'banner ok'; banner.textContent = 'Site added: ' + ref; banner.style.display = 'block';
@@ -888,34 +1256,170 @@ const SEED_SUGGESTIONS = {
   ]
 };
 
+// ---- Type-ahead suggestions (v18.0) ----
+// Replaces the browser's own <datalist> suggestions, which barely show on
+// phones (iPhones especially). Our own dropdown works the same everywhere:
+// it appears as you type, ignores capitals and spaces, matches anywhere in
+// the name, and puts the most-used names first. If nothing matches, it
+// offers close spellings ("Did you mean…"). Leaving a box with a different
+// spelling of a name that's already used (e.g. "press Line 4") swaps it for
+// the usual spelling, so new variants don't creep in. Suggestions come from
+// this site's tests plus the starter list (SEED_SUGGESTIONS).
+const SUGGEST_KEYS = ['panelName', 'millLocation', 'equipmentName', 'physicalLocation', 'relayLocation', 'equipmentAffected', 'manufacturer', 'model'];
+let SUGGEST = {};   // key -> [{ value, n, norm }]
+function normName(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 function rebuildSuggestions() {
-  const pools = { panelName:new Set(), millLocation:new Set(), equipmentName:new Set(),
-    physicalLocation:new Set(), relayLocation:new Set(), equipmentAffected:new Set(),
-    manufacturer:new Set(), model:new Set() };
-  Object.keys(SEED_SUGGESTIONS).forEach(k => { SEED_SUGGESTIONS[k].forEach(v => pools[k].add(v)); });
-  siteHistoryCache.forEach(d => {
-    Object.keys(pools).forEach(k => { if (d[k]) pools[k].add(d[k]); });
-  });
-  Object.keys(pools).forEach(k => {
-    const dl = document.getElementById('dl-' + k);
-    if (dl) dl.innerHTML = Array.from(pools[k]).sort().map(v => `<option value="${v.replace(/"/g,'&quot;')}">`).join('');
+  const pools = {};
+  SUGGEST_KEYS.forEach(k => { pools[k] = new Map(); });   // norm -> Map(spelling -> times used)
+  const add = (k, v, w) => {
+    v = String(v || '').trim().replace(/\s+/g, ' ');
+    const nm = normName(v);
+    if (!nm) return;
+    if (!pools[k].has(nm)) pools[k].set(nm, new Map());
+    const m = pools[k].get(nm);
+    m.set(v, (m.get(v) || 0) + w);
+  };
+  Object.keys(SEED_SUGGESTIONS).forEach(k => SEED_SUGGESTIONS[k].forEach(v => add(k, v, 0)));
+  siteHistoryCache.forEach(d => { if (!d.deletedFlag) SUGGEST_KEYS.forEach(k => add(k, d[k], 1)); });
+  SUGGEST = {};
+  SUGGEST_KEYS.forEach(k => {
+    SUGGEST[k] = [...pools[k].entries()].map(([norm, spellings]) => {
+      const best = [...spellings.entries()].sort((a, b) => b[1] - a[1])[0];   // the most-used spelling is the one offered
+      const n = [...spellings.values()].reduce((s, x) => s + x, 0);
+      return { value: best[0], n, norm };
+    });
   });
 }
+function editDistance(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 99;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function suggestMatches(key, q) {
+  const list = SUGGEST[key] || [];
+  const nq = normName(q), lq = String(q || '').trim().toLowerCase();
+  const byUse = (a, b) => (b.n - a.n) || a.value.localeCompare(b.value);
+  if (!nq) return { items: list.filter(e => e.n > 0 || key === 'millLocation').sort(byUse).slice(0, 6), close: false };
+  const hits = list.filter(e => e.norm.includes(nq) || e.value.toLowerCase().includes(lq));
+  hits.sort((a, b) => (Number(b.norm.startsWith(nq)) - Number(a.norm.startsWith(nq))) || byUse(a, b));
+  if (hits.length || nq.length < 4) return { items: hits.slice(0, 6), close: false };
+  const allow = nq.length >= 8 ? 2 : 1;
+  return { items: list.filter(e => editDistance(e.norm, nq) <= allow).sort(byUse).slice(0, 3), close: true };
+}
+
+const sugBox = document.createElement('div');
+sugBox.className = 'sug-box'; sugBox.hidden = true;
+document.body.appendChild(sugBox);
+const sugNote = document.createElement('div');
+sugNote.className = 'sug-note'; sugNote.hidden = true;
+document.body.appendChild(sugNote);
+let sugInput = null, sugIdx = -1, sugItems = [];
+function sugPlace() {
+  if (!sugInput || sugBox.hidden) return;
+  const r = sugInput.getBoundingClientRect();
+  sugBox.style.left = (r.left + window.scrollX) + 'px';
+  sugBox.style.top = (r.bottom + window.scrollY + 2) + 'px';
+  sugBox.style.width = Math.max(r.width, 200) + 'px';
+}
+function sugHide() { sugBox.hidden = true; sugItems = []; sugIdx = -1; }
+function sugShow(inp) {
+  sugInput = inp;
+  const { items, close } = suggestMatches(inp.dataset.suggest, inp.value);
+  const typed = inp.value.trim();
+  if (!items.length || (items.length === 1 && items[0].value === typed)) { sugHide(); return; }
+  sugItems = items; sugIdx = -1;
+  sugBox.innerHTML = (close ? '<div class="sug-head">Did you mean…</div>' : '') +
+    items.map((e, i) => `<div class="sug-opt" data-i="${i}"><span>${escHtml(e.value)}</span>${e.n ? `<small>used ${e.n}×</small>` : ''}</div>`).join('');
+  sugBox.hidden = false;
+  sugPlace();
+}
+function sugMark() { sugBox.querySelectorAll('.sug-opt').forEach((o, i) => o.classList.toggle('on', i === sugIdx)); }
+function sugSet(inp, value) {
+  inp._sugQuiet = true;
+  inp.value = value;
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+  inp._sugQuiet = false;
+}
+function sugPick(i) {
+  const e = sugItems[i];
+  if (!e || !sugInput) return;
+  sugSet(sugInput, e.value);
+  sugHide();
+}
+// Same spelling as a name already in use, apart from capitals/spaces/dots?
+// Use the usual spelling.
+function sugTidy(inp) {
+  const v = inp.value.trim().replace(/\s+/g, ' ');
+  if (!v) { if (inp.value) sugSet(inp, ''); return; }
+  const hit = (SUGGEST[inp.dataset.suggest] || []).find(e => e.norm === normName(v));
+  const target = hit ? hit.value : v;
+  if (target !== inp.value) sugSet(inp, target);
+  if (hit && hit.value !== v) {
+    const r = inp.getBoundingClientRect();
+    sugNote.textContent = 'Changed to “' + hit.value + '”, the spelling already used';
+    sugNote.style.left = (r.left + window.scrollX) + 'px';
+    sugNote.style.top = (r.bottom + window.scrollY + 2) + 'px';
+    sugNote.hidden = false;
+    clearTimeout(sugNote._t);
+    sugNote._t = setTimeout(() => { sugNote.hidden = true; }, 3000);
+  }
+}
+sugBox.addEventListener('mousedown', e => e.preventDefault());   // keep the keyboard up
+sugBox.addEventListener('click', e => { const o = e.target.closest('.sug-opt'); if (o) sugPick(Number(o.dataset.i)); });
+document.addEventListener('focusin', e => { const t = e.target; if (t.matches && t.matches('input[data-suggest]')) sugShow(t); });
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.matches && t.matches('input[data-suggest]') && !t._sugQuiet && document.activeElement === t) sugShow(t);
+});
+document.addEventListener('keydown', e => {
+  if (sugBox.hidden || e.target !== sugInput) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); sugIdx = Math.min(sugItems.length - 1, sugIdx + 1); sugMark(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); sugIdx = Math.max(0, sugIdx - 1); sugMark(); }
+  else if (e.key === 'Enter' && sugIdx >= 0) { e.preventDefault(); sugPick(sugIdx); }
+  else if (e.key === 'Escape') sugHide();
+});
+document.addEventListener('focusout', e => {
+  const t = e.target;
+  if (!(t.matches && t.matches('input[data-suggest]'))) return;
+  setTimeout(() => {
+    if (document.activeElement === t) return;
+    if (sugInput === t) sugHide();
+    sugTidy(t);
+  }, 150);
+});
+window.addEventListener('resize', sugPlace);
+window.addEventListener('scroll', sugPlace, true);
 
 function overallPassOf(record) {
   if (record.checks && Object.keys(record.checks).length) return !Object.values(record.checks).some(v => v === 'Fail');
   return true;
 }
 
-// ---- Today's tests list ----
+// ---- Your tests on this day ----
+// v18.0: built from the site's tests (plus anything saved on this phone that
+// hasn't gone up yet), not a list kept only in the open page, so it survives
+// closing the app and shows whether each test has reached the office.
 function renderTodayList() {
   const card = document.getElementById('todayCard');
   const list = document.getElementById('todayList');
-  if (todaysTests.length === 0) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  list.innerHTML = todaysTests.map(t => `
-    <div class="today-item"><span class="id">${t.equipmentId}</span><span class="cat">${t.category}</span></div>
-  `).join('');
+  const date = document.getElementById('visitDate').value;
+  const mine = siteHistoryCache
+    .filter(h => !h.deletedFlag && h.date === date && sameEmail(h.engineerEmail, meEmail()))
+    .sort((a, b) => createdMillis(b) - createdMillis(a));
+  if (!mine.length) { card.hidden = true; return; }
+  card.hidden = false;
+  const label = date === localISO() ? 'today' : 'on ' + longDate(date);
+  card.querySelector('.section-label').textContent = 'Your tests ' + label + ' (' + mine.length + ')';
+  list.innerHTML = mine.map(t => {
+    const wait = isPendingTest(t);
+    return `<div class="today-item"><div><div class="id">${escHtml(t.equipmentId)}</div><div class="cat">${escHtml(t.category || '')}</div></div>
+      <span class="sent-tag ${wait ? 'wait' : 'ok'}">${wait ? 'Not sent yet' : '✓ Sent'}</span></div>`;
+  }).join('');
 }
 
 // ---- Register ----
@@ -937,20 +1441,20 @@ let regSortOrder = 'equipmentId';
 
 function buildEditPanel(record) {
   const def = CATEGORIES[record.category];
-  const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+  const esc = escHtml;
 
   const descFieldsHtml = (def ? def.fields : []).map(f => `
-    <label>${f.label}</label>
-    <input type="text" data-editfield="${f.key}" value="${esc(record[f.key])}">
+    <div class="fld"><label>${f.label}</label>
+    <input type="text" data-editfield="${f.key}" data-suggest="${f.key}" autocomplete="off" value="${esc(record[f.key])}"></div>
   `).join('');
 
   const specsHtml = def && def.hasIsolatorSpecs ? `
-    <label>Current rating</label>
-    <input type="text" data-editfield="currentRating" value="${esc(record.currentRating)}">
-    <label>Number of poles</label>
-    <select data-editfield="poles">${[1,2,3,4,5,6,7,8].map(n => `<option ${String(record.poles) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}</select>
-    <label>Auxiliary</label>
-    <select data-editfield="auxiliary">${AUX_OPTIONS.map(a => `<option ${record.auxiliary === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
+    <div class="fld"><label>Current rating</label>
+    <input type="text" data-editfield="currentRating" value="${esc(record.currentRating)}"></div>
+    <div class="fld"><label>Number of poles</label>
+    <select data-editfield="poles">${[1,2,3,4,5,6,7,8].map(n => `<option ${String(record.poles) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+    <div class="fld"><label>Auxiliary</label>
+    <select data-editfield="auxiliary">${AUX_OPTIONS.map(a => `<option ${record.auxiliary === a ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
   ` : '';
 
   const isLimited = record.testingStatus === 'Limited';
@@ -970,16 +1474,15 @@ function buildEditPanel(record) {
 
   const limitationHtml = isLimited ? `
     <label>Reason for limitation</label>
-    <textarea data-editfield="limitationReason">${record.limitationReason || ''}</textarea>
+    <textarea data-editfield="limitationReason">${esc(record.limitationReason)}</textarea>
     <label>Agreed with</label>
     <input type="text" data-editfield="limitationAgreedWith" value="${esc(record.limitationAgreedWith)}">
   ` : '';
 
   return `
     <div class="edit-panel" data-edit-doc-id="${record._id}">
-      <p class="id-locked-note">Equipment ID stays fixed on an edit: ${record.equipmentId}</p>
-      ${descFieldsHtml}
-      ${specsHtml}
+      <p class="id-locked-note">Equipment ID stays fixed on an edit: ${esc(record.equipmentId)}</p>
+      <div class="fgrid">${descFieldsHtml}${specsHtml}</div>
       ${checksHtml}
       ${limitationHtml}
       <label>Further action</label>
@@ -988,11 +1491,13 @@ function buildEditPanel(record) {
         <option value="Requires Replacement" ${record.action === 'Requires Replacement' ? 'selected' : ''}>Requires Replacement</option>
         <option value="Requires Remedial Works" ${record.action === 'Requires Remedial Works' ? 'selected' : ''}>Requires Remedial Works</option>
       </select>
-      <label>Manufacturer</label><input type="text" data-editfield="manufacturer" value="${esc(record.manufacturer)}">
-      <label>Model</label><input type="text" data-editfield="model" value="${esc(record.model)}">
-      <label>Part number</label><input type="text" data-editfield="partNumber" value="${esc(record.partNumber)}">
+      <div class="fgrid">
+      <div class="fld"><label>Manufacturer</label><input type="text" data-editfield="manufacturer" data-suggest="manufacturer" autocomplete="off" value="${esc(record.manufacturer)}"></div>
+      <div class="fld"><label>Model</label><input type="text" data-editfield="model" data-suggest="model" autocomplete="off" value="${esc(record.model)}"></div>
+      <div class="fld"><label>Part number</label><input type="text" data-editfield="partNumber" value="${esc(record.partNumber)}"></div>
+      </div>
       <label>Observations</label>
-      <textarea data-editfield="observations">${record.observations || ''}</textarea>
+      <textarea data-editfield="observations">${esc(record.observations)}</textarea>
       ${record.whatWasDone !== undefined ? `<label>What was done</label>
       <textarea data-editfield="whatWasDone">${escHtml(record.whatWasDone)}</textarea>` : ''}
       <div style="display:flex;gap:8px;margin-top:6px;">
@@ -1053,10 +1558,10 @@ function buildRegLocFilterOptions(activeTab) {
   siteHistoryCache.forEach(d => { if (!byEquip[d.equipmentId]) byEquip[d.equipmentId] = []; byEquip[d.equipmentId].push(d); });
   let latestList = Object.values(byEquip).map(hist => hist.filter(h => !h.deletedFlag)).filter(a => a.length).map(a => a[a.length - 1]);
   if (activeTab && activeTab !== 'All') latestList = latestList.filter(r => r.category === activeTab);
-  const locs = Array.from(new Set(latestList.map(r => locationOf(r)).filter(Boolean))).sort();
+  const locs = Array.from(new Set(latestList.map(r => locationOf(r)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   const current = sel.value;
-  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option ${l === current ? 'selected' : ''}>${l}</option>`).join('');
-  if (!locs.includes(current)) sel.value = '';
+  sel.innerHTML = '<option value="">All locations</option>' + locs.map(l => `<option value="${escHtml(l)}">${escHtml(l)}</option>`).join('');
+  sel.value = locs.includes(current) ? current : '';
 }
 
 function matchesSearch(latest, eq, query) {
@@ -1068,22 +1573,60 @@ function matchesSearch(latest, eq, query) {
 }
 
 ['regSearch','regLocFilter','regPassFilter'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const activeBtn = document.querySelector('#regSubtabs button.active');
-    renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
-  });
+  document.getElementById(id).addEventListener('input', () => renderRegister(currentRegTab));
 });
 ['regOverdueOnly','regLimitedOnly','regNotRetestedOnly'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => {
-    const activeBtn = document.querySelector('#regSubtabs button.active');
-    renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
-  });
+  document.getElementById(id).addEventListener('change', () => renderRegister(currentRegTab));
 });
 document.getElementById('regSortOrder').addEventListener('change', (e) => {
   regSortOrder = e.target.value;
-  const activeBtn = document.querySelector('#regSubtabs button.active');
-  renderRegister(activeBtn ? activeBtn.dataset.tab : 'All');
+  renderRegister(currentRegTab);
 });
+// Phones: the filters fold away behind a "Filters" button.
+document.getElementById('regFiltersBtn').addEventListener('click', () => {
+  document.getElementById('regFilters').classList.toggle('open');
+  updateFiltersBtn();
+});
+function activeFilterCount() {
+  let n = 0;
+  if (document.getElementById('regLocFilter').value) n++;
+  if (document.getElementById('regPassFilter').value) n++;
+  if (regSortOrder !== 'equipmentId') n++;
+  ['regOverdueOnly', 'regLimitedOnly'].forEach(id => { if (document.getElementById(id).checked) n++; });
+  if (!document.getElementById('regNotRetestedWrap').hidden && document.getElementById('regNotRetestedOnly').checked) n++;
+  return n;
+}
+function updateFiltersBtn() {
+  const open = document.getElementById('regFilters').classList.contains('open');
+  const n = activeFilterCount();
+  document.getElementById('regFiltersBtn').textContent = (open ? 'Hide filters' : 'Filters') + (n ? ' (' + n + ' on)' : '');
+}
+
+// ---- Flag for deletion / restore ----
+// Doesn't wait for signal: the screen changes straight away and the change
+// goes up with everything else. Flagging offers Undo for a few seconds.
+let undoTimer = null;
+function setDeletedFlag(docId, flag) {
+  const r = siteHistoryCache.find(h => h._id === docId);
+  const who = VIEW_AS ? VIEW_AS.name : (currentUser.displayName || currentUser.email);
+  const write = updateDoc(doc(db, 'isolatorTests', docId), flag
+    ? { deletedFlag: true, deletedBy: who, deletedAt: serverTimestamp() }
+    : { deletedFlag: false });
+  write.catch(e => { alert('Could not update — ' + (e.message || e.code || 'unknown error')); loadSiteData(); });
+  if (r) Object.assign(r, flag ? { deletedFlag: true, deletedBy: who } : { deletedFlag: false });
+  renderRegister(currentRegTab);
+  renderTodayList();
+  if (flag && r) showUndo(`${r.equipmentId} (${shortDate(r.date)}) flagged for deletion.`, () => setDeletedFlag(docId, false));
+}
+function showUndo(text, onUndo) {
+  let t = document.getElementById('undoToast');
+  if (!t) { t = document.createElement('div'); t.id = 'undoToast'; t.className = 'undo-toast'; document.body.appendChild(t); }
+  t.innerHTML = `<span>${escHtml(text)}</span><button type="button">Undo</button>`;
+  t.hidden = false;
+  t.querySelector('button').onclick = () => { t.hidden = true; clearTimeout(undoTimer); onUndo(); };
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => { t.hidden = true; }, 10000);
+}
 
 let currentRegTab = 'All';
 function renderRegister(activeTab) {
@@ -1091,17 +1634,26 @@ function renderRegister(activeTab) {
   currentRegTab = activeTab;
   buildRegLocFilterOptions(activeTab);
   const list = document.getElementById('regList');
+  const countEl = document.getElementById('regCount');
   const siteRef = document.getElementById('site').value;
   const summaryEl = document.getElementById('retestSummary');
   const notRetestedWrap = document.getElementById('regNotRetestedWrap');
   summaryEl.style.display = 'none';
-  if (!siteRef) { notRetestedWrap.style.display = 'none'; list.innerHTML = '<div class="loading-note">Select a site to view its register.</div>'; return; }
-  if (siteHistoryCache.length === 0) { notRetestedWrap.style.display = 'none'; list.innerHTML = '<div class="history-empty">Nothing logged for this site yet.</div>'; return; }
+  countEl.innerHTML = '';
+  updateFiltersBtn();
+  if (!siteRef) { notRetestedWrap.hidden = true; list.innerHTML = '<div class="loading-note">Select a site to view its register.</div>'; return; }
+  if (siteHistoryCache.length === 0) {
+    notRetestedWrap.hidden = true;
+    list.innerHTML = document.getElementById('siteLoadingIndicator').hidden
+      ? '<div class="history-empty">Nothing logged for this site yet.</div>'
+      : '<div class="loading-note">Loading…</div>';
+    return;
+  }
 
   const lastReport = lastReportOf(siteMeta);
   const lastDate = lastReport ? lastReport.date : '';
   const siteClosed = isClosedStatus(currentJobStatus);
-  notRetestedWrap.style.display = lastDate ? 'flex' : 'none';
+  notRetestedWrap.hidden = !lastDate;
 
   const byEquip = {};
   siteHistoryCache.forEach(d => {
@@ -1121,6 +1673,7 @@ function renderRegister(activeTab) {
     }
     return { eq, hist, active, latest, daysSince, overdue, since: classifySince(active, lastDate) };
   }).filter(g => g.latest || g.hist.some(h => h.deletedFlag));
+  const siteItemCount = groups.filter(g => g.latest).length;
 
   // "Still to retest" summary - counted across the whole site, before any filters.
   if (lastDate && !siteClosed) {
@@ -1155,6 +1708,15 @@ function renderRegister(activeTab) {
   const searchQuery = document.getElementById('regSearch').value.trim();
   if (searchQuery) groups = groups.filter(g => g.latest && matchesSearch(g.latest, g.eq, searchQuery));
 
+  // v18.0: the count row, like the reports app's Overview, but for what's
+  // showing now, so it changes with the tab, search and filters.
+  const shown = groups.filter(g => g.latest);
+  const nFail = shown.filter(g => !overallPassOf(g.latest)).length;
+  const nLim = shown.filter(g => g.latest.testingStatus === 'Limited').length;
+  const stat = (n, l, color) => `<div><div class="n" ${color ? `style="color:${color};"` : ''}>${n}</div><div class="l">${l}</div></div>`;
+  countEl.innerHTML = stat(shown.length, 'Total') + stat(shown.length - nFail, 'Passed', 'var(--pass)') + stat(nFail, 'Failed', 'var(--fail)') +
+    stat(nLim, 'Limitations', '#8a6d1a') + (shown.length !== siteItemCount ? `<div class="of">Showing ${shown.length} of ${siteItemCount} items</div>` : '');
+
   groups.sort((a, b) => {
     if (regSortOrder === 'lastTestedOldest') return (a.latest && a.latest.date || '').localeCompare(b.latest && b.latest.date || '');
     if (regSortOrder === 'lastTestedNewest') return (b.latest && b.latest.date || '').localeCompare(a.latest && a.latest.date || '');
@@ -1167,51 +1729,54 @@ function renderRegister(activeTab) {
     const latest = g.latest;
     const isExpanded = expandedEquip.has(g.eq);
     const displayCat = latest ? latest.category : g.hist[g.hist.length - 1].category;
+    const eqAttr = escHtml(g.eq);
     const historyRows = [...g.hist].reverse().map(h => {
       if (h.deletedFlag) {
         return `
-          <div class="hist-row">
+          <div class="hist-row"><div class="hist-row-top">
             <div>
-              <div class="hist-date" style="text-decoration:line-through;color:var(--grey);">${h.date || '—'}</div>
-              <div class="hist-meta">Flagged for deletion by ${h.deletedBy || '—'} · pending manager review</div>
+              <div class="hist-date" style="text-decoration:line-through;color:var(--grey);">${escHtml(h.date || '—')}</div>
+              <div class="hist-meta">Flagged for deletion by ${escHtml(h.deletedBy || '—')} · waiting for a manager</div>
             </div>
-            <button type="button" class="del-btn" data-doc-id="${h._id}" data-action="restore">Restore</button>
-          </div>
+            ${siteClosed ? '' : `<button type="button" class="restore-btn" data-doc-id="${h._id}" data-action="restore">Restore</button>`}
+          </div></div>
         `;
       }
       const hPass = overallPassOf(h);
-      const canEdit = h.engineerEmail === currentUser.email && !h.qsed && !siteClosed;
+      const mine = sameEmail(h.engineerEmail, meEmail());
+      const canEdit = mine && !h.qsed && !siteClosed;
       const isEditingThis = editingDocIds.has(h._id);
       return `
-        <div class="hist-row" style="${isEditingThis ? 'display:block;' : ''}">
-          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+        <div class="hist-row">
+          <div class="hist-row-top">
             <div>
-              <div class="hist-date">${h.date || '—'} <span class="chip ${hPass ? 'pass' : 'fail'}" style="margin-left:6px;">${hPass ? 'Pass' : 'Fail'}</span></div>
-              <div class="hist-meta">by ${h.engineer || '—'}${h.qsed ? ' · QSed' : ''}</div>
-              ${isEditingThis ? '' : `<div class="hist-detail">${pastTestDetailHtml(h)}</div>`}
+              <div class="hist-date">${escHtml(h.date || '—')} <span class="chip ${hPass ? 'pass' : 'fail'}">${hPass ? 'Pass' : 'Fail'}</span>${isPendingTest(h) ? '<span class="chip wait">Not sent yet</span>' : ''}</div>
+              <div class="hist-meta">by ${escHtml(h.engineer || '—')}${h.qsed ? ' · QSed' : ''}</div>
             </div>
-            <div style="display:flex;gap:6px;">
+            <div class="hist-btns">
               ${canEdit ? `<button type="button" class="btn-edit-own" data-toggle-doc-id="${h._id}">${isEditingThis ? 'Close' : 'Edit'}</button>` : ''}
               ${siteClosed ? '' : `<button type="button" class="del-btn" data-doc-id="${h._id}" data-action="flag">Flag for deletion</button>`}
             </div>
           </div>
-          ${!canEdit && h.engineerEmail === currentUser.email && h.qsed ? '<div class="id-locked-note">This has been QSed — ask QS to un-tick it before you can edit.</div>' : ''}
+          ${isEditingThis ? '' : `<div class="hist-detail">${pastTestDetailHtml(h)}</div>`}
+          ${!canEdit && mine && h.qsed ? '<div class="id-locked-note">This has been QSed — ask QS to un-tick it before you can edit.</div>' : ''}
           ${isEditingThis ? buildEditPanel(h) : ''}
         </div>
       `;
     }).join('');
 
     if (!latest) {
+      const lastFlagged = g.hist[g.hist.length - 1];
       return `
         <div class="reg-item ${isExpanded ? 'editing-full' : ''}">
           <div class="reg-item-top">
-            <div><div class="cat">${displayCat || 'Uncategorised'}</div><div class="eq">${g.eq}</div></div>
-            <span class="chip" style="background:#eee;color:var(--grey);">Pending review</span>
+            <div><div class="cat">${escHtml(displayCat || 'Uncategorised')}</div><div class="eq">${eqAttr}</div></div>
+            <span class="chip" style="background:#eee;color:var(--grey);">Flagged</span>
           </div>
-          <div class="meta">All tests for this item are flagged for deletion — awaiting manager review.</div>
+          <div class="meta">Every test for this item is flagged for deletion, waiting for a manager. Flagged by mistake? Press Restore.</div>
           <div class="reg-item-bottom">
-            <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
-            <span></span>
+            <button type="button" class="expand-btn" data-eq="${eqAttr}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
+            ${siteClosed ? '<span></span>' : `<button type="button" class="restore-btn" data-doc-id="${lastFlagged._id}" data-action="restore">Restore latest test</button>`}
           </div>
           ${isExpanded ? `<div class="hist-list">${historyRows}</div>` : ''}
         </div>
@@ -1220,7 +1785,7 @@ function renderRegister(activeTab) {
 
     const overallPass = overallPassOf(latest);
     const daysSince = g.daysSince, overdue = g.overdue;
-    const lastEdit = (latest.editLog && latest.editLog.length) ? latest.editLog[latest.editLog.length - 1] : null;
+    const lastEdit = (latest.editLog || []).filter(e => e.checklistChanged).pop() || null;   // tidy-ups in the log aren't checklist edits
     const checklistWasEdited = latest.editLog && latest.editLog.some(e => e.checklistChanged);
     let sinceTag = '';
     const sk = g.since.kind;
@@ -1230,24 +1795,25 @@ function renderRegister(activeTab) {
     return `
       <div class="reg-item ${overdue ? 'overdue' : ''} ${isExpanded ? 'editing-full' : ''}">
         <div class="reg-item-top">
-          <div>
-            <div class="cat">${latest.category || 'Uncategorised'} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
-            <div class="eq">${g.eq}</div>
+          <div style="min-width:0;">
+            <div class="cat">${escHtml(latest.category || 'Uncategorised')} ${checklistWasEdited ? '<span class="edited-marker">Edited</span>' : ''}</div>
+            <div class="eq">${eqAttr}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
             <span class="chip ${overallPass ? 'pass' : 'fail'}">${overallPass ? 'Pass' : 'Fail'}</span>
             ${overdue ? '<span class="chip overdue">Overdue</span>' : ''}
+            ${isPendingTest(latest) ? '<span class="chip wait">Not sent yet</span>' : ''}
           </div>
         </div>
         <div class="meta ${overdue ? 'overdue-text' : ''}">
-          Last tested ${latest.date || '—'} by ${latest.engineer || '—'}
+          Last tested ${escHtml(latest.date || '—')} by ${escHtml(latest.engineer || '—')}
           ${daysSince !== null ? ` · ${daysSince} days ago` : ''}
-          ${checklistWasEdited && lastEdit ? `<br>Checklist last edited by ${lastEdit.by} · ${lastEdit.at.slice(0,10)}` : ''}
+          ${checklistWasEdited && lastEdit ? `<br>Checklist last edited by ${escHtml(lastEdit.by)} · ${escHtml(String(lastEdit.at || '').slice(0,10))}` : ''}
         </div>
         ${sinceTag}
         <div class="reg-item-bottom">
-          <button type="button" class="expand-btn" data-eq="${g.eq}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
-          ${siteClosed ? '<span></span>' : `<button type="button" class="retest-btn" data-eq="${g.eq}">Retest</button>`}
+          <button type="button" class="expand-btn" data-eq="${eqAttr}">${isExpanded ? 'Hide history' : 'View history'} (${g.hist.length})</button>
+          ${siteClosed ? '<span></span>' : `<button type="button" class="retest-btn" data-eq="${eqAttr}">Retest</button>`}
         </div>
         ${isExpanded ? `<div class="hist-list">${historyRows}</div>` : ''}
       </div>
@@ -1291,20 +1857,10 @@ function renderRegister(activeTab) {
       renderRegister(activeTab);
     });
   });
-  list.querySelectorAll('.del-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      try {
-        if (btn.dataset.action === 'restore') {
-          await updateDoc(doc(db, 'isolatorTests', btn.dataset.docId), { deletedFlag: false });
-        } else {
-          if (!confirm('Flag this test as incorrect / for deletion? It stays on record but is hidden from the active register until a manager confirms removal.')) return;
-          await updateDoc(doc(db, 'isolatorTests', btn.dataset.docId), {
-            deletedFlag: true, deletedBy: currentUser.displayName || currentUser.email, deletedAt: serverTimestamp()
-          });
-        }
-        await loadSiteData();
-        renderRegister(activeTab);
-      } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
+  list.querySelectorAll('[data-action="flag"], [data-action="restore"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.action === 'flag' && !confirm('Flag this test as incorrect / for deletion? It stays on record but is hidden from the active register until a manager confirms removal.')) return;
+      setDeletedFlag(btn.dataset.docId, btn.dataset.action === 'flag');
     });
   });
   list.querySelectorAll('.retest-btn').forEach(btn => {
@@ -1313,9 +1869,10 @@ function renderRegister(activeTab) {
       const group = groups.find(g => g.eq === eq);
       const latest = group ? group.latest : null;
       if (!latest) return;
-      addEntry(latest);
+      if (!openEntry(latest)) return;
       switchTab('log');
-      window.scrollTo({ top: document.getElementById('entries').offsetTop - 20, behavior: 'smooth' });
+      const entries = document.getElementById('entries');
+      window.scrollTo({ top: entries.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
     });
   });
 }
@@ -1366,9 +1923,9 @@ function renderCategoryFields(wrap, category, prefill) {
   if (!def) { fieldsContainer.innerHTML = ''; checksContainer.innerHTML = ''; specsContainer.innerHTML = ''; refreshIdPreview(wrap); return; }
 
   fieldsContainer.innerHTML = def.fields.map(f => `
-    <label>${f.label} <span class="req">*</span><span class="hint">${f.hint}</span></label>
-    <input type="text" data-field="${f.key}" list="dl-${f.dl}" value="${prefill && prefill[f.key] ? prefill[f.key] : ''}">
-    <div class="error-msg">${f.label} is required</div>
+    <div class="fld"><label>${f.label} <span class="req">*</span><span class="hint">${f.hint}</span></label>
+    <input type="text" data-field="${f.key}" data-suggest="${f.key}" autocomplete="off" value="${escHtml(prefill && prefill[f.key] ? prefill[f.key] : '')}">
+    <div class="error-msg">${f.label} is required</div></div>
   `).join('');
 
   fieldsContainer.querySelectorAll('input').forEach(inp => {
@@ -1377,23 +1934,23 @@ function renderCategoryFields(wrap, category, prefill) {
 
   if (def.hasIsolatorSpecs) {
     specsContainer.innerHTML = `
-      <label>Current rating <span class="req">*</span><span class="hint">E.g. 32A</span></label>
-      <input type="text" data-field="currentRating" value="${prefill && prefill.currentRating ? prefill.currentRating : ''}">
-      <div class="error-msg">Current rating is required</div>
+      <div class="fld"><label>Current rating <span class="req">*</span><span class="hint">E.g. 32A</span></label>
+      <input type="text" data-field="currentRating" value="${escHtml(prefill && prefill.currentRating ? prefill.currentRating : '')}">
+      <div class="error-msg">Current rating is required</div></div>
 
-      <label>Number of poles <span class="req">*</span></label>
+      <div class="fld"><label>Number of poles <span class="req">*</span></label>
       <select data-field="poles">
         <option value="" disabled ${!prefill || !prefill.poles ? 'selected' : ''}>Select</option>
         ${[1,2,3,4,5,6,7,8].map(n => `<option ${prefill && String(prefill.poles) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}
       </select>
-      <div class="error-msg">Number of poles is required</div>
+      <div class="error-msg">Number of poles is required</div></div>
 
-      <label>Auxiliary <span class="req">*</span></label>
+      <div class="fld"><label>Auxiliary <span class="req">*</span></label>
       <select data-field="auxiliary">
         <option value="" disabled ${!prefill || !prefill.auxiliary ? 'selected' : ''}>Select</option>
         ${AUX_OPTIONS.map(a => `<option ${prefill && prefill.auxiliary === a ? 'selected' : ''}>${a}</option>`).join('')}
       </select>
-      <div class="error-msg">Auxiliary is required</div>
+      <div class="error-msg">Auxiliary is required</div></div>
     `;
   } else {
     specsContainer.innerHTML = '';
@@ -1502,100 +2059,109 @@ function addEntry(prefill) {
   wrap.innerHTML = `
     <div class="entry-head">
       <span class="tag">${prefill ? 'Retest' : 'New'}</span>
-      <span class="eq-id" data-role="eqlabel">${prefill ? prefill.equipmentId : 'New entry'}</span>
+      <span class="eq-id" data-role="eqlabel">${prefill ? escHtml(prefill.equipmentId) : 'New entry'}</span>
       <button type="button" data-role="remove">Cancel</button>
     </div>
     <div class="entry-body">
       ${lastTimeHtml}
 
-      <label>Category <span class="req">*</span></label>
-      <select data-field="category" ${prefill ? 'disabled' : ''}>
-        <option value="" ${!prefill ? 'disabled selected' : ''}>Select category</option>
-        ${CATEGORY_NAMES.map(c => `<option ${prefill && prefill.category === c ? 'selected' : ''}>${c}</option>`).join('')}
-      </select>
-      <div class="error-msg">Category is required</div>
+      <div class="fgrid">
+        <div class="fld"><label>Category <span class="req">*</span></label>
+        <select data-field="category" ${prefill ? 'disabled' : ''}>
+          <option value="" ${!prefill ? 'disabled selected' : ''}>Select category</option>
+          ${CATEGORY_NAMES.map(c => `<option ${prefill && prefill.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+        <div class="error-msg">Category is required</div></div>
 
-      <div data-role="catFields"></div>
+        <div class="contents" data-role="catFields"></div>
 
-      <label>Equipment ID <span class="hint" style="display:inline;">(generated automatically)</span></label>
-      <div class="id-preview pending" data-role="idPreview">Select a category and fill in the fields above</div>
-      <p class="id-note" data-role="idNote"></p>
+        <div class="fld full"><label>Equipment ID <span class="hint" style="display:inline;">(generated automatically)</span></label>
+        <div class="id-preview pending" data-role="idPreview">Select a category and fill in the fields above</div>
+        <p class="id-note" data-role="idNote"></p></div>
 
-      <label>Was the item fully accessible and tested? <span class="req">*</span><span class="hint">Select "Limitation" where any part of the inspection or test could not be completed due to an agreed limitation.</span></label>
-      <div class="radio-row" data-testing-status style="margin-bottom:14px;">
-        <div class="radio-opt" data-value="Full">Yes — fully tested</div>
-        <div class="radio-opt" data-value="Limited">No — limitation</div>
+        <div class="fld full"><label>Was the item fully accessible and tested? <span class="req">*</span><span class="hint">Select "Limitation" where any part of the inspection or test could not be completed due to an agreed limitation.</span></label>
+        <div class="radio-row" data-testing-status style="margin-bottom:14px;">
+          <div class="radio-opt" data-value="Full">Yes — fully tested</div>
+          <div class="radio-opt" data-value="Limited">No — limitation</div>
+        </div>
+        <div class="error-msg" data-error-for="testingStatus">Required</div></div>
+
+        <div class="contents" data-role="limitationFields" hidden>
+          <div class="fld"><label>Reason for limitation <span class="req">*</span><span class="hint">E.g. couldn't isolate — machine in use, access refused</span></label>
+          <textarea data-field="limitationReason"></textarea>
+          <div class="error-msg">Reason is required for a limited test</div></div>
+          <div class="fld"><label>Agreed with <span class="req">*</span><span class="hint">Who on site agreed this was acceptable</span></label>
+          <input type="text" data-field="limitationAgreedWith">
+          <div class="error-msg">Required for a limited test</div></div>
+        </div>
+
+        <div class="contents" data-role="isolatorSpecs"></div>
       </div>
-      <div class="error-msg" data-error-for="testingStatus">Required</div>
 
-      <div data-role="limitationFields" style="display:none;">
-        <label>Reason for limitation <span class="req">*</span><span class="hint">E.g. couldn't isolate — machine in use, access refused</span></label>
-        <textarea data-field="limitationReason"></textarea>
-        <div class="error-msg">Reason is required for a limited test</div>
-        <label>Agreed with <span class="req">*</span><span class="hint">Who on site agreed this was acceptable</span></label>
-        <input type="text" data-field="limitationAgreedWith">
-        <div class="error-msg">Required for a limited test</div>
+      <div class="checks-grid" data-role="catChecks"></div>
+
+      <div class="fgrid" style="margin-top:14px;">
+        <div class="fld"><label>Further action required <span class="req">*</span></label>
+        <select data-field="action">
+          <option value="" disabled selected>Select</option>
+          <option value="No">No</option>
+          <option value="Requires Replacement">Requires Replacement</option>
+          <option value="Requires Remedial Works">Requires Remedial Works</option>
+        </select>
+        <div class="hint" data-role="actionHint" style="display:none;margin:-10px 0 12px;color:var(--fail);font-size:12px;">A Fail above means this can't be left as "No"</div>
+        <div class="error-msg" data-error-for="action">Required — and can't be "No" if any check above failed</div></div>
+
+        <div class="fld"><label>Manufacturer <span class="req">*</span><span class="hint">E.g. Eaton, Guardmaster, Schneider</span></label>
+        <input type="text" data-field="manufacturer" data-suggest="manufacturer" autocomplete="off" value="${escHtml(prefill && prefill.manufacturer ? prefill.manufacturer : '')}">
+        <div class="error-msg">Manufacturer is required</div></div>
+
+        <div class="fld"><label>Model <span class="req">*</span><span class="hint">E.g. rotary isolator, Trojan 5</span></label>
+        <input type="text" data-field="model" data-suggest="model" autocomplete="off" value="${escHtml(prefill && prefill.model ? prefill.model : '')}">
+        <div class="error-msg">Model is required</div></div>
+
+        <div class="fld"><label>Part number <span class="req">*</span></label>
+        <input type="text" data-field="partNumber" value="${escHtml(prefill && prefill.partNumber ? prefill.partNumber : '')}">
+        <div class="error-msg">Part number is required</div></div>
+
+        <div class="fld full"><label>Observations <span class="req" data-role="obsReq" style="display:none;">*</span><span class="hint">Required if anything above failed</span></label>
+        <textarea data-field="observations"></textarea>
+        <div class="error-msg" data-error-for="observations">An observation is required when a check has failed</div></div>
+
+        ${prevFail ? `
+        <div class="fld full"><label>What was done <span class="req" data-role="wwdReq">*</span><span class="hint">This failed last time. E.g. "Interlock fitted", "Labelled"</span></label>
+        <textarea data-field="whatWasDone"></textarea>
+        <div class="error-msg" data-error-for="whatWasDone">Say what was done, as this failed last time</div></div>` : ''}
+
+        <div class="fld"><label>General photo of equipment <span class="req">*</span></label>
+        ${prefill && prefill.photoBase64 ? `
+          <div style="margin-bottom:10px;">
+            <p class="id-locked-note" style="font-style:normal;">Photo from last visit (${escHtml(prefill.date || 'previous test')}) — reference only, take a fresh one below</p>
+            <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoBase64}">
+          </div>` : ''}
+        <input type="file" accept="image/*" data-field="photo">
+        <div class="error-msg" data-error-for="photo">A photo is required</div></div>
+
+        <div class="fld"><label>Photo of internals <span class="req" data-role="internalsReq" style="display:none;">*</span><span class="hint">E.g. main switch body, E-stop contacts — makes sourcing a replacement part easier without a second visit. Required if further action is needed.</span></label>
+        ${prefill && prefill.photoInternalsBase64 ? `
+          <div style="margin-bottom:10px;">
+            <p class="id-locked-note" style="font-style:normal;">Internals photo from last visit (${escHtml(prefill.date || 'previous test')}) — reference only, take a fresh one below</p>
+            <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoInternalsBase64}">
+          </div>` : ''}
+        <input type="file" accept="image/*" data-field="photoInternals">
+        <div class="error-msg" data-error-for="photoInternals">A photo of the internals is required when further action is needed</div></div>
       </div>
-
-      <div data-role="isolatorSpecs"></div>
-
-      <div data-role="catChecks"></div>
-
-      <label style="margin-top:14px;">Further action required <span class="req">*</span></label>
-      <select data-field="action">
-        <option value="" disabled selected>Select</option>
-        <option value="No">No</option>
-        <option value="Requires Replacement">Requires Replacement</option>
-        <option value="Requires Remedial Works">Requires Remedial Works</option>
-      </select>
-      <div class="hint" data-role="actionHint" style="display:none;margin:-10px 0 12px;color:var(--fail);">A Fail above means this can't be left as "No"</div>
-      <div class="error-msg" data-error-for="action">Required — and can't be "No" if any check above failed</div>
-
-      <label>Manufacturer <span class="req">*</span><span class="hint">E.g. Eaton, Guardmaster, Schneider</span></label>
-      <input type="text" data-field="manufacturer" list="dl-manufacturer" value="${prefill && prefill.manufacturer ? prefill.manufacturer : ''}">
-      <div class="error-msg">Manufacturer is required</div>
-
-      <label>Model <span class="req">*</span><span class="hint">E.g. rotary isolator, Trojan 5</span></label>
-      <input type="text" data-field="model" list="dl-model" value="${prefill && prefill.model ? prefill.model : ''}">
-      <div class="error-msg">Model is required</div>
-
-      <label>Part number <span class="req">*</span></label>
-      <input type="text" data-field="partNumber" value="${prefill && prefill.partNumber ? prefill.partNumber : ''}">
-      <div class="error-msg">Part number is required</div>
-
-      <label>Observations <span class="req" data-role="obsReq" style="display:none;">*</span><span class="hint">Required if anything above failed</span></label>
-      <textarea data-field="observations"></textarea>
-      <div class="error-msg" data-error-for="observations">An observation is required when a check has failed</div>
-
-      ${prevFail ? `
-      <label>What was done <span class="req" data-role="wwdReq">*</span><span class="hint">This failed last time. E.g. "Interlock fitted", "Labelled"</span></label>
-      <textarea data-field="whatWasDone"></textarea>
-      <div class="error-msg" data-error-for="whatWasDone">Say what was done, as this failed last time</div>` : ''}
-
-      <label>General photo of equipment <span class="req">*</span></label>
-      ${prefill && prefill.photoBase64 ? `
-        <div style="margin-bottom:10px;">
-          <p class="id-locked-note" style="font-style:normal;">Photo from last visit (${prefill.date || 'previous test'}) — reference only, take a fresh one below</p>
-          <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoBase64}">
-        </div>` : ''}
-      <input type="file" accept="image/*" data-field="photo">
-      <div class="error-msg" data-error-for="photo">A photo is required</div>
-
-      <label>Photo of internals <span class="req" data-role="internalsReq" style="display:none;">*</span><span class="hint">E.g. main switch body, E-stop contacts — makes sourcing a replacement part easier without a second visit. Required if further action is needed.</span></label>
-      ${prefill && prefill.photoInternalsBase64 ? `
-        <div style="margin-bottom:10px;">
-          <p class="id-locked-note" style="font-style:normal;">Internals photo from last visit (${prefill.date || 'previous test'}) — reference only, take a fresh one below</p>
-          <img class="reference-photo" src="data:image/jpeg;base64,${prefill.photoInternalsBase64}">
-        </div>` : ''}
-      <input type="file" accept="image/*" data-field="photoInternals">
-      <div class="error-msg" data-error-for="photoInternals">A photo of the internals is required when further action is needed</div>
 
       <button type="button" class="save-entry-btn" data-role="saveEntry">Save this test</button>
     </div>
   `;
 
   document.getElementById('entries').appendChild(wrap);
-  document.getElementById('emptyNote').style.display = 'none';
+  // Anything typed, picked or ticked means the form has been started.
+  const markDirty = () => { wrap.dataset.dirty = '1'; };
+  wrap.querySelector('.entry-body').addEventListener('input', markDirty);
+  wrap.querySelector('.entry-body').addEventListener('change', markDirty);
+  wrap.querySelector('.entry-body').addEventListener('click', e => { if (e.target.closest('.radio-opt')) markDirty(); });
+  updateEntryButtons();
 
   renderCategoryFields(wrap, prefill ? prefill.category : '', prefill);
 
@@ -1606,7 +2172,7 @@ function addEntry(prefill) {
     statusGroup.querySelectorAll('.radio-opt').forEach(o => {
       o.classList.toggle('pass-sel', o.dataset.value === prefill.testingStatus);
     });
-    limitationBox.style.display = prefill.testingStatus === 'Limited' ? 'block' : 'none';
+    limitationBox.hidden = prefill.testingStatus !== 'Limited';
     if (prefill.testingStatus === 'Limited') {
       wrap.querySelector('[data-field="limitationReason"]').value = prefill.limitationReason || '';
       wrap.querySelector('[data-field="limitationAgreedWith"]').value = prefill.limitationAgreedWith || '';
@@ -1620,14 +2186,15 @@ function addEntry(prefill) {
       const val = opt.getAttribute('data-value');
       wrap.dataset.testingStatus = val;
       statusGroup.setAttribute('data-value-selected', val);
-      limitationBox.style.display = val === 'Limited' ? 'block' : 'none';
+      limitationBox.hidden = val !== 'Limited';
       applyTestingStatusToChecks(wrap);
     });
   });
 
   wrap.querySelector('[data-role="remove"]').addEventListener('click', () => {
+    if (wrap.dataset.dirty && !confirm('Throw away this form?')) return;
     wrap.remove(); delete entries[id];
-    if (document.querySelectorAll('.entry').length === 0) document.getElementById('emptyNote').style.display = 'block';
+    updateEntryButtons();
   });
 
   if (!prefill) {
@@ -1662,7 +2229,29 @@ function addEntry(prefill) {
 
   wrap.querySelector('[data-role="saveEntry"]').addEventListener('click', () => saveEntry(wrap, id));
 }
-document.getElementById('addEntryBtn').addEventListener('click', () => addEntry());
+document.getElementById('addEntryBtn').addEventListener('click', () => openEntry());
+
+// v18.0: one form at a time. Saving opens a fresh blank form, and Retest
+// used to add its form underneath that blank one, so the wrong form could be
+// filled in. Now opening a form (new or retest) replaces whatever's open,
+// asking first if it has been started.
+function openEntry(prefill) {
+  const open = [...document.querySelectorAll('#entries .entry')];
+  const started = open.filter(w => w.dataset.dirty);
+  if (started.length) {
+    const what = started[0].dataset.lockedId ? 'the retest of ' + started[0].dataset.lockedId : 'a new test';
+    const next = prefill ? 'retest ' + prefill.equipmentId : 'start a new one';
+    if (!confirm(`You've started filling in ${what}. Throw it away and ${next}?`)) return false;
+  }
+  open.forEach(w => { w.remove(); delete entries[w.id]; });
+  addEntry(prefill);
+  return true;
+}
+function updateEntryButtons() {
+  const any = document.querySelectorAll('#entries .entry').length > 0;
+  document.getElementById('emptyNote').hidden = any;
+  document.getElementById('addEntryBtn').hidden = any;
+}
 
 // ---- Validation for a single entry ----
 function validateEntry(wrap, id) {
@@ -1792,20 +2381,17 @@ function validateEntry(wrap, id) {
 function saveEntry(wrap, id) {
   const banner = document.getElementById('banner');
   banner.style.display = 'none';
+  delete banner.dataset.docId;
+  const bad = (text) => { banner.className = 'banner bad'; banner.textContent = text; banner.style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const date = document.getElementById('visitDate').value;
   const siteSelect = document.getElementById('site');
   const siteRef = siteSelect.value;
   const siteName = siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '';
 
-  if (!date || !siteRef) {
-    banner.className = 'banner bad'; banner.textContent = 'Date and site are both required.';
-    banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
-  }
-  if (isClosedStatus(currentJobStatus)) {
-    banner.className = 'banner bad'; banner.textContent = 'This site is marked Complete. Ask a manager to reopen it before adding tests.';
-    banner.style.display = 'block'; window.scrollTo({top:0, behavior:'smooth'}); return;
-  }
+  if (VIEW_AS) return bad(SW_VA_MSG);
+  if (!date || !siteRef) return bad('Date and site are both required.');
+  if (isClosedStatus(currentJobStatus)) return bad('This site is marked Complete. Ask a manager to reopen it before adding tests.');
 
   const { valid, record } = validateEntry(wrap, id);
   if (!valid) {
@@ -1815,42 +2401,84 @@ function saveEntry(wrap, id) {
 
   const engineer = currentUser.displayName || currentUser.email;
   const equipmentId = record.equipmentId;
+
+  // v18.0: the same item already tested on this date? Ask first. (Scott's
+  // INT-A-PI and Sam's GR2-A-SI were each saved twice a couple of minutes apart.)
+  const sameDay = siteHistoryCache.filter(h => !h.deletedFlag && h.equipmentId === equipmentId && h.date === date);
+  if (sameDay.length) {
+    const by = sameDay[sameDay.length - 1].engineer || 'someone';
+    if (!confirm(`${equipmentId} has already been tested on ${longDate(date)} (by ${by}).\n\nSave another test for it? If it's the same test saved twice, press Cancel.`)) return;
+  }
+
   const payload = {
     siteRef, siteName, date, engineer, engineerEmail: currentUser.email,
     ...record, createdAt: serverTimestamp()
   };
 
-  // Fire the write and immediately hand it to the background tracker -
-  // deliberately not awaited here.
-  const writePromise = addDoc(collection(db, 'isolatorTests'), payload);
-  trackWrite(writePromise, equipmentId, { siteName, engineer, equipmentId });
+  // The id is made on the phone, so the test can be listed as "not sent
+  // yet" (and checked against the server later) before it has gone up.
+  const ref = doc(collection(db, 'isolatorTests'));
+  swuAdd({ c: 'isolatorTests', id: ref.id, label: equipmentId, app: 'Isolator testing', site: siteName });
+  // Fire the write and hand it to the background tracker - deliberately not awaited.
+  trackWrite(setDoc(ref, payload), ref.id, { siteName, engineer, equipmentId });
 
-  // Proceed with the "saved" UI straight away, regardless of connectivity.
-  todaysTests.unshift({ equipmentId, category: record.category });
+  // Show it straight away in "Your tests" and the Site Register, whatever the signal.
+  siteHistoryCache.push({ ...payload, _id: ref.id, createdAt: null, _local: true, _pending: true });
+  siteHistoryCache.sort(compareTests);
+  rebuildSuggestions();
   renderTodayList();
 
-  banner.className = 'banner ok';
+  banner.className = 'banner wait';
+  banner.dataset.docId = ref.id;
   banner.textContent = navigator.onLine
-    ? `${equipmentId} saved.`
-    : `${equipmentId} saved on this device — queued, will sync once you're back online.`;
+    ? `${equipmentId} saved on this phone. Sending to the office…`
+    : `${equipmentId} saved on this phone. No signal: it'll send when you're back in signal.`;
   banner.style.display = 'block';
-  window.scrollTo({top:0, behavior:'smooth'});
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   wrap.remove();
   delete entries[id];
-  document.getElementById('emptyNote').style.display = 'block';
-
-  if (navigator.onLine) {
-    loadSiteData();   // refresh the register in the background - no reason to block on this either
-  }
   addEntry();
+  if (navigator.onLine) loadSiteData();   // refresh in the background - no reason to block on this either
 }
 </script>
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SHARED (index, isolator-interlock-test and isolator-interlock-report so
+//  far — keep in step; every other page gets it when it's next changed):
+//  service worker + "A new version is ready" bar. Agreed 20 Oct 2026.
+//  After an upload (with CACHE_NAME bumped), the new service worker installs
+//  in the background and takes over; that's the moment the new files are
+//  saved on the device. The bar then asks to reload onto them. It never
+//  reloads by itself, and a page can stop it while something's unfinished
+//  by setting window.swUpdateBlocker = () => 'reason' (or '' when it's fine).
+//  Checks for an update when the app is opened or brought back to the
+//  front, and every 30 minutes.
+// ═══════════════════════════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
+  const swvHadController = !!navigator.serviceWorker.controller;   // first ever install isn't an "update"
+  window.swvShowBar = function () {
+    if (document.getElementById('swvBar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'swvBar'; bar.className = 'swv-bar';
+    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button">Update</button>';
+    bar.querySelector('button').addEventListener('click', () => {
+      const why = typeof window.swUpdateBlocker === 'function' ? window.swUpdateBlocker() : '';
+      if (why) { bar.querySelector('span').textContent = why; bar.classList.add('wait'); return; }
+      bar.querySelector('button').disabled = true;
+      location.reload();
+    });
+    document.body.appendChild(bar);
+    document.body.classList.add('swv-on');
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swvHadController) window.swvShowBar(); });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
+    navigator.serviceWorker.register("service-worker.js").then(reg => {
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60000);
+    }).catch(err => console.error("Service worker registration failed:", err));
   });
 }
 </script>
