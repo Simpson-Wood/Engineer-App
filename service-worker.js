@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v25';
+const CACHE_NAME = 'sw-engineer-apps-shell-v26';
 
 const APP_SHELL = [
   './',
@@ -27,6 +27,8 @@ const APP_SHELL = [
   'timesheet.html',
   'timesheet-report.html',
   'leave.html',
+  'sw-design.css',
+  'sw-shared.js',
   'manifest.json',
   'sw-logo.png',
   'sw-logo-white.png',
@@ -41,6 +43,7 @@ const APP_SHELL = [
 // would quietly leave phones with nothing saved for offline use. Now a missing
 // file is skipped and logged, and everything else is still saved.
 // Every file listed here must exist on the site.
+// v26 (27 Oct 2026): adds the shared files sw-design.css and sw-shared.js.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>

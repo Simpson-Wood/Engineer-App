@@ -7,19 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="sw-design.css">
 <style>
-  :root{
-    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea;
-    --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
-    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
-    --amber:#7a4f00; --amber-bg:#fff4dd; --amber-line:#efd59c;
-    --green:#1e6b34; --green-bg:#e9f5ec; --green-line:#b8dcc2;
-    --blue:#1d3c63;  --blue-bg:#eef3fa;  --blue-line:#cfdced;
-    --bad-ink:#7d1418; --bad-line:#f1c4c6;
-    --test-ink:#3d2a63; --test-bg:#e9e4f5; --test-line:#d3c8ea;
-    --orange:#e8731a; --hdr-muted:#8f8f8f; --hdr-link:#e2b0b3;
-    --radius:10px;
-  }
+  /* Colours, type and the shared blocks' styles come from sw-design.css (design guide). */
+  :root{ --radius:10px; }
   *{box-sizing:border-box;}
   body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
   button{font-family:inherit;}
@@ -46,7 +37,7 @@
   .icon-btn:hover{background:rgba(255,255,255,0.1); color:#fff;}
 
   /* ---- layout / tiles (mobile-first grid) ---- */
-  .layout{display:block;}
+  .layout{display:block; gap:0; align-items:stretch;}   /* (sw-design.css has a .layout grid for other pages; not this one) */
   .tool-nav{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:12px; padding:20px;}
   .tool-section-label{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; grid-column:1/-1; margin:8px 0 -4px;}
   .tool-section-label:first-child{margin-top:0;}
@@ -66,20 +57,7 @@
   .icon-wrap{position:relative; display:inline-flex; align-items:center; justify-content:center;}
   /* v3.0: the QS count sits at the end of the row (PC) or on the tile's corner (phone), never on the icon */
   .tile .tile-count{position:absolute; top:-7px; right:-7px; background:var(--red); color:#fff; font-size:11px; font-weight:600; min-width:20px; height:18px; border-radius:20px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; line-height:1;}
-  .activity-list{width:100%; max-width:640px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(100vh - 130px); padding:4px 2px;}
-  .activity-item{display:flex; align-items:center; gap:12px; background:var(--card); border:0.5px solid var(--line); border-radius:10px; padding:12px 14px; text-decoration:none; color:var(--ink);}
-  .activity-item:hover{border-color:var(--red);}
-  .activity-item.pending{border-left:3px solid var(--red);}
-  .activity-item i{font-size:18px; color:var(--red); flex-shrink:0;}
-  .activity-item .main{flex:1; min-width:0;}
-  .activity-item .title{font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .activity-item .meta{font-size:11.5px; color:var(--grey); margin-top:1px;}
-  .activity-pill{font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap;}
-  .activity-pill.pending{background:var(--red-tint); color:var(--bad-ink);}
-  .activity-pill.done{background:var(--green-bg); color:var(--green);}
-  .activity-heading{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; margin:14px 0 2px; width:100%; max-width:640px;}
-  .activity-heading:first-child{margin-top:0;}
-  .content-pane-inner{width:100%; max-width:640px; display:flex; flex-direction:column; align-items:flex-start;}
+  .content-pane-inner{width:100%; max-width:1500px; display:flex; flex-direction:column; align-items:stretch;}
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
   .toast.show{opacity:1;}
 
@@ -99,15 +77,41 @@
     .soon-btn{color:var(--hdr-muted); font-size:12.5px;}
     .soon-btn:hover{color:var(--field);}
     .soon-list{color:var(--hdr-muted); padding-left:21px;}
-    .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
+    .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:28px 32px 40px; overflow-y:auto; min-width:0;}
   }
 
   /* ---- home boxes (v2.8) ---- */
   .home-boxes{width:100%; display:flex; flex-direction:column; gap:12px;}
   .home-boxes:empty{display:none;}
-  .feed{width:100%; margin-top:22px;}
-  .feed:empty{display:none;}
-  .feed .activity-list{max-height:none; overflow:visible; max-width:none;}
+  /* v4.0: two columns on a PC (main + side, layout option C), one on a phone; Arrange */
+  .hb-head{display:flex; align-items:center; justify-content:space-between; gap:10px 14px; flex-wrap:wrap;}
+  .hb-arr{display:flex; gap:8px; flex-wrap:wrap;}
+  .hb-arr .btn{min-height:38px; padding:7px 12px; font-size:14px; color:var(--ink);}
+  .hb-arr .btn.primary{background:var(--red); border-color:var(--red); color:#fff;}
+  .hb-arrnote{flex-basis:100%; font-size:14px; color:var(--grey); margin:-2px 0 0;}
+  .hb-cols{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:14px; align-items:start;}
+  .hb-cols.phone{display:block;}
+  .hb-cols.solo{display:block;}
+  .hb-cols.solo .hb-col{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); align-items:start;}
+  .hb-col{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .hb-box{min-width:0;}
+  .hb-col-label{font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--grey);}
+  .arranging .hb-col{min-height:110px; border:2px dashed var(--field); border-radius:14px; padding:10px; background:rgba(255,255,255,.45);}
+  .arranging .hb-col.over{border-color:var(--red); background:var(--red-tint);}
+  .arranging .hb-box .hb-card{border-top-left-radius:0; border-top-right-radius:0;}
+  .arranging .hb-card a, .arranging .hb-card button{pointer-events:none;}
+  .arranging .pc .hb-box{cursor:grab;}
+  .hb-box.dragging{opacity:.4;}
+  .hb-ctl{display:flex; flex-wrap:wrap; gap:6px; align-items:center; background:var(--ink); color:#fff; border-radius:12px 12px 0 0; padding:6px 8px; font-size:13px;}
+  .hb-ctl .grip{margin-right:auto; display:inline-flex; gap:5px; align-items:center; font-weight:600; padding:0 4px;}
+  .hb-ctl .grip i{font-size:18px; color:#fff;}
+  .hb-ctl button{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); color:#fff; border-radius:8px; padding:5px 10px; min-height:34px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; gap:4px; align-items:center;}
+  .hb-ctl button i{font-size:16px; color:#fff;}
+  .hb-ctl button:disabled{opacity:.35; cursor:default;}
+  .hb-tray{background:var(--card); border:1.5px dashed var(--field); border-radius:12px; padding:12px 14px; color:var(--ink); font-size:14.5px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .hb-tray b{margin-right:4px;}
+  .hb-tray .chip i{color:var(--red);}
+  @media (max-width:899px){ .hb-ctl button{min-height:40px;} }
   .hb-date{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:600; color:var(--ink); line-height:1.1;}
   .hb-notice{display:flex; gap:9px; align-items:flex-start; background:var(--blue-bg); border:1px solid var(--blue-line); color:var(--blue); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.4;}
   .hb-notice i{font-size:18px; flex-shrink:0;}
@@ -146,74 +150,15 @@
     .layout{display:flex; flex-direction:column;}
     .content-pane{display:block; order:-1; padding:16px 16px 0;}
     .content-pane-inner{max-width:none;}
-    .feed{display:none;}
     .tool-nav{grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px; padding:16px;}
     .tile{padding:10px 6px; gap:6px; border-radius:10px;}
     .tile i{font-size:20px;}
     .tile span{font-size:12px;}
   }
 
-  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
-  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
-  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-  .sw-hbtn i{font-size:17px;}
-  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
-  .topbar-right .sw-hbtn{margin-right:6px;}
-  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
-  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
-  .sw-vabar i{font-size:18px;}
-  .sw-vabar span{flex:1; min-width:180px;}
-  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
-  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
-  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
-  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
-  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
-  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
-  .sw-news li{margin-bottom:8px;}
-  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
-  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
-  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
-  .sw-people{display:grid; gap:6px;}
-  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
-  .sw-people button:hover{background:#fbe9ea;}
-  .sw-people small{color:#5c5c5c;}
-  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
-  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
-  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
-  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
-  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
-  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
-  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
-  .sw-help summary::-webkit-details-marker{display:none;}
-  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
-  .sw-help details[open] summary::before{content:'–';}
-  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
-  .sw-help details > div p{margin:0 0 8px;}
-  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
-  @media (max-width:640px){ .sw-help{max-width:none;} }
-  /* ---- SHARED (keep in step: index, isolator test): Not sent yet ---- */
-  .swu-bar{display:flex; align-items:center; gap:9px; width:100%; border:none; border-bottom:1px solid #f0dc9a; background:#fff3cd; color:#8a6d1a; padding:10px 16px; font-family:'Barlow',sans-serif; font-size:14.5px; font-weight:600; text-align:left; cursor:pointer; line-height:1.35;}
-  .swu-bar[hidden]{display:none !important;}
-  .swu-bar i{font-size:20px; flex-shrink:0;}
-  .swu-bar.bad{background:#fbe9e9; color:#a32d2d; border-bottom-color:#f0bcbe;}
-  .swu-list{display:grid; gap:6px;}
-  .swu-row{display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #e2e2e2; border-radius:9px; padding:9px 12px; font-size:15px;}
-  .swu-row.bad{border-color:#f0bcbe; background:#fff8f8;}
-  .swu-row small{display:block; color:#5c5c5c; font-size:13px; margin-top:1px;}
-  .swu-row .swu-why{color:#a32d2d;}
-  .swu-pill{font-size:12px; font-weight:700; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:2px 9px; white-space:nowrap;}
-  .swu-note{font-size:13.5px; color:#5c5c5c; margin:12px 0 0; line-height:1.45;}
   .tile .unsent-pill{display:inline-block; margin-left:6px; background:var(--amber-bg); color:var(--amber); border-radius:20px; padding:1px 7px; font-size:10.5px; font-weight:600; white-space:nowrap;}
   .tile .unsent-pill.bad{background:var(--red-tint); color:var(--bad-ink);}
   @media (max-width:899px){ .tile .unsent-pill{display:block; margin:4px auto 0; width:max-content;} }
-  /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
-  .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
-  .swv-bar button{background:#D0222A; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .swv-bar.wait{background:#7a5c0e;}
-  body.swv-on{padding-bottom:76px;}
-  body.swv-on .undo-toast{bottom:86px;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -242,7 +187,7 @@
   </header>
   <div class="layout">
     <nav class="tool-nav" id="tool-nav"></nav>
-    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner"><div class="home-boxes" id="homeBoxes"></div><div class="feed" id="feed"></div></div></div>
+    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner"><div class="home-boxes" id="homeBoxes"></div></div></div>
   </div>
 </div>
 
@@ -258,8 +203,11 @@ import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocFromServer,
   collection, getDocs, query, where, orderBy, limit, setDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// v4.0: View as, What's New, Help, Not sent yet, the update bar and error
+// reporting come from the shared file (standards §15), not copies in this page.
+import * as SWS from './sw-shared.js';
 
-const VERSION = "v3.0";
+const VERSION = "v4.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -273,6 +221,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v4.0 (27 Oct 2026): shared files (sw-design.css, sw-shared.js, with error
+// reporting); the Ready for QS / Recent submissions list removed; PC layout
+// in two columns (main + side); Arrange (move / hide boxes, own layout on PC
+// and phone); Rob's To do shows errors to look at.
 // v3.0 (27 Oct 2026): design catch-up (guide colours, plain sign-in with the
 // black Microsoft button, Barlow 400-700, icons pinned to Tabler 3.49.0, logo
 // links home), QS counts moved to the end of the row / tile corner with the
@@ -280,227 +232,10 @@ const auth = getAuth(app);
 // v2.9: the multi-tab cache, so this page, the engineer apps and any second
 // tab share the phone's saved data and unsent queue safely.
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
-// Raw Firestore functions for the shared block below (this page saves
-// nothing else, so there's nothing for "View as" to guard).
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = setDoc, swGetDocFromServer = getDocFromServer;
+SWS.swSetup({ db, auth, page: 'index', version: VERSION });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report,
-//  management, isolator-interlock-test and isolator-interlock-report — keep
-//  in step): access level · View as (Rob only) ·
-//  What's New · Help.   Standards §15: any page changed from now on gets
-//  this block too.
-// ═══════════════════════════════════════════════════════════════════════════
-const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
-const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
-let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
-let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
-const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
-const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
-// Wrap anything that saves, so "View as" can never change real data.
-function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
-function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
-(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
-  const f = window.fetch.bind(window);
-  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
-})();
-// Who someone is: 'management' (Manager / QS / Director, or the console-only
-// managers list), 'office' or 'engineer'.
-async function swAccess(email) {
-  let managers = false, position = '', staff = null;
-  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
-  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
-  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
-  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
-}
-function swHeaderButton(id, icon, label, onClick) {
-  if (document.getElementById(id)) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
-  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
-  b.addEventListener('click', onClick);
-  const right = document.querySelector('.topbar-right');
-  if (right) right.prepend(b);
-  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
-}
-function swModal(html, cls) {
-  const bg = document.createElement('div');
-  bg.className = 'sw-modal-bg ' + (cls || '');
-  bg.innerHTML = html;
-  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
-  document.body.appendChild(bg);
-  return bg;
-}
-
-// ---- View as (Rob only) ----------------------------------------------------
-// Rob picks a person and every page shows what they'd see, read-only. The
-// choice lasts for this browser tab (all pages) until he presses Stop. Data is
-// still read with Rob's own access, so it shows screens, not the database rules.
-async function swViewAsInit(user) {
-  const real = String(user.email || '').toLowerCase();
-  if (real !== SW_OWNER) return null;
-  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
-  let v = null;
-  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
-  if (!v) return null;
-  let name = v, position = '';
-  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
-  VIEW_AS = { email: v, name, position };
-  const bar = document.createElement('div');
-  bar.className = 'sw-vabar';
-  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('[data-va]'); if (!b) return;
-    if (b.dataset.va === 'change') swPickViewAs();
-    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
-  });
-  document.body.prepend(bar);
-  document.body.classList.add('sw-va-on');
-  return VIEW_AS;
-}
-async function swPickViewAs() {
-  let people = [];
-  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
-  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
-  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
-  const draw = () => {
-    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
-    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
-  };
-  m.querySelector('[data-q]').addEventListener('input', draw);
-  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
-  draw(); m.querySelector('[data-q]').focus();
-}
-
-// ---- What's New + Help -------------------------------------------------------
-// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
-// (questions; each with the tab it belongs to and, if not everyone, the
-// levels it's for), then calls swExtrasStart().
-function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
-function swShowNews() {
-  const items = swNewsItems();
-  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
-    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-}
-async function swNewsCheck() {
-  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
-  const key = 'seen_' + SW.page;
-  try {
-    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
-    const snap = await swGetDoc(ref);
-    if (snap.exists() && snap.data()[key] === SW.version) return;
-    swShowNews();
-    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
-  } catch (e) { console.warn('What\'s new check failed', e); }
-}
-function swShowHelp() {
-  const tab = SW.tab() || '';
-  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
-  const groups = new Map();
-  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
-  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
-  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
-    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
-    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
-  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
-}
-function swExtrasStart() {
-  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
-  swNewsCheck();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index and isolator-interlock-test — keep in step; add
-//  to timesheet and leave when they're next changed): NOT SENT YET.
-//  Every save made on this device is written down here (localStorage, which
-//  every page on the site shares) until the server copy is confirmed.
-//  Firestore keeps its own queue of unsent saves on the phone; this list is
-//  how we *show* it, and unlike the old in-page counter it survives the app
-//  being closed or reloaded. Every page that has this block checks the list
-//  against the server when it opens, when signal comes back and every minute,
-//  so anything that went up in the background clears itself.
-//  Needs: db, auth, swDoc, swGetDocFromServer, swModal, swEsc (§15 block).
-//  An item: { c: collection, id: doc id, label, app, site, at, by, failed?, why? }
-// ═══════════════════════════════════════════════════════════════════════════
-const SWU_KEY = 'sw-unsent-v1';
-const SWU_SLOW_MS = 30 * 60000;   // still not there after 30 min with signal: say so
-function swuMe() { return String((auth.currentUser && auth.currentUser.email) || '').toLowerCase(); }
-function swuAll() { try { const a = JSON.parse(localStorage.getItem(SWU_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-function swuSave(a) { try { localStorage.setItem(SWU_KEY, JSON.stringify(a)); } catch (e) {} swuRender(); }
-function swuMine() { const me = swuMe(); return swuAll().filter(x => x.by === me); }
-function swuAdd(item) { const a = swuAll().filter(x => x.id !== item.id); a.push(Object.assign({ at: Date.now(), by: swuMe() }, item)); swuSave(a); }
-function swuSent(id) { const a = swuAll(); if (a.some(x => x.id === id)) swuSave(a.filter(x => x.id !== id)); }
-function swuFailed(id, why) { swuSave(swuAll().map(x => x.id === id ? Object.assign({}, x, { failed: true, why: String(why || '') }) : x)); }
-function swuWaiting(id) { return swuAll().some(x => x.id === id && !x.failed); }
-let swuChecking = false;
-async function swuCheck() {
-  if (swuChecking || !navigator.onLine || !auth.currentUser) return;
-  swuChecking = true;
-  try {
-    for (const x of swuMine().filter(x => !x.failed)) {
-      try {
-        const s = await swGetDocFromServer(swDoc(db, x.c, x.id));
-        if (s.exists()) swuSent(x.id);
-      } catch (e) { if (e && e.code === 'unavailable') break; }   // no real signal: try again later
-    }
-  } finally { swuChecking = false; swuRender(); }
-}
-function swuAgo(ms) {
-  const m = Math.round((Date.now() - ms) / 60000);
-  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' hr ago' : Math.round(m / 1440) + ' days ago';
-}
-function swuRender() {
-  const head = document.querySelector('#appRoot header');
-  if (!head) return;
-  let bar = document.getElementById('swuBar');
-  if (!bar) {
-    bar = document.createElement('button');
-    bar.type = 'button'; bar.id = 'swuBar'; bar.className = 'swu-bar'; bar.hidden = true;
-    bar.addEventListener('click', swuShowList);
-    head.insertAdjacentElement('afterend', bar);
-  }
-  const mine = swuMine(), bad = mine.filter(x => x.failed), wait = mine.filter(x => !x.failed);
-  document.dispatchEvent(new CustomEvent('swu-change', { detail: { waiting: wait, failed: bad } }));
-  if (!mine.length) { bar.hidden = true; return; }
-  bar.hidden = false;
-  bar.classList.toggle('bad', bad.length > 0);
-  const n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
-  bar.innerHTML = bad.length
-    ? `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${n(bad.length, 'test')} didn't save. Tap to see which, then log ${bad.length === 1 ? 'it' : 'them'} again.</span>`
-    : `<i class="ti ti-cloud-upload" aria-hidden="true"></i><span>${n(wait.length, 'test')} not sent yet. ` +
-      (navigator.onLine ? 'Sending… keep the app open.' : `No signal. ${wait.length === 1 ? 'It' : 'They'}'ll send when you're back in signal. Don't clear the app.`) + `</span>`;
-}
-function swuShowList() {
-  const mine = swuMine().sort((a, b) => b.at - a.at);
-  const slow = x => !x.failed && navigator.onLine && Date.now() - x.at > SWU_SLOW_MS;
-  const row = x => `<div class="swu-row ${x.failed ? 'bad' : ''}"><div><b>${swEsc(x.label || x.id)}</b>
-      <small>${swEsc([x.app, x.site].filter(Boolean).join(' · '))}${x.app || x.site ? ' · ' : ''}saved ${swuAgo(x.at)}</small>
-      ${x.failed ? `<small class="swu-why">Didn't save${x.why ? ' (' + swEsc(x.why) + ')' : ''}. Log it again, then press Remove.</small>` : ''}
-      ${slow(x) ? `<small class="swu-why">Still not sent. Open ${swEsc(x.app || 'the app')} with signal. If it stays here, tell the office.</small>` : ''}</div>
-      ${x.failed ? `<button type="button" class="sw-btn" data-swudrop="${swEsc(x.id)}">Remove</button>` : '<span class="swu-pill">Waiting</span>'}</div>`;
-  const m = swModal(`<div class="sw-modal"><h3>Not sent yet</h3>
-    ${mine.length ? `<div class="swu-list">${mine.map(row).join('')}</div>` : '<p>Everything has been sent.</p>'}
-    <p class="swu-note">Tests stay safe on this phone until the office has them. Keep the app open with signal and they go up on their own. Don't clear the app's data or uninstall it while anything is waiting.</p>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swucheck>Check again</button><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-  m.addEventListener('click', e => {
-    const d = e.target.closest('[data-swudrop]');
-    if (d) { swuSave(swuAll().filter(x => x.id !== d.dataset.swudrop)); m.remove(); swuShowList(); return; }
-    if (e.target.closest('[data-swucheck]')) { m.remove(); swuCheck().then(swuShowList); }
-  });
-}
-function swuStart() {
-  swuRender();
-  swuCheck();
-  window.addEventListener('online', () => { swuRender(); swuCheck(); });
-  window.addEventListener('offline', swuRender);
-  window.addEventListener('storage', e => { if (e.key === SWU_KEY) swuRender(); });
-  setInterval(swuCheck, 60000);
-}
-// ═══════════════════════════ end of NOT SENT YET ═══════════════════════════
-// "A new version is ready" bar (shared block at the bottom): wait for unsent tests.
-window.swUpdateBlocker = () => swuMine().some(x => !x.failed) ? 'Wait until your tests have sent (the yellow bar goes), then tap Update.' : '';
+// "A new version is ready" bar (in sw-shared.js): wait for unsent tests.
+window.swUpdateBlocker = () => SWS.swuMine().some(x => !x.failed) ? 'Wait until your tests have sent (the yellow bar goes), then tap Update.' : '';
 
 // Homepage: the tool's tile says how many of its tests are still waiting.
 document.addEventListener('swu-change', e => {
@@ -647,77 +382,31 @@ function renderTools(tools, isManager, isOffice){
   addSoon();
 }
 
-async function renderActivityFeed(reportEntries){
-  const pane = document.getElementById('feed');
-  if (reportEntries.length === 0){
-    pane.innerHTML = '';
-    return;
-  }
-  pane.innerHTML = 'Loading recent activity…';
-
-  let allRecords = [];
-  await Promise.all(reportEntries.map(async ({ tool, entry }) => {
+// v4.0: the "Ready for QS / Recent submissions" list is gone from the home
+// page (Rob, 27 Oct). The same look-up still gives the QS counts for the
+// sidebar and the To do box. Note: it reads each tool's 30 latest tests, so a
+// count can't go above 30 (to fix once photos are out of the test records).
+async function loadQsCounts(reportEntries){
+  if (!reportEntries.length) return;
+  const countsByTool = {};
+  await Promise.all(reportEntries.map(async ({ tool }) => {
     try {
-      const q = query(collection(db, tool.id + 'Tests'), orderBy('date', 'desc'), limit(30));
-      const snap = await getDocs(q);
+      const snap = await getDocs(query(collection(db, tool.id + 'Tests'), orderBy('date', 'desc'), limit(30)));
       snap.forEach(d => {
         const r = d.data();
-        if (r.deletedFlag) return;
-        allRecords.push({
-          tool, entry,
-          title: r.equipmentId || r.category || tool.name,
-          site: r.siteName || r.siteRef || '',
-          date: r.date || '',
-          qsed: !!r.qsed,
-          siteRef: r.siteRef || ''
-        });
+        if (r.deletedFlag || r.qsed) return;   // missing qsed counts as not QSed yet
+        countsByTool[tool.id] = (countsByTool[tool.id] || 0) + 1;
       });
     } catch (e) {
-      console.error('Could not load recent activity for ' + tool.id, e);
+      console.error('Could not load QS counts for ' + tool.id, e);
+      SWS.swReport('load', 'QS count for ' + tool.name + ' didn\'t load: ' + (e.code || e.message));
     }
   }));
-
-  const pending = allRecords.filter(r => !r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const recent = allRecords.filter(r => r.qsed).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-  // Badge counts come from this same fetch, not a separate query — a
-  // Firestore query for qsed == false would silently miss any record where
-  // qsed was never set at all (missing != false in a query), while "pending"
-  // here already treats missing the same as false. Same source, so the
-  // sidebar badge and the "Ready for QS" list can never disagree.
-  const countsByTool = {};
-  pending.forEach(r => { countsByTool[r.tool.id] = (countsByTool[r.tool.id] || 0) + 1; });
   Object.keys(countsByTool).forEach(id => {
     const badge = document.querySelector('[data-count-id="' + id + '"]');
     if (badge){ badge.textContent = countsByTool[id] > 99 ? '99+' : String(countsByTool[id]); badge.hidden = false; }
   });
   homeQS(countsByTool, reportEntries);
-
-  if (pending.length === 0 && recent.length === 0){
-    pane.innerHTML = 'No recent activity yet.';
-    return;
-  }
-
-  function renderItem(r){
-    const href = r.entry.reportHref + (r.siteRef ? ('?site=' + encodeURIComponent(r.siteRef)) : '');
-    return '<a class="activity-item' + (r.qsed ? '' : ' pending') + '" href="' + href + '">' +
-      '<i class="ti ' + r.tool.icon + '" aria-hidden="true"></i>' +
-      '<div class="main"><div class="title">' + r.title + '</div><div class="meta">' + r.site + ' · ' + r.date + '</div></div>' +
-      '<span class="activity-pill ' + (r.qsed ? 'done' : 'pending') + '">' + (r.qsed ? 'QSed' : 'Ready for QS') + '</span>' +
-      '</a>';
-  }
-
-  let html = '<div class="activity-list">';
-  if (pending.length){
-    html += '<div class="activity-heading">Ready for QS</div>';
-    html += pending.map(renderItem).join('');
-  }
-  if (recent.length){
-    html += '<div class="activity-heading">Recent submissions</div>';
-    html += recent.map(renderItem).join('');
-  }
-  html += '</div>';
-  pane.innerHTML = html;
 }
 
 async function loadTools(){
@@ -726,6 +415,7 @@ async function loadTools(){
     if (snap.exists()) return snap.data().tools || {};
   } catch (e) {
     console.error('Could not load app config, falling back to defaults', e);
+    SWS.swReport('load', 'Homepage tool list (config/homepage) didn\'t load: ' + (e.code || e.message));
   }
   // Fallback if Firestore is unreachable or the doc doesn't exist yet
   return { isolator: { live: true } };
@@ -868,7 +558,7 @@ function coversRange(day, email, s, e) {
 
 // What the home page loaded. "my*" are the signed-in person's own; the rest
 // are only loaded for Office and management.
-const H = { me: '', level: 'engineer', tools: {}, rota: new Map(), myLeave: [], mySwaps: [], myTs: [], leave: [], swaps: [], ts: [], qs: null, failed: 0 };
+const H = { me: '', level: 'engineer', tools: {}, rota: new Map(), myLeave: [], mySwaps: [], myTs: [], leave: [], swaps: [], ts: [], qs: null, failed: 0, errs: 0, homeLayout: {} };
 const SWAP_LATE_HOURS = 48;   // same as Timesheets & leave: unanswered after this, or the shift is this close
 const LOOKBACK_DAYS = 31;     // same as the timesheet pages: how far back "missing" looks
 const HB_AHEAD = 31;          // "and N more" on My next on-call counts this far ahead
@@ -906,9 +596,15 @@ async function loadHome(email, level) {
     // Two months is enough to work out the last 31 days (the report page loads them all).
     getDocs(query(collection(db, 'timesheets'), where('date', '>=', addDays(today, -62)))).then(snap => { H.ts = real(docs(snap)); })
   );
+  // v4.0: the person's own home page layout (Arrange). Not while viewing as someone.
+  if (!SWS.swViewingAs() && auth.currentUser) jobs.push(getDoc(doc(db, 'userPrefs', auth.currentUser.email))
+    .then(s => { H.homeLayout = (s.exists() && s.data().homeLayout) || {}; }, () => { H.homeLayout = {}; }));
   const res = await Promise.allSettled(jobs);
   H.failed = res.filter(r => r.status === 'rejected').length;
-  res.filter(r => r.status === 'rejected').forEach(r => console.error('Home box data:', r.reason));
+  res.filter(r => r.status === 'rejected').forEach(r => {
+    console.error('Home box data:', r.reason);
+    SWS.swReport('load', 'Home page box didn\'t load: ' + ((r.reason && (r.reason.code || r.reason.message)) || r.reason));
+  });
 }
 
 // ---- the rota as one timeline: back-to-back pieces for the same person joined up
@@ -1064,21 +760,185 @@ function hbTodo() {
   const m = teamMissing();
   if (m.people) rows.push(`<a class="hb-row hb-go" href="timesheet-report.html" data-trtab="ts"><span><i class="ti ti-clock-exclamation"></i> Missing timesheets <span class="w">(${m.people} ${m.people === 1 ? 'person' : 'people'})</span></span><span class="hb-pill">${m.days} day${m.days === 1 ? '' : 's'}</span></a>`);
   add(diaryCount(), 'ti-calendar-x', 'Work diary to sort', 'leave', true);
+  if (H.errs) rows.push(`<a class="hb-row" href="management.html#errors"><span><i class="ti ti-bug"></i> Errors to look at</span><span class="hb-pill red">${H.errs}</span></a>`);
   (H.qs || []).forEach(q => rows.push(`<a class="hb-row" href="${esc(q.href)}"><span><i class="ti ${q.icon}"></i> ${esc(q.name)}: ready for QS</span><span class="hb-pill red">${q.n}</span></a>`));
   return `<div class="hb-card hb-todo" id="hbTodo"><h3><i class="ti ti-checklist"></i> To do</h3>${rows.join('') || '<div class="hb-empty">All clear: nothing to approve or chase.</div>'}</div>`;
 }
+// ═══════════════════════════════════════════════════════════════════════════
+//  v4.0 (27 Oct 2026): the boxes in two columns on a PC (main + side, layout
+//  option C) and one on a phone, and ARRANGE: everyone can move boxes, move
+//  them between the columns (PC) and hide them. To do can't be hidden. The
+//  PC and the phone each have their own layout, saved in userPrefs/{email}
+//  .homeLayout.pc { main, side, hidden } / .phone { phone, hidden }. A box
+//  added in a later version appears where the standard layout puts it, even
+//  for someone who has arranged theirs.
+// ═══════════════════════════════════════════════════════════════════════════
+const BOX_NAMES = { todo: 'To do', nudge: 'Missing timesheets', waiting: 'Swaps waiting for you', myoncall: 'My next on-call', oncall: 'On call', myrequests: 'My requests' };
+const PHONE_MQ = window.matchMedia('(max-width:899px)');
+const ARR = { on: false, mode: 'pc', layout: null };
+function boxIds() { return H.level === 'engineer' ? ['nudge', 'waiting', 'myoncall', 'oncall', 'myrequests'] : ['todo', 'nudge', 'waiting', 'oncall', 'myoncall', 'myrequests']; }
+function layoutMode() { return PHONE_MQ.matches ? 'phone' : 'pc'; }
+function defaultLayout(mode) {
+  if (mode === 'phone') return { cols: { phone: boxIds() }, hidden: [] };
+  return H.level === 'engineer'
+    ? { cols: { main: ['nudge', 'waiting', 'myoncall'], side: ['oncall', 'myrequests'] }, hidden: [] }
+    : { cols: { main: ['todo', 'nudge', 'waiting'], side: ['oncall', 'myoncall', 'myrequests'] }, hidden: [] };
+}
+// Put id into list just after the nearest box that comes before it in ref.
+function insertByRef(list, id, ref) {
+  const i = ref.indexOf(id); let at = 0;
+  for (let k = i - 1; k >= 0; k--) { const p = list.indexOf(ref[k]); if (p >= 0) { at = p + 1; break; } }
+  list.splice(at, 0, id);
+}
+function currentLayout(mode) {
+  const def = defaultLayout(mode), ids = boxIds();
+  const saved = (!SWS.swViewingAs() && H.homeLayout && H.homeLayout[mode]) || null;
+  if (!saved) return def;
+  const out = { cols: {}, hidden: (saved.hidden || []).filter(id => ids.includes(id) && id !== 'todo') };
+  const placed = new Set(out.hidden);
+  Object.keys(def.cols).forEach(c => { out.cols[c] = (saved[c] || []).filter(id => ids.includes(id) && !placed.has(id) && (placed.add(id), true)); });
+  Object.entries(def.cols).forEach(([c, list]) => list.forEach(id => { if (!placed.has(id)) { insertByRef(out.cols[c], id, list); placed.add(id); } }));
+  return out;
+}
+function boxHtml(id, blocks) {
+  const eng = H.level === 'engineer';
+  switch (id) {
+    case 'todo': return eng ? '' : hbTodo();
+    case 'nudge': return hbNudge();
+    case 'waiting': return hbWaitingForMe();
+    case 'myoncall': return hbMyOnCall(blocks, eng);
+    case 'oncall': return hbOnCallNow(blocks);
+    case 'myrequests': return hbMyRequests(eng);
+  }
+  return '';
+}
+function boxCtl(id, col, mode) {
+  const up = '<button type="button" data-mv="up" title="Move up" aria-label="Move up"><i class="ti ti-arrow-up"></i></button><button type="button" data-mv="down" title="Move down" aria-label="Move down"><i class="ti ti-arrow-down"></i></button>';
+  const swap = mode === 'pc' ? `<button type="button" data-mv="col">${col === 'main' ? 'To side <i class="ti ti-arrow-right"></i>' : '<i class="ti ti-arrow-left"></i> To main'}</button>` : '';
+  const hide = id === 'todo' ? '' : '<button type="button" data-mv="hide"><i class="ti ti-eye-off"></i> Hide</button>';
+  return `<div class="hb-ctl"><span class="grip">${mode === 'pc' ? '<i class="ti ti-grip-vertical"></i> ' : ''}${esc(BOX_NAMES[id] || id)}</span>${up}${swap}${hide}</div>`;
+}
+function hbHead() {
+  let btns = '';
+  if (!SWS.swViewingAs()) btns = ARR.on
+    ? `<div class="hb-arr"><button type="button" class="btn" data-arr="reset"><i class="ti ti-restore"></i> Reset</button><button type="button" class="btn" data-arr="cancel">Cancel</button><button type="button" class="btn primary" data-arr="done"><i class="ti ti-check"></i> Done</button></div>
+       <p class="hb-arrnote">${ARR.mode === 'pc' ? 'Drag a box by its dark bar, or use the arrows.' : 'Use the arrows to move a box up or down.'} This ${ARR.mode === 'pc' ? 'computer' : 'phone'} layout is saved for you when you press Done.</p>`
+    : `<div class="hb-arr"><button type="button" class="btn" data-arr="start"><i class="ti ti-layout-grid"></i> Arrange</button></div>`;
+  const d = hbDate(), k = d.indexOf('<div class="hb-notice">');
+  return `<div class="hb-head">${k < 0 ? d : d.slice(0, k)}${btns}</div>` + (k < 0 ? '' : d.slice(k));
+}
 function renderHome() {
   const box = document.getElementById('homeBoxes'); if (!box) return;
-  const blocks = rotaBlocks(), eng = H.level === 'engineer';
-  let h = hbDate();
+  const blocks = rotaBlocks(), mode = ARR.on ? ARR.mode : layoutMode();
+  const L = ARR.on ? ARR.layout : currentLayout(mode);
+  let h = hbHead();
   if (H.failed) h += '<div class="hb-notice bad"><i class="ti ti-wifi-off"></i><span>Some of this didn\'t load. Check your signal and reload.</span></div>';
-  if (!eng) h += hbTodo();
-  h += hbNudge() + hbWaitingForMe();
-  h += eng ? hbMyOnCall(blocks, true) + hbOnCallNow(blocks) + hbMyRequests(true)
-           : hbOnCallNow(blocks) + hbMyOnCall(blocks, false) + hbMyRequests(false);
+  const cols = Object.entries(L.cols).map(([c, list]) => ({ c, html: list.map(id => { const b = boxHtml(id, blocks); return b ? `<div class="hb-box" data-box="${id}"${ARR.on && mode === 'pc' ? ' draggable="true"' : ''}>${ARR.on ? boxCtl(id, c, mode) : ''}${b}</div>` : ''; }).join('') }));
+  const shown = ARR.on ? cols : cols.filter(x => x.html);
+  const solo = !ARR.on && mode === 'pc' && shown.length < 2;
+  h += `<div class="hb-cols ${mode}${solo ? ' solo' : ''}">` + shown.map(x => `<div class="hb-col" data-col="${x.c}">${ARR.on ? `<div class="hb-col-label">${x.c === 'main' ? 'Main column' : x.c === 'side' ? 'Side column' : 'Your boxes'}</div>` : ''}${x.html}</div>`).join('') + '</div>';
+  if (ARR.on) h += `<div class="hb-tray"><b>Hidden:</b> ${L.hidden.length ? L.hidden.map(id => `<button type="button" class="chip" data-show="${id}"><i class="ti ti-eye"></i> ${esc(BOX_NAMES[id] || id)}</button>`).join('') : '<span class="w">nothing hidden.</span>'}</div>`;
   box.innerHTML = h;
+  box.classList.toggle('arranging', ARR.on);
 }
-// Called by the activity feed once it has the "Ready for QS" counts (management only).
+// Which column a box is in, in the arrange copy.
+function arrFind(id) { for (const [c, list] of Object.entries(ARR.layout.cols)) { const i = list.indexOf(id); if (i >= 0) return { c, list, i }; } return null; }
+// Boxes with nothing to show aren't on screen, so up/down skips over them.
+function arrVisible(list) { const blocks = rotaBlocks(); return list.filter(id => boxHtml(id, blocks)); }
+function arrMove(id, how) {
+  const f = arrFind(id); if (!f) return;
+  if (how === 'hide') { f.list.splice(f.i, 1); ARR.layout.hidden.push(id); }
+  else if (how === 'col') { f.list.splice(f.i, 1); ARR.layout.cols[f.c === 'main' ? 'side' : 'main'].push(id); }
+  else {
+    const vis = arrVisible(f.list), v = vis.indexOf(id), other = vis[how === 'up' ? v - 1 : v + 1];
+    if (!other) return;
+    const j = f.list.indexOf(other); f.list[f.i] = other; f.list[j] = id;
+  }
+  renderHome();
+  const el = document.querySelector(`.hb-box[data-box="${id}"]`); if (el) el.scrollIntoView({ block: 'nearest' });
+}
+function arrShow(id) {
+  ARR.layout.hidden = ARR.layout.hidden.filter(x => x !== id);
+  const def = defaultLayout(ARR.mode);
+  const c = Object.keys(def.cols).find(k => def.cols[k].includes(id)) || Object.keys(def.cols)[0];
+  insertByRef(ARR.layout.cols[c], id, def.cols[c]);
+  renderHome();
+}
+function arrStart() { ARR.on = true; ARR.mode = layoutMode(); ARR.layout = JSON.parse(JSON.stringify(currentLayout(ARR.mode))); renderHome(); }
+function arrStop() { ARR.on = false; ARR.layout = null; renderHome(); }
+function arrSave(value) {
+  const mode = ARR.mode;
+  H.homeLayout = Object.assign({}, H.homeLayout, { [mode]: value });
+  arrStop();
+  if (!auth.currentUser || SWS.swViewingAs()) return;
+  // Don't wait for the server: with no signal it goes up later (standards: queue = saved).
+  setDoc(doc(db, 'userPrefs', auth.currentUser.email), { homeLayout: { [mode]: value } }, { merge: true }).catch(e => {
+    showToast('Your layout didn\'t save. Check your signal and try again.');
+    SWS.swReport('save', 'Home page layout didn\'t save: ' + (e.code || e.message));
+  });
+  showToast(value ? 'Layout saved' : 'Back to the standard layout');
+}
+function arrDone() {
+  const L = ARR.layout, v = { hidden: L.hidden.slice() };
+  Object.entries(L.cols).forEach(([c, list]) => { v[c] = list.slice(); });
+  arrSave(v);
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-arr]');
+  if (a) {
+    const k = a.dataset.arr;
+    if (k === 'start') arrStart();
+    else if (k === 'cancel') arrStop();
+    else if (k === 'done') arrDone();
+    else if (k === 'reset' && confirm('Put your home page back to the standard layout on this ' + (ARR.mode === 'pc' ? 'computer' : 'phone') + '?')) arrSave(null);
+    return;
+  }
+  if (!ARR.on) return;
+  const mv = e.target.closest('[data-mv]');
+  if (mv) { arrMove(mv.closest('.hb-box').dataset.box, mv.dataset.mv); return; }
+  const sh = e.target.closest('[data-show]');
+  if (sh) arrShow(sh.dataset.show);
+});
+// Dragging (PC): the box moves as you drag; the order is read back when you let go.
+let DRAG = null;
+document.addEventListener('dragstart', e => {
+  const b = ARR.on && e.target.closest && e.target.closest('.hb-box[draggable]'); if (!b) return;
+  DRAG = b; b.classList.add('dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.dataset.box); } catch (er) {}
+});
+document.addEventListener('dragover', e => {
+  if (!DRAG) return;
+  const col = e.target.closest && e.target.closest('.arranging .hb-col'); if (!col) return;
+  e.preventDefault();
+  document.querySelectorAll('.hb-col.over').forEach(x => x !== col && x.classList.remove('over'));
+  col.classList.add('over');
+  const after = [...col.querySelectorAll('.hb-box:not(.dragging)')].find(x => { const r = x.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+  if (after) { if (after.previousElementSibling !== DRAG) col.insertBefore(DRAG, after); }
+  else if (col.lastElementChild !== DRAG) col.appendChild(DRAG);
+});
+document.addEventListener('drop', e => { if (DRAG) e.preventDefault(); });
+document.addEventListener('dragend', () => {
+  if (!DRAG) return;
+  DRAG.classList.remove('dragging'); DRAG = null;
+  document.querySelectorAll('.hb-col.over').forEach(x => x.classList.remove('over'));
+  // New order from the screen; boxes with nothing to show keep their place.
+  const old = ARR.layout.cols, next = {};
+  document.querySelectorAll('.arranging .hb-col').forEach(col => { next[col.dataset.col] = [...col.querySelectorAll('.hb-box')].map(x => x.dataset.box); });
+  const onScreen = new Set(Object.values(next).flat());
+  Object.entries(old).forEach(([c, list]) => list.forEach(id => { if (!onScreen.has(id)) { next[c] = next[c] || []; insertByRef(next[c], id, list); } }));
+  ARR.layout.cols = next;
+  renderHome();
+});
+PHONE_MQ.addEventListener && PHONE_MQ.addEventListener('change', () => { if (ARR.on) { ARR.on = false; ARR.layout = null; } if (H.me) renderHome(); });
+// Rob only: how many errors are waiting in Management → Errors (a line in To do).
+async function loadErrorCount() {
+  try {
+    const snap = await getDocs(query(collection(db, 'appErrors'), where('dealt', '==', false)));
+    H.errs = snap.size;
+    const t = document.getElementById('hbTodo'); if (t) t.outerHTML = hbTodo();
+  } catch (e) { console.warn('Error count not loaded', e); }
+}
+// Called by loadQsCounts once it has the "Ready for QS" counts (management only).
 function homeQS(countsByTool, reportEntries) {
   if (H.level !== 'management') return;
   H.qs = reportEntries.filter(x => countsByTool[x.tool.id]).map(x => ({ name: x.tool.name, icon: x.tool.icon, href: x.entry.reportHref, n: countsByTool[x.tool.id] }));
@@ -1095,17 +955,15 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   engineer: [
-    'The sign-in page now looks the same as the other tools.',
-    'Fixed a problem that could stop the app opening with no signal after an update.'
+    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.'
   ],
   office: [
-    'The sign-in page now looks the same as the other tools.',
-    'Fixed a problem that could stop the app opening with no signal after an update.'
+    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.',
+    'On a computer the home page now uses the whole screen. The list of recent tests has gone from it.'
   ],
   management: [
-    'The number of tests waiting for QS is now at the <b>end of the report\'s line</b> (on a phone, on the corner of the tile), so it no longer covers the icon. The small green ticks have gone.',
-    'The sign-in page now looks the same as the other tools.',
-    'Fixed a problem that could stop the app opening with no signal after an update.'
+    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.',
+    'On a computer the home page now uses the whole screen. The list of recent tests has gone: the <b>To do</b> box shows what\'s waiting for QS.'
   ]
 };
 const HELP = [
@@ -1119,7 +977,8 @@ const HELP = [
   { q: 'What\'s the yellow bar at the top?', a: '<p>Tests saved on this phone that haven\'t reached the office yet. Keep the app open with signal and it clears on its own. Tap it to see which ones.</p><p>Don\'t clear the app or uninstall it while it\'s showing. If it goes <b>red</b>, a test didn\'t save: log it again.</p>' },
   { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
   { levels: ['office', 'management'], q: 'What\'s in the To do box?', a: '<p>Everything waiting for the office: holiday and swaps to approve, swaps the other person hasn\'t answered (red when it\'s been 48 hours or the shift is close), missing timesheets and the work diary.</p><p>Tap a line and Timesheets &amp; leave opens on the right tab. When there\'s nothing to do, it says so.</p>' },
-  { levels: ['office', 'management'], q: 'What\'s the list under the boxes?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>. It only shows on a computer.</p>' },
+  { q: 'Can I move the boxes around?', a: '<p>Yes. Press <b>Arrange</b> at the top.</p><p>On a computer, drag a box by its dark bar, or use the arrows. <b>To side</b> and <b>To main</b> move it to the other column. On a phone, use the arrows.</p><p><b>Hide</b> takes a box away. Hidden boxes are listed at the bottom: tap one to bring it back. <b>To do</b> can\'t be hidden.</p><p>Press <b>Done</b> to keep it, or <b>Reset</b> to go back to the standard layout. Your phone and your computer each remember their own.</p>' },
+  { levels: ['office', 'management'], q: 'Where did the list of recent tests go?', a: '<p>It\'s gone from the home page. The <b>To do</b> box and the number next to each report in the list show what\'s waiting for QS. Open the reports to see the tests.</p>' },
   { levels: ['management'], q: 'What\'s the red number by a report?', a: '<p>How many test results are waiting to be QSed for that tool. It\'s at the end of the line (on a phone, on the corner of the tile). The same counts are in the To do box.</p>' },
   { levels: ['management'], q: 'Where do I add staff or change someone\'s position?', a: '<p>Press the <b>cog</b> at the top right to open Management.</p>' }
 ];
@@ -1132,7 +991,7 @@ onAuthStateChanged(auth, async (user) => {
   }
   document.getElementById('signinScreen').hidden = true;
   document.getElementById('appRoot').hidden = false;
-  const va = await swViewAsInit(user);
+  const va = await SWS.swViewAsInit(user);
   document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
 
   let isManager = false, isOffice = false;
@@ -1141,64 +1000,29 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('mgmtBtn').hidden = !isManager;
   } catch (e) {
     console.error('Access check failed:', e);
+    SWS.swReport('load', 'Access check didn\'t load: ' + (e.code || e.message));
   }
 
   const tools = await loadTools();
   renderTools(tools, isManager, isOffice);
   H.tools = tools || {};
-  loadHome(va ? va.email : user.email, isManager ? 'management' : isOffice ? 'office' : 'engineer').then(renderHome);
+  const level = isManager ? 'management' : isOffice ? 'office' : 'engineer';
+  loadHome(va ? va.email : user.email, level).then(() => {
+    renderHome();
+    if (!va && String(user.email).toLowerCase() === SWS.SW_OWNER) loadErrorCount();
+  });
 
-  if (isManager || isOffice){
+  if (isManager){
     const reportEntries = REPORT_TOOLS
       .map(t => ({ tool: t, entry: (tools && tools[t.pairKey]) || {} }))
       .filter(x => x.entry.live && x.entry.reportHref);
-    renderActivityFeed(reportEntries);
+    loadQsCounts(reportEntries);
   }
-  SW = Object.assign(SW, { page: 'index', version: VERSION, level: isManager ? 'management' : isOffice ? 'office' : 'engineer', news: NEWS, help: HELP });
-  swExtrasStart();
-  swuStart();
+  SWS.swExtrasStart({ page: 'index', version: VERSION, level, news: NEWS, help: HELP });
+  SWS.swuStart();
 });
 
 document.getElementById('mgmtBtn').addEventListener('click', () => { location.href = 'management.html'; });
-</script>
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (index, isolator-interlock-test and isolator-interlock-report so
-//  far — keep in step; every other page gets it when it's next changed):
-//  service worker + "A new version is ready" bar. Agreed 20 Oct 2026.
-//  After an upload (with CACHE_NAME bumped), the new service worker installs
-//  in the background and takes over; that's the moment the new files are
-//  saved on the device. The bar then asks to reload onto them. It never
-//  reloads by itself, and a page can stop it while something's unfinished
-//  by setting window.swUpdateBlocker = () => 'reason' (or '' when it's fine).
-//  Checks for an update when the app is opened or brought back to the
-//  front, and every 30 minutes.
-// ═══════════════════════════════════════════════════════════════════════════
-if ("serviceWorker" in navigator) {
-  const swvHadController = !!navigator.serviceWorker.controller;   // first ever install isn't an "update"
-  window.swvShowBar = function () {
-    if (document.getElementById('swvBar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'swvBar'; bar.className = 'swv-bar';
-    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button">Update</button>';
-    bar.querySelector('button').addEventListener('click', () => {
-      const why = typeof window.swUpdateBlocker === 'function' ? window.swUpdateBlocker() : '';
-      if (why) { bar.querySelector('span').textContent = why; bar.classList.add('wait'); return; }
-      bar.querySelector('button').disabled = true;
-      location.reload();
-    });
-    document.body.appendChild(bar);
-    document.body.classList.add('swv-on');
-  };
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swvHadController) window.swvShowBar(); });
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").then(reg => {
-      const check = () => reg.update().catch(() => {});
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
-      setInterval(check, 30 * 60000);
-    }).catch(err => console.error("Service worker registration failed:", err));
-  });
-}
 </script>
 </body>
 </html>

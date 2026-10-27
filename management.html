@@ -2,163 +2,125 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Simpson &amp; Wood — Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="sw-design.css">
 <style>
-  :root{
-    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a; --grey:#6b6b6b;
-    --line:#e2e2e2; --bg:#f2f1ee; --card:#ffffff;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink);}
-  h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
+  /* v4.0: colours, header, tabs, cards, fields and buttons come from sw-design.css
+     (design guide). Only what's particular to this page is here. */
   .screen{min-height:100vh;}
-  [hidden]{display:none !important;}
-
-  #signinScreen{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:var(--bg);}
-  #signinScreen img{height:44px; margin-bottom:28px;}
-  #signinScreen h2{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
-  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
-  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
-  .ms-btn:active{background:#000;}
+  #signinScreen, #notAuthorised{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img, #notAuthorised img{height:44px; margin-bottom:28px;}
+  #signinScreen h2, #notAuthorised h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p, #notAuthorised p{color:var(--grey); font-size:14px; max-width:340px; margin:0 0 26px;}
   #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
-
-  #notAuthorised{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; background:var(--bg);}
-  #notAuthorised h2{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:19px; color:var(--red); margin:0 0 10px;}
-  #notAuthorised p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 20px;}
-
+  .na-btns{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
   #appRoot{display:none;}
-  header{background:var(--ink); padding:16px 18px calc(14px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; gap:12px;}
-  header .brand{display:flex; align-items:center; gap:12px; text-decoration:none; cursor:pointer;}
-  header img{height:32px; display:block;}
-  header .title-block h1{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
-  header .title-block p{margin:2px 0 0; font-size:11px; color:#8f8f8f;}
-  header .who{text-align:right; display:flex; align-items:center; gap:14px;}
-  header .who .name{color:#fff; font-size:12px; font-weight:600;}
-  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  header .brand h1{font-family:'Barlow Condensed',sans-serif;}
 
-  .wrap{max-width:900px; margin:0 auto; padding:24px 20px 60px;}
-  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:20px;}
-  .card h2{margin:0 0 4px; font-size:18px; font-weight:700;}
-  .card .sub{color:var(--grey); font-size:12.5px; margin:0 0 16px;}
+  .pane{display:block;}
+  @media (min-width:1001px){ .layout.staff{grid-template-columns:minmax(0,1fr) 380px;} }
+  a.btn{color:var(--ink); text-decoration:none;}
+  .side .card{margin-bottom:14px;}
+  .card .h2row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .card .h2row h2{margin:0;}
+  .empty-note{color:var(--grey); font-size:14.5px; text-align:center; padding:18px 0;}
+  .note code, .notes code, .imp-list code, .card code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:.92em;}
 
-  .status-row{display:flex; align-items:center; justify-content:space-between; padding:10px 2px; border-bottom:1px solid var(--line);}
+  /* staff list */
+  .staff-item > div:first-child{flex:1 1 220px; min-width:200px;}
+  .staff-item{display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 16px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:8px; background:#fff;}
+  .staff-item .name{font-weight:700; font-size:15.5px;}
+  .staff-item .meta{font-size:13px; color:var(--grey); margin-top:2px; overflow-wrap:anywhere;}
+  .staff-ctl{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+  .staff-ctl .tick{font-size:14px; white-space:nowrap;}
+  .staff-ctl .inp{width:auto; min-height:40px; padding-top:8px; padding-bottom:8px;}
+  .short-in{width:96px !important;}
+  .remove-btn{background:#fff; border:1.5px solid var(--field); color:var(--red); font-size:14px; font-weight:700; padding:8px 12px; min-height:40px; border-radius:8px; cursor:pointer;}
+  .remove-btn:disabled{opacity:.45; cursor:not-allowed;}
+  .save-meta-btn{width:100%; min-height:48px; background:var(--red); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer;}
+  .save-meta-btn:hover{background:var(--red-dark);}
+  .save-meta-btn:disabled, .btn-dark:disabled{background:var(--field); cursor:not-allowed;}
+  .btn-dark{background:var(--red); color:#fff; border:none; padding:10px 18px; min-height:44px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .btn-light{background:#fff; border:1.5px solid var(--field); color:var(--ink); padding:9px 14px; min-height:44px; border-radius:8px; font-weight:700; font-size:14.5px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+  .btn-light:disabled{opacity:.45; cursor:not-allowed;}
+
+  /* Live apps */
+  .status-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:10px 4px; border-bottom:1px solid var(--line);}
   .status-row:last-child{border-bottom:none;}
-  .status-row .name{display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600;}
-  .status-row .name i{color:var(--red); font-size:17px; width:18px;}
+  .status-row .name{display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600;}
+  .status-row .name i{color:var(--red); font-size:18px; width:20px;}
+  .status-row .inp{width:200px; min-height:40px; padding:8px 10px;}
+  .status-row.changed{background:var(--amber-bg);}
   .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
   .switch input{opacity:0; width:0; height:0;}
   .switch .track{position:absolute; inset:0; background:#d6d4cd; border-radius:24px; cursor:pointer; transition:0.15s;}
   .switch .track::before{content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.15s;}
   .switch input:checked + .track{background:var(--red);}
   .switch input:checked + .track::before{transform:translateX(18px);}
-
-  .staff-item{display:flex; justify-content:space-between; align-items:center; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
-  .staff-item .name{font-weight:700; font-size:13.5px;}
-  .staff-item .meta{font-size:11.5px; color:var(--grey); margin-top:2px;}
-  .remove-btn{background:none; border:1.5px solid var(--red); color:var(--red); font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:6px; cursor:pointer;}
-  .empty-note{color:var(--grey); font-size:13px; text-align:center; padding:16px 0;}
-
-  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;}
-  .form-grid > div{display:flex; flex-direction:column;}
-  label{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); margin-bottom:4px;}
-  input[type=text], select{padding:9px 10px; font-size:14px; border:1.5px solid var(--line); border-radius:7px; font-family:'Barlow',sans-serif;}
-  .save-meta-btn{width:100%; background:var(--red); color:#fff; border:none; padding:11px 16px; border-radius:7px; font-weight:700; font-size:13.5px; cursor:pointer;}
-
-  .note{background:var(--bg); border-radius:8px; padding:12px 14px; font-size:12.5px; color:var(--grey); margin-top:16px; line-height:1.5;}
-  .note code{background:#e8e6e0; padding:1px 5px; border-radius:4px;}
-  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s;}
-  .toast.show{opacity:1;}
-
-  /* Data import panel (owner only) */
-  .imp-row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;}
-  .imp-row > div{display:flex; flex-direction:column; flex:1; min-width:200px;}
-  .imp-row input[type=file]{font-size:13px; padding:7px 0;}
-  .btn-dark{background:var(--ink); color:#fff; border:none; padding:10px 16px; border-radius:7px; font-weight:700; font-size:13px; cursor:pointer;}
-  .btn-dark:disabled, .save-meta-btn:disabled{opacity:.45; cursor:not-allowed;}
-  .imp-msg{font-size:13px; padding:10px 12px; border-radius:7px; margin:10px 0; line-height:1.45;}
-  .imp-msg.err{background:#fbe9ea; color:var(--red-dark);}
-  .imp-msg.ok{background:#e9f5ec; color:#1e6b34;}
-  .imp-msg.info{background:var(--bg); color:var(--grey);}
-  .imp-summary{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0;}
-  .imp-summary div{background:var(--bg); border-radius:8px; padding:10px; text-align:center;}
-  .imp-summary b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:22px;}
-  .imp-summary span{font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--grey);}
-  .imp-list{max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-bottom:12px;}
-  .imp-list div{font-size:12.5px; padding:6px 10px; border-bottom:1px solid var(--line); display:flex; gap:8px; align-items:center;}
-  .imp-list div:last-child{border-bottom:none;}
-  .imp-list code{background:#eeece7; padding:1px 5px; border-radius:4px; font-size:11.5px;}
-  .imp-tag{font-size:10.5px; font-weight:700; text-transform:uppercase; padding:2px 6px; border-radius:4px; flex-shrink:0;}
-  .imp-tag.new{background:#e9f5ec; color:#1e6b34;}
-  .imp-tag.changed{background:#fff4dd; color:#8a5a00;}
-  .imp-tag.missing{background:#fbe9ea; color:var(--red-dark);}
-  .imp-h{font-size:12px; font-weight:700; text-transform:uppercase; color:var(--grey); margin:14px 0 6px;}
-
-  .sg{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px;}
-  .sg .what{font-weight:700; font-size:14px;}
-  .sg .who{font-size:11.5px; color:var(--grey); margin:2px 0 8px;}
-  .sg .msg{font-size:13.5px; white-space:pre-wrap; background:var(--bg); border-radius:6px; padding:8px 10px; margin-bottom:8px;}
-  .sg-btns{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
-  .sg-btns input{flex:1; min-width:160px; padding:7px 9px; font-size:13px; border:1.5px solid var(--line); border-radius:6px;}
-  .sg-tabs{display:flex; gap:6px; margin-bottom:12px;}
-  .sg-tabs button{background:var(--bg); border:none; border-radius:16px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer;}
-  .sg-tabs button.active{background:var(--ink); color:#fff;}
-  @media (max-width:600px){ .form-grid{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);} }
-  .more-link{margin:26px 0 10px; font-size:13.5px;}
-  .more-link a{color:var(--grey); cursor:pointer; text-decoration:underline; display:inline-flex; gap:6px; align-items:center;}
   .live-btns{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:14px;}
-  .btn-light{background:#fff; border:1.5px solid var(--line); color:var(--ink); padding:9px 14px; border-radius:7px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
-  .btn-light:disabled{opacity:.45; cursor:not-allowed;}
-  .info-i{background:none; border:1.5px solid var(--grey); color:var(--grey); border-radius:50%; width:20px; height:20px; font-size:12px; font-weight:700; line-height:1; cursor:pointer; margin-left:6px; padding:0; vertical-align:middle; font-family:Georgia,serif;}
-  .status-row.changed{background:#fff4dd;}
-  .name-row{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:10px; align-items:center; padding:7px 4px; border-bottom:1px solid var(--line);}
-  .name-row span{display:block; color:var(--grey); font-size:12px;}
-  .name-row select{font-size:13px; padding:6px 8px;}
-  .short-in{width:64px; font-size:12.5px; padding:6px 7px;}
+  .live-btns .save-meta-btn{width:auto;}
+  .more-link{margin:26px 0 10px; font-size:14px;}
+  .more-link a{color:var(--grey); cursor:pointer; text-decoration:underline; display:inline-flex; gap:6px; align-items:center;}
 
-  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
-  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
-  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-  .sw-hbtn i{font-size:17px;}
-  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
-  .topbar-right .sw-hbtn{margin-right:6px;}
-  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
-  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
-  .sw-vabar i{font-size:18px;}
-  .sw-vabar span{flex:1; min-width:180px;}
-  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
-  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
-  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
-  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
-  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
-  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
-  .sw-news li{margin-bottom:8px;}
-  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
-  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
-  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
-  .sw-people{display:grid; gap:6px;}
-  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
-  .sw-people button:hover{background:#fbe9ea;}
-  .sw-people small{color:#5c5c5c;}
-  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
-  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
-  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
-  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
-  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
-  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
-  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
-  .sw-help summary::-webkit-details-marker{display:none;}
-  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
-  .sw-help details[open] summary::before{content:'–';}
-  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
-  .sw-help details > div p{margin:0 0 8px;}
-  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
-  @media (max-width:640px){ .sw-help{max-width:none;} }
+  /* Data import */
+  .imp-row{display:grid; grid-template-columns:minmax(220px,1.2fr) minmax(220px,1fr) auto auto; gap:12px; align-items:end; margin-bottom:12px;}
+  .imp-row > div{display:flex; flex-direction:column; min-width:0;}
+  .imp-row .lbl{display:flex; align-items:center; gap:6px;}
+  .imp-row input[type=file]{font-size:14px; padding:9px 0; min-height:44px;}
+  .info-i{background:none; border:none; color:var(--grey); padding:0; cursor:pointer; display:inline-flex; line-height:1;}
+  .info-i i{font-size:19px;}
+  .imp-msg{font-size:14.5px; padding:10px 12px; border-radius:10px; margin:10px 0; line-height:1.45; border:1px solid;}
+  .imp-msg.err{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .imp-msg.ok{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .imp-msg.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .imp-summary{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0;}
+  .imp-summary div{background:var(--soft); border-radius:10px; padding:10px; text-align:center;}
+  .imp-summary b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:24px;}
+  .imp-summary span{font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--grey);}
+  .imp-list{max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:10px; margin-bottom:12px;}
+  .imp-list div{font-size:14px; padding:7px 10px; border-bottom:1px solid var(--line); display:flex; gap:8px; align-items:center;}
+  .imp-list div:last-child{border-bottom:none;}
+  .imp-tag{font-size:11.5px; font-weight:700; text-transform:uppercase; padding:2px 7px; border-radius:6px; flex-shrink:0;}
+  .imp-tag.new{background:var(--green-bg); color:var(--green);}
+  .imp-tag.changed{background:var(--amber-bg); color:var(--amber);}
+  .imp-tag.missing{background:var(--red-tint); color:var(--red-dark);}
+  .imp-h{font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:16px 0 6px;}
+  .imp-result .save-meta-btn{width:auto;}
+  .name-row{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:10px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line);}
+  .name-row span{display:block; color:var(--grey); font-size:13px;}
+  .name-row select{min-height:40px; padding-top:7px; padding-bottom:7px;}
+
+  /* Fire toolkit corrections */
+  .sg{border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#fff;}
+  .sg .what{font-weight:700; font-size:15.5px;}
+  .sg .who{font-size:13px; color:var(--grey); margin:2px 0 8px;}
+  .sg .msg{font-size:15px; white-space:pre-wrap; background:var(--soft); border-radius:8px; padding:9px 11px; margin-bottom:8px;}
+  .sg-btns{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .sg-btns .inp{flex:1; min-width:180px; width:auto;}
+  .sg-btns .save-meta-btn{width:auto;}
+  .sg-tabs, .err-chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+
+  /* Errors (Rob only) */
+  .err-row{display:grid; grid-template-columns:130px minmax(0,1fr) auto; gap:6px 16px; align-items:start; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:8px;}
+  .err-row.dealt{opacity:.6;}
+  .err-when b{display:block; font-family:'Barlow Condensed',sans-serif; font-size:18px;}
+  .err-when span{color:var(--grey); font-size:13px;}
+  .err-msg{font-weight:600; font-size:15px; overflow-wrap:anywhere;}
+  .err-meta{color:var(--grey); font-size:13.5px; margin-top:3px; display:flex; flex-wrap:wrap; gap:4px 12px;}
+  .err-where{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:var(--grey); margin-top:3px; overflow-wrap:anywhere;}
+  .err-when .err-n{display:inline-block; background:var(--red); color:#fff; border-radius:20px; font-size:12px; font-weight:700; padding:1px 8px; margin-top:4px;}
+  .err-acts{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  @media (max-width:1000px){ .imp-row{grid-template-columns:1fr 1fr;} }
+  @media (max-width:640px){
+    .imp-row{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);}
+    .staff-ctl{justify-content:flex-start;}
+    .err-row{grid-template-columns:1fr;} .err-acts{justify-content:flex-start;}
+    .status-row .inp{width:100%;}
+  }
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
@@ -168,116 +130,143 @@
 <div id="signinScreen">
   <img src="sw-logo.png" alt="Simpson &amp; Wood">
   <h2>Management</h2>
-  <p>Management sign-in required.</p>
-  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows" aria-hidden="true"></i> Sign in with Microsoft</button>
   <div class="err" id="signinErr"></div>
 </div>
 
 <div id="notAuthorised">
-  <img src="sw-logo.png" alt="Simpson &amp; Wood" style="height:40px; margin-bottom:24px;">
-  <h2>Access restricted</h2>
-  <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span> — if this should have access, contact whoever manages the Firebase project.</p>
-  <button class="ms-btn" id="signOutBtn2">Sign out</button>
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Management</h2>
+  <p>You're signed in as <b id="notAuthEmail"></b>. This page is for managers. If you should have access, ask Rob.</p>
+  <div class="na-btns"><button class="ms-btn" id="signOutBtn2">Sign out</button><a class="btn" href="index.html"><i class="ti ti-arrow-left"></i> Back to home</a></div>
 </div>
 
 <div id="appRoot">
   <header>
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html" title="Home">
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
-      <div class="title-block">
-        <h1>Management</h1>
-        <p id="versionLabel">v1.0</p>
-      </div>
+      <div><h1>Management</h1><p id="versionLabel">v1.0</p></div>
     </a>
-    <div class="who">
-      <div class="name" id="whoName">—</div>
-      <button id="signOutBtn">Sign out</button>
+    <div class="right">
+      <div class="who"><div class="name" id="whoName">—</div><button id="signOutBtn">Sign out</button></div>
     </div>
   </header>
+  <nav class="tabs" id="tabs">
+    <button type="button" class="tab active" data-tab="staff"><i class="ti ti-users"></i>Staff</button>
+    <button type="button" class="tab" data-tab="import"><i class="ti ti-database-import"></i>Data import <span class="count" id="namesCount" hidden></span></button>
+    <button type="button" class="tab" data-tab="corrections"><i class="ti ti-flame"></i>Fire toolkit <span class="count" id="sgCount" hidden></span></button>
+    <button type="button" class="tab" data-tab="errors" id="errorsTabBtn" hidden><i class="ti ti-bug"></i>Errors <span class="count" id="errCount" hidden></span></button>
+  </nav>
 
-  <div class="wrap">
-    <div class="card" id="importCard" hidden>
-      <h2>Data import</h2>
-      <p class="sub">Load a prepared data file into the database. You'll always see a preview first — nothing is written until you confirm, and nothing is ever deleted automatically.</p>
-      <div class="imp-row">
-        <div>
-          <label for="impType">What are you importing? <button type="button" class="info-i" id="impInfo" hidden aria-label="What is this?">i</button></label>
-          <select id="impType"></select>
+  <div class="wrap wide">
+    <section class="pane" data-pane="staff">
+      <div class="layout staff">
+        <div class="card">
+          <h2>Existing staff</h2>
+          <div id="staffList"><div class="empty-note">Loading…</div></div>
         </div>
-        <div>
-          <label for="impFile" id="impFileLabel">Data file (.json)</label>
-          <input type="file" id="impFile" accept=".json,application/json">
-        </div>
-        <div id="impTabBox" hidden>
-          <label for="impTab">Which rota (tab)?</label>
-          <select id="impTab"></select>
-        </div>
-        <button type="button" class="btn-dark" id="impPreviewBtn" disabled>Preview</button>
-        <button type="button" class="btn-light" id="impExportBtn" disabled><i class="ti ti-download"></i> Export</button>
-      </div>
-      <div id="impTypeNote" class="imp-msg info" hidden></div>
-      <div id="impResult"></div>
-    </div>
-
-    <div class="card" id="namesCard" hidden>
-      <h2>Names to match</h2>
-      <p class="sub">These names came in from a data import (the on-call rota). The app knows people by their email, so it needs telling once who each one is. Best guesses are already picked: check them and press Save.</p>
-      <div id="nameRows"></div>
-      <button type="button" class="save-meta-btn" id="namesSave" style="width:auto;margin-top:12px">Save</button>
-    </div>
-
-    <div class="card" id="suggestCard">
-      <h2>Fire toolkit corrections</h2>
-      <p class="sub">Suggestions from staff using the fire toolkit. <b>Accept</b> means it should go into the content — it's added to <code>fire-toolkit-content.md</code> and re-imported at the next content update, then marked done. Nothing changes for engineers until then.</p>
-      <div class="sg-tabs" id="sgTabs">
-        <button data-st="pending" class="active">Pending</button>
-        <button data-st="accepted">Accepted — awaiting update</button>
-        <button data-st="dismissed">Dismissed</button>
-      </div>
-      <div id="sgList"><div class="empty-note">Loading…</div></div>
-    </div>
-
-    <div class="card">
-      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Add staff member</p>
-      <div class="form-grid">
-        <div>
-          <label>Name</label>
-          <input type="text" id="newStaffName">
-        </div>
-        <div>
-          <label>Email <span style="font-weight:400;text-transform:none;">(must match their Microsoft sign-in email)</span></label>
-          <input type="text" id="newStaffEmail">
-        </div>
-        <div>
-          <label>Position <span style="font-weight:400;text-transform:none;">(Manager, QS and Director get management access automatically)</span></label>
-          <select id="newStaffPosition">
-            <option value="" disabled selected>Select</option>
-            <option>Apprentice electrician</option>
-            <option>Electrical improver</option>
-            <option>Electrician</option>
-            <option>QS</option>
-            <option>Office</option>
-            <option>Manager</option>
-            <option>Director</option>
-          </select>
+        <div class="side">
+          <div class="card">
+            <h2>Add staff member</h2>
+            <div class="field"><label class="lbl" for="newStaffName">Name</label><input class="inp" type="text" id="newStaffName" autocomplete="off"></div>
+            <div class="field"><label class="lbl" for="newStaffEmail">Email</label><input class="inp" type="text" id="newStaffEmail" autocomplete="off" inputmode="email"><div class="hint">Exactly as they sign in with Microsoft.</div></div>
+            <div class="field"><label class="lbl" for="newStaffPosition">Position</label>
+              <select class="inp" id="newStaffPosition">
+                <option value="" disabled selected>Select</option>
+                <option>Apprentice electrician</option>
+                <option>Electrical improver</option>
+                <option>Electrician</option>
+                <option>QS</option>
+                <option>Office</option>
+                <option>Manager</option>
+                <option>Director</option>
+              </select>
+            </div>
+            <button type="button" class="btn-primary" id="addStaffBtn">Add staff member</button>
+          </div>
         </div>
       </div>
-      <button type="button" class="save-meta-btn" id="addStaffBtn">Add staff member</button>
-    </div>
+      <div class="notes">
+        <h3>Good to know</h3>
+        <p><b>Manager, QS and Director</b> get management access straight away; changing it away removes it. <b>Office</b> sees Timesheets &amp; leave, but not this page.</p>
+        <p><b>Short</b> is the name on the on-call calendar on phones. Leave it blank to use their initials.</p>
+      </div>
+      <div class="more-link" id="liveAppsLinkBox" hidden><a id="liveAppsLink"><i class="ti ti-toggle-right"></i> Live apps (only you)</a></div>
+      <div class="card" id="liveAppsCard" hidden>
+        <h2>Live apps</h2>
+        <div id="statusList"></div>
+        <div class="live-btns"><button type="button" class="btn-light" id="liveClose">Close</button><button type="button" class="btn-light" id="liveCancel" disabled>Undo changes</button><button type="button" class="save-meta-btn" id="liveSave" disabled>Save changes</button></div>
+        <div class="notes"><p>Switch a tool on and set the files it links to. Nothing changes until you press Save.</p></div>
+      </div>
+    </section>
 
-    <div class="card">
-      <p class="section-label" style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--grey);margin:0 0 12px;">Existing staff</p>
-      <p class="sub">Manager, QS and Director get management access straight away; changing it away removes it. Office sees the homepage activity feed and Timesheets &amp; leave, but not this page. "Short" is the name on the on-call calendar on phones (leave it blank to use their initials).</p>
-      <div id="staffList"><div class="empty-note">Loading…</div></div>
-    </div>
+    <section class="pane" data-pane="import" hidden>
+      <div class="card" id="namesCard" hidden>
+        <h2>Names to match</h2>
+        <div id="nameRows"></div>
+        <button type="button" class="save-meta-btn" id="namesSave" style="width:auto;margin-top:12px">Save</button>
+        <div class="notes"><p>These names came in from a data import (the on-call rota). The app knows people by their email, so it needs telling once who each one is. Best guesses are already picked: check them and press Save.</p></div>
+      </div>
+      <div class="card" id="importCard" hidden>
+        <h2>Data import</h2>
+        <div class="imp-row">
+          <div>
+            <label class="lbl" for="impType">What are you importing? <button type="button" class="info-i" id="impInfo" hidden aria-label="What is this?"><i class="ti ti-info-circle"></i></button></label>
+            <select class="inp" id="impType"></select>
+          </div>
+          <div>
+            <label class="lbl" for="impFile" id="impFileLabel">Data file (.json)</label>
+            <input type="file" id="impFile" accept=".json,application/json">
+          </div>
+          <div id="impTabBox" hidden>
+            <label class="lbl" for="impTab">Which rota (tab)?</label>
+            <select class="inp" id="impTab"></select>
+          </div>
+          <button type="button" class="btn-dark" id="impPreviewBtn" disabled>Preview</button>
+          <button type="button" class="btn-light" id="impExportBtn" disabled><i class="ti ti-download"></i> Export</button>
+        </div>
+        <div id="impTypeNote" class="imp-msg info" hidden></div>
+        <div id="impResult" class="imp-result"></div>
+      </div>
+      <div class="notes">
+        <h3>Good to know</h3>
+        <p>You always see a preview first. Nothing is written until you confirm, and nothing is ever deleted automatically.</p>
+      </div>
+    </section>
 
-    <div class="more-link" id="liveAppsLinkBox" hidden><a id="liveAppsLink"><i class="ti ti-toggle-right"></i> Live apps (only you)</a></div>
-    <div class="card" id="liveAppsCard" hidden>
-      <h2>Live apps</h2>
-      <p class="sub">Switch a tool on and set the files it links to. Nothing changes until you press Save.</p>
-      <div id="statusList"></div>
-      <div class="live-btns"><button type="button" class="btn-light" id="liveClose">Close</button><button type="button" class="btn-light" id="liveCancel" disabled>Undo changes</button><button type="button" class="save-meta-btn" id="liveSave" disabled style="width:auto">Save changes</button></div>
-    </div>
+    <section class="pane" data-pane="corrections" hidden>
+      <div class="card" id="suggestCard">
+        <h2>Fire toolkit corrections</h2>
+        <div class="sg-tabs" id="sgTabs">
+          <button type="button" data-st="pending" class="chip on">Pending</button>
+          <button type="button" data-st="accepted" class="chip">Accepted, awaiting update</button>
+          <button type="button" data-st="dismissed" class="chip">Dismissed</button>
+        </div>
+        <div id="sgList"><div class="empty-note">Loading…</div></div>
+      </div>
+      <div class="notes">
+        <h3>Good to know</h3>
+        <p>Suggestions from staff using the fire toolkit. <b>Accept</b> means it should go into the content: it's added to <code>fire-toolkit-content.md</code> and re-imported at the next content update, then marked done. Nothing changes for engineers until then.</p>
+      </div>
+    </section>
+
+    <section class="pane" data-pane="errors" hidden>
+      <div class="card">
+        <div class="h2row"><h2>Errors</h2><div class="err-acts"><button type="button" class="btn" id="errRefresh"><i class="ti ti-refresh"></i> Refresh</button><button type="button" class="btn" id="errAllDealt" hidden><i class="ti ti-checks"></i> Mark all shown as dealt with</button></div></div>
+        <div class="err-chips" id="errChips">
+          <button type="button" class="chip on" data-ef="open">To look at</button>
+          <button type="button" class="chip" data-ef="dealt">Dealt with</button>
+          <button type="button" class="chip" data-ef="all">All</button>
+        </div>
+        <div id="errList"><div class="empty-note">Loading…</div></div>
+      </div>
+      <div class="notes">
+        <h3>Good to know</h3>
+        <p>Problems the apps hit: crashes, saves that failed and things that didn't load. Only you can see this. The same error, for the same person, on the same page and day is one line with a count. Errors are cleared after 90 days.</p>
+        <p>So far only the home page and this page report errors. The isolator apps follow in the next release, and the rest after that.</p>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -290,10 +279,16 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, writeBatch as _writeBatch, serverTimestamp, query, where
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, getDocsFromServer, doc, getDoc, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, writeBatch as _writeBatch, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// v4.0: View as, What's New, Help, the update bar and error reporting come
+// from the shared file (standards §15), not copies in this page.
+import * as SWS from './sw-shared.js';
 
-const VERSION = "v3.0";
+// v4.0 (27 Oct 2026): shared files; design catch-up (full width, tabs,
+// guide fields and buttons, notes at the bottom); Errors tab (Rob only);
+// failed saves and loads are reported; multi-tab cache.
+const VERSION = "v4.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -307,138 +302,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
-// Raw Firestore functions for the shared block below; everything else saves
-// through the guarded versions, so "View as" can never change real data.
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = _setDoc;
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+SWS.swSetup({ db, auth, page: 'management', version: VERSION });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report and
-//  management — keep in step): access level · View as (Rob only) ·
-//  What's New · Help.   Standards §15: any page changed from now on gets
-//  this block too.
-// ═══════════════════════════════════════════════════════════════════════════
-const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
-const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
-let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
-let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
-const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
-const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
-// Wrap anything that saves, so "View as" can never change real data.
-function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
-function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
-(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
-  const f = window.fetch.bind(window);
-  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
-})();
-// Who someone is: 'management' (Manager / QS / Director, or the console-only
-// managers list), 'office' or 'engineer'.
-async function swAccess(email) {
-  let managers = false, position = '', staff = null;
-  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
-  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
-  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
-  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+// Everything saves through these, so "View as" can never change real data.
+const setDoc = SWS.swGuard(_setDoc), updateDoc = SWS.swGuard(_updateDoc), deleteDoc = SWS.swGuard(_deleteDoc), writeBatch = SWS.swGuardBatch(_writeBatch);
+// A save or load that went wrong: tell the person (as before) and record it
+// for Rob (Management → Errors). Never with what was typed.
+function failed(kind, what, e) {
+  const why = (e && (e.code || e.message)) || 'unknown error';
+  if (!(e && String(e.message || '').includes(SWS.SW_VA_MSG))) SWS.swReport(kind, what + ': ' + why);
+  return why;
 }
-function swHeaderButton(id, icon, label, onClick) {
-  if (document.getElementById(id)) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
-  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
-  b.addEventListener('click', onClick);
-  const right = document.querySelector('.topbar-right');
-  if (right) right.prepend(b);
-  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
-}
-function swModal(html, cls) {
-  const bg = document.createElement('div');
-  bg.className = 'sw-modal-bg ' + (cls || '');
-  bg.innerHTML = html;
-  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
-  document.body.appendChild(bg);
-  return bg;
-}
-
-// ---- View as (Rob only) ----------------------------------------------------
-// Rob picks a person and every page shows what they'd see, read-only. The
-// choice lasts for this browser tab (all pages) until he presses Stop. Data is
-// still read with Rob's own access, so it shows screens, not the database rules.
-async function swViewAsInit(user) {
-  const real = String(user.email || '').toLowerCase();
-  if (real !== SW_OWNER) return null;
-  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
-  let v = null;
-  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
-  if (!v) return null;
-  let name = v, position = '';
-  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
-  VIEW_AS = { email: v, name, position };
-  const bar = document.createElement('div');
-  bar.className = 'sw-vabar';
-  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('[data-va]'); if (!b) return;
-    if (b.dataset.va === 'change') swPickViewAs();
-    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
-  });
-  document.body.prepend(bar);
-  document.body.classList.add('sw-va-on');
-  return VIEW_AS;
-}
-async function swPickViewAs() {
-  let people = [];
-  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
-  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
-  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
-  const draw = () => {
-    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
-    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
-  };
-  m.querySelector('[data-q]').addEventListener('input', draw);
-  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
-  draw(); m.querySelector('[data-q]').focus();
-}
-
-// ---- What's New + Help -------------------------------------------------------
-// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
-// (questions; each with the tab it belongs to and, if not everyone, the
-// levels it's for), then calls swExtrasStart().
-function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
-function swShowNews() {
-  const items = swNewsItems();
-  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
-    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-}
-async function swNewsCheck() {
-  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
-  const key = 'seen_' + SW.page;
-  try {
-    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
-    const snap = await swGetDoc(ref);
-    if (snap.exists() && snap.data()[key] === SW.version) return;
-    swShowNews();
-    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
-  } catch (e) { console.warn('What\'s new check failed', e); }
-}
-function swShowHelp() {
-  const tab = SW.tab() || '';
-  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
-  const groups = new Map();
-  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
-  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
-  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
-    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
-    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
-  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
-}
-function swExtrasStart() {
-  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
-  swNewsCheck();
-}
-
-const setDoc = swGuard(_setDoc), updateDoc = swGuard(_updateDoc), deleteDoc = swGuard(_deleteDoc), writeBatch = swGuardBatch(_writeBatch);
 
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
@@ -476,17 +351,17 @@ async function renderStatusList(){
     liveTools = snap.exists() ? (snap.data().tools || {}) : {};
   } catch (e) {
     console.error('Could not load tool config', e);
-    list.innerHTML = '<div class="empty-note">Couldn\'t load — ' + escapeHtml(e.code || e.message) + '</div>';
+    list.innerHTML = '<div class="empty-note">Couldn\'t load — ' + escapeHtml(failed('load', 'Live apps settings didn\'t load', e)) + '</div>';
     return;
   }
   const val = id => Object.assign({}, liveEntry(id), liveDraft[id] || {});
   list.innerHTML = TOOL_PAIRS.map(tool => {
     const v = val(tool.id), changed = !!liveChanges().find(c => c.id === tool.id);
-    return '<div class="status-row ' + (changed ? 'changed' : '') + '" style="flex-wrap:wrap">' +
+    return '<div class="status-row ' + (changed ? 'changed' : '') + '">' +
       '<div class="name"><i class="ti ' + tool.icon + '" aria-hidden="true"></i>' + tool.name + '</div>' +
-      '<div style="display:flex; align-items:center; gap:8px;">' +
-      '<input type="text" data-href-id="' + tool.id + '" placeholder="engineer file" value="' + escapeHtml(v.href || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
-      '<input type="text" data-report-href-id="' + tool.id + '" placeholder="report file" value="' + escapeHtml(v.reportHref || '') + '" style="width:160px; padding:6px 8px; font-size:12.5px;">' +
+      '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+      '<input class="inp" type="text" data-href-id="' + tool.id + '" placeholder="engineer file" aria-label="' + escapeHtml(tool.name) + ' engineer file" value="' + escapeHtml(v.href || '') + '">' +
+      '<input class="inp" type="text" data-report-href-id="' + tool.id + '" placeholder="report file" aria-label="' + escapeHtml(tool.name) + ' report file" value="' + escapeHtml(v.reportHref || '') + '">' +
       '<label class="switch"><input type="checkbox" data-live-id="' + tool.id + '" ' + (v.live ? 'checked' : '') + '><span class="track"></span></label>' +
       '</div></div>';
   }).join('');
@@ -536,12 +411,12 @@ async function renderStaffList() {
           <div class="name">${r.name || r.id}</div>
           <div class="meta">${r.id}</div>
         </div>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; white-space:nowrap; cursor:pointer;" title="Expected to fill in a timesheet every weekday">
+        <div class="staff-ctl">
+          <label class="tick" title="Expected to fill in a timesheet every weekday">
             <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'}> Fills in timesheets
           </label>
-          <input class="short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" title="Short name on the on-call calendar (phones). Blank = initials.">
-          <select class="position-select" data-email="${r.id}" style="font-size:12.5px; padding:6px 8px;">
+          <input class="inp short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" aria-label="Short name" title="Short name on the on-call calendar (phones). Blank = initials.">
+          <select class="inp position-select" data-email="${r.id}" aria-label="Position">
             ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
           </select>
           <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
@@ -556,7 +431,7 @@ async function renderStaffList() {
           await setDoc(doc(db, 'staff', email), { position: newPosition }, { merge: true });
           showToast(email + ' is now ' + newPosition);
         } catch (err) {
-          showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
+          showToast('Could not update — ' + failed('save', 'Staff position didn\'t save', err));
         }
       });
     });
@@ -564,7 +439,7 @@ async function renderStaffList() {
       inp.addEventListener('change', async (e) => {
         const email = e.target.dataset.short, v = e.target.value.trim();
         try { await setDoc(doc(db, 'staff', email), { short: v }, { merge: true }); showToast(v ? 'Short name saved' : 'Short name cleared (initials used)'); }
-        catch (err) { showToast('Could not update — ' + (err.message || err.code || 'unknown error')); }
+        catch (err) { showToast('Could not update — ' + failed('save', 'Short name didn\'t save', err)); }
       });
     });
     list.querySelectorAll('.fills-ts').forEach(cb => {
@@ -575,7 +450,7 @@ async function renderStaffList() {
           showToast(email + (on ? ' fills in timesheets' : ' doesn\'t fill in timesheets'));
         } catch (err) {
           e.target.checked = !on;
-          showToast('Could not update — ' + (err.message || err.code || 'unknown error'));
+          showToast('Could not update — ' + failed('save', '"Fills in timesheets" didn\'t save', err));
         }
       });
     });
@@ -586,11 +461,11 @@ async function renderStaffList() {
           await deleteDoc(doc(db, 'staff', btn.dataset.email));
           await renderStaffList();
         }
-        catch (e) { showToast('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+        catch (e) { showToast('Could not remove — ' + failed('save', 'Removing a staff member didn\'t save', e)); }
       });
     });
   } catch (e) {
-    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+    list.innerHTML = '<div class="empty-note">Could not load — ' + escapeHtml(failed('load', 'Staff list didn\'t load', e)) + '</div>';
   }
 }
 
@@ -788,6 +663,7 @@ async function runImportPreview() {
     const snap = await getDocsFromServer(collection(db, type.collection));
     snap.forEach(d => { const v = d.data(); if (!type.testRecords || v.testData === true) existing.set(d.id, v); });
   } catch (e) {
+    failed('load', 'Data import preview (' + type.id + ') didn\'t load', e);
     impMsg('err', 'Couldn\'t read the current data to compare against — ' + escapeHtml(e.code || e.message) +
       (e.code === 'permission-denied' ? '<br>The Firestore rules for <code>' + type.collection + '</code> may not be published yet.' : ''));
     return;
@@ -890,6 +766,7 @@ async function runImportWrite() {
   } catch (e) {
     console.error(e);
     btn.disabled = false; btn.textContent = 'Try again';
+    failed('save', 'Data import (' + type.id + ') didn\'t save', e);
     impMsg('err', '<b>Import failed — ' + escapeHtml(e.code || e.message) + '.</b>' +
       (e.code === 'permission-denied' ? '<br>The database refused the write. Check the Firestore rules are published and your account is in the console-only <code>managers</code> list.' : '') +
       '<br>Batches of up to 400 are all-or-nothing; if this was a very large file, run Preview again to see what did land.');
@@ -920,7 +797,7 @@ async function runClearTest() {
     showToast('Removed ' + ids.length + ' test record' + (ids.length === 1 ? '' : 's'));
     await runImportPreview();
   } catch (e) {
-    impMsg('err', 'Removing test data failed — ' + escapeHtml(e.code || e.message) + '.');
+    impMsg('err', 'Removing test data failed — ' + escapeHtml(failed('save', 'Removing test data didn\'t save', e)) + '.');
   }
 }
 
@@ -933,7 +810,7 @@ async function runImportDelete(ids) {
     showToast('Deleted ' + ids.length);
     await runImportPreview(); // refresh the comparison
   } catch (e) {
-    impMsg('err', 'Delete failed — ' + escapeHtml(e.code || e.message) + '.');
+    impMsg('err', 'Delete failed — ' + escapeHtml(failed('save', 'Deleting imported entries didn\'t save', e)) + '.');
   }
 }
 
@@ -954,6 +831,7 @@ async function renderSuggestions() {
     if (sgStatus === 'pending') {
       const btn = document.querySelector('#sgTabs [data-st="pending"]');
       btn.textContent = 'Pending' + (rows.length ? ' (' + rows.length + ')' : '');
+      setCount('sgCount', rows.length);
     }
     if (!rows.length) { list.innerHTML = '<div class="empty-note">Nothing here.</div>'; return; }
     const when = t => t && t.toDate ? t.toDate().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
@@ -964,7 +842,7 @@ async function renderSuggestions() {
         <div class="msg">${escapeHtml(r.message)}</div>
         ${r.reviewNote ? '<div class="who">Note: ' + escapeHtml(r.reviewNote) + '</div>' : ''}
         <div class="sg-btns">
-          ${sgStatus === 'pending' ? `<input type="text" placeholder="Optional note" data-note="${r.id}">
+          ${sgStatus === 'pending' ? `<input class="inp" type="text" placeholder="Optional note" aria-label="Note" data-note="${r.id}">
             <button class="save-meta-btn" style="width:auto;padding:8px 14px;" data-sg="${r.id}" data-to="accepted">Accept</button>
             <button class="remove-btn" data-sg="${r.id}" data-to="dismissed">Dismiss</button>` : ''}
           ${sgStatus === 'accepted' ? `<button class="save-meta-btn" style="width:auto;padding:8px 14px;" data-sg="${r.id}" data-to="done">Mark done (content updated)</button>` : ''}
@@ -976,14 +854,14 @@ async function renderSuggestions() {
       const upd = { status: b.dataset.to, reviewedBy: auth.currentUser.email, reviewedAt: serverTimestamp() };
       if (note && note.value.trim()) upd.reviewNote = note.value.trim();
       try { await updateDoc(doc(db, 'fireToolkitSuggestions', b.dataset.sg), upd); showToast('Marked ' + b.dataset.to); renderSuggestions(); }
-      catch (e) { showToast('Could not update — ' + (e.code || e.message)); }
+      catch (e) { showToast('Could not update — ' + failed('save', 'Fire toolkit correction didn\'t save', e)); }
     }));
   } catch (e) {
-    list.innerHTML = '<div class="empty-note">Could not load — ' + escapeHtml(e.code || e.message) + '</div>';
+    list.innerHTML = '<div class="empty-note">Could not load — ' + escapeHtml(failed('load', 'Fire toolkit corrections didn\'t load', e)) + '</div>';
   }
 }
 document.querySelectorAll('#sgTabs button').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#sgTabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('#sgTabs button').forEach(x => x.classList.toggle('on', x === b));
   sgStatus = b.dataset.st; renderSuggestions();
 }));
 
@@ -998,7 +876,7 @@ document.getElementById('addStaffBtn').addEventListener('click', async () => {
     await renderStaffList();
     showToast('Staff member added: ' + name);
   } catch (e) {
-    showToast('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
+    showToast('Could not add staff member — ' + failed('save', 'Adding a staff member didn\'t save', e));
   }
 });
 
@@ -1033,11 +911,11 @@ getRedirectResult(auth).catch(err => {
 let LEAVE_SETTINGS = { nameMap: {} };
 let STAFF_ROWS = [];        // [{ id, name, position, short }]
 async function loadLeaveSettings() {
-  try { const s = await getDoc(doc(db, 'leaveSettings', 'main')); if (s.exists()) LEAVE_SETTINGS = Object.assign({ nameMap: {} }, s.data()); } catch (e) { console.warn('leave settings not loaded', e); }
+  try { const s = await getDoc(doc(db, 'leaveSettings', 'main')); if (s.exists()) LEAVE_SETTINGS = Object.assign({ nameMap: {} }, s.data()); } catch (e) { console.warn('leave settings not loaded', e); failed('load', 'Leave settings didn\'t load', e); }
 }
 async function loadStaffRows() {
   try { const snap = await getDocs(collection(db, 'staff')); STAFF_ROWS = []; snap.forEach(d => STAFF_ROWS.push(Object.assign({ id: d.id.toLowerCase() }, d.data()))); }
-  catch (e) { console.warn('staff not loaded', e); }
+  catch (e) { console.warn('staff not loaded', e); failed('load', 'Staff names didn\'t load', e); }
   STAFF_ROWS.sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
 }
 // Match a name from a rota spreadsheet to a staff email: a saved match first,
@@ -1073,7 +951,8 @@ async function renderNamesCard() {
       if (x.planned && !x.plannedEmail) note(x.planned);
       (x.parts || []).forEach(p => { if (!p.email) note(p.name); });
     });
-  } catch (e) { card.hidden = true; return; }
+  } catch (e) { card.hidden = true; failed('load', 'Names to match didn\'t load', e); return; }
+  setCount('namesCount', names.size);
   if (!names.size) { card.hidden = true; return; }
   card.hidden = false;
   document.getElementById('nameRows').innerHTML = [...names.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([n, c]) => {
@@ -1090,7 +969,7 @@ async function saveNames() {
     LEAVE_SETTINGS.nameMap = map;
     showToast('Names matched');
     renderNamesCard();
-  } catch (e) { showToast('Could not save — ' + (e.code || e.message)); }
+  } catch (e) { showToast('Could not save — ' + failed('save', 'Names to match didn\'t save', e)); }
 }
 
 // ---- Live apps (Rob only): changes wait until Save ----
@@ -1136,7 +1015,7 @@ async function saveLiveApps() {
     liveDraft = {};
     showToast('Saved — the homepage has changed');
     renderStatusList();
-  } catch (e) { showToast('Couldn\'t save — ' + (e.code || e.message)); }
+  } catch (e) { showToast('Couldn\'t save — ' + failed('save', 'Live apps didn\'t save', e)); }
 }
 
 // ---- Export: what's in the database now, in the import layout ----
@@ -1165,7 +1044,7 @@ async function runExport() {
     entries.sort((a, b) => String(a.id).localeCompare(String(b.id)));
     downloadFile(`${type.id}-export-${today}.json`, JSON.stringify({ importType: type.id, source: 'Export from the database ' + today, entries }, null, 1), 'application/json');
     showToast(entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') + ' exported');
-  } catch (e) { showToast('Export failed — ' + (e.code || e.message)); }
+  } catch (e) { showToast('Export failed — ' + failed('load', 'Export didn\'t load', e)); }
   finally { btn.disabled = false; }
 }
 
@@ -1259,7 +1138,7 @@ async function runRotaImport() {
     renderNamesCard();
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Try again';
-    impMsg('err', 'Import failed — ' + escapeHtml(e.code || e.message));
+    impMsg('err', 'Import failed — ' + escapeHtml(failed('save', 'Rota import didn\'t save', e)));
   }
 }
 async function exportRotaXlsx(snap, today) {
@@ -1285,26 +1164,127 @@ async function exportRotaXlsx(snap, today) {
   showToast('Rota exported (' + days.length + ' days, as it is in the app now)');
 }
 // ═══════════════════════════════════════════════════════════════════════════
+//  v4.0 (27 Oct 2026): tabs, and the Errors tab (Rob only)
+// ═══════════════════════════════════════════════════════════════════════════
+function setCount(id, n) { const el = document.getElementById(id); if (!el) return; el.textContent = n > 99 ? '99+' : String(n); el.hidden = !n; }
+const TABS = ['staff', 'import', 'corrections', 'errors'];
+let IS_OWNER = false;
+function showTab(name) {
+  if (!TABS.includes(name) || (name === 'errors' && !IS_OWNER)) name = 'staff';
+  document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => { p.hidden = p.dataset.pane !== name; });
+  if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  if (name === 'errors') renderErrors(true);
+}
+document.getElementById('tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (t) showTab(t.dataset.tab); });
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
+// ---- Errors: written by sw-shared.js on every page that has it; only the
+// owner can read them (rules: appErrors). One record per error, per person,
+// per page, per day, with a count. Cleared after 90 days when this tab opens.
+let ERRS = [], errFilter = 'open', errTidied = false;
+const ERR_KIND = { crash: 'Crash', save: 'Didn\'t save', load: 'Didn\'t load' };
+function errWhen(r) {
+  const t = r.lastAt && r.lastAt.toDate ? r.lastAt.toDate() : null;
+  const d = t || new Date(r.day + 'T12:00:00');
+  return { day: d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), time: t ? t.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase() : '' };
+}
+function staffName(email) { const s = STAFF_ROWS.find(x => x.id === String(email || '').toLowerCase()); return (s && s.name) || email || 'Not signed in'; }
+async function tidyOldErrors() {
+  if (errTidied) return 0;
+  errTidied = true;
+  const cut = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  const old = ERRS.filter(r => (r.day || '') < cut);
+  if (!old.length) return 0;
+  await commitInChunks(old.map(r => batch => batch.delete(doc(db, 'appErrors', r.id))));
+  ERRS = ERRS.filter(r => (r.day || '') >= cut);
+  return old.length;
+}
+async function renderErrors(reload) {
+  const list = document.getElementById('errList');
+  if (reload) {
+    list.innerHTML = '<div class="empty-note">Loading…</div>';
+    try {
+      const snap = await getDocsFromServer(collection(db, 'appErrors'));
+      ERRS = []; snap.forEach(d => ERRS.push(Object.assign({ id: d.id }, d.data())));
+    } catch (e) {
+      list.innerHTML = e.code === 'permission-denied'
+        ? '<div class="banner bad"><i class="ti ti-lock"></i><div>The database isn\'t letting this page read errors. The Firestore rules for <code>appErrors</code> probably aren\'t published yet (see the upload checklist).</div></div>'
+        : '<div class="empty-note">Couldn\'t load errors — ' + escapeHtml(e.code || e.message) + '</div>';
+      return;
+    }
+    let gone = 0;
+    try { gone = await tidyOldErrors(); } catch (e) { console.warn('old errors not cleared', e); }
+    if (gone) showToast('Cleared ' + gone + ' error' + (gone === 1 ? '' : 's') + ' older than 90 days');
+  }
+  ERRS.sort((a, b) => ((b.lastAt && b.lastAt.seconds) || 0) - ((a.lastAt && a.lastAt.seconds) || 0) || String(b.day).localeCompare(String(a.day)));
+  const open = ERRS.filter(r => !r.dealt);
+  setCount('errCount', open.length);
+  const rows = errFilter === 'open' ? open : errFilter === 'dealt' ? ERRS.filter(r => r.dealt) : ERRS;
+  document.getElementById('errAllDealt').hidden = !(errFilter !== 'dealt' && rows.some(r => !r.dealt));
+  if (!rows.length) { list.innerHTML = `<div class="empty-note">${errFilter === 'open' ? 'Nothing to look at. No errors waiting.' : 'Nothing here.'}</div>`; return; }
+  list.innerHTML = rows.map(r => {
+    const w = errWhen(r);
+    return `<div class="err-row${r.dealt ? ' dealt' : ''}">
+      <div class="err-when"><b>${escapeHtml(w.day)}</b><span>${escapeHtml(w.time ? 'last at ' + w.time : '')}</span>${(r.count || 1) > 1 ? `<div><span class="err-n">×${r.count}</span></div>` : ''}</div>
+      <div><div class="err-msg">${escapeHtml(r.message || '')}</div>
+        <div class="err-meta"><span class="tag ${r.kind === 'crash' ? 'bad' : 'warn'}">${escapeHtml(ERR_KIND[r.kind] || r.kind || '')}</span><span><b>${escapeHtml(r.page || '')}</b> ${escapeHtml(r.version || '')}</span><span>${escapeHtml(staffName(r.email))}</span><span>${escapeHtml([r.device, r.browser].filter(Boolean).join(' · '))}</span></div>
+        ${r.where ? `<div class="err-where">${escapeHtml(r.where)}</div>` : ''}
+        ${r.dealt && r.dealtBy ? `<div class="err-meta">Dealt with by ${escapeHtml(staffName(r.dealtBy))}</div>` : ''}</div>
+      <div class="err-acts">${r.dealt ? `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="open">Not dealt with</button>` : `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="dealt"><i class="ti ti-check"></i> Dealt with</button>`}</div>
+    </div>`;
+  }).join('');
+}
+async function markErrors(ids, dealt) {
+  const who = auth.currentUser.email.toLowerCase();
+  const upd = dealt ? { dealt: true, dealtAt: serverTimestamp(), dealtBy: who } : { dealt: false };
+  try {
+    await commitInChunks(ids.map(id => batch => batch.update(doc(db, 'appErrors', id), upd)));
+    ERRS.forEach(r => { if (ids.includes(r.id)) Object.assign(r, { dealt, dealtBy: dealt ? who : r.dealtBy }); });
+    renderErrors(false);
+  } catch (e) { showToast('Couldn\'t save — ' + failed('save', 'Marking errors didn\'t save', e)); }
+}
+document.getElementById('errList').addEventListener('click', e => { const b = e.target.closest('[data-err]'); if (b) markErrors([b.dataset.err], b.dataset.to === 'dealt'); });
+document.getElementById('errChips').addEventListener('click', e => {
+  const c = e.target.closest('[data-ef]'); if (!c) return;
+  errFilter = c.dataset.ef;
+  document.querySelectorAll('#errChips .chip').forEach(x => x.classList.toggle('on', x === c));
+  renderErrors(false);
+});
+document.getElementById('errRefresh').addEventListener('click', () => renderErrors(true));
+document.getElementById('errAllDealt').addEventListener('click', () => {
+  const ids = (errFilter === 'open' ? ERRS.filter(r => !r.dealt) : ERRS.filter(r => !r.dealt)).map(r => r.id);
+  if (ids.length && confirm('Mark ' + ids.length + ' error' + (ids.length === 1 ? '' : 's') + ' as dealt with?')) markErrors(ids, true);
+});
+// Just the count on the tab, without opening it.
+async function loadErrorCount() {
+  try { const snap = await getDocs(query(collection(db, 'appErrors'), where('dealt', '==', false))); setCount('errCount', snap.size); }
+  catch (e) { console.warn('Error count not loaded', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
-const NEWS = {
-  management: [
-    '<b>Directors</b> now have the same access as managers.',
-    '<b>Data import</b> is open to managers, QS and directors. Pick a type first, then use <b>Export</b> to download what\'s there now and see how the file is laid out.',
-    'The <b>on-call rota</b> imports straight from the rota spreadsheet. It only adds days that aren\'t in the app yet.',
-    'There\'s a <b>Help</b> button at the top of every page.'
-  ]
-};
-const HELP = [
-  { q: 'How do I add someone?', a: '<p>Fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add</b>.</p>' },
-  { q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: the homepage list of recent tests, plus Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p>' },
-  { q: 'What\'s "Fills in timesheets"?', a: '<p>Tick it for anyone who does a timesheet every weekday. Untick it for office staff and anyone else who doesn\'t, so they\'re never chased for missing days.</p>' },
-  { q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
-  { q: 'How do I add the next on-call rota?', a: '<p>In <b>Data import</b>, pick <b>On-call rota</b>, choose the rota spreadsheet, then pick the tab (e.g. "144 - 2027") and press <b>Preview</b>.</p><p>Check who\'s who, then press <b>Add</b>. Only days that aren\'t already in the app are added, so swaps made in the app are never overwritten.</p>' },
-  { q: 'What does Export do?', a: '<p>It downloads what\'s in the database now for the type you\'ve picked, laid out the same way the import reads it. Use it to see the layout, or to add to the list and import it back.</p>' },
-  { q: 'What\'s "Names to match"?', a: '<p>Names that came in from a data import (like "Mike" on the rota) that the app hasn\'t linked to a person yet. Pick the right person and press <b>Save</b>, and it remembers for next time. The box goes away once there\'s nothing left to match.</p>' },
-  { q: 'What are fire toolkit corrections?', a: '<p>Suggestions engineers send from the fire toolkit. <b>Accept</b> means it goes into the content at the next update. <b>Dismiss</b> means it doesn\'t.</p>' }
+// What's New is only for new features (standards §15). Nothing new for
+// managers in v4.0; the Errors tab is Rob's, so his note is added at sign-in.
+const NEWS = { management: [] };
+const OWNER_NEWS = [
+  'New <b>Errors</b> tab (only you): crashes, saves that failed and things that didn\'t load on the home page and this page, with who, when and on what. Your home page To do box says when there are some to look at.'
 ];
+const HELP = [
+  { tab: 'Staff', q: 'How do I add someone?', a: '<p>On the <b>Staff</b> tab, fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add staff member</b>.</p>' },
+  { tab: 'Staff', q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p>' },
+  { tab: 'Staff', q: 'What\'s "Fills in timesheets"?', a: '<p>Tick it for anyone who does a timesheet every weekday. Untick it for office staff and anyone else who doesn\'t, so they\'re never chased for missing days.</p>' },
+  { tab: 'Staff', q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
+  { tab: 'Data import', q: 'How do I add the next on-call rota?', a: '<p>On the <b>Data import</b> tab, pick <b>On-call rota</b>, choose the rota spreadsheet, then pick the tab (e.g. "144 - 2027") and press <b>Preview</b>.</p><p>Check who\'s who, then press <b>Add</b>. Only days that aren\'t already in the app are added, so swaps made in the app are never overwritten.</p>' },
+  { tab: 'Data import', q: 'What does Export do?', a: '<p>It downloads what\'s in the database now for the type you\'ve picked, laid out the same way the import reads it. Use it to see the layout, or to add to the list and import it back.</p>' },
+  { tab: 'Data import', q: 'What\'s "Names to match"?', a: '<p>Names that came in from a data import (like "Mike" on the rota) that the app hasn\'t linked to a person yet. Pick the right person and press <b>Save</b>, and it remembers for next time. The box goes away once there\'s nothing left to match.</p>' },
+  { tab: 'Fire toolkit', q: 'What are fire toolkit corrections?', a: '<p>Suggestions engineers send from the fire toolkit. <b>Accept</b> means it goes into the content at the next update. <b>Dismiss</b> means it doesn\'t.</p>' }
+];
+const OWNER_HELP = [
+  { tab: 'Errors', q: 'What\'s on the Errors tab?', a: '<p>Problems the apps hit: crashes, saves that failed and things that didn\'t load. Each line says what, where, who, when, and on what phone or computer. The same error for the same person, page and day is one line, with a count.</p><p>Press <b>Dealt with</b> once it\'s sorted. If it happens again, it comes back.</p><p>Only you can see this tab. Errors are cleared after 90 days.</p>' }
+];
+const TAB_NAMES = { staff: 'Staff', import: 'Data import', corrections: 'Fire toolkit', errors: 'Errors' };
 
 document.getElementById('liveAppsLink').addEventListener('click', openLiveApps);
 document.getElementById('liveClose').addEventListener('click', () => {
@@ -1321,7 +1301,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  const va = await swViewAsInit(user);
+  const va = await SWS.swViewAsInit(user);
   const isManager = await checkManager(va ? va.email : user.email);
 
   if (!isManager) {
@@ -1332,9 +1312,11 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
-  // Live apps: Rob only, and never while viewing as someone else.
+  // Live apps and Errors: Rob only, and never while viewing as someone else.
   const isOwner = !va && (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase());
+  IS_OWNER = isOwner;
   document.getElementById('liveAppsLinkBox').hidden = !isOwner;
+  document.getElementById('errorsTabBtn').hidden = !isOwner;
   // Data import: everyone with management access (v3.0).
   document.getElementById('importCard').hidden = false;
   await Promise.all([loadLeaveSettings(), loadStaffRows()]);
@@ -1342,16 +1324,12 @@ onAuthStateChanged(auth, async (user) => {
   renderStaffList();
   renderSuggestions();
   renderNamesCard();
-  SW = Object.assign(SW, { page: 'management', version: VERSION, level: 'management', news: NEWS, help: HELP });
-  swExtrasStart();
+  showTab(location.hash.slice(1) || 'staff');
+  if (isOwner && location.hash !== '#errors') loadErrorCount();
+  SWS.swExtrasStart({ page: 'management', version: VERSION, level: 'management',
+    news: isOwner ? { management: OWNER_NEWS } : NEWS, help: isOwner ? HELP.concat(OWNER_HELP) : HELP,
+    tab: () => TAB_NAMES[(document.querySelector('#tabs .tab.active') || {}).dataset?.tab] || '' });
 });
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
-  });
-}
 </script>
 </body>
 </html>
