@@ -2,40 +2,47 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Simpson &amp; Wood — Engineer Apps</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
 <style>
   :root{
-    --red:#D0222A; --red-dark:#a51b22; --ink:#1a1a1a;
-    --bg:#f4f3f0; --card:#ffffff; --line:#e2e0da;
-    --grey:#6b6b68; --radius:10px;
+    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea;
+    --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
+    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
+    --amber:#7a4f00; --amber-bg:#fff4dd; --amber-line:#efd59c;
+    --green:#1e6b34; --green-bg:#e9f5ec; --green-line:#b8dcc2;
+    --blue:#1d3c63;  --blue-bg:#eef3fa;  --blue-line:#cfdced;
+    --bad-ink:#7d1418; --bad-line:#f1c4c6;
+    --test-ink:#3d2a63; --test-bg:#e9e4f5; --test-line:#d3c8ea;
+    --orange:#e8731a; --hdr-muted:#8f8f8f; --hdr-link:#e2b0b3;
+    --radius:10px;
   }
   *{box-sizing:border-box;}
-  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink);}
+  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
+  button{font-family:inherit;}
   h1,h2,h3,.label{font-family:'Barlow Condensed',sans-serif;}
   .screen{min-height:100vh;}
   [hidden]{display:none !important;}
 
   /* ---- sign-in ---- */
-  #signin-screen{display:flex; align-items:center; justify-content:center; padding:24px; background:var(--ink);}
-  .signin-card{background:var(--card); border-radius:16px; padding:40px 32px; max-width:380px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,0.35);}
-  .signin-logo{width:100%; max-width:260px; margin:0 auto 20px;}
-  .signin-tagline{color:var(--grey); font-size:15px; margin:0 0 28px;}
-  .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:8px; padding:13px 16px; font-size:15px; font-family:'Barlow',sans-serif; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
-  .btn-primary:hover{background:var(--red-dark);}
-  .error-text{color:var(--red); font-size:13px; margin-top:14px;}
+  #signinScreen{display:flex; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:#fff; border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinErr{color:var(--red); font-size:13px; margin:16px 0 0; max-width:320px;}
 
   /* ---- topbar ---- */
-  .topbar{display:flex; align-items:center; justify-content:space-between; background:var(--ink); padding:10px 20px; height:56px;}
-  .topbar-brand{display:flex; align-items:center; gap:10px;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; min-height:calc(56px + env(safe-area-inset-top));}
+  .topbar-brand{display:flex; align-items:center; gap:10px; text-decoration:none;}
   .topbar-logo{height:28px;}
-  #versionLabel{color:#8a8a86; font-size:11px; margin:0;}
+  #versionLabel{color:var(--hdr-muted); font-size:11px; margin:0;}
   .topbar-right{display:flex; align-items:center; gap:6px;}
-  .user-name{color:#cfcfcf; font-size:13px; margin-right:8px;}
-  .icon-btn{background:none; border:none; color:#cfcfcf; width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
+  .user-name{color:var(--field); font-size:13px; margin-right:8px;}
+  .icon-btn{background:none; border:none; color:var(--field); width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
   .icon-btn:hover{background:rgba(255,255,255,0.1); color:#fff;}
 
   /* ---- layout / tiles (mobile-first grid) ---- */
@@ -43,7 +50,7 @@
   .tool-nav{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:12px; padding:20px;}
   .tool-section-label{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; grid-column:1/-1; margin:8px 0 -4px;}
   .tool-section-label:first-child{margin-top:0;}
-  .tile{background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:16px 8px; text-align:center; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;}
+  .tile{position:relative; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 8px; text-align:center; text-decoration:none; color:var(--ink); display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;}
   .tile i{font-size:24px; color:var(--red);}
   .tile span{font-size:12.5px; line-height:1.25;}
   .tile.disabled{opacity:0.45; cursor:default;}
@@ -57,8 +64,8 @@
   .soon-list{font-size:12.5px; color:var(--grey); line-height:1.6; padding:2px 0 4px 21px;}
   .content-pane{display:none;}
   .icon-wrap{position:relative; display:inline-flex; align-items:center; justify-content:center;}
-  .tile .icon-wrap .badge-check{position:absolute; bottom:-3px; right:-4px; font-size:10px !important; background:var(--card); border-radius:50%; color:#2e8b57 !important;}
-  .tile .icon-wrap .badge-count{position:absolute; top:-6px; right:-8px; background:var(--red); color:#fff !important; font-size:9.5px !important; font-weight:600; min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; font-family:'Barlow',sans-serif; line-height:1;}
+  /* v3.0: the QS count sits at the end of the row (PC) or on the tile's corner (phone), never on the icon */
+  .tile .tile-count{position:absolute; top:-7px; right:-7px; background:var(--red); color:#fff; font-size:11px; font-weight:600; min-width:20px; height:18px; border-radius:20px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; line-height:1;}
   .activity-list{width:100%; max-width:640px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(100vh - 130px); padding:4px 2px;}
   .activity-item{display:flex; align-items:center; gap:12px; background:var(--card); border:0.5px solid var(--line); border-radius:10px; padding:12px 14px; text-decoration:none; color:var(--ink);}
   .activity-item:hover{border-color:var(--red);}
@@ -68,8 +75,8 @@
   .activity-item .title{font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .activity-item .meta{font-size:11.5px; color:var(--grey); margin-top:1px;}
   .activity-pill{font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap;}
-  .activity-pill.pending{background:#fbe9e9; color:#a32d2d;}
-  .activity-pill.done{background:#eaf3de; color:#3b6d11;}
+  .activity-pill.pending{background:var(--red-tint); color:var(--bad-ink);}
+  .activity-pill.done{background:var(--green-bg); color:var(--green);}
   .activity-heading{font-size:13px; color:var(--grey); text-transform:uppercase; letter-spacing:0.04em; margin:14px 0 2px; width:100%; max-width:640px;}
   .activity-heading:first-child{margin-top:0;}
   .content-pane-inner{width:100%; max-width:640px; display:flex; flex-direction:column; align-items:flex-start;}
@@ -79,18 +86,19 @@
   @media (min-width:900px){
     .layout{display:flex; min-height:calc(100vh - 56px);}
     .tool-nav{display:flex; flex-direction:column; width:230px; background:var(--ink); padding:20px 14px; gap:2px; flex-shrink:0; grid-template-columns:none;}
-    .tool-section-label{color:#8a8a86; margin:14px 0 2px; padding:0 10px;}
+    .tool-section-label{color:var(--hdr-muted); margin:14px 0 2px; padding:0 10px;}
     .tool-section-label:first-child{margin-top:0;}
     .tile{flex-direction:row; justify-content:flex-start; text-align:left; background:none; border:none; border-radius:8px; padding:9px 10px; gap:10px;}
     .tile:hover{background:rgba(255,255,255,0.06);}
     .tile i{font-size:17px; width:20px;}
-    .tile span{font-size:13.5px; color:#e4e4e2;}
+    .tile span{font-size:13.5px; color:var(--line);}
+    .tile .tile-count{position:static; margin-left:auto; flex-shrink:0; font-size:11.5px; min-width:22px; height:20px; padding:0 7px; color:#fff;}
     .tile.disabled .soon{display:inline; margin:0 0 0 6px; font-size:10.5px;}
     .tile.disabled span{display:flex; align-items:center;}
     .soon-wrap{margin-top:14px; padding:0 10px;}
-    .soon-btn{color:#8a8a86; font-size:12.5px;}
-    .soon-btn:hover{color:#cfcfcf;}
-    .soon-list{color:#8a8a86; padding-left:21px;}
+    .soon-btn{color:var(--hdr-muted); font-size:12.5px;}
+    .soon-btn:hover{color:var(--field);}
+    .soon-list{color:var(--hdr-muted); padding-left:21px;}
     .content-pane{display:flex; flex:1; align-items:flex-start; justify-content:center; color:var(--grey); font-size:15px; padding:32px 40px; overflow-y:auto;}
   }
 
@@ -101,23 +109,23 @@
   .feed:empty{display:none;}
   .feed .activity-list{max-height:none; overflow:visible; max-width:none;}
   .hb-date{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:600; color:var(--ink); line-height:1.1;}
-  .hb-notice{display:flex; gap:9px; align-items:flex-start; background:#eef3fb; border:1px solid #c9d8ef; color:#1f4f8a; border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.4;}
+  .hb-notice{display:flex; gap:9px; align-items:flex-start; background:var(--blue-bg); border:1px solid var(--blue-line); color:var(--blue); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.4;}
   .hb-notice i{font-size:18px; flex-shrink:0;}
-  .hb-notice.bad{background:#fbe9e9; border-color:#efc4c4; color:#a32d2d;}
+  .hb-notice.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
   .hb-card{background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:14px 16px; color:var(--ink); font-size:14.5px; line-height:1.4;}
   .hb-card h3{margin:0 0 8px; font-size:18px; font-weight:600; display:flex; align-items:center; gap:8px;}
   .hb-card h3 i{color:var(--red); font-size:20px;}
   .hb-alert{border-left:4px solid var(--red);}
-  .hb-row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:7px 0; border-top:1px solid #efede8; color:var(--ink); text-decoration:none;}
+  .hb-row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:7px 0; border-top:1px solid var(--line); color:var(--ink); text-decoration:none;}
   .hb-card h3 + .hb-row{border-top:none;}
   .hb-row .w{color:var(--grey);}
   .hb-row .w b{color:var(--ink); margin-right:4px;}
   .hb-row .n{font-weight:600; text-align:right; white-space:nowrap;}
-  .hb-row.now{background:#fbf1f1; margin:0 -8px; padding:7px 8px; border-radius:8px; border-top-color:transparent;}
+  .hb-row.now{background:var(--red-tint); margin:0 -8px; padding:7px 8px; border-radius:8px; border-top-color:transparent;}
   .hb-row.mine .n{color:var(--red);}
   .hb-row i{color:var(--red); margin-right:4px;}
   a.hb-row:hover{color:var(--red);}
-  .hb-red{color:#a32d2d; font-weight:600;}
+  .hb-red{color:var(--bad-ink); font-weight:600;}
   .hb-big{font-size:17px; font-weight:600;}
   .hb-sub{color:var(--grey); font-size:13.5px; margin-top:2px;}
   .hb-sub b{color:var(--ink);}
@@ -126,14 +134,14 @@
   .hb-acts{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
   .hb-btn{display:inline-flex; align-items:center; gap:6px; background:var(--red); color:#fff; border:1px solid var(--red); border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; text-decoration:none;}
   .hb-btn:hover{background:var(--red-dark);}
-  .hb-btn.ghost{background:#fff; color:var(--ink); border-color:var(--line);}
+  .hb-btn.ghost{background:var(--card); color:var(--ink); border-color:var(--line);}
   .hb-btn.ghost:hover{border-color:var(--red);}
-  .hb-swap{padding:8px 0; border-top:1px solid #efede8;}
+  .hb-swap{padding:8px 0; border-top:1px solid var(--line);}
   .hb-card h3 + .hb-swap{border-top:none; padding-top:0;}
-  .hb-pill{font-size:12px; font-weight:600; padding:2px 9px; border-radius:20px; background:#f1efe9; color:var(--ink); white-space:nowrap;}
-  .hb-pill.red{background:#fbe9e9; color:#a32d2d;}
-  .hb-pill.amber{background:#fdf1d8; color:#8a5a00;}
-  .hb-pill.green{background:#eaf3de; color:#3b6d11;}
+  .hb-pill{font-size:12px; font-weight:600; padding:2px 9px; border-radius:20px; background:var(--soft); color:var(--ink); white-space:nowrap;}
+  .hb-pill.red{background:var(--red-tint); color:var(--bad-ink);}
+  .hb-pill.amber{background:var(--amber-bg); color:var(--amber);}
+  .hb-pill.green{background:var(--green-bg); color:var(--green);}
   @media (max-width:899px){
     .layout{display:flex; flex-direction:column;}
     .content-pane{display:block; order:-1; padding:16px 16px 0;}
@@ -144,8 +152,6 @@
     .tile i{font-size:20px;}
     .tile span{font-size:12px;}
   }
-  /* The small tick on the report tiles: keep it a circle (the sidebar's 20px icon width was stretching it into a pill) */
-  .tile .icon-wrap .badge-check{width:auto; height:auto; line-height:1;}
 
   /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
   .sw-hbox{display:flex; gap:6px; margin-left:auto;}
@@ -199,8 +205,8 @@
   .swu-row .swu-why{color:#a32d2d;}
   .swu-pill{font-size:12px; font-weight:700; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:2px 9px; white-space:nowrap;}
   .swu-note{font-size:13.5px; color:#5c5c5c; margin:12px 0 0; line-height:1.45;}
-  .tile .unsent-pill{display:inline-block; margin-left:6px; background:#fff3cd; color:#8a6d1a; border-radius:20px; padding:1px 7px; font-size:10.5px; font-weight:600; white-space:nowrap;}
-  .tile .unsent-pill.bad{background:#fbe9e9; color:#a32d2d;}
+  .tile .unsent-pill{display:inline-block; margin-left:6px; background:var(--amber-bg); color:var(--amber); border-radius:20px; padding:1px 7px; font-size:10.5px; font-weight:600; white-space:nowrap;}
+  .tile .unsent-pill.bad{background:var(--red-tint); color:var(--bad-ink);}
   @media (max-width:899px){ .tile .unsent-pill{display:block; margin:4px auto 0; width:max-content;} }
   /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
   .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
@@ -214,21 +220,20 @@
 </head>
 <body>
 
-<div id="signinScreen" class="screen">
-  <div class="signin-card">
-    <img src="sw-logo.png" alt="Simpson &amp; Wood" class="signin-logo">
-    <p class="signin-tagline">Sign in with your Simpson &amp; Wood Microsoft account to get to your tools.</p>
-    <button id="msSignInBtn" class="btn-primary"><i class="ti ti-brand-windows" aria-hidden="true"></i>Sign in with Microsoft</button>
-    <p id="signinErr" class="error-text"></p>
-  </div>
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Engineer apps</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to get to your tools.</p>
+  <button id="msSignInBtn" class="ms-btn"><i class="ti ti-brand-windows" aria-hidden="true"></i> Sign in with Microsoft</button>
+  <p id="signinErr"></p>
 </div>
 
 <div id="appRoot" class="screen" hidden>
   <header class="topbar">
-    <div class="topbar-brand">
+    <a class="topbar-brand" href="index.html" title="Home">
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood" class="topbar-logo">
       <p id="versionLabel">v1.0</p>
-    </div>
+    </a>
     <div class="topbar-right">
       <span id="whoName" class="user-name"></span>
       <button id="mgmtBtn" class="icon-btn" hidden title="Management"><i class="ti ti-settings" aria-hidden="true"></i></button>
@@ -254,7 +259,7 @@ import {
   collection, getDocs, query, where, orderBy, limit, setDoc
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-const VERSION = "v2.9";
+const VERSION = "v3.0";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -268,6 +273,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v3.0 (27 Oct 2026): design catch-up (guide colours, plain sign-in with the
+// black Microsoft button, Barlow 400-700, icons pinned to Tabler 3.49.0, logo
+// links home), QS counts moved to the end of the row / tile corner with the
+// ticks gone, and the Timesheet fallback link fixed.
 // v2.9: the multi-tab cache, so this page, the engineer apps and any second
 // tab share the phone's saved data and unsent queue safely.
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
@@ -513,10 +522,11 @@ msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' 
 
 // Tool catalogue. "pairKey" maps to the live/coming-later flag stored in
 // Firestore at config/homepage -> tools.{pairKey}. v2.6: the timesheet is on
-// the Live apps panel too. Until it has an entry there it stays live on its
-// old file (alwaysLive); once it has one, the panel decides (off = off).
+// the Live apps panel too. Until it has an entry there it stays live on
+// timesheet.html (alwaysLive); once it has one, the panel decides (off = off).
+// v3.0: the fallback pointed at sw-timesheet.html, deleted 23 Oct 2026.
 const TOOLS = [
-  { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "sw-timesheet.html", pairKey: "timesheet", alwaysLive: true },
+  { section: "Daily tools", id: "timesheet", name: "Timesheet", icon: "ti-clock", href: "timesheet.html", pairKey: "timesheet", alwaysLive: true },
   { section: "Daily tools", id: "holiday", name: "Leave & on-call", icon: "ti-calendar-event", href: "leave.html", pairKey: "holiday" },
   { section: "Reference", id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame", href: "fire-toolkit.html", pairKey: "firetoolkit" },
   { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
@@ -551,7 +561,7 @@ function timesheetsTile(tools){
   const ts = document.createElement('a');
   ts.href = entry.reportHref || 'timesheet-report.html';
   ts.className = 'tile';
-  ts.innerHTML = '<span class="icon-wrap"><i class="ti ti-clock" aria-hidden="true"></i><i class="ti ti-circle-check badge-check" aria-hidden="true"></i></span><span>Timesheets &amp; leave</span>';
+  ts.innerHTML = '<i class="ti ti-clock" aria-hidden="true"></i><span>Timesheets &amp; leave</span>';
   return ts;
 }
 
@@ -629,9 +639,9 @@ function renderTools(tools, isManager, isOffice){
     el.href = entry.reportHref;
     el.className = 'tile';
     el.innerHTML =
-      '<span class="icon-wrap"><i class="ti ' + tool.icon + '" aria-hidden="true"></i><i class="ti ti-circle-check badge-check" aria-hidden="true"></i>' +
-      '<span class="badge-count" data-count-id="' + tool.id + '" hidden>0</span></span>' +
-      '<span>' + tool.name + ' reports</span>';
+      '<i class="ti ' + tool.icon + '" aria-hidden="true"></i>' +
+      '<span>' + tool.name + ' reports</span>' +
+      '<span class="tile-count" data-count-id="' + tool.id + '" hidden>0</span>';
     nav.appendChild(el);
   });
   addSoon();
@@ -1085,18 +1095,17 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════════════════
 const NEWS = {
   engineer: [
-    'If any of your tests <b>haven\'t reached the office yet</b>, a yellow bar at the top of the home page says so, and the <b>Isolator testing</b> tool shows how many. Tap the bar to see which ones.',
-    'Keep the app open with signal and they go up on their own. Don\'t clear the app while the bar is showing.',
-    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
+    'The sign-in page now looks the same as the other tools.',
+    'Fixed a problem that could stop the app opening with no signal after an update.'
   ],
   office: [
-    'If any tests saved on this device <b>haven\'t reached the office yet</b>, a yellow bar at the top says so. Tap it to see which ones.',
-    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
+    'The sign-in page now looks the same as the other tools.',
+    'Fixed a problem that could stop the app opening with no signal after an update.'
   ],
   management: [
-    'If any tests saved on this device <b>haven\'t reached the office yet</b>, a yellow bar at the top says so, and the tool shows how many. Engineers see the same on their phones.',
-    'The isolator reports have a new <b>Tidy names</b> tab for merging different spellings of the same name.',
-    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
+    'The number of tests waiting for QS is now at the <b>end of the report\'s line</b> (on a phone, on the corner of the tile), so it no longer covers the icon. The small green ticks have gone.',
+    'The sign-in page now looks the same as the other tools.',
+    'Fixed a problem that could stop the app opening with no signal after an update.'
   ]
 };
 const HELP = [
@@ -1111,7 +1120,7 @@ const HELP = [
   { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
   { levels: ['office', 'management'], q: 'What\'s in the To do box?', a: '<p>Everything waiting for the office: holiday and swaps to approve, swaps the other person hasn\'t answered (red when it\'s been 48 hours or the shift is close), missing timesheets and the work diary.</p><p>Tap a line and Timesheets &amp; leave opens on the right tab. When there\'s nothing to do, it says so.</p>' },
   { levels: ['office', 'management'], q: 'What\'s the list under the boxes?', a: '<p>Recent test results from engineers. Anything still to be checked is at the top under <b>Ready for QS</b>. It only shows on a computer.</p>' },
-  { levels: ['management'], q: 'What\'s the red number on a report tile?', a: '<p>How many test results are waiting to be QSed for that tool. The same counts are in the To do box.</p>' },
+  { levels: ['management'], q: 'What\'s the red number by a report?', a: '<p>How many test results are waiting to be QSed for that tool. It\'s at the end of the line (on a phone, on the corner of the tile). The same counts are in the To do box.</p>' },
   { levels: ['management'], q: 'Where do I add staff or change someone\'s position?', a: '<p>Press the <b>cog</b> at the top right to open Management.</p>' }
 ];
 

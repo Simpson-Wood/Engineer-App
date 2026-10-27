@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v24';
+const CACHE_NAME = 'sw-engineer-apps-shell-v25';
 
 const APP_SHELL = [
   './',
@@ -24,7 +24,6 @@ const APP_SHELL = [
   'fire-toolkit.html',
   'isolator-interlock-test.html',
   'isolator-interlock-report.html',
-  'sw-timesheet.html',
   'timesheet.html',
   'timesheet-report.html',
   'leave.html',
@@ -36,11 +35,20 @@ const APP_SHELL = [
   'icon-512-maskable.png'
 ];
 
+// v25 (27 Oct 2026): each file is saved on its own. cache.addAll() gives up
+// on the whole list if a single file is missing (as happened when
+// sw-timesheet.html was deleted on 23 Oct but was still listed here), which
+// would quietly leave phones with nothing saved for offline use. Now a missing
+// file is skipped and logged, and everything else is still saved.
+// Every file listed here must exist on the site.
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .catch((err) => console.error('Service worker: failed to precache app shell', err))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(APP_SHELL.map((url) =>
+        cache.add(new Request(url, { cache: 'reload' }))
+          .catch((err) => console.error('Service worker: could not save ' + url + ' for offline use', err))
+      ))
+    )
   );
   self.skipWaiting();
 });
