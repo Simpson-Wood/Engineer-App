@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v27';
+const CACHE_NAME = 'sw-engineer-apps-shell-v28';
 
 const APP_SHELL = [
   './',
@@ -45,6 +45,7 @@ const APP_SHELL = [
 // Every file listed here must exist on the site.
 // v26 (27 Oct 2026): adds the shared files sw-design.css and sw-shared.js.
 // v27 (28 Oct 2026): timesheet v5.0, Timesheets & leave v4.0, management v4.1, sw-shared.js v1.1.
+// v28 (28 Oct 2026): isolator test v19.0, isolator reports v18.0, management v4.2, home page v4.1.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>

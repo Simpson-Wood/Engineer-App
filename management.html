@@ -39,6 +39,15 @@
   .staff-ctl .tick{font-size:14px; white-space:nowrap;}
   .staff-ctl .inp{width:auto; min-height:40px; padding-top:8px; padding-bottom:8px;}
   .short-in{width:96px !important;}
+  /* signatures (v4.2) */
+  .sig-btn{display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:4px 10px; background:#fff; border:1.5px solid var(--field); border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; color:var(--ink);}
+  .sig-btn img{height:30px; max-width:96px; display:block;}
+  .sig-btn.none{border-style:dashed; color:var(--grey);}
+  .sig-btn i{font-size:17px;}
+  .sig-prev{border:1px solid var(--line); border-radius:10px; background:#fff; padding:10px; text-align:center; min-height:90px; display:flex; align-items:center; justify-content:center; margin:8px 0 12px;}
+  .sig-prev img{max-width:100%; max-height:160px;}
+  .sig-msg{font-size:13.5px; color:var(--grey); margin:0 0 8px;}
+  .sig-msg.bad{color:var(--red);}
   .remove-btn{background:#fff; border:1.5px solid var(--field); color:var(--red); font-size:14px; font-weight:700; padding:8px 12px; min-height:40px; border-radius:8px; cursor:pointer;}
   .remove-btn:disabled{opacity:.45; cursor:not-allowed;}
   .save-meta-btn{width:100%; min-height:48px; background:var(--red); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer;}
@@ -190,7 +199,8 @@
       <div class="notes">
         <h3>Good to know</h3>
         <p><b>Manager, QS and Director</b> get management access straight away; changing it away removes it. <b>Office</b> sees Timesheets &amp; leave, but not this page.</p>
-        <p><b>Short</b> is the name on the on-call calendar on phones. Leave it blank to use their initials.</p>
+        <p><b>Short</b> is the name on the on-call calendar on phones and at the end of each row on the isolator certificate. Leave it blank to use their initials.</p>
+        <p><b>Signatures</b> go on the isolator Final certificate. Only Manager, QS and Director can see them.</p>
       </div>
       <div class="more-link" id="liveAppsLinkBox" hidden><a id="liveAppsLink"><i class="ti ti-toggle-right"></i> Live apps (only you)</a></div>
       <div class="card" id="liveAppsCard" hidden>
@@ -285,12 +295,15 @@ import {
 // from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
+// v4.2 (28 Oct 2026): signatures. A manager adds each person's signature
+// from a photo (Staff tab). Kept in staffSignatures/{email}, which only
+// managers can read; the isolator certificate uses them.
 // v4.1 (28 Oct 2026): Errors tab marks known Firebase bugs "Firebase's — not
 // ours to fix" (still listed and counted, so you can see how often).
 // v4.0 (27 Oct 2026): shared files; design catch-up (full width, tabs,
 // guide fields and buttons, notes at the bottom); Errors tab (Rob only);
 // failed saves and loads are reported; multi-tab cache.
-const VERSION = "v4.1";
+const VERSION = "v4.2";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -402,7 +415,7 @@ async function renderStaffList() {
   const list = document.getElementById('staffList');
   const POSITIONS = ['Apprentice electrician', 'Electrical improver', 'Electrician', 'QS', 'Office', 'Manager', 'Director'];
   try {
-    const snap = await getDocs(collection(db, 'staff'));
+    const [snap, sigs] = await Promise.all([getDocs(collection(db, 'staff')), loadSignatures()]);
     if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
     const rows = [];
     snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
@@ -417,6 +430,7 @@ async function renderStaffList() {
           <label class="tick" title="Expected to fill in a timesheet every weekday">
             <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'}> Fills in timesheets
           </label>
+          ${sigs ? sigButton(r.id, sigs[r.id.toLowerCase()]) : ''}
           <input class="inp short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" aria-label="Short name" title="Short name on the on-call calendar (phones). Blank = initials.">
           <select class="inp position-select" data-email="${r.id}" aria-label="Position">
             ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
@@ -456,11 +470,13 @@ async function renderStaffList() {
         }
       });
     });
+    list.querySelectorAll('[data-sig]').forEach(btn => btn.addEventListener('click', () => openSignature(btn.dataset.sig, (rows.find(x => x.id === btn.dataset.sig) || {}).name, sigs[btn.dataset.sig.toLowerCase()])));
     list.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
         try {
           await deleteDoc(doc(db, 'staff', btn.dataset.email));
+          deleteDoc(doc(db, 'staffSignatures', btn.dataset.email.toLowerCase())).catch(() => {});
           await renderStaffList();
         }
         catch (e) { showToast('Could not remove — ' + failed('save', 'Removing a staff member didn\'t save', e)); }
@@ -469,6 +485,97 @@ async function renderStaffList() {
   } catch (e) {
     list.innerHTML = '<div class="empty-note">Could not load — ' + escapeHtml(failed('load', 'Staff list didn\'t load', e)) + '</div>';
   }
+}
+
+// ---------------------------------------------------------------------------
+// SIGNATURES (v4.2, agreed 28 Oct 2026)
+// A manager takes a photo of someone's signature on white paper. The page
+// makes the paper white, trims to the ink and keeps a small JPEG in
+// staffSignatures/{email} (managers only, never on the staff record, which
+// everyone can read). The isolator Final certificate uses it, and can't be
+// made until everyone who tested, and whoever authorises it, has one.
+// ---------------------------------------------------------------------------
+async function loadSignatures() {
+  try {
+    const out = {};
+    (await getDocs(collection(db, 'staffSignatures'))).forEach(d => { out[d.id.toLowerCase()] = d.data(); });
+    return out;
+  } catch (e) { failed('load', 'Signatures didn\'t load', e); return null; }
+}
+function sigButton(email, sig) {
+  return sig
+    ? `<button type="button" class="sig-btn" data-sig="${escapeHtml(email)}" title="Signature"><img src="${sig.image}" alt="Signature"></button>`
+    : `<button type="button" class="sig-btn none" data-sig="${escapeHtml(email)}"><i class="ti ti-signature"></i>Add signature</button>`;
+}
+// Photo → clean signature: white paper, dark ink, trimmed, at most 600×200.
+function cleanSignature(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+      const d = x.getImageData(0, 0, w, h), px = d.data;
+      let sum = 0;
+      for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      const cut = Math.max(80, Math.min(200, sum / (px.length / 4) - 45));   // a bit darker than the paper
+      let x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+        const i = (yy * w + xx) * 4, l = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+        if (l > cut) { px[i] = px[i + 1] = px[i + 2] = 255; }
+        else { const v = Math.round(l * 0.5); px[i] = px[i + 1] = px[i + 2] = v; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+        px[i + 3] = 255;
+      }
+      if (x1 < 0 || (x1 - x0) < 20 || (y1 - y0) < 8) { reject(new Error('No signature found in that photo. Try again on plain white paper, close up.')); return; }
+      x.putImageData(d, 0, 0);
+      const pad = 10; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+      const cw = x1 - x0 + 1, ch = y1 - y0 + 1, s2 = Math.min(1, 600 / cw, 200 / ch);
+      const o = document.createElement('canvas'); o.width = Math.round(cw * s2); o.height = Math.round(ch * s2);
+      const ox = o.getContext('2d'); ox.fillStyle = '#fff'; ox.fillRect(0, 0, o.width, o.height);
+      ox.drawImage(c, x0, y0, cw, ch, 0, 0, o.width, o.height);
+      resolve({ image: o.toDataURL('image/jpeg', 0.9), w: o.width, h: o.height });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file isn\'t a photo the browser can open.')); };
+    img.src = url;
+  });
+}
+function openSignature(email, name, current) {
+  let made = null;
+  const m = SWS.swModal(`<div class="sw-modal"><h3>Signature: ${escapeHtml(name || email)}</h3>
+    <p class="sig-msg">Take a photo of their signature in dark pen on plain white paper, close up.</p>
+    <div class="sig-prev" data-prev>${current ? `<img src="${current.image}" alt="Signature">` : '<span class="sig-msg">No signature saved yet.</span>'}</div>
+    <input type="file" accept="image/*" class="inp" data-file>
+    <p class="sig-msg" data-msg></p>
+    <div class="sw-mbtns">${current ? '<button type="button" class="sw-btn" data-del style="margin-right:auto;color:var(--red);">Remove</button>' : ''}
+      <button type="button" class="sw-btn" data-swclose>Cancel</button><button type="button" class="sw-btn sw-btn-red" data-save disabled>Save</button></div></div>`);
+  const msg = m.querySelector('[data-msg]'), save = m.querySelector('[data-save]');
+  m.querySelector('[data-file]').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    msg.className = 'sig-msg'; msg.textContent = 'Cleaning it up…'; save.disabled = true;
+    try {
+      made = await cleanSignature(f);
+      m.querySelector('[data-prev]').innerHTML = `<img src="${made.image}" alt="New signature">`;
+      msg.textContent = 'This is how it will look on certificates. Press Save if it looks right.';
+      save.disabled = false;
+    } catch (err) { made = null; msg.className = 'sig-msg bad'; msg.textContent = err.message; }
+  });
+  save.addEventListener('click', async () => {
+    if (!made) return;
+    save.disabled = true; msg.className = 'sig-msg'; msg.textContent = 'Saving…';
+    try {
+      await setDoc(doc(db, 'staffSignatures', email.toLowerCase()), { ...made, updatedAt: serverTimestamp(), updatedBy: auth.currentUser.email.toLowerCase() });
+      m.remove(); showToast('Signature saved for ' + (name || email)); renderStaffList();
+    } catch (err) { save.disabled = false; msg.className = 'sig-msg bad'; msg.textContent = 'Could not save — ' + failed('save', 'Signature didn\'t save', err); }
+  });
+  const del = m.querySelector('[data-del]');
+  if (del) del.addEventListener('click', async () => {
+    if (!confirm('Remove ' + (name || email) + '\'s signature? Final certificates can\'t be made for their tests until a new one is added.')) return;
+    try { await deleteDoc(doc(db, 'staffSignatures', email.toLowerCase())); m.remove(); showToast('Signature removed'); renderStaffList(); }
+    catch (err) { msg.className = 'sig-msg bad'; msg.textContent = 'Could not remove — ' + failed('save', 'Removing a signature didn\'t save', err); }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1276,15 +1383,16 @@ async function loadErrorCount() {
 // ═══════════════════════════════════════════════════════════════════════════
 // What's New is only for new features (standards §15). Nothing new for
 // managers in v4.0; the Errors tab is Rob's, so his note is added at sign-in.
-const NEWS = { management: [] };
-const OWNER_NEWS = [
-  'New <b>Errors</b> tab (only you): crashes, saves that failed and things that didn\'t load on the home page and this page, with who, when and on what. Your home page To do box says when there are some to look at.'
-];
+const NEWS = { management: [
+  '<b>Signatures</b>: on the Staff tab, press <b>Add signature</b> next to someone and take a photo of their signature. The isolator Final certificate uses them.'
+] };
+const OWNER_NEWS = NEWS.management;
 const HELP = [
   { tab: 'Staff', q: 'How do I add someone?', a: '<p>On the <b>Staff</b> tab, fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add staff member</b>.</p>' },
   { tab: 'Staff', q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p>' },
   { tab: 'Staff', q: 'What\'s "Fills in timesheets"?', a: '<p>Tick it for anyone who does a timesheet every weekday. Untick it for office staff and anyone else who doesn\'t, so they\'re never chased for missing days.</p>' },
-  { tab: 'Staff', q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
+  { tab: 'Staff', q: 'How do I add someone\'s signature?', a: '<p>Press <b>Add signature</b> next to their name. Take a photo of their signature in dark pen on plain white paper, close up. The page whitens the paper and trims it; press <b>Save</b> if it looks right.</p><p>Tap a saved signature to change or remove it. Only Manager, QS and Director can see signatures.</p><p>The isolator Final certificate can\'t be made until everyone who tested, and whoever authorises it, has one.</p>' },
+  { tab: 'Staff', q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit, and at the end of each row on the isolator certificate. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
   { tab: 'Data import', q: 'How do I add the next on-call rota?', a: '<p>On the <b>Data import</b> tab, pick <b>On-call rota</b>, choose the rota spreadsheet, then pick the tab (e.g. "144 - 2027") and press <b>Preview</b>.</p><p>Check who\'s who, then press <b>Add</b>. Only days that aren\'t already in the app are added, so swaps made in the app are never overwritten.</p>' },
   { tab: 'Data import', q: 'What does Export do?', a: '<p>It downloads what\'s in the database now for the type you\'ve picked, laid out the same way the import reads it. Use it to see the layout, or to add to the list and import it back.</p>' },
   { tab: 'Data import', q: 'What\'s "Names to match"?', a: '<p>Names that came in from a data import (like "Mike" on the rota) that the app hasn\'t linked to a person yet. Pick the right person and press <b>Save</b>, and it remembers for next time. The box goes away once there\'s nothing left to match.</p>' },

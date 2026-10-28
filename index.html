@@ -207,7 +207,7 @@ import {
 // reporting come from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
-const VERSION = "v4.0";
+const VERSION = "v4.1";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -221,6 +221,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v4.1 (28 Oct 2026): a proper "ready for QS" count for isolator testing
+// once the old photos are out of the test records (it used to stop at 30).
 // v4.0 (27 Oct 2026): shared files (sw-design.css, sw-shared.js, with error
 // reporting); the Ready for QS / Recent submissions list removed; PC layout
 // in two columns (main + side); Arrange (move / hide boxes, own layout on PC
@@ -384,13 +386,43 @@ function renderTools(tools, isManager, isOffice){
 
 // v4.0: the "Ready for QS / Recent submissions" list is gone from the home
 // page (Rob, 27 Oct). The same look-up still gives the QS counts for the
-// sidebar and the To do box. Note: it reads each tool's 30 latest tests, so a
-// count can't go above 30 (to fix once photos are out of the test records).
+// sidebar and the To do box. Other tools still read their 30 latest tests, so
+// their count can't go above 30.
+// v4.1: isolator testing gets a proper count: on every site that isn't
+// Complete, the items whose latest test hasn't been QSed (the same number as
+// "QSed x / y" in the reports app). It reads every test on those sites, so it
+// only switches on once the old photos have been moved out of the test
+// records (config/isolatorPhotos.removedAt); until then it's the old way,
+// which looks at the 30 latest tests. Kept for 10 minutes on this computer.
+const QS_KEEP_MS = 10 * 60000;
+async function isolatorQsCount() {
+  try { const c = JSON.parse(localStorage.getItem('sw-qs-isolator') || 'null'); if (c && Date.now() - c.at < QS_KEEP_MS) return c.n; } catch (e) {}
+  const jobs = await getDocs(query(collection(db, 'jobs'), where('status', '==', 'Active')));
+  const open = [];
+  jobs.forEach(d => { const st = ((d.data().isolator || {}).jobStatus) || 'In Progress'; if (!['Complete', 'Sent to Client'].includes(st)) open.push(d.id); });
+  let n = 0;
+  await Promise.all(open.map(async ref => {
+    const snap = await getDocs(query(collection(db, 'isolatorTests'), where('siteRef', '==', ref)));
+    const latest = new Map();
+    const ms = r => (r.createdAt && r.createdAt.toMillis) ? r.createdAt.toMillis() : 0;
+    snap.forEach(d => {
+      const r = d.data(); if (r.deletedFlag || !r.equipmentId) return;
+      const was = latest.get(r.equipmentId);
+      if (!was || (r.date || '') > (was.date || '') || ((r.date || '') === (was.date || '') && ms(r) >= ms(was))) latest.set(r.equipmentId, r);
+    });
+    latest.forEach(r => { if (!r.qsed) n++; });
+  }));
+  try { localStorage.setItem('sw-qs-isolator', JSON.stringify({ at: Date.now(), n })); } catch (e) {}
+  return n;
+}
 async function loadQsCounts(reportEntries){
   if (!reportEntries.length) return;
   const countsByTool = {};
+  let photosOut = false;
+  try { const c = await getDoc(doc(db, 'config', 'isolatorPhotos')); photosOut = c.exists() && !!c.data().removedAt; } catch (e) {}
   await Promise.all(reportEntries.map(async ({ tool }) => {
     try {
+      if (tool.id === 'isolator' && photosOut) { const n = await isolatorQsCount(); if (n) countsByTool.isolator = n; return; }
       const snap = await getDocs(query(collection(db, tool.id + 'Tests'), orderBy('date', 'desc'), limit(30)));
       snap.forEach(d => {
         const r = d.data();
@@ -953,19 +985,8 @@ document.addEventListener('click', e => {
 // ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
-const NEWS = {
-  engineer: [
-    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.'
-  ],
-  office: [
-    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.',
-    'On a computer the home page now uses the whole screen. The list of recent tests has gone from it.'
-  ],
-  management: [
-    'You can <b>arrange your home page</b>: press <b>Arrange</b> to move the boxes around or hide the ones you don\'t need. Your phone and your computer each keep their own layout.',
-    'On a computer the home page now uses the whole screen. The list of recent tests has gone: the <b>To do</b> box shows what\'s waiting for QS.'
-  ]
-};
+// What's New is only for new features (standards §15); v4.1 has none.
+const NEWS = {};
 const HELP = [
   { q: 'How do I open a tool?', a: '<p>Tap it in the list on the left. On a phone, the tools are under the boxes.</p>' },
   { q: 'Where are the other tools?', a: '<p>Tools that aren\'t ready yet are in the <b>Coming soon</b> line at the bottom. Tap it to see the list. Each one moves up into its proper place as soon as it\'s switched on.</p>' },

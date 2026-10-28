@@ -2,229 +2,239 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Isolator / Interlock Reports — Simpson & Wood</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
-<style>
-  :root{
-    --red:#D0222A; --red-dark:#a91b22; --ink:#1a1a1a; --grey:#6b6b6b;
-    --line:#e2e2e2; --bg:#f6f5f4; --card:#ffffff; --pass:#1f8a3d; --fail:#c0272d;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:'Barlow',sans-serif;background:var(--bg);color:var(--ink);}
-  header{background:var(--ink);padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  header .brand{display:flex;align-items:center;gap:12px;}
-  header img{height:32px;display:block;}
-  header .title-block h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.02em;color:#fff;margin:0;text-transform:uppercase;}
-  header .title-block p{margin:2px 0 0;font-size:11.5px;color:#8f8f8f;}
-  header .who{text-align:right;}
-  header .who .name{color:#fff;font-size:12.5px;font-weight:600;}
-  header .who button{background:none;border:none;color:#e2b0b3;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;}
-
-  .site-bar{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;}
-  .site-bar-inner{max-width:1600px;margin:0 auto;}
-  .site-bar label{font-size:12px;font-weight:600;margin-bottom:5px;display:block;}
-  .site-bar select{width:100%;max-width:340px;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-family:'Barlow',sans-serif;}
-  .site-status{font-size:11.5px;color:var(--grey);margin-top:5px;}
-
-  .tab-bar{display:flex;max-width:1600px;margin:0 auto;background:#fff;border-bottom:1px solid var(--line);}
-  .tab-bar{overflow-x:auto;scrollbar-width:none;}   /* v17.0: five tabs scroll sideways on a phone instead of pushing the page wider */
-  .tab-bar button{flex:1 0 auto;white-space:nowrap;padding:13px;border:none;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:13px;color:var(--grey);cursor:pointer;border-bottom:3px solid transparent;}
-  .tab-bar button.active{color:var(--red);border-bottom-color:var(--red);}
-
-  main{max-width:1600px;margin:0 auto;padding:16px;}
-  .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--line);}
-  .section-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--red);margin:0 0 12px;}
-  .hint{color:var(--grey);font-size:12.5px;}
-  label{display:block;font-size:12.5px;font-weight:600;margin:0 0 5px;}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:0 24px;align-items:start;}
-  .form-grid .field-wide{grid-column:1 / -1;}
-  input[type=text], input[type=date]{width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;font-family:'Barlow',sans-serif;}
-  .postcode-ok{color:var(--pass);}
-  .postcode-bad{color:var(--fail);}
-
-  .pending-item, .preview-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}
-  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
-  #limitedList .pending-item{margin-bottom:0;}
-  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
-  #previewList .preview-item{margin-bottom:0;}
-  #previewList .preview-item.editing-full{grid-column:1 / -1;}
-  #limitedList{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px;}
-  #previewList{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px;align-items:start;}
-  #previewList .preview-item.editing-full{grid-column:1 / -1;}
-  .site-item, .staff-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
-  .site-item .name, .staff-item .name{font-weight:700;font-size:13.5px;}
-  .site-item .meta, .staff-item .meta{font-size:11.5px;color:var(--grey);margin-top:2px;}
-  .remove-btn{background:none;border:1.5px solid var(--fail);color:var(--fail);font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;}
-  .pending-item .eq, .preview-item .eq{font-weight:700;font-size:14px;word-break:break-word;overflow-wrap:anywhere;}
-  .pending-item .cat, .preview-item .cat{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
-  .pending-item .meta, .preview-item .meta{font-size:12px;color:var(--grey);margin-top:4px;}
-  .pending-item .btns{display:flex;gap:8px;margin-top:10px;}
-  .btn-confirm{flex:1;background:var(--fail);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .btn-restore{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .empty-note{color:var(--grey);font-size:13px;text-align:center;padding:14px 0;}
-
-  .preview-item{opacity:1;transition:opacity .2s;}
-  .preview-item.qsed{opacity:.5;}
-  .preview-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
-  .chip-pass{background:#eaf7ee;color:var(--pass);}
-  .chip-fail{background:#fbe9e9;color:var(--fail);}
-  .preview-item .detail-line{font-size:12.5px;color:var(--ink);margin-top:3px;}
-  .qsed-check{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--grey);white-space:nowrap;}
-  .qsed-btn{border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
-  .qsed-btn.is-qsed{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
-  .edit-btn{background:none;border:1.5px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
-  .preview-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
-  .preview-edit label{font-size:11.5px;}
-  .preview-edit input, .preview-edit textarea{width:100%;padding:8px 9px;font-size:13.5px;border:1.5px solid var(--line);border-radius:6px;margin-bottom:10px;font-family:'Barlow',sans-serif;}
-  .preview-edit textarea{min-height:44px;resize:vertical;}
-  .id-live{background:#f2f2f2;border:1px dashed var(--line);border-radius:6px;padding:7px 9px;font-size:12.5px;font-weight:600;margin-bottom:10px;}
-  .preview-edit .btns{display:flex;gap:8px;}
-  .btn-save{flex:1;background:var(--pass);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .btn-cancel{flex:1;background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .loading-spinner{display:flex;align-items:center;gap:8px;color:var(--grey);font-size:13px;padding:10px 0 0;}
-  .loading-spinner .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite ease-in-out;}
-  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
-  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
-  .check-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:9px 0;flex-wrap:wrap;}
-  .check-item:first-child{border-top:none;padding-top:0;}
-  .check-item .check-label{flex:1;min-width:160px;font-size:12.5px;font-weight:600;color:var(--ink);}
-  .radio-row{display:flex;gap:6px;margin:0;flex-shrink:0;}
-  .radio-opt{border:1.5px solid var(--line);border-radius:6px;padding:6px 11px;text-align:center;font-weight:600;font-size:12px;cursor:pointer;user-select:none;color:var(--grey);min-width:50px;}
-  .radio-opt.pass-sel{border-color:var(--pass);background:#eaf7ee;color:var(--pass);}
-  .radio-opt.fail-sel{border-color:var(--fail);background:#fbe9e9;color:var(--fail);}
-  .radio-opt.na-sel{border-color:var(--grey);background:#f0f0f0;color:var(--grey);}
-  .edit-warning{background:#fff3cd;color:#8a6d1a;border:1px solid #f0dc9a;border-radius:6px;padding:8px 10px;font-size:11.5px;margin-bottom:10px;}
-  .edited-marker{font-size:10.5px;font-weight:700;color:#8a6d1a;background:#fff3cd;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
-
-  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .pill{font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--grey);cursor:pointer;font-weight:600;}
-  .pill.active{border-color:var(--red);background:var(--red);color:#fff;}
-  .loc-select{max-width:240px;margin-bottom:14px;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;}
-
-  .schedule-wrap{overflow-x:auto;margin-bottom:8px;}
-  .schedule-cat-label{font-size:13px;font-weight:700;margin:0 0 8px;}
-  .schedule-legend{font-size:11px;color:var(--grey);margin:0 0 20px;line-height:1.6;}
-  table.schedule{border-collapse:collapse;font-size:11.5px;border:1px solid var(--line);}
-  table.schedule th, table.schedule td{border:1px solid var(--line);padding:6px 8px;}
-  table.schedule th{background:#f2f1ee;font-weight:600;color:var(--grey);}
-  table.schedule tbody tr:nth-child(even){background:#faf9f7;}
-  .cell-pass{color:var(--pass);text-align:center;font-weight:700;}
-  .cell-fail{color:var(--fail);text-align:center;font-weight:700;}
-
-  .satisfactory-box{padding:16px;border-radius:8px;text-align:center;margin-top:12px;}
-  .satisfactory-box.ok{background:#eaf7ee;}
-  .satisfactory-box.bad{background:#fbe9e9;}
-  .satisfactory-box .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:0;}
-  .satisfactory-box .verdict{font-size:22px;font-weight:700;margin:4px 0 0;}
-  .satisfactory-box.ok .label, .satisfactory-box.ok .verdict{color:var(--pass);}
-  .satisfactory-box.bad .label, .satisfactory-box.bad .verdict{color:var(--fail);}
-  .satisfactory-box .sub{font-size:12px;margin:4px 0 0;}
-
-  .generate-btn{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;margin-top:14px;}
-  .generate-btn:disabled{background:#c9a3a5;cursor:not-allowed;}
-  .save-meta-btn{background:#fff;border:1.5px solid var(--line);color:var(--ink);padding:9px 16px;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer;}
-
-  .banner{display:none;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
-  .banner.ok{background:#eaf7ee;color:var(--pass);border:1px solid #b9e2c4;}
-  .banner.bad{background:#fbe9e9;color:var(--fail);border:1px solid #f0bcbe;}
-
-  #signinScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
-  #signinScreen img{height:44px;margin-bottom:28px;}
-  #signinScreen h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:20px;margin:0 0 8px;}
-  #signinScreen p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 26px;}
-  .ms-btn{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
-  .ms-btn:active{background:#000;}
-  #signinScreen .err{color:var(--fail);font-size:13px;margin-top:16px;max-width:320px;}
-  #appRoot{display:none;}
-
-  #notAuthorised{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);}
-  #notAuthorised h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;color:var(--fail);margin:0 0 10px;}
-  #notAuthorised p{color:var(--grey);font-size:14px;max-width:320px;margin:0 0 20px;}
-
-  [hidden]{display:none !important;}
-  /* v17.0: Tidy names */
-  .tidy-top{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px;align-items:end;}
-  @media (min-width:800px){ .tidy-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;} }
-  .tidy-top select, .tidy-top input[type=text]{width:100%;padding:9px 10px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;font-family:'Barlow',sans-serif;}
-  .tidy-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
-  @media (min-width:1000px){ .tidy-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} .tidy-panel{position:sticky;top:12px;} }
-  .tidy-list{border:1px solid var(--line);border-radius:8px;max-height:65vh;overflow:auto;}
-  .tidy-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f0f0f0;margin:0;cursor:pointer;font-size:14px;font-weight:500;}
-  .tidy-row:first-child{border-top:none;}
-  .tidy-row input{width:auto;margin:0;flex-shrink:0;}
-  .tidy-row .tv{flex:1;min-width:0;word-break:break-word;}
-  .tidy-row .tn{color:var(--grey);font-size:12px;white-space:nowrap;}
-  .tidy-row.on{background:#fff8f8;}
-  .tidy-alike{font-size:10.5px;font-weight:700;background:#fff3cd;color:#8a6d1a;border-radius:20px;padding:1px 7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
-  .tidy-panel{border:1.5px solid var(--line);border-radius:10px;padding:14px;}
-  .tidy-empty{color:var(--grey);font-size:14px;padding:6px 0;}
-  .tidy-ticked{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .tidy-chip{background:#f2f1ee;border-radius:20px;padding:4px 10px;font-size:13px;font-weight:600;}
-  .tidy-chip small{color:var(--grey);font-weight:600;margin-left:3px;}
-  .tidy-sum{font-size:14px;margin:14px 0 10px;line-height:1.5;}
-  .tidy-ids{border:1px solid var(--line);border-radius:8px;max-height:40vh;overflow:auto;margin-bottom:12px;}
-  .tidy-id{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 10px;border-top:1px solid #f0f0f0;font-size:13px;}
-  .tidy-id:first-child{border-top:none;}
-  .tidy-id .arrow{color:var(--grey);}
-  .tidy-id.clash{background:#fff8e6;}
-  .tidy-join{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;width:100%;}
-  .tidy-join input{width:auto;margin:0;}
-  .tidy-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;}
-  .tidy-btns .save-meta-btn{width:100%;padding:12px;}
-
-  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
-  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
-  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-  .sw-hbtn i{font-size:17px;}
-  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
-  .topbar-right .sw-hbtn{margin-right:6px;}
-  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
-  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
-  .sw-vabar i{font-size:18px;}
-  .sw-vabar span{flex:1; min-width:180px;}
-  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
-  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
-  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
-  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
-  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
-  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
-  .sw-news li{margin-bottom:8px;}
-  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
-  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
-  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
-  .sw-people{display:grid; gap:6px;}
-  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
-  .sw-people button:hover{background:#fbe9ea;}
-  .sw-people small{color:#5c5c5c;}
-  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
-  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
-  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
-  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
-  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
-  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
-  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
-  .sw-help summary::-webkit-details-marker{display:none;}
-  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
-  .sw-help details[open] summary::before{content:'–';}
-  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
-  .sw-help details > div p{margin:0 0 8px;}
-  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
-  @media (max-width:640px){ .sw-help{max-width:none;} }
-  /* ---- SHARED (keep in step: index, isolator test, isolator reports): "new version ready" bar ---- */
-  .swv-bar{position:fixed; left:0; right:0; bottom:0; z-index:450; display:flex; align-items:center; justify-content:center; gap:10px 14px; flex-wrap:wrap; background:#1a1a1a; color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); font-family:'Barlow',sans-serif; font-size:15px; font-weight:600; box-shadow:0 -4px 16px rgba(0,0,0,.2); text-align:center;}
-  .swv-bar button{background:#D0222A; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .swv-bar.wait{background:#7a5c0e;}
-  body.swv-on{padding-bottom:76px;}
-  body.swv-on .undo-toast{bottom:86px;}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  /* v18.0: colours, header, tabs, cards and the shared blocks come from
+     sw-design.css (design guide). Only what's particular to this page, or
+     differs from the guide, is here. */
+  .wrap{max-width:1500px; margin:0 auto; padding:0;}
+  header .brand{flex:1 1 auto;} header .brand > div{min-width:0;}   /* long title: … rather than running under the buttons */
+  main{padding:16px 16px 40px;}
+
+  /* ---- sign-in / not allowed ---- */
+  #signinScreen, #notAuthorised{min-height:100vh; display:none; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2, #notAuthorised h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #notAuthorised h2{color:var(--red);}
+  #signinScreen p, #notAuthorised p{color:var(--grey); font-size:14px; max-width:340px; margin:0 0 26px;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+  #appRoot{display:none;}
+
+  /* ---- site bar ---- */
+  .site-bar{background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px;}
+  .site-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .site-row select{flex:1 1 260px; max-width:460px; margin:0;}
+  .site-status{font-size:12.5px; color:var(--grey); margin:5px 0 0;}
+  .tabs .wrap{display:flex; gap:4px; width:100%;}
+  header .who button{white-space:nowrap;}
+
+  /* ---- layout: main column + side column on a PC ---- */
+  .rlayout{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:16px; align-items:start;}
+  .rlayout > div{min-width:0;}
+  @media (max-width:1100px){ .rlayout{grid-template-columns:minmax(0,1fr);} }
+
+  .card{padding:16px 18px; margin-bottom:16px; min-width:0;}
+  .section-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:20px; color:var(--ink); margin:0 0 12px;}
+  .card-h{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .card-h .section-label{margin:0;}
+  .hint{color:var(--grey); font-size:13px;}
+  p.hint{margin:0 0 12px;}
+
+  /* ---- fields: labels are the guide's .lbl ---- */
+  label{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:0 0 6px;}
+  label .hint{display:block; font-family:'Barlow',sans-serif; font-weight:400; text-transform:none; letter-spacing:0; font-size:12.5px; margin-top:2px;}
+  label.tick{display:flex; align-items:center; gap:8px; font-family:'Barlow',sans-serif; font-size:14.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink); margin:0; min-height:36px;}
+  input[type=checkbox]{width:18px; height:18px; margin:0; accent-color:var(--red); flex:0 0 auto;}
+  input[type=text], input[type=date], select, textarea, input[type=file]{width:100%; min-height:44px; padding:10px 12px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--ink); border:1.5px solid var(--field); border-radius:8px; background:#fff; margin-bottom:12px;}
+  input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+  input:disabled{background:var(--soft); color:var(--grey);}
+  textarea{min-height:70px; resize:vertical; line-height:1.4;}
+  select{appearance:none; -webkit-appearance:none; padding-right:34px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%235c5c5c' d='M5 7l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; background-size:18px;}
+  .form-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0 20px; align-items:start;}
+  .form-grid .field-wide{grid-column:1 / -1;}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center;}
+  .filters select{flex:1 1 170px; margin:0;}
+  .ticks{display:flex; gap:6px 18px; flex-wrap:wrap; margin-bottom:12px;}
+  .postcode-ok{color:var(--green);}
+  .postcode-bad{color:var(--red);}
+
+  /* ---- buttons ---- */
+  .save-meta-btn, .edit-btn, .qsed-btn, .remove-btn, .btn-restore, .btn-confirm, .btn-save, .btn-cancel{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:8px 14px; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap; background:#fff; border:1.5px solid var(--field); color:var(--ink);}
+  .save-meta-btn i, .edit-btn i{font-size:17px;}
+  .save-meta-btn.dark{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .save-meta-btn.red{background:var(--red); border-color:var(--red); color:#fff;}
+  .save-meta-btn:disabled, .edit-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .remove-btn{border-color:var(--red); color:var(--red);}
+  .btn-confirm{flex:1; background:var(--red); border-color:var(--red); color:#fff;}
+  .btn-restore{flex:1;}
+  .btn-save{flex:1; background:var(--green); border-color:var(--green); color:#fff;}
+  .btn-cancel{flex:1;}
+  .qsed-btn.is-qsed{border-color:var(--green); background:var(--green-bg); color:var(--green);}
+  .generate-btn{width:100%; min-height:52px; padding:14px; background:var(--red); color:#fff; border:none; border-radius:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; margin-top:4px;}
+  .generate-btn.dark{background:var(--ink);}
+  .generate-btn:disabled{background:var(--field); cursor:not-allowed;}
+
+  /* ---- lists ---- */
+  .pending-item, .preview-item{border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; min-width:0; background:#fff;}
+  #limitedList{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px;}
+  #limitedList .pending-item{margin-bottom:0;}
+  #previewList{display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:12px; align-items:start;}
+  @media (max-width:640px){ #previewList{grid-template-columns:minmax(0,1fr);} }
+  #previewList .preview-item{margin-bottom:0;}
+  #previewList .preview-item.editing-full{grid-column:1 / -1;}
+  .site-item{display:flex; justify-content:space-between; align-items:center; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff;}
+  .site-item.on{border-color:var(--red); background:#fff8f8;}
+  .site-item .name{font-weight:700; font-size:15px;}
+  .site-item .meta{font-size:13px; color:var(--grey); margin-top:2px;}
+  .site-item select{width:auto; min-height:40px; margin:0; font-size:14.5px; padding:6px 34px 6px 10px;}
+  .site-item .acts{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .pending-item .eq, .preview-item .eq{font-weight:700; font-size:15px; word-break:break-word; overflow-wrap:anywhere;}
+  .pending-item .cat, .preview-item .cat{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .pending-item .meta, .preview-item .meta{font-size:13px; color:var(--grey); margin-top:4px;}
+  .pending-item .btns{display:flex; gap:8px; margin-top:10px;}
+  .empty-note{color:var(--grey); font-size:14px; text-align:center; padding:14px 0;}
+  .stats{display:flex; gap:22px; flex-wrap:wrap;}
+  .stats .n{font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700; line-height:1.05;}
+  .stats .l{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+
+  .preview-item{transition:opacity .2s;}
+  .preview-item.qsed{opacity:.5;}
+  .preview-item .top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .preview-item .side-btns{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
+  .chip{display:inline-block; border:none; cursor:default; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; background:#eeece7; color:var(--grey);}
+  .chip-pass{background:var(--green-bg); color:var(--green);}
+  .chip-fail{background:var(--red-tint); color:var(--red-dark);}
+  .chip-warn{background:var(--amber-bg); color:var(--amber);}
+  .chip-info{background:var(--blue-bg); color:var(--blue);}
+  .preview-item .detail-line{font-size:13.5px; color:var(--ink); margin-top:3px;}
+  .preview-edit{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px;}
+  .id-live{background:var(--soft); border:1px dashed var(--field); border-radius:8px; padding:9px 11px; font-size:14px; font-weight:600; margin-bottom:12px;}
+  .preview-edit .btns{display:flex; gap:8px;}
+  .photo-block{margin-bottom:14px;}
+  .photo-block img{max-width:220px; border-radius:8px; cursor:zoom-in; display:block; margin-bottom:6px; border:1px solid var(--line);}
+  .loading-spinner{display:flex; align-items:center; gap:8px; color:var(--grey); font-size:13.5px; padding:10px 0 0;}
+  .loading-spinner .dot{width:7px; height:7px; border-radius:50%; background:var(--red); animation:pulse 1s infinite ease-in-out;}
+  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+  .check-item{display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--line); padding:9px 0; flex-wrap:wrap;}
+  .check-item:first-child{border-top:none; padding-top:0;}
+  .check-item .check-label{flex:1; min-width:160px; font-size:14.5px; font-weight:600; color:var(--ink);}
+  .radio-row{display:flex; gap:6px; margin:0; flex-shrink:0;}
+  .radio-opt{display:flex; align-items:center; justify-content:center; min-height:40px; border:1.5px solid var(--field); border-radius:8px; padding:6px 12px; font-weight:700; font-size:14px; cursor:pointer; user-select:none; color:var(--grey); min-width:56px; background:#fff;}
+  .radio-opt.pass-sel{border-color:var(--green); background:var(--green-bg); color:var(--green);}
+  .radio-opt.fail-sel{border-color:var(--red); background:var(--red-tint); color:var(--red-dark);}
+  .radio-opt.na-sel{border-color:var(--grey); background:var(--soft); color:var(--grey);}
+  .edit-warning{background:var(--amber-bg); color:#4d3300; border:1px solid var(--amber-line); border-radius:8px; padding:9px 11px; font-size:13.5px; margin-bottom:12px;}
+  .edited-marker{font-size:11px; font-weight:700; color:var(--amber); background:var(--amber-bg); padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em;}
+
+  /* filter pills: the guide's chips (black when on) */
+  .pill-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .pill{display:inline-flex; align-items:center; min-height:38px; background:#fff; border:1.5px solid var(--line); border-radius:20px; padding:5px 14px; font-size:14px; font-weight:600; color:var(--grey); cursor:pointer;}
+  .pill.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+  .schedule-wrap{overflow-x:auto; margin-bottom:8px;}
+  .schedule-cat-label{font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; text-transform:uppercase; margin:0 0 6px;}
+  .schedule-legend{font-size:12.5px; color:var(--grey); margin:0 0 20px; line-height:1.6;}
+  table.schedule{border-collapse:collapse; font-size:13px; border:1px solid var(--line); background:#fff;}
+  table.schedule th, table.schedule td{border:1px solid var(--line); padding:6px 8px;}
+  table.schedule th{background:var(--red); color:#fff; font-weight:600; text-align:left;}
+  table.schedule tbody tr:nth-child(even){background:var(--soft);}
+  .cell-pass{color:var(--green); text-align:center; font-weight:700;}
+  .cell-fail{color:var(--red); text-align:center; font-weight:700;}
+
+  .satisfactory-box{padding:16px; border-radius:10px; text-align:center; margin-top:12px; border:1px solid;}
+  .satisfactory-box.ok{background:var(--green-bg); border-color:var(--green-line);}
+  .satisfactory-box.bad{background:var(--red-tint); border-color:var(--bad-line);}
+  .satisfactory-box .label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin:0;}
+  .satisfactory-box .verdict{font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; margin:4px 0 0;}
+  .satisfactory-box.ok .label, .satisfactory-box.ok .verdict{color:var(--green);}
+  .satisfactory-box.bad .label, .satisfactory-box.bad .verdict{color:var(--red-dark);}
+  .satisfactory-box .sub{font-size:13px; margin:4px 0 0; color:var(--grey);}
+
+  .banner{display:none; font-weight:600;}
+  .banner.ok{background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+
+  /* ---- sign-off (v18.0) ---- */
+  .sig-list{display:grid; gap:8px; margin-bottom:14px;}
+  .sig-row{display:grid; grid-template-columns:minmax(0,1fr) 150px; gap:6px 14px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;}
+  .sig-row.missing{border-color:var(--bad-line); background:#fff8f8;}
+  .sig-row b{font-size:15px;}
+  .sig-row small{display:block; color:var(--grey); font-size:13px;}
+  .sig-row .sig{height:44px; display:flex; align-items:center; justify-content:flex-end;}
+  .sig-row .sig img{max-height:44px; max-width:150px;}
+  .sig-sub{font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:4px 0 6px;}
+  .sig-warn{background:var(--red-tint); color:var(--bad-ink); border:1px solid var(--bad-line); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.45; margin-top:10px;}
+  .sig-warn a{color:inherit; font-weight:700;}
+
+  /* ---- moving photos out of the test records (v18.0, one-off) ---- */
+  .mv-steps{display:grid; gap:10px;}
+  .mv-step{border:1px solid var(--line); border-radius:10px; padding:12px; background:#fff;}
+  .mv-step.done{border-color:var(--green-line); background:var(--green-bg);}
+  .mv-step h3{font-size:16px; text-transform:uppercase; margin:0 0 4px; display:flex; gap:6px; align-items:center;}
+  .mv-step h3 i{font-size:19px;}
+  .mv-step p{margin:0 0 8px; font-size:14px; line-height:1.45;}
+  .mv-sites{display:grid; gap:6px; margin:8px 0;}
+  .mv-site{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:14px; flex-wrap:wrap;}
+  .mv-bar{height:10px; background:#eeece7; border-radius:10px; overflow:hidden; margin:8px 0 4px;}
+  .mv-bar > div{height:100%; background:var(--red); width:0; transition:width .2s;}
+  .mv-log{font-size:13px; color:var(--grey);}
+
+  /* ---- tidy names ---- */
+  .tidy-top{display:grid; grid-template-columns:minmax(0,1fr); gap:0 16px; align-items:end;}
+  @media (min-width:800px){ .tidy-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;} }
+  .tidy-layout{display:grid; grid-template-columns:minmax(0,1fr); gap:16px; align-items:start;}
+  @media (min-width:1000px){ .tidy-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} .tidy-panel{position:sticky; top:70px;} }
+  .tidy-list{border:1px solid var(--line); border-radius:10px; max-height:65vh; overflow:auto; background:#fff;}
+  .tidy-row{display:flex; align-items:center; gap:10px; padding:9px 12px; border-top:1px solid var(--line); margin:0; cursor:pointer; font-family:'Barlow',sans-serif; text-transform:none; letter-spacing:0; color:var(--ink); font-size:14.5px; font-weight:500;}
+  .tidy-row:first-child{border-top:none;}
+  .tidy-row input{width:auto; margin:0; flex-shrink:0;}
+  .tidy-row .tv{flex:1; min-width:0; word-break:break-word;}
+  .tidy-row .tn{color:var(--grey); font-size:12.5px; white-space:nowrap;}
+  .tidy-row.on{background:#fff8f8;}
+  .tidy-alike{font-size:11px; font-weight:700; background:var(--amber-bg); color:var(--amber); border-radius:20px; padding:1px 7px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;}
+  .tidy-panel{border:1px solid var(--line); border-radius:10px; padding:14px; background:#fff;}
+  .tidy-empty{color:var(--grey); font-size:14px; padding:6px 0;}
+  .tidy-ticked{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .tidy-chip{background:var(--soft); border-radius:20px; padding:4px 10px; font-size:13.5px; font-weight:600;}
+  .tidy-chip small{color:var(--grey); font-weight:600; margin-left:3px;}
+  .tidy-sum{font-size:14.5px; margin:14px 0 10px; line-height:1.5;}
+  .tidy-ids{border:1px solid var(--line); border-radius:10px; max-height:40vh; overflow:auto; margin-bottom:12px;}
+  .tidy-id{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; padding:7px 10px; border-top:1px solid var(--line); font-size:13.5px;}
+  .tidy-id:first-child{border-top:none;}
+  .tidy-id .arrow{color:var(--grey);}
+  .tidy-id.clash{background:var(--amber-bg);}
+  .tidy-join{display:flex; align-items:center; gap:6px; margin:0; font-family:'Barlow',sans-serif; text-transform:none; letter-spacing:0; color:var(--ink); font-size:13.5px; width:100%;}
+  .tidy-join input{width:auto; margin:0;}
+  .tidy-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:center;}
+  .tidy-btns .save-meta-btn{width:100%; padding:12px;}
+
+  /* ---- pop-ups of this page ---- */
+  .r-modal-bg{display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; align-items:center; justify-content:center; padding:20px;}
+  .r-modal{background:#fff; border-radius:14px; padding:22px; max-width:420px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.25);}
+  .r-modal h3{font-size:22px; margin:0 0 10px;}
+  .r-modal p{font-size:14.5px; color:var(--grey); margin:0 0 16px;}
+  .r-modal .stack{display:grid; gap:8px;}
+  .r-modal .stack button{width:100%; min-height:44px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer; border:1.5px solid var(--field); background:#fff;}
+  .r-modal .stack button.red{background:var(--red); border-color:var(--red); color:#fff;}
+  .r-modal .stack button.plain{border:none; background:none; color:var(--grey);}
+  .r-modal .err{color:var(--red); font-size:13.5px; font-weight:600; margin:-4px 0 10px; display:none;}
+
+  @media (max-width:640px){
+    header h1{font-size:16px;}
+    header .who .name{display:none;}
+    main{padding:12px 12px 30px;}
+    .card{padding:14px;}
+    .sig-row{grid-template-columns:minmax(0,1fr);}
+    .sig-row .sig{justify-content:flex-start;}
+  }
+</style>
 </head>
 <body>
 
@@ -239,177 +249,142 @@
 <div id="notAuthorised">
   <img src="sw-logo.png" alt="Simpson & Wood" style="height:40px;margin-bottom:24px;">
   <h2>Access restricted</h2>
-  <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span> — if this should have access, contact whoever manages the Firebase project.</p>
+  <p>This tool is for management only. Signed in as <span id="notAuthEmail"></span>. If you should have access, ask Rob.</p>
   <button class="ms-btn" id="signOutBtn2">Sign out</button>
 </div>
 
 <div id="appRoot">
   <header>
-    <a class="brand" href="index.html" style="text-decoration:none;">
+    <a class="brand" href="index.html" title="Home">
       <img src="sw-logo-white.png" alt="Simpson & Wood">
-      <div class="title-block">
+      <div>
         <h1>Isolator / Interlock Reports</h1>
-        <p id="versionLabel">v16.1 · Management</p>
+        <p id="versionLabel">v18.0</p>
       </div>
     </a>
-    <div class="who">
-      <div class="name" id="whoName">—</div>
-      <button id="manageStaffLink" style="margin-right:12px;">Manage staff</button>
-      <button id="signOutBtn">Sign out</button>
+    <div class="right">
+      <div class="who">
+        <div class="name" id="whoName">—</div>
+        <button id="signOutBtn">Sign out</button>
+      </div>
     </div>
   </header>
 
   <div class="site-bar">
-    <div class="site-bar-inner">
-      <label style="margin-bottom:4px;">Site</label>
-      <select id="site" style="width:100%;max-width:420px;padding:10px 11px;font-size:15px;border:1.5px solid var(--line);border-radius:7px;">
-        <option value="" disabled selected>Loading site list…</option>
-      </select>
+    <div class="wrap">
+      <label for="site">Site</label>
+      <div class="site-row">
+        <select id="site">
+          <option value="" disabled selected>Loading site list…</option>
+        </select>
+        <button type="button" class="save-meta-btn" id="refreshSiteBtn" style="min-height:44px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
+      </div>
       <p class="site-status" id="siteStatus"></p>
       <div id="siteLoadingIndicator" class="loading-spinner" style="display:none;"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading site data…</div>
-      <button type="button" id="refreshSiteBtn" style="margin-top:8px;padding:7px 12px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;">↻ Refresh</button>
     </div>
   </div>
 
-  <div class="tab-bar">
-    <button id="tabSitesBtn" class="active">Sites</button>
-    <button id="tabReviewBtn">Review</button>
-    <button id="tabScheduleBtn">Test schedule</button>
-    <button id="tabFrontBtn">Front page & generate</button>
-    <button id="tabTidyBtn">Tidy names</button>
-  </div>
+  <nav class="tabs">
+    <div class="wrap">
+      <button type="button" class="tab active" id="tabSitesBtn"><i class="ti ti-building-factory-2" aria-hidden="true"></i> Sites</button>
+      <button type="button" class="tab" id="tabReviewBtn"><i class="ti ti-checklist" aria-hidden="true"></i> Review</button>
+      <button type="button" class="tab" id="tabScheduleBtn"><i class="ti ti-table" aria-hidden="true"></i> Test schedule</button>
+      <button type="button" class="tab" id="tabFrontBtn"><i class="ti ti-file-certificate" aria-hidden="true"></i> Front page &amp; generate</button>
+      <button type="button" class="tab" id="tabTidyBtn"><i class="ti ti-wand" aria-hidden="true"></i> Tidy names</button>
+    </div>
+  </nav>
 
   <main>
+   <div class="wrap">
     <div id="banner" class="banner"></div>
 
     <div id="sitesTab">
-      <div class="card">
-        <p class="section-label">Add new customer / site</p>
-        <div class="form-grid">
-          <div>
-            <label>Site reference <span class="hint">(suggested automatically — edit if you need something different, can't be changed later)</span></label>
-            <input type="text" id="newSiteRef">
-          </div>
-          <div>
-            <label>Customer / site name</label>
-            <input type="text" id="newSiteName">
-          </div>
-          <div>
-            <label>Address line</label>
-            <input type="text" id="newSiteAddressLine">
-          </div>
-          <div>
-            <label>Postcode</label>
-            <input type="text" id="newSitePostcode" style="text-transform:uppercase;">
-          </div>
-          <div>
-            <label>Agreed with</label>
-            <input type="text" id="newSiteAgreedWith">
-          </div>
-          <div class="field-wide">
-            <label>Agreed limitations <span class="hint">(what's out of scope, and why)</span></label>
-            <textarea id="newSiteLimitations" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;min-height:60px;font-family:'Barlow',sans-serif;"></textarea>
-          </div>
+     <div class="rlayout">
+      <div>
+        <div class="card">
+          <p class="section-label">Existing sites</p>
+          <div id="sitesList"><div class="empty-note">Loading…</div></div>
         </div>
-        <button type="button" class="save-meta-btn" id="addSiteBtn" style="width:100%;background:var(--red);color:#fff;border:none;">Add site</button>
       </div>
-      <div class="card">
-        <p class="section-label">Existing sites</p>
-        <div id="sitesList"><div class="empty-note">Loading…</div></div>
-      </div>
-    </div>
-
-    <div id="staffTab" style="display:none;">
-      <button type="button" id="backFromStaffBtn" style="background:none;border:none;color:var(--grey);font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:12px;text-decoration:underline;">← Back</button>
-      <div class="card">
-        <p class="section-label">Add staff member</p>
-        <div class="form-grid">
-          <div>
-            <label>Name</label>
-            <input type="text" id="newStaffName">
-          </div>
-          <div>
-            <label>Email <span class="hint">(must match their Microsoft sign-in email)</span></label>
-            <input type="text" id="newStaffEmail">
-          </div>
-          <div>
-            <label>Position <span class="hint">(used to identify who the QS is, for notifications)</span></label>
-            <select id="newStaffPosition">
-              <option value="" disabled selected>Select</option>
-              <option>Apprentice electrician</option>
-              <option>Electrical improver</option>
-              <option>Electrician</option>
-              <option>QS</option>
-              <option>Manager</option>
-              <option>Director</option>
-            </select>
-          </div>
+      <div>
+        <div class="card" id="photoMoveCard" hidden>
+          <p class="section-label">Move photos out of the test records</p>
+          <div id="photoMoveBody"></div>
         </div>
-        <button type="button" class="save-meta-btn" id="addStaffBtn" style="width:100%;background:var(--red);color:#fff;border:none;">Add staff member</button>
+        <div class="card">
+          <p class="section-label">Add new customer / site</p>
+          <label>Site reference <span class="hint">Suggested for you. It can't be changed later.</span></label>
+          <input type="text" id="newSiteRef">
+          <label>Customer / site name</label>
+          <input type="text" id="newSiteName">
+          <label>Address line</label>
+          <input type="text" id="newSiteAddressLine">
+          <label>Postcode</label>
+          <input type="text" id="newSitePostcode" style="text-transform:uppercase;">
+          <label>Agreed with</label>
+          <input type="text" id="newSiteAgreedWith">
+          <label>Agreed limitations <span class="hint">What's out of scope, and why</span></label>
+          <textarea id="newSiteLimitations"></textarea>
+          <button type="button" class="generate-btn" id="addSiteBtn">Add site</button>
+        </div>
+        <p class="hint" style="margin:0 4px;">Staff are added and changed in <a href="management.html">Management</a>.</p>
       </div>
-      <div class="card">
-        <p class="section-label">Existing staff</p>
-        <div id="staffList"><div class="empty-note">Loading…</div></div>
-      </div>
+     </div>
     </div>
 
     <div id="reviewTab" style="display:none;">
       <div class="card">
         <p class="section-label">Overview</p>
-        <div id="statsBar" style="display:flex;gap:18px;flex-wrap:wrap;"></div>
+        <div id="statsBar" class="stats"></div>
       </div>
       <div class="card">
         <p class="section-label">Pending deletions</p>
         <div id="pendingList"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <p class="section-label" style="margin:0;">Limitations / not fully tested <span id="limitedCount" style="color:var(--grey);font-weight:400;text-transform:none;letter-spacing:normal;"></span></p>
+        <div class="card-h">
+          <p class="section-label">Limitations / not fully tested <span id="limitedCount" style="color:var(--grey);"></span></p>
           <button type="button" id="limitedToggle" class="edit-btn">Show</button>
         </div>
-        <p class="hint" style="display:block;margin:6px 0 14px;">Items agreed as limited on site — chase access before the next visit.</p>
         <div id="limitedList" style="display:none;"><div class="empty-note">Select a site to review.</div></div>
       </div>
       <div class="card">
         <p class="section-label">Report preview</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Tick QSed once you've checked an item. Test results aren't editable here, only wording.</p>
-        <input type="text" id="previewSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <p class="hint">Tick QSed once you've checked an item.</p>
+        <input type="text" id="previewSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…">
         <div class="pill-row" id="previewCatPills"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <select id="previewLocFilter" style="flex:1;min-width:140px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;"><option value="">All locations</option></select>
-          <select id="previewPassFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+        <div class="filters">
+          <select id="previewLocFilter" aria-label="Location"><option value="">All locations</option></select>
+          <select id="previewPassFilter" aria-label="Pass or fail">
             <option value="">Pass or Fail</option>
             <option value="pass">Pass only</option>
             <option value="fail">Fail only</option>
           </select>
-          <select id="previewQsedFilter" style="flex:1;min-width:110px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+          <select id="previewQsedFilter" aria-label="QSed">
             <option value="">QSed or not</option>
             <option value="qsed">QSed only</option>
             <option value="notqsed">Not QSed only</option>
           </select>
-          <select id="previewSinceFilter" style="flex:1;min-width:150px;padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
+          <select id="previewSinceFilter" aria-label="Since last report">
             <option value="">Since last report: all</option>
             <option value="new">New since last report</option>
             <option value="fixed">Fixed since last report</option>
             <option value="notRetested">Not retested yet</option>
             <option value="notRetestedFail">Failed, not retested yet</option>
           </select>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="margin-bottom:4px;font-size:12.5px;font-weight:600;display:block;">Sort by</label>
-          <select id="previewSortOrder" style="padding:8px 9px;font-size:13px;border:1.5px solid var(--line);border-radius:7px;">
-            <option value="equipmentId">Equipment ID (A–Z)</option>
-            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
-            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          <select id="previewSortOrder" aria-label="Sort by">
+            <option value="equipmentId">Sort: Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Sort: Last tested (oldest first)</option>
+            <option value="lastTestedNewest">Sort: Last tested (newest first)</option>
           </select>
         </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="previewLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        <div class="ticks">
+          <label class="tick"><input type="checkbox" id="previewOverdueOnly">Overdue only</label>
+          <label class="tick"><input type="checkbox" id="previewLimitedOnly">Limitation only</label>
+          <label class="tick"><input type="checkbox" id="selectAllBox">Select all showing</label>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-bottom:10px;"><input type="checkbox" id="selectAllBox" style="width:auto;margin:0;">Select all visible</label>
         <div id="bulkDeleteBar" style="display:none;margin-bottom:12px;">
-          <button type="button" class="remove-btn" id="bulkDeleteBtn" style="width:100%;padding:9px;">Delete selected (<span id="bulkDeleteCount">0</span>)</button>
+          <button type="button" class="remove-btn" id="bulkDeleteBtn" style="width:100%;">Delete selected (<span id="bulkDeleteCount">0</span>)</button>
         </div>
         <div id="previewList"><div class="empty-note">Select a site to preview.</div></div>
       </div>
@@ -418,147 +393,119 @@
     <div id="scheduleTab" style="display:none;">
       <div class="card">
         <p class="section-label">Test schedule</p>
-        <input type="text" id="scheduleSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…" style="margin-bottom:12px;">
+        <input type="text" id="scheduleSearch" placeholder="Search by Equipment ID, location, manufacturer, model, observations…">
         <div class="pill-row" id="catPills"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <select class="loc-select" id="locFilter" style="margin-bottom:0;"><option value="">All locations</option></select>
-          <select id="schedulePassFilter" style="padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;">
+        <div class="filters">
+          <select id="locFilter" aria-label="Location"><option value="">All locations</option></select>
+          <select id="schedulePassFilter" aria-label="Pass or fail">
             <option value="">Pass or Fail</option>
             <option value="pass">Pass only</option>
             <option value="fail">Fail only</option>
           </select>
-          <select id="scheduleSortOrder" style="padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;">
-            <option value="location">Location, then Equipment ID</option>
-            <option value="equipmentId">Equipment ID (A–Z)</option>
-            <option value="lastTestedOldest">Last Tested (Oldest First)</option>
-            <option value="lastTestedNewest">Last Tested (Newest First)</option>
+          <select id="scheduleSortOrder" aria-label="Sort by">
+            <option value="location">Sort: Location, then Equipment ID</option>
+            <option value="equipmentId">Sort: Equipment ID (A–Z)</option>
+            <option value="lastTestedOldest">Sort: Last tested (oldest first)</option>
+            <option value="lastTestedNewest">Sort: Last tested (newest first)</option>
           </select>
         </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="scheduleOverdueOnly" style="width:auto;margin:0;">Overdue only</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin:0;"><input type="checkbox" id="scheduleLimitedOnly" style="width:auto;margin:0;">Limitation only</label>
+        <div class="ticks">
+          <label class="tick"><input type="checkbox" id="scheduleOverdueOnly">Overdue only</label>
+          <label class="tick"><input type="checkbox" id="scheduleLimitedOnly">Limitation only</label>
         </div>
         <div id="scheduleContent"><div class="empty-note">Select a site.</div></div>
       </div>
     </div>
 
     <div id="frontTab" style="display:none;">
-      <div class="card">
-        <p class="section-label">Installation details</p>
-        <input type="text" id="metaName" style="display:none;">
-        <div class="form-grid">
-          <div>
-            <label>Certificate number <span class="hint">(manually set — increment yourself for a repeat annual test)</span></label>
-            <input type="text" id="metaCertNumber">
+     <div class="rlayout">
+      <div>
+        <div class="card">
+          <p class="section-label">Installation details</p>
+          <input type="text" id="metaName" hidden>
+          <div class="form-grid">
+            <div>
+              <label>Certificate number <span class="hint">Set by hand. Go up one for a repeat annual test.</span></label>
+              <input type="text" id="metaCertNumber">
+            </div>
+            <div>
+              <label>Address line <span class="hint">Building / street</span></label>
+              <input type="text" id="metaAddressLine">
+            </div>
+            <div>
+              <label>Postcode</label>
+              <input type="text" id="metaPostcode" style="text-transform:uppercase;">
+              <p id="postcodeStatus" class="hint" style="margin:-6px 0 12px;"></p>
+            </div>
+            <div>
+              <label>Testing started <span class="hint">Suggested from the earliest test</span></label>
+              <input type="date" id="metaStarted">
+            </div>
+            <div>
+              <label>Next retest due <span class="hint">Suggested for you</span></label>
+              <input type="text" id="metaDue">
+            </div>
+            <div>
+              <label>Agreed with</label>
+              <input type="text" id="metaAgreedWith">
+            </div>
+            <div class="field-wide">
+              <label>Agreed limitations <span class="hint">Check this every year</span></label>
+              <textarea id="metaLimitations"></textarea>
+            </div>
           </div>
-          <div>
-            <label>Address line <span class="hint">(building / street)</span></label>
-            <input type="text" id="metaAddressLine">
-          </div>
-          <div>
-            <label>Postcode</label>
-            <input type="text" id="metaPostcode" style="text-transform:uppercase;">
-            <p id="postcodeStatus" class="hint" style="margin:-6px 0 12px;"></p>
-          </div>
-          <div>
-            <label>Testing started <span class="hint">(suggested automatically from the earliest test on record, editable)</span></label>
-            <input type="date" id="metaStarted">
-          </div>
-          <div>
-            <label>Next retest due <span class="hint">(suggested automatically, editable)</span></label>
-            <input type="text" id="metaDue">
-          </div>
-          <div>
-            <label>Agreed with</label>
-            <input type="text" id="metaAgreedWith">
-          </div>
-          <div class="field-wide">
-            <label>Agreed limitations <span class="hint">(review this every year — carried over from site creation, editable here)</span></label>
-            <textarea id="metaLimitations" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;min-height:60px;font-family:'Barlow',sans-serif;"></textarea>
-          </div>
+          <button type="button" class="save-meta-btn dark" id="saveMetaBtn">Save details</button>
+          <div id="satisfactoryBox"></div>
         </div>
-        <button type="button" class="save-meta-btn" id="saveMetaBtn">Save details</button>
-        <div id="satisfactoryBox"></div>
-      </div>
 
-      <div class="card">
-        <p class="section-label">Report history</p>
-        <div id="reportHistoryList"><div class="empty-note">Select a site.</div></div>
-        <div class="form-grid" style="margin-top:12px;">
-          <div>
-            <label>Date of a past report</label>
-            <input type="date" id="pastReportDate">
-          </div>
-          <div>
-            <label>Certificate number</label>
-            <input type="text" id="pastReportCert">
-          </div>
+        <div class="card">
+          <p class="section-label">Sign-off</p>
+          <div class="sig-sub">Inspected and tested by</div>
+          <div class="sig-list" id="signTesters"><div class="empty-note">Select a site.</div></div>
+          <div class="sig-sub">Report authorised by</div>
+          <div class="sig-list" id="signAuth"></div>
+          <div id="signMissing" class="sig-warn" hidden></div>
         </div>
-        <button type="button" class="save-meta-btn" id="addPastReportBtn">Add past report</button>
-        <p class="hint" style="display:block;margin:12px 0 0;">Marking a site Complete adds an entry here automatically. Only add one by hand for a report issued before this was set up. Anything tested after the latest date here counts as new since the last report.</p>
       </div>
+      <div>
+        <div class="card">
+          <p class="section-label">Generate report</p>
+          <button type="button" class="generate-btn dark" id="generateProgressBtn">Progress report</button>
+          <p class="hint" style="margin:8px 0 16px;">Any time. What's fixed, still failing and not yet retested since the last report, then every item. No sign-off.</p>
+          <button type="button" class="generate-btn" id="generateBtn">Final certificate</button>
+          <p class="hint" style="margin:8px 0 0;" id="finalCertHint">Only once the site is marked Complete (Sites tab).</p>
+          <p class="hint" style="margin:12px 0 0;">Sort out pending deletions first.</p>
+        </div>
 
-      <div class="card">
-        <p class="section-label">Sign-off</p>
-        <p class="hint" style="display:block;margin-bottom:14px;">Defaults to whoever tested the most items on this report — override if needed. Signatures are uploaded fresh each time a report is generated, not stored.</p>
-        <div class="form-grid">
-          <div>
-            <label>Inspected and tested by</label>
-            <select id="signInspectedName" style="width:100%;padding:9px 10px;font-size:14px;border:1.5px solid var(--line);border-radius:7px;margin-bottom:12px;"></select>
-          </div>
-          <div>
-            <label>Position</label>
-            <input type="text" id="signInspectedPosition" placeholder="E.g. Electrician">
-          </div>
-          <div>
-            <label>Signature <span class="hint">(image file)</span></label>
-            <input type="file" accept="image/*" id="signInspectedFile" style="margin-bottom:20px;">
-          </div>
-          <div>
-            <label>Report authorised by</label>
-            <input type="text" id="signAuthName" disabled style="background:#f2f2f2;">
-          </div>
-          <div>
-            <label>Position</label>
-            <input type="text" id="signAuthPosition" placeholder="E.g. QS">
-          </div>
-          <div>
-            <label>Signature <span class="hint">(image file)</span></label>
-            <input type="file" accept="image/*" id="signAuthFile">
-          </div>
+        <div class="card">
+          <p class="section-label">Report history</p>
+          <div id="reportHistoryList"><div class="empty-note">Select a site.</div></div>
+          <label style="margin-top:12px;">Date of a past report</label>
+          <input type="date" id="pastReportDate">
+          <label>Certificate number</label>
+          <input type="text" id="pastReportCert">
+          <button type="button" class="save-meta-btn" id="addPastReportBtn">Add past report</button>
+          <p class="hint" style="margin:12px 0 0;">Marking a site Complete adds one here. Only add one by hand for a report from before the app.</p>
         </div>
       </div>
-
-      <div class="card">
-        <p class="section-label">Generate report</p>
-        <div class="form-grid">
-          <div>
-            <button type="button" class="generate-btn" id="generateProgressBtn" style="background:var(--ink);">Progress report</button>
-            <p class="hint" style="display:block;margin-top:8px;">Any time. A summary of what's fixed, still failing and not yet retested since the last report, then every item. Not a certificate, so no sign-off.</p>
-          </div>
-          <div>
-            <button type="button" class="generate-btn" id="generateBtn">Final certificate</button>
-            <p class="hint" style="display:block;margin-top:8px;" id="finalCertHint">Only once the site is marked Complete (Sites tab). Front page, sign-off, one section per category, observations and the final declaration.</p>
-          </div>
-        </div>
-        <p class="hint" style="display:block;margin-top:10px;">Resolve pending deletions first for an accurate report.</p>
-      </div>
+     </div>
     </div>
+
     <div id="tidyTab" style="display:none;">
       <div class="card">
         <p class="section-label">Tidy names</p>
-        <p class="hint" style="display:block;margin:0 0 14px;">Merge different spellings of the same name on this site, e.g. "Press Line 4", "Pl4" and "Press line 4". Equipment IDs update to match, and you can undo a tidy-up.</p>
+        <p class="hint">Merge different spellings of the same name on this site, e.g. "Press Line 4", "Pl4" and "Press line 4". Equipment IDs update to match, and you can undo a tidy-up.</p>
         <div id="tidyNoSite" class="empty-note">Select a site first.</div>
         <div id="tidyClosedNote" class="edit-warning" hidden>This site is marked Complete, so names can't be changed. Reopen it on the Sites tab first.</div>
         <div id="tidyBody" hidden>
           <div class="tidy-top">
             <div><label for="tidyField">Which name?</label><select id="tidyField"></select></div>
             <div><label for="tidySearch">Find</label><input type="text" id="tidySearch" placeholder="e.g. press line 4"></div>
-            <div><button type="button" class="save-meta-btn" id="tidyBackupBtn" style="margin-bottom:12px;">Export backup</button></div>
+            <div><button type="button" class="save-meta-btn" id="tidyBackupBtn" style="margin-bottom:12px;min-height:44px;">Export backup</button></div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
             <span class="hint" id="tidyCount"></span>
-            <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;"><input type="checkbox" id="tidyAlikeOnly" style="width:auto;margin:0;">Only look-alikes</label>
+            <label class="tick"><input type="checkbox" id="tidyAlikeOnly">Only look-alikes</label>
           </div>
           <div class="tidy-layout">
             <div class="tidy-list" id="tidyValues"></div>
@@ -571,30 +518,35 @@
         <div id="tidyHistory"><div class="empty-note">Select a site.</div></div>
       </div>
     </div>
+   </div>
   </main>
 </div>
 
-<div id="qsedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:10px;padding:22px;max-width:380px;width:100%;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:15px;color:var(--red);margin:0 0 10px;">Not everything's been QSed</p>
-    <p id="qsedModalText" style="font-size:13.5px;color:var(--grey);margin:0 0 18px;"></p>
-    <button type="button" id="qsedWithBtn" style="width:100%;padding:11px;margin-bottom:8px;border:1.5px solid var(--line);background:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Generate with non-QSed items included</button>
-    <button type="button" id="qsedWithoutBtn" style="width:100%;padding:11px;margin-bottom:8px;border:none;background:var(--red);color:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Generate without them</button>
-    <button type="button" id="qsedCancelBtn" style="width:100%;padding:11px;border:none;background:none;color:var(--grey);font-weight:600;font-size:13px;cursor:pointer;">Cancel</button>
+<div id="qsedModal" class="r-modal-bg">
+  <div class="r-modal">
+    <h3>Not everything's been QSed</h3>
+    <p id="qsedModalText"></p>
+    <div class="stack">
+      <button type="button" id="qsedWithBtn">Include the ones not QSed</button>
+      <button type="button" id="qsedWithoutBtn" class="red">Leave them out</button>
+      <button type="button" id="qsedCancelBtn" class="plain">Cancel</button>
+    </div>
   </div>
 </div>
 
-<div id="completeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:10px;padding:22px;max-width:420px;width:100%;">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:15px;color:var(--red);margin:0 0 10px;">Mark <span id="completeSiteRef"></span> Complete</p>
+<div id="completeModal" class="r-modal-bg">
+  <div class="r-modal">
+    <h3>Mark <span id="completeSiteRef"></span> Complete</h3>
     <label>Certificate number</label>
     <input type="text" id="completeCert">
     <label>Report date</label>
     <input type="date" id="completeDate">
-    <p id="completeErr" style="color:var(--fail);font-size:12.5px;font-weight:600;margin:-4px 0 10px;display:none;"></p>
-    <button type="button" id="completeOkBtn" style="width:100%;padding:11px;margin-bottom:8px;border:none;background:var(--red);color:#fff;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Mark Complete</button>
-    <button type="button" id="completeCancelBtn" style="width:100%;padding:11px;border:none;background:none;color:var(--grey);font-weight:600;font-size:13px;cursor:pointer;">Cancel</button>
-    <p class="hint" style="display:block;margin:8px 0 0;font-size:12px;">Engineers can't add or change tests until the site is reopened. The date and certificate number go into the site's report history, and anything tested after this date counts as new.</p>
+    <p id="completeErr" class="err"></p>
+    <div class="stack">
+      <button type="button" id="completeOkBtn" class="red">Mark Complete</button>
+      <button type="button" id="completeCancelBtn" class="plain">Cancel</button>
+    </div>
+    <p class="hint" style="margin:10px 0 0;">Engineers can't add or change tests until it's reopened. Anything tested after this date counts as new.</p>
   </div>
 </div>
 
@@ -608,10 +560,11 @@ import {
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc,
   updateDoc as fsUpdateDoc, deleteDoc as fsDeleteDoc, setDoc as fsSetDoc, writeBatch as fsWriteBatch, arrayUnion,
-  query, where, orderBy, serverTimestamp, FieldPath, deleteField
+  query, where, orderBy, serverTimestamp, FieldPath, deleteField, getDocFromServer, getDocsFromServer
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import * as SWS from './sw-shared.js';
 
-const VERSION = "v17.0";
+const VERSION = "v18.0";
 document.getElementById('versionLabel').textContent = VERSION + ' · Management';
 
 const firebaseConfig = {
@@ -630,134 +583,17 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 
-// Raw Firestore functions for the shared block below.
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = fsSetDoc;
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report,
-//  management, isolator-interlock-test and isolator-interlock-report — keep
-//  in step): access level · View as (Rob only) ·
-//  What's New · Help.   Standards §15: any page changed from now on gets
-//  this block too.
-// ═══════════════════════════════════════════════════════════════════════════
-const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
-const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
-let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
-let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
-const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
-const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
-// Wrap anything that saves, so "View as" can never change real data.
-function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
-function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
-(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
-  const f = window.fetch.bind(window);
-  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
-})();
-// Who someone is: 'management' (Manager / QS / Director, or the console-only
-// managers list), 'office' or 'engineer'.
-async function swAccess(email) {
-  let managers = false, position = '', staff = null;
-  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
-  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
-  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
-  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
-}
-function swHeaderButton(id, icon, label, onClick) {
-  if (document.getElementById(id)) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
-  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
-  b.addEventListener('click', onClick);
-  const right = document.querySelector('.topbar-right');
-  if (right) right.prepend(b);
-  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
-}
-function swModal(html, cls) {
-  const bg = document.createElement('div');
-  bg.className = 'sw-modal-bg ' + (cls || '');
-  bg.innerHTML = html;
-  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
-  document.body.appendChild(bg);
-  return bg;
-}
-
-// ---- View as (Rob only) ----------------------------------------------------
-// Rob picks a person and every page shows what they'd see, read-only. The
-// choice lasts for this browser tab (all pages) until he presses Stop. Data is
-// still read with Rob's own access, so it shows screens, not the database rules.
-async function swViewAsInit(user) {
-  const real = String(user.email || '').toLowerCase();
-  if (real !== SW_OWNER) return null;
-  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
-  let v = null;
-  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
-  if (!v) return null;
-  let name = v, position = '';
-  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
-  VIEW_AS = { email: v, name, position };
-  const bar = document.createElement('div');
-  bar.className = 'sw-vabar';
-  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('[data-va]'); if (!b) return;
-    if (b.dataset.va === 'change') swPickViewAs();
-    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
-  });
-  document.body.prepend(bar);
-  document.body.classList.add('sw-va-on');
-  return VIEW_AS;
-}
-async function swPickViewAs() {
-  let people = [];
-  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
-  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
-  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
-  const draw = () => {
-    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
-    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
-  };
-  m.querySelector('[data-q]').addEventListener('input', draw);
-  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
-  draw(); m.querySelector('[data-q]').focus();
-}
-
-// ---- What's New + Help -------------------------------------------------------
-// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
-// (questions; each with the tab it belongs to and, if not everyone, the
-// levels it's for), then calls swExtrasStart().
-function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
-function swShowNews() {
-  const items = swNewsItems();
-  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
-    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-}
-async function swNewsCheck() {
-  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
-  const key = 'seen_' + SW.page;
-  try {
-    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
-    const snap = await swGetDoc(ref);
-    if (snap.exists() && snap.data()[key] === SW.version) return;
-    swShowNews();
-    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
-  } catch (e) { console.warn('What\'s new check failed', e); }
-}
-function swShowHelp() {
-  const tab = SW.tab() || '';
-  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
-  const groups = new Map();
-  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
-  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
-  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
-    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
-    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
-  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
-}
-function swExtrasStart() {
-  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
-  swNewsCheck();
+// v18.0: the shared blocks (View as, What's New, Help, error reporting, the
+// "new version" bar) come from sw-shared.js instead of copies pasted into
+// this page (standards §15.0).
+SWS.swSetup({ db, auth, page: 'isolator-report', version: VERSION });
+const isVaError = e => e && String(e.message || '').includes(SWS.SW_VA_MSG);
+// Every failed save or load is recorded for Rob (Management → Errors), and
+// the message to show is handed back.
+function failed(kind, what, e) {
+  const why = (e && (e.code || e.message)) || 'unknown error';
+  if (!isVaError(e)) SWS.swReport(kind, what + ': ' + why);
+  return (e && (e.message || e.code)) || 'unknown error';
 }
 
 // "A new version is ready" bar (shared block at the bottom of the page): not in
@@ -765,11 +601,14 @@ function swExtrasStart() {
 window.swUpdateBlocker = () => {
   if (editingId) return 'Save or cancel the edit you\'re making, then tap Update.';
   if (document.getElementById('tidyGoBtn') && document.getElementById('tidyGoBtn').textContent === 'Saving…') return 'Wait for the tidy-up to finish, then tap Update.';
+  if (moveBusy) return 'Wait for the photos to finish moving, then tap Update.';
+  if (pdfBusy) return 'Wait for the report to finish, then tap Update.';
   return '';
 };
 
 // Everything this page saves goes through these, so "View as" can never change real data.
-const updateDoc = swGuard(fsUpdateDoc), deleteDoc = swGuard(fsDeleteDoc), setDoc = swGuard(fsSetDoc), writeBatch = swGuardBatch(fsWriteBatch);
+const updateDoc = SWS.swGuard(fsUpdateDoc), deleteDoc = SWS.swGuard(fsDeleteDoc), setDoc = SWS.swGuard(fsSetDoc), writeBatch = SWS.swGuardBatch(fsWriteBatch);
+let moveBusy = false, pdfBusy = false;
 
 // Kept in sync by hand with the engineer tool's CATEGORIES object.
 const CATEGORIES = {
@@ -1176,7 +1015,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('appRoot').style.display = 'none';
   if (!user) { document.getElementById('signinScreen').style.display = 'flex'; return; }
 
-  const va = await swViewAsInit(user);
+  const va = await SWS.swViewAsInit(user);
   const isManager = await checkManager(va ? va.email : user.email);
 
   if (!isManager) {
@@ -1189,34 +1028,35 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
   if (booted) return;
   booted = true;
-  SW = Object.assign(SW, { page: 'isolator-report', version: VERSION, level: 'management', news: NEWS, help: HELP, tab: currentTabName });
-  swExtrasStart();
+  SWS.swExtrasStart({ page: 'isolator-report', version: VERSION, level: 'management', news: NEWS, help: HELP, tab: currentTabName });
   boot();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
+// What's New is only for new features (standards §15).
 const NEWS = {
   management: [
-    'New <b>Tidy names</b> tab: merge different spellings of the same name, e.g. "Press Line 4", "Pl4" and "Press line 4". Equipment IDs update to match, and every tidy-up can be undone.',
-    'Take a backup with <b>Export backup</b> on that tab before you merge.',
-    'Engineers can now see which tests haven\'t reached the office yet, and get asked before testing the same item twice on one day.',
-    'This page has a <b>Help</b> button at the top.',
-    'When the app has been updated, a bar at the bottom says <b>A new version is ready</b>. Tap <b>Update</b>.'
+    'The <b>Final certificate</b> lists everyone who tested, with their initials at the end of each row and their saved signature. Signatures are added in <b>Management → Staff</b>.',
+    'The certificate is shorter: a failed or limited item\'s notes go on a line under it in the schedule, and the agreed limitations are on the front page.'
   ]
 };
 const HELP = [
+  { tab: 'Front page & generate', q: 'Progress report or Final certificate?', a: '<p>The <b>Progress report</b> can be made any time. The <b>Final certificate</b> only once the site is marked Complete on the Sites tab.</p>' },
+  { tab: 'Front page & generate', q: 'Why can\'t I make the Final certificate?', a: '<p>Either the site isn\'t marked Complete yet, or someone in <b>Sign-off</b> has no saved signature. The box under Sign-off says who. Add their signature in <b>Management → Staff</b>.</p>' },
+  { tab: 'Front page & generate', q: 'Who goes under "Inspected and tested by"?', a: '<p>Everyone whose test is the one shown for at least one item, with how many items. Their initials are at the end of each row of the schedule. Initials come from the <b>Short</b> name in Management → Staff.</p>' },
+  { tab: 'Review', q: 'What does QSed mean?', a: '<p>You\'ve checked that test. Tick <b>QSed</b> on each item once you have. Engineers can\'t edit a test once it\'s QSed.</p>' },
+  { tab: 'Review', q: 'What are pending deletions?', a: '<p>Tests an engineer has flagged as wrong. <b>Restore</b> puts it back; <b>Confirm removal</b> deletes it for good.</p>' },
+  { tab: 'Sites', q: 'How do I take a backup of a site?', a: '<p>Press <b>Export JSON</b> next to the site, or <b>Export backup</b> on Tidy names. It downloads everything for that site in one file, photos included.</p>' },
+  { tab: 'Sites', q: 'Moving the photos out of the test records', a: '<p>A one-off job. Take a backup of each site, press <b>Check</b>, then <b>Copy the photos</b>. Every copy is checked against the original.</p><p>A few days later, once everyone\'s phone has the new version, press <b>Remove the old copies</b>.</p>' },
+  { tab: 'Sites', q: 'How do I add or change staff?', a: '<p>In <b>Management → Staff</b>. That\'s also where signatures and Short names go.</p>' },
   { tab: 'Tidy names', q: 'How do I merge two spellings?', a: '<p>Pick the site, then on <b>Tidy names</b> pick which name (e.g. Mill location). Tick the spellings that mean the same thing. Check the name in <b>Change them all to</b>, press <b>Preview the changes</b>, then <b>Merge</b>.</p><p><b>Only look-alikes</b> shows names that only differ by capitals, spaces or dots.</p>' },
   { tab: 'Tidy names', q: 'What happens to the Equipment IDs?', a: '<p>When you merge mill locations (or a motor isolator\'s equipment name), the IDs change to match, e.g. PL4S-A-SI becomes PL4-C-SI. Every test of that item changes together, so its history stays in one place.</p><p>The preview lists every ID before anything changes.</p>' },
   { tab: 'Tidy names', q: 'It says some IDs would clash', a: '<p>Another item already has that ID. Unless you tick <b>Same item</b>, the clashing item keeps its old ID and only the name changes.</p><p>Only tick <b>Same item</b> if they really are the same piece of equipment. Their histories become one.</p>' },
   { tab: 'Tidy names', q: 'How do I undo a tidy-up?', a: '<p>Press <b>Undo</b> next to it under <b>Recent tidy-ups</b>. Any test that\'s been changed again since is left alone.</p>' },
   { tab: 'Tidy names', q: 'Why can\'t I tidy this site?', a: '<p>It\'s marked Complete. Reopen it on the <b>Sites</b> tab first.</p>' },
-  { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
-  { q: 'How do I take a backup of a site?', a: '<p>Press <b>Export JSON</b> next to the site on the <b>Sites</b> tab, or <b>Export backup</b> on Tidy names. It downloads everything for that site, photos included.</p>' },
-  { tab: 'Review', q: 'What does QSed mean?', a: '<p>You\'ve checked that test. Tick <b>QSed</b> on each item once you have. Engineers can\'t edit a test once it\'s QSed.</p>' },
-  { tab: 'Review', q: 'What are pending deletions?', a: '<p>Tests an engineer has flagged as wrong. <b>Restore</b> puts it back; <b>Confirm removal</b> deletes it for good.</p>' },
-  { tab: 'Front page & generate', q: 'Progress report or Final certificate?', a: '<p>The <b>Progress report</b> can be made any time. The <b>Final certificate</b> only once the site is marked Complete on the Sites tab.</p>' }
+  { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of an edit, it asks you to finish first.</p>' }
 ];
 
 function boot() {
@@ -1224,7 +1064,7 @@ function boot() {
   buildCatPills();
   buildPreviewCatPills();
   renderSitesList();
-  renderStaffList();
+  renderPhotoMove();
   suggestNextSiteRef();
 }
 
@@ -1261,7 +1101,7 @@ document.getElementById('tabScheduleBtn').addEventListener('click', () => switch
 document.getElementById('tabFrontBtn').addEventListener('click', () => switchTab('front'));
 document.getElementById('tabTidyBtn').addEventListener('click', () => switchTab('tidy'));
 function currentTabName() {
-  const on = document.querySelector('.tab-bar button.active');
+  const on = document.querySelector('.tabs .tab.active');
   return on ? on.textContent.trim().replace(/^Front page.*/, 'Front page & generate') : '';
 }
 function switchTab(which) {
@@ -1279,19 +1119,10 @@ function switchTab(which) {
   if (which === 'front') renderFront();
   if (which === 'review') renderStatsBar();
   if (which === 'tidy') renderTidy();
+  if (which === 'sites') renderPhotoMove();
 }
 
-document.getElementById('manageStaffLink').addEventListener('click', () => {
-  ['sitesTab','reviewTab','scheduleTab','frontTab','tidyTab'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('staffTab').style.display = 'block';
-  document.querySelector('.tab-bar').style.display = 'none';
-});
-document.getElementById('backFromStaffBtn').addEventListener('click', () => {
-  document.getElementById('staffTab').style.display = 'none';
-  document.querySelector('.tab-bar').style.display = 'flex';
-  switchTab('sites');
-});
-document.getElementById('refreshSiteBtn').addEventListener('click', () => loadSiteData());
+document.getElementById('refreshSiteBtn').addEventListener('click', () => { peopleCache = null; loadSiteData(); });
 
 // ---- Sites management ----
 async function renderSitesList() {
@@ -1312,23 +1143,22 @@ async function renderSitesList() {
       const last = lastReportOf(r);
       const statusOptions = closed ? CLOSED_STATUSES : [...OPEN_STATUSES, 'Complete'];
       return `
-      <div class="site-item" style="flex-direction:column;align-items:stretch;gap:8px;${isSelected ? 'border-color:var(--red);background:#fff8f8;' : ''}">
+      <div class="site-item ${isSelected ? 'on' : ''}" style="flex-direction:column;align-items:stretch;gap:8px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-          <div style="cursor:pointer;" data-select-site="${r.id}">
-            <div class="name">${r.id} — ${r.name || ''}</div>
-            <div class="meta">${r.addressLine || 'No address set'} ${r.postcode || ''} · Created ${createdDate}${iso.certificateNumber ? ' · Cert #' + escHtml(iso.certificateNumber) : ''}${last ? ' · Last report ' + longDate(last.date) : ''}</div>
+          <div style="cursor:pointer;min-width:0;" data-select-site="${escHtml(r.id)}">
+            <div class="name">${escHtml(r.id)} — ${escHtml(r.name || '')}</div>
+            <div class="meta">${escHtml(r.addressLine || 'No address set')} ${escHtml(r.postcode || '')} · Created ${createdDate}${iso.certificateNumber ? ' · Cert #' + escHtml(iso.certificateNumber) : ''}${last ? ' · Last report ' + longDate(last.date) : ''}</div>
           </div>
-          <button type="button" class="remove-btn" data-delete-site="${r.id}">Delete site</button>
+          <button type="button" class="remove-btn" data-delete-site="${escHtml(r.id)}">Delete site</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <label style="margin:0;font-size:11.5px;">Status:</label>
-          <select data-status-for="${r.id}" style="width:auto;padding:6px 8px;font-size:12.5px;border:1.5px solid var(--line);border-radius:6px;">
+        <div class="acts">
+          <select data-status-for="${escHtml(r.id)}" aria-label="Status">
             ${statusOptions.map(st => `<option ${status === st ? 'selected' : ''}>${st}</option>`).join('')}
           </select>
-          ${closed ? `<button type="button" class="edit-btn" data-reopen="${r.id}">Reopen</button>` : ''}
-          <button type="button" class="edit-btn" data-export-csv="${r.id}">Export CSV</button>
-          <button type="button" class="edit-btn" data-export-json="${r.id}">Export JSON</button>
-          <button type="button" class="edit-btn" data-select-site="${r.id}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
+          ${closed ? `<button type="button" class="edit-btn" data-reopen="${escHtml(r.id)}">Reopen</button>` : ''}
+          <button type="button" class="edit-btn" data-export-csv="${escHtml(r.id)}">Export CSV</button>
+          <button type="button" class="edit-btn" data-export-json="${escHtml(r.id)}">Export JSON</button>
+          <button type="button" class="edit-btn" data-select-site="${escHtml(r.id)}" style="margin-left:auto;">${isSelected ? 'Selected' : 'Select this site'}</button>
         </div>
       </div>
     `;
@@ -1359,7 +1189,7 @@ async function renderSitesList() {
           if (ref === document.getElementById('site').value) await loadSiteData();
         } catch (e) {
           sel.value = oldStatus;
-          alert('Could not update status — ' + (e.message || e.code || 'unknown error'));
+          alert('Could not update status — ' + failed('save', 'Reports: could not update status', e));
         }
       });
     });
@@ -1375,7 +1205,7 @@ async function renderSitesList() {
           await renderSitesList();
           if (ref === document.getElementById('site').value) await loadSiteData();
           showBanner('ok', ref + ' reopened.');
-        } catch (e) { alert('Could not reopen — ' + (e.message || e.code || 'unknown error')); }
+        } catch (e) { alert('Could not reopen — ' + failed('save', 'Reports: could not reopen', e)); }
       });
     });
     list.querySelectorAll('[data-export-csv]').forEach(btn => {
@@ -1387,7 +1217,7 @@ async function renderSitesList() {
           const records = await fetchSiteTestRecords(ref);
           const row = rows.find(x => x.id === ref) || {};
           downloadBlob(ref + '-export-' + new Date().toISOString().slice(0,10) + '.csv', recordsToCSV(records, row.name), 'text/csv');
-        } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
+        } catch (e) { alert('Could not export — ' + failed('load', 'Reports: could not export', e)); }
         btn.disabled = false; btn.textContent = original;
       });
     });
@@ -1398,7 +1228,8 @@ async function renderSitesList() {
         btn.disabled = true; btn.textContent = 'Exporting…';
         try {
           await exportSiteBackup(ref);
-        } catch (e) { alert('Could not export — ' + (e.message || e.code || 'unknown error')); }
+          backedUp.add(ref); renderPhotoMove();
+        } catch (e) { alert('Could not export — ' + failed('load', 'Reports: could not export', e)); }
         btn.disabled = false; btn.textContent = original;
       });
     });
@@ -1408,14 +1239,16 @@ async function renderSitesList() {
         if (!confirm('Permanently delete "' + ref + '" and every test record under it? This cannot be undone.')) return;
         try {
           const testsSnap = await getDocs(query(collection(db, 'isolatorTests'), where('siteRef', '==', ref)));
-          for (const d of testsSnap.docs) { await deleteDoc(doc(db, 'isolatorTests', d.id)); }
+          await deleteTests(testsSnap.docs.map(d => d.id));
+          const leftover = await sitePhotoDocs(ref).catch(() => new Map());
+          if (leftover.size) await deleteTests([...leftover.keys()]);
           await deleteDoc(doc(db, 'jobs', ref));
           if (document.getElementById('site').value === ref) {
             document.getElementById('site').value = '';
           }
           await loadSites();
           renderSitesList();
-        } catch (e) { alert('Could not delete site — ' + (e.message || e.code || 'unknown error')); }
+        } catch (e) { alert('Could not delete site — ' + failed('save', 'Reports: could not delete site', e)); }
       });
     });
   } catch (e) {
@@ -1426,11 +1259,18 @@ async function renderSitesList() {
 // v16.0: the backup also carries the site record itself (status, certificate
 // number, limitations, report history), not just the tests. v17.0: one
 // function, used by the Sites tab and by Tidy names.
+// v18.0: photos kept in isolatorPhotos are put back on their tests, so the
+// backup is still one file with everything in it (Rob, 28 Oct).
 async function exportSiteBackup(ref) {
   const records = await fetchSiteTestRecords(ref);
+  const photos = await sitePhotoDocs(ref);
+  records.forEach(r => {
+    const p = photos.get(r._id);
+    if (p && !hasInlinePhotos(r)) { r.photoBase64 = p.photoBase64 || null; r.photoInternalsBase64 = p.photoInternalsBase64 || null; }
+  });
   const siteSnap = await getDoc(doc(db, 'jobs', ref));
   const backup = {
-    exportedAt: new Date().toISOString(), exportedBy: currentUser.email, siteRef: ref,
+    exportedAt: new Date().toISOString(), exportedBy: currentUser.email, siteRef: ref, photosIncluded: true,
     site: siteSnap.exists() ? { _id: ref, ...siteSnap.data() } : null,
     tests: records
   };
@@ -1453,6 +1293,43 @@ function downloadBlob(filename, content, mimeType) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// ---- Photos (v18.0) ----
+// New tests keep their photos in isolatorPhotos/{test id}, not in the test.
+// Older tests still have them inside the test record until they're moved
+// (Sites tab, "Move photos out of the test records"), so both are read.
+const hasInlinePhotos = r => !!(r && (r.photoBase64 || r.photoInternalsBase64));
+const photoCache = new Map();
+async function loadPhotos(r) {
+  if (hasInlinePhotos(r)) return { photoBase64: r.photoBase64 || null, photoInternalsBase64: r.photoInternalsBase64 || null };
+  if (photoCache.has(r._id)) return photoCache.get(r._id);
+  const snap = await getDoc(doc(db, 'isolatorPhotos', r._id));
+  const p = snap.exists() ? { photoBase64: snap.data().photoBase64 || null, photoInternalsBase64: snap.data().photoInternalsBase64 || null } : { photoBase64: null, photoInternalsBase64: null };
+  photoCache.set(r._id, p);
+  return p;
+}
+async function sitePhotoDocs(siteRef, fromServer) {
+  const q = query(collection(db, 'isolatorPhotos'), where('siteRef', '==', siteRef));
+  const snap = fromServer ? await getDocsFromServer(q) : await getDocs(q);
+  const m = new Map();
+  snap.forEach(d => m.set(d.id, d.data()));
+  return m;
+}
+// Deleting a test deletes its photos with it.
+async function deleteTests(ids) {
+  for (let i = 0; i < ids.length; i += 200) {
+    const b = writeBatch(db);
+    ids.slice(i, i + 200).forEach(id => { b.delete(doc(db, 'isolatorTests', id)); b.delete(doc(db, 'isolatorPhotos', id)); });
+    await b.commit();
+  }
+  ids.forEach(id => photoCache.delete(id));
+}
+// Tap a photo to see it bigger.
+document.addEventListener('click', e => {
+  const img = e.target.closest && e.target.closest('img[data-zoom]');
+  if (!img) return;
+  SWS.swModal(`<div class="sw-modal" style="max-width:900px;"><img src="${img.src}" alt="" style="max-width:100%;max-height:76vh;display:block;margin:0 auto;border-radius:8px;"><div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>Close</button></div></div>`);
+});
 
 // CSV deliberately excludes photo data (base64 images are useless in a
 // spreadsheet and would make the file enormous) - use the JSON export for a
@@ -1500,55 +1377,191 @@ document.getElementById('addSiteBtn').addEventListener('click', async () => {
     const banner = document.getElementById('banner');
     banner.className = 'banner ok'; banner.textContent = 'Site added: ' + ref; banner.style.display = 'block';
   } catch (e) {
-    alert('Could not add site — ' + (e.message || e.code || 'unknown error'));
+    alert('Could not add site — ' + failed('save', 'Reports: could not add site', e));
   }
 });
 
-// ---- Staff management ----
-async function renderStaffList() {
-  const list = document.getElementById('staffList');
-  try {
-    const snap = await getDocs(collection(db, 'staff'));
-    if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
-    const rows = [];
-    snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
-    rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    list.innerHTML = rows.map(r => `
-      <div class="staff-item">
-        <div>
-          <div class="name">${r.name || r.id}</div>
-          <div class="meta">${r.id} · ${r.position || 'No position set'}</div>
-        </div>
-        <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+// v18.0: staff are only added and changed in Management (this page's own
+// "Add staff member" reset "Fills in timesheets" and the Short name).
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MOVING THE PHOTOS OUT OF THE TEST RECORDS (v18.0, one-off; Rob, 28 Oct)
+//  Old tests carry their two photos inside the test record, which makes every
+//  site slow to load (SW-ISO-01 is about 200 MB). New tests already keep them
+//  in isolatorPhotos/{test id}. This moves the old ones across:
+//    1. back up every site (Export JSON, photos included)
+//    2. check: how many tests still have photos inside them
+//    3. copy them to isolatorPhotos, then read every copy back from the
+//       server and compare it with the original
+//    4. a few days later, once every phone has the new engineer app (older
+//       versions only look inside the test), remove the old copies. Each one
+//       is checked against its copy again first, and copied now if needed.
+//  Progress is kept in config/isolatorPhotos so anyone in management sees it.
+// ═══════════════════════════════════════════════════════════════════════════
+const backedUp = new Set();
+let moveCheck = null;     // the last Check: { sites: [...], inline, copied, mb }
+let moveResult = '';      // what the last Copy / Remove did
+const samePhotos = (p, r) => (p.photoBase64 || null) === (r.photoBase64 || null) && (p.photoInternalsBase64 || null) === (r.photoInternalsBase64 || null);
+async function moveState() {
+  const snap = await getDoc(doc(db, 'config', 'isolatorPhotos'));
+  return snap.exists() ? snap.data() : {};
+}
+async function allJobs() {
+  const out = [];
+  (await getDocs(collection(db, 'jobs'))).forEach(d => out.push({ id: d.id, name: d.data().name || d.id }));
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+function whenText(ts) {
+  const d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+  return d && !isNaN(d) ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+}
+function daysSince(ts) {
+  const d = ts && ts.toDate ? ts.toDate() : null;
+  return d ? Math.floor((Date.now() - d.getTime()) / 86400000) : null;
+}
+async function renderPhotoMove() {
+  const card = document.getElementById('photoMoveCard'), body = document.getElementById('photoMoveBody');
+  if (!card || moveBusy) return;
+  let st, jobs;
+  try { [st, jobs] = await Promise.all([moveState(), allJobs()]); }
+  catch (e) { card.hidden = false; body.innerHTML = '<p class="hint">Couldn\'t load — ' + escHtml(failed('load', 'Reports: photo move state didn\'t load', e)) + '</p>'; return; }
+  if (st.removedAt) { card.hidden = true; return; }
+  card.hidden = false;
+  const copied = !!st.copiedAt;
+  const ready = document.getElementById('mvBackedUp') ? document.getElementById('mvBackedUp').checked : false;
+  const days = daysSince(st.copiedAt);
+  body.innerHTML = `
+    <p class="hint">A one-off job. Photos go into their own records so sites open quicker. Nothing is removed until step 4.</p>
+    <div class="mv-steps">
+      <div class="mv-step ${ready || copied ? 'done' : ''}">
+        <h3><i class="ti ti-download" aria-hidden="true"></i> 1. Back up every site</h3>
+        <div class="mv-sites">${jobs.map(j => `<div class="mv-site"><span>${escHtml(j.id)} · ${escHtml(j.name)}</span>
+          <button type="button" class="edit-btn" data-mv-backup="${escHtml(j.id)}">${backedUp.has(j.id) ? '<i class="ti ti-check"></i> Saved' : 'Export JSON'}</button></div>`).join('')}</div>
+        <label class="tick"><input type="checkbox" id="mvBackedUp" ${ready ? 'checked' : ''}>I've saved a backup of every site</label>
       </div>
-    `).join('');
-    list.querySelectorAll('.remove-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Remove ' + btn.dataset.email + ' from the staff list?')) return;
-        try { await deleteDoc(doc(db, 'staff', btn.dataset.email)); await renderStaffList(); }
-        catch (e) { alert('Could not remove — ' + (e.message || e.code || 'unknown error')); }
-      });
-    });
+      <div class="mv-step ${moveCheck ? 'done' : ''}">
+        <h3><i class="ti ti-search" aria-hidden="true"></i> 2. Check</h3>
+        ${moveCheck ? `<p>${moveCheck.inline} test${moveCheck.inline === 1 ? '' : 's'} still have photos inside them (${moveCheck.mb} MB). ${moveCheck.copied} of those are already copied.</p>
+          ${moveCheck.sites.filter(x => x.inline).map(x => `<div class="mv-site"><span>${escHtml(x.ref)}</span><span class="hint">${x.inline} with photos · ${x.copied} copied</span></div>`).join('')}` : '<p>See how many tests still have photos inside them.</p>'}
+        <button type="button" class="save-meta-btn" id="mvCheckBtn"><i class="ti ti-search"></i> Check</button>
+      </div>
+      <div class="mv-step ${copied ? 'done' : ''}">
+        <h3><i class="ti ti-copy" aria-hidden="true"></i> 3. Copy the photos</h3>
+        ${copied ? `<p>Copied ${st.copiedCount || 0} on ${whenText(st.copiedAt)}${st.copiedBy ? ' by ' + escHtml(st.copiedBy) : ''}. ${st.copyProblems ? `<b>${st.copyProblems} didn't match.</b> Press Copy again.` : 'Every copy matched its original.'}</p>` : '<p>Copies each photo to its own record, then checks every copy against the original.</p>'}
+        <button type="button" class="save-meta-btn ${copied ? '' : 'red'}" id="mvCopyBtn" ${(ready || copied) && moveCheck ? '' : 'disabled'}><i class="ti ti-copy"></i> ${copied ? 'Copy again (new tests only)' : 'Copy the photos'}</button>
+        ${!(ready || copied) ? '<p class="hint" style="margin-top:6px;">Tick step 1 and press Check first.</p>' : !moveCheck ? '<p class="hint" style="margin-top:6px;">Press Check first.</p>' : ''}
+      </div>
+      <div class="mv-step">
+        <h3><i class="ti ti-trash" aria-hidden="true"></i> 4. Remove the old copies</h3>
+        <p>Do this a few days after copying, once everyone has the new engineer app (v19.0). Older versions only look for photos inside the test.${copied && days !== null ? ` Copied ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'}.` : ''}</p>
+        <button type="button" class="save-meta-btn" id="mvRemoveBtn" ${copied ? '' : 'disabled'}><i class="ti ti-trash"></i> Remove the old copies</button>
+      </div>
+    </div>
+    <div id="mvProgress" hidden><div class="mv-bar"><div></div></div><div class="mv-log"></div></div>
+    ${moveResult ? `<p class="hint" style="margin-top:10px;">${moveResult}</p>` : ''}`;
+  body.querySelectorAll('[data-mv-backup]').forEach(btn => btn.addEventListener('click', async () => {
+    const ref = btn.dataset.mvBackup;
+    btn.disabled = true; btn.textContent = 'Exporting…';
+    try { await exportSiteBackup(ref); backedUp.add(ref); }
+    catch (e) { alert('Could not export — ' + failed('load', 'Reports: backup didn\'t export', e)); }
+    renderPhotoMove();
+  }));
+  document.getElementById('mvBackedUp').addEventListener('change', renderPhotoMove);
+  document.getElementById('mvCheckBtn').addEventListener('click', () => runMove('check'));
+  document.getElementById('mvCopyBtn').addEventListener('click', () => runMove('copy'));
+  document.getElementById('mvRemoveBtn').addEventListener('click', () => {
+    if (!confirm('Remove the photos from inside the test records?\n\nEach one is checked against its copy first. Only do this once everyone has the new engineer app (v19.0).')) return;
+    runMove('remove');
+  });
+}
+function moveProgress(done, total, text) {
+  const box = document.getElementById('mvProgress'); if (!box) return;
+  box.hidden = false;
+  box.querySelector('.mv-bar > div').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  box.querySelector('.mv-log').textContent = text;
+}
+async function runMove(what) {
+  if (moveBusy) return;
+  if (SWS.swViewingAs() && what !== 'check') { alert(SWS.SW_VA_MSG); return; }
+  moveBusy = true;
+  document.querySelectorAll('#photoMoveBody button').forEach(b => { b.disabled = true; });
+  const me = currentUser.displayName || currentUser.email;
+  let jobs;
+  try { jobs = await allJobs(); } catch (e) { moveBusy = false; alert('Could not load the sites — ' + failed('load', 'Reports: sites didn\'t load', e)); renderPhotoMove(); return; }
+  const sites = [];
+  let nInline = 0, nCopied = 0, nWritten = 0, nRemoved = 0, bytes = 0;
+  const problems = [];
+  try {
+    for (let i = 0; i < jobs.length; i++) {
+      const j = jobs[i];
+      moveProgress(i, jobs.length, (what === 'check' ? 'Checking ' : what === 'copy' ? 'Copying ' : 'Removing ') + j.id + '…');
+      // Always from the server, never this computer's saved copy.
+      const tsnap = await getDocsFromServer(query(collection(db, 'isolatorTests'), where('siteRef', '==', j.id)));
+      let photos = await sitePhotoDocs(j.id, true);
+      const inline = [];
+      tsnap.forEach(d => { const r = d.data(); if (hasInlinePhotos(r)) inline.push({ id: d.id, ...r }); });
+      const need = inline.filter(r => !(photos.get(r.id) && samePhotos(photos.get(r.id), r)));
+      const site = { ref: j.id, tests: tsnap.size, inline: inline.length, copied: inline.length - need.length };
+      sites.push(site);
+      nInline += inline.length; nCopied += site.copied;
+      inline.forEach(r => { bytes += (r.photoBase64 || '').length + (r.photoInternalsBase64 || '').length; });
+      if (what === 'check' || !inline.length) continue;
+
+      // Copy whatever isn't there yet (or doesn't match), a few MB at a time.
+      let b = null, bBytes = 0, bN = 0;
+      const flush = async () => { if (b && bN) { await b.commit(); } b = null; bBytes = 0; bN = 0; };
+      for (const r of need) {
+        const size = (r.photoBase64 || '').length + (r.photoInternalsBase64 || '').length;
+        if (b && (bBytes + size > 3500000 || bN >= 20)) await flush();
+        if (!b) b = writeBatch(db);
+        b.set(doc(db, 'isolatorPhotos', r.id), { siteRef: j.id, testId: r.id, engineerEmail: r.engineerEmail || '',
+          photoBase64: r.photoBase64 || null, photoInternalsBase64: r.photoInternalsBase64 || null, movedAt: serverTimestamp(), movedBy: me });
+        bBytes += size; bN++; nWritten++;
+        moveProgress(i, jobs.length, 'Copying ' + j.id + '… ' + nWritten + ' copied');
+      }
+      await flush();
+      // Read every copy back from the server and compare it with the original.
+      if (need.length) photos = await sitePhotoDocs(j.id, true);
+      const good = inline.filter(r => photos.get(r.id) && samePhotos(photos.get(r.id), r));
+      inline.filter(r => !good.includes(r)).forEach(r => problems.push(r.equipmentId || r.id));
+      site.copied = good.length;
+      if (what === 'remove') {
+        for (let k = 0; k < good.length; k += 200) {
+          const rb = writeBatch(db);
+          good.slice(k, k + 200).forEach(r => rb.update(doc(db, 'isolatorTests', r.id), { photoBase64: deleteField(), photoInternalsBase64: deleteField() }));
+          await rb.commit();
+          nRemoved += Math.min(200, good.length - k);
+          moveProgress(i, jobs.length, 'Removing ' + j.id + '… ' + nRemoved + ' done');
+        }
+      }
+    }
+    moveProgress(jobs.length, jobs.length, 'Done.');
+    const copiedNow = sites.reduce((n, x) => n + x.copied, 0);
+    if (what === 'check') {
+      moveCheck = { sites, inline: nInline, copied: nCopied, mb: (bytes * 0.75 / 1048576).toFixed(0) };
+      moveResult = '';
+    } else if (what === 'copy') {
+      await setDoc(doc(db, 'config', 'isolatorPhotos'), { copiedAt: serverTimestamp(), copiedBy: me, copiedCount: copiedNow, copyProblems: problems.length }, { merge: true });
+      moveCheck = { sites, inline: nInline, copied: copiedNow, mb: (bytes * 0.75 / 1048576).toFixed(0) };
+      moveResult = problems.length ? `${problems.length} didn't match after copying: ${problems.slice(0, 12).map(escHtml).join(', ')}${problems.length > 12 ? '…' : ''}. Press Copy again.`
+        : `Copied ${nWritten} and checked all ${copiedNow}: every copy matches.`;
+    } else {
+      const left = problems.length;
+      await setDoc(doc(db, 'config', 'isolatorPhotos'), left ? { copyProblems: left } : { removedAt: serverTimestamp(), removedBy: me, removedCount: nRemoved }, { merge: true });
+      moveResult = left ? `Removed ${nRemoved}. ${left} were left alone because their copy didn't match: ${problems.slice(0, 12).map(escHtml).join(', ')}. Press Copy again, then Remove.`
+        : `Done: removed the old copies from ${nRemoved} tests. Sites will open quicker now.`;
+      if (!left) showBanner('ok', 'Photos moved: the old copies are removed from ' + nRemoved + ' tests.');
+      photoCache.clear();
+      if (document.getElementById('site').value) loadSiteData();
+    }
   } catch (e) {
-    list.innerHTML = '<div class="empty-note">Could not load — ' + (e.message || e.code || 'unknown error') + '</div>';
+    moveResult = '<b>Stopped part-way</b> — ' + escHtml(failed('save', 'Reports: photo ' + what + ' stopped', e)) + '. Nothing is lost: press the same button again to carry on.';
+  } finally {
+    moveBusy = false;
+    renderPhotoMove();
   }
 }
-
-document.getElementById('addStaffBtn').addEventListener('click', async () => {
-  const name = document.getElementById('newStaffName').value.trim();
-  const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
-  const position = document.getElementById('newStaffPosition').value.trim();
-  if (!name || !email) { alert('Name and email are both required.'); return; }
-  try {
-    await setDoc(doc(db, 'staff', email), { name, position });
-    ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
-    await renderStaffList();
-    const banner = document.getElementById('banner');
-    banner.className = 'banner ok'; banner.textContent = 'Staff member added: ' + name; banner.style.display = 'block';
-  } catch (e) {
-    alert('Could not add staff member — ' + (e.message || e.code || 'unknown error'));
-  }
-});
+// ═════════════════════ end of MOVING THE PHOTOS ═════════════════════════════
 
 // ---- Sites ----
 async function loadSites() {
@@ -1634,11 +1647,11 @@ function renderPending() {
           await updateDoc(doc(db, 'isolatorTests', id), { deletedFlag: false });
         } else {
           if (!confirm('Permanently delete this test record? This cannot be undone.')) return;
-          await deleteDoc(doc(db, 'isolatorTests', id));
+          await deleteTests([id]);
         }
         await loadSiteData();
       } catch (e) {
-        alert('Action failed — ' + (e.message || e.code || 'unknown error'));
+        alert('Action failed — ' + failed('save', 'Reports: Action failed', e));
       }
     });
   });
@@ -1657,10 +1670,10 @@ document.getElementById('bulkDeleteBtn').addEventListener('click', async () => {
   if (selected.length === 0) return;
   if (!confirm('Permanently delete ' + selected.length + ' test record' + (selected.length > 1 ? 's' : '') + '? This cannot be undone.')) return;
   try {
-    for (const id of selected) { await deleteDoc(doc(db, 'isolatorTests', id)); }
+    await deleteTests(selected);
     await loadSiteData();
   } catch (e) {
-    alert('Could not delete all selected records — ' + (e.message || e.code || 'unknown error'));
+    alert('Could not delete all selected records — ' + failed('save', 'Reports: could not delete all selected records', e));
   }
 });
 
@@ -1674,8 +1687,8 @@ function renderStatsBar() {
   const limited = groups.filter(g => isLimitedRecord(g.latest)).length;
   const passed = total - failed;
   const qsed = groups.filter(g => g.latest && g.latest.qsed).length;
-  const stat = (label, val, color) => `<div><div style="font-size:22px;font-weight:700;${color ? 'color:' + color + ';' : ''}">${val}</div><div style="font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.03em;font-weight:600;">${label}</div></div>`;
-  let html = stat('Total', total) + stat('Passed', passed, 'var(--pass)') + stat('Failed', failed, 'var(--fail)') + stat('Limitations', limited, '#8a6d1a') + stat('QSed', qsed + ' / ' + total);
+  const stat = (label, val, color) => `<div><div class="n" ${color ? `style="color:${color};"` : ''}>${val}</div><div class="l">${label}</div></div>`;
+  let html = stat('Total', total) + stat('Passed', passed, 'var(--green)') + stat('Failed', failed, 'var(--red)') + stat('Limitations', limited, 'var(--amber)') + stat('QSed', qsed + ' / ' + total);
   const last = lastReportOf(siteMeta);
   if (last) {
     const sinces = groups.map(g => classifySince(g.hist, last.date));
@@ -1683,7 +1696,7 @@ function renderStatsBar() {
     const fixed = sinces.filter(x => x.kind === 'fixed').length;
     const notYet = sinces.filter(x => x.kind === 'notRetested');
     const notYetFail = notYet.filter(x => x.prevFail).length;
-    html += stat('New since ' + shortDate(last.date), newSince, '#1f5fa8') + stat('Fixed since', fixed, 'var(--pass)') +
+    html += stat('New since ' + shortDate(last.date), newSince, 'var(--blue)') + stat('Fixed since', fixed, 'var(--green)') +
       stat('Not retested', notYet.length + (notYetFail ? ' (' + notYetFail + ' failed)' : ''), 'var(--grey)');
   }
   bar.innerHTML = html;
@@ -1828,8 +1841,8 @@ function renderPreview() {
                 <div class="eq">${g.eq}</div>
                 ${detailLine ? `<div class="detail-line">${detailLine}</div>` : ''}
                 ${latest.manufacturer || latest.model ? `<div class="detail-line">${[latest.manufacturer, latest.model].filter(Boolean).join(', ')}</div>` : ''}
-                ${checklistWasEdited && lastEdit ? `<div class="detail-line" style="color:#8a6d1a;">Checklist last edited by ${lastEdit.by} · ${formatDateDMY(lastEdit.at.slice(0,10))}</div>` : ''}
-                ${g.since.kind !== 'none' ? `<div class="detail-line"><span class="chip" style="${isNewSince(g.since) ? 'background:#e8f0fb;color:#1f5fa8;' : 'background:#f0f0f0;color:var(--grey);'}">${isNewSince(g.since) ? 'New since last report · ' : ''}${sinceLabel(g.since)}</span></div>` : ''}
+                ${checklistWasEdited && lastEdit ? `<div class="detail-line" style="color:var(--amber);">Checklist last edited by ${lastEdit.by} · ${formatDateDMY(lastEdit.at.slice(0,10))}</div>` : ''}
+                ${g.since.kind !== 'none' ? `<div class="detail-line"><span class="chip" style="${isNewSince(g.since) ? 'background:var(--blue-bg);color:var(--blue);' : 'background:#eeece7;color:var(--grey);'}">${isNewSince(g.since) ? 'New since last report · ' : ''}${sinceLabel(g.since)}</span></div>` : ''}
                 ${latest.whatWasDone ? `<div class="detail-line"><strong>What was done:</strong> ${escHtml(latest.whatWasDone)}</div>` : ''}
               </div>
             </div>
@@ -1864,11 +1877,11 @@ function renderPreview() {
       `;
     }).join('') : '';
 
-    function photoBlock(label, base64, fieldKey) {
+    function photoBlock(label, fieldKey) {
       return `
-        <div style="margin-bottom:14px;">
-          <p class="hint" style="margin:0 0 4px;font-weight:600;">${label}</p>
-          ${base64 ? `<img src="data:image/jpeg;base64,${base64}" style="max-width:220px;border-radius:6px;cursor:zoom-in;display:block;margin-bottom:6px;" data-full-photo="${base64}">` : '<p class="hint">No photo currently on record.</p>'}
+        <div class="photo-block">
+          <label>${label}</label>
+          <div data-photo-slot="${fieldKey}"><p class="hint">Loading photo…</p></div>
           <input type="file" accept="image/*" data-photo-replace="${fieldKey}">
           <p class="edit-warning" data-photo-warning="${fieldKey}" style="display:none;">Uploading a new photo here will permanently replace the current one — this can't be undone.</p>
         </div>
@@ -1898,9 +1911,9 @@ function renderPreview() {
           <p class="hint" style="font-weight:600;margin:10px 0 6px;">Checklist result</p>
           ${checksEditable || '<p class="hint">No checklist recorded.</p>'}
 
-          <p class="hint" style="font-weight:600;margin:14px 0 6px;">Photos <span style="font-weight:400;">(click an existing photo to view full size)</span></p>
-          ${photoBlock('General photo', latest.photoBase64, 'photoBase64')}
-          ${photoBlock('Internals photo', latest.photoInternalsBase64, 'photoInternalsBase64')}
+          <p class="hint" style="font-weight:600;margin:14px 0 6px;">Photos <span style="font-weight:400;">(tap one to see it bigger)</span></p>
+          ${photoBlock('General photo', 'photoBase64')}
+          ${photoBlock('Internals photo', 'photoInternalsBase64')}
 
           <div class="btns">
             <button type="button" class="btn-cancel" data-role="cancel">Cancel</button>
@@ -1918,7 +1931,7 @@ function renderPreview() {
       try {
         await updateDoc(doc(db, 'isolatorTests', btn.dataset.qsedId), { qsed: newState });
         await loadSiteData();
-      } catch (e) { alert('Could not update — ' + (e.message || e.code || 'unknown error')); }
+      } catch (e) { alert('Could not update — ' + failed('save', 'Reports: could not update', e)); }
     });
   });
 
@@ -1929,15 +1942,8 @@ function renderPreview() {
     btn.addEventListener('click', async () => {
       if (isSiteComplete()) { alert('This site is marked Complete. Reopen it on the Sites tab first.'); return; }
       if (!confirm('Permanently delete this test record? This cannot be undone.')) return;
-      try { await deleteDoc(doc(db, 'isolatorTests', btn.dataset.singleDelete)); await loadSiteData(); }
-      catch (e) { alert('Could not delete — ' + (e.message || e.code || 'unknown error')); }
-    });
-  });
-
-  previewList.querySelectorAll('[data-full-photo]').forEach(img => {
-    img.addEventListener('click', () => {
-      const w = window.open();
-      if (w) w.document.write('<img src="data:image/jpeg;base64,' + img.dataset.fullPhoto + '" style="max-width:100%;">');
+      try { await deleteTests([btn.dataset.singleDelete]); await loadSiteData(); }
+      catch (e) { alert('Could not delete — ' + failed('save', 'Reports: could not delete', e)); }
     });
   });
 
@@ -1952,6 +1958,15 @@ function renderPreview() {
     const docId = editBox.dataset.docId;
     const record = siteHistoryCache.find(h => h._id === docId);
     const replacementPhotos = {}; // fieldKey -> new base64, only populated if actually replaced
+    if (record) loadPhotos(record).then(p => {
+      editBox.querySelectorAll('[data-photo-slot]').forEach(slot => {
+        const b64 = p[slot.dataset.photoSlot];
+        slot.innerHTML = b64 ? `<img src="data:image/jpeg;base64,${b64}" alt="" data-zoom>` : '<p class="hint">No photo on record.</p>';
+      });
+    }).catch(e => {
+      failed('load', 'Reports: photos didn\'t load', e);
+      editBox.querySelectorAll('[data-photo-slot]').forEach(slot => { slot.innerHTML = '<p class="hint">Photo didn\'t load.</p>'; });
+    });
 
     function refreshIdLive() {
       const values = {};
@@ -2019,7 +2034,10 @@ function renderPreview() {
 
       const checklistChanged = record ? JSON.stringify(record.checks || {}) !== JSON.stringify(newChecks) : false;
 
-      Object.keys(replacementPhotos).forEach(fieldKey => { update[fieldKey] = replacementPhotos[fieldKey]; });
+      // A replaced photo goes in isolatorPhotos. If the test still has its
+      // old copy inside it (not moved yet), that's changed too, so the two match.
+      const replacing = Object.keys(replacementPhotos).length > 0;
+      if (replacing && record && hasInlinePhotos(record)) Object.keys(replacementPhotos).forEach(fieldKey => { update[fieldKey] = replacementPhotos[fieldKey]; });
 
       const logEntry = {
         by: currentUser.displayName || currentUser.email, byEmail: currentUser.email,
@@ -2028,10 +2046,15 @@ function renderPreview() {
       update.editLog = [...((record && record.editLog) || []), logEntry];
 
       try {
+        if (replacing) {
+          await setDoc(doc(db, 'isolatorPhotos', docId), { siteRef: record ? record.siteRef : document.getElementById('site').value, testId: docId,
+            engineerEmail: (record && record.engineerEmail) || '', ...replacementPhotos, updatedAt: serverTimestamp() }, { merge: true });
+          photoCache.delete(docId);
+        }
         await updateDoc(doc(db, 'isolatorTests', docId), update);
         editingId = null;
         await loadSiteData();
-      } catch (e) { alert('Could not save — ' + (e.message || e.code || 'unknown error')); }
+      } catch (e) { alert('Could not save — ' + failed('save', 'Reports: could not save', e)); }
     });
   });
 }
@@ -2122,7 +2145,7 @@ function renderSchedule() {
         const cellText = v === 'Pass' ? '✓' : v === 'Fail' ? '✕' : v === 'N/A' ? 'N/A' : '—';
         html += `<td class="${cellClass}">${cellText}</td>`;
       });
-      const statusLabel = isLimitedRecord(latest) ? '<span class="chip" style="background:#fff3cd;color:#8a6d1a;">Limitation</span>' : '<span class="chip chip-pass">Full</span>';
+      const statusLabel = isLimitedRecord(latest) ? '<span class="chip chip-warn">Limitation</span>' : '<span class="chip chip-pass">Full</span>';
       const sinceCell = schedLastDate ? `<td style="white-space:nowrap;">${sinceLabel(classifySince(g.hist, schedLastDate))}</td>` : '';
       html += `<td style="white-space:nowrap;">${latest.model || '—'}</td><td>${statusLabel}</td>${sinceCell}<td style="max-width:220px;">${latest.observations || '-'}${latest.whatWasDone ? '<br><em>Done: ' + escHtml(latest.whatWasDone) + '</em>' : ''}</td></tr>`;
     });
@@ -2187,6 +2210,77 @@ function fullAddress() {
   return [line, pc].filter(Boolean).join(', ');
 }
 
+// ---- Sign-off (v18.0) ----
+// "Inspected and tested by" is everyone whose test is the one shown for at
+// least one item (the same people as the By column), with their position from
+// their staff record and how many items. Signatures are saved by a manager in
+// Management → Staff (staffSignatures/{email}, managers only). The Final
+// certificate can't be made until everyone here has one saved.
+let peopleCache = null;
+async function loadPeople(fresh) {
+  if (peopleCache && !fresh) return peopleCache;
+  const staff = {}, sigs = {};
+  (await getDocs(collection(db, 'staff'))).forEach(d => { staff[d.id.toLowerCase()] = d.data(); });
+  try { (await getDocs(collection(db, 'staffSignatures'))).forEach(d => { sigs[d.id.toLowerCase()] = d.data(); }); }
+  catch (e) { failed('load', 'Reports: signatures didn\'t load', e); }
+  peopleCache = { staff, sigs };
+  return peopleCache;
+}
+function initialsFrom(name) {
+  return String(name || '').split(/\s+/).filter(Boolean).map(w => w[0].toUpperCase()).join('').slice(0, 3) || '-';
+}
+function shortOf(people, email, name) {
+  const s = email ? people.staff[email] : null;
+  return (s && s.short) || initialsFrom((s && s.name) || name);
+}
+function testersOf(groups, people) {
+  const by = new Map();
+  groups.forEach(g => {
+    const r = g.latest; if (!r) return;
+    const email = String(r.engineerEmail || '').toLowerCase();
+    const key = email || 'name:' + (r.engineer || '');
+    if (!by.has(key)) by.set(key, { email, name: r.engineer || email || 'Unknown', n: 0 });
+    by.get(key).n++;
+  });
+  return [...by.values()].map(t => {
+    const s = t.email ? people.staff[t.email] : null;
+    return { ...t, name: (s && s.name) || t.name, position: (s && s.position) || '', short: shortOf(people, t.email, t.name),
+      sig: t.email ? people.sigs[t.email] || null : null, onStaff: !!s };
+  }).sort((a, b) => (b.n - a.n) || a.name.localeCompare(b.name));
+}
+function authoriserOf(people) {
+  const va = SWS.swViewingAs();
+  const email = va ? va.email : String(currentUser.email || '').toLowerCase();
+  const s = people.staff[email];
+  return { email, name: (s && s.name) || (va ? va.name : (currentUser.displayName || email)), position: (s && s.position) || '',
+    short: shortOf(people, email, s && s.name), sig: people.sigs[email] || null, onStaff: !!s };
+}
+function missingSignatures(testers, auth) {
+  return [...testers, auth].filter(p => !p.sig).map(p => p.name + (p.onStaff ? '' : ' (not on the staff list)'));
+}
+function sigRowHtml(p, extra) {
+  return `<div class="sig-row ${p.sig ? '' : 'missing'}"><div><b>${escHtml(p.name)} (${escHtml(p.short)})</b><small>${escHtml(p.position || 'No position set')}${extra ? ' · ' + extra : ''}</small></div>
+    <div class="sig">${p.sig ? `<img src="${p.sig.image}" alt="Signature">` : '<span class="chip chip-fail">No signature</span>'}</div></div>`;
+}
+let signoffToken = 0;
+async function renderSignoff(groups) {
+  const my = ++signoffToken;
+  const tEl = document.getElementById('signTesters'), aEl = document.getElementById('signAuth'), mEl = document.getElementById('signMissing');
+  const finalBtn = document.getElementById('generateBtn');
+  if (!groups.length) { tEl.innerHTML = '<div class="empty-note">No tests logged yet.</div>'; aEl.innerHTML = ''; mEl.hidden = true; return; }
+  let people;
+  try { people = await loadPeople(); }
+  catch (e) { tEl.innerHTML = '<div class="empty-note">Couldn\'t load the staff list — ' + escHtml(failed('load', 'Reports: staff list didn\'t load', e)) + '</div>'; return; }
+  if (my !== signoffToken) return;
+  const testers = testersOf(groups, people), auth = authoriserOf(people);
+  tEl.innerHTML = testers.map(t => sigRowHtml(t, t.n + ' item' + (t.n === 1 ? '' : 's'))).join('');
+  aEl.innerHTML = sigRowHtml(auth, 'you');
+  const missing = missingSignatures(testers, auth);
+  mEl.hidden = !missing.length;
+  mEl.innerHTML = missing.length ? `<b>The Final certificate can't be made yet.</b> No signature saved for: ${missing.map(escHtml).join(', ')}. Add ${missing.length === 1 ? 'it' : 'them'} in <a href="management.html">Management → Staff</a>, then come back and press Refresh.` : '';
+  if (missing.length) finalBtn.disabled = true;
+}
+
 function tallyEngineers(groups) {
   const counts = {};
   groups.forEach(g => { if (g.latest && g.latest.engineer) counts[g.latest.engineer] = (counts[g.latest.engineer] || 0) + 1; });
@@ -2222,7 +2316,7 @@ function renderReportHistory() {
         await updateJob(siteRef, siteMeta, { 'isolator.reports': remaining });
         await loadSiteData();
         renderSitesList();
-      } catch (e) { alert('Could not remove — ' + (e.message || e.code || 'unknown error')); }
+      } catch (e) { alert('Could not remove — ' + failed('save', 'Reports: could not remove', e)); }
     });
   });
 }
@@ -2247,7 +2341,7 @@ document.getElementById('addPastReportBtn').addEventListener('click', async () =
     await loadSiteData();
     renderSitesList();
     showBanner('ok', 'Report of ' + longDate(date) + ' added to the history.');
-  } catch (e) { alert('Could not add — ' + (e.message || e.code || 'unknown error')); }
+  } catch (e) { alert('Could not add — ' + failed('save', 'Reports: could not add', e)); }
 });
 
 function renderFront() {
@@ -2257,7 +2351,7 @@ function renderFront() {
   const closed = isSiteComplete();
   const finalBtn = document.getElementById('generateBtn');
   finalBtn.disabled = !closed;
-  document.getElementById('finalCertHint').style.color = closed ? '' : 'var(--fail)';
+  document.getElementById('finalCertHint').style.color = closed ? '' : 'var(--red)';
   document.getElementById('metaName').value = siteMeta.name || (siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].textContent : '');
   document.getElementById('metaCertNumber').value = iso.certificateNumber || '';
   document.getElementById('metaAddressLine').value = siteMeta.addressLine || '';
@@ -2280,12 +2374,7 @@ function renderFront() {
     </div>
   `;
 
-  const engineers = tallyEngineers(groups);
-  const nameSelect = document.getElementById('signInspectedName');
-  nameSelect.innerHTML = engineers.length
-    ? engineers.map(e => `<option>${e}</option>`).join('')
-    : '<option value="">No tests logged yet</option>';
-  document.getElementById('signAuthName').value = currentUser.displayName || currentUser.email;
+  renderSignoff(groups);
 }
 
 document.getElementById('saveMetaBtn').addEventListener('click', async () => {
@@ -2315,7 +2404,7 @@ document.getElementById('saveMetaBtn').addEventListener('click', async () => {
     const banner = document.getElementById('banner');
     banner.className = 'banner ok'; banner.textContent = 'Installation details saved.'; banner.style.display = 'block';
   } catch (e) {
-    alert('Could not save — ' + (e.message || e.code || 'unknown error'));
+    alert('Could not save — ' + failed('save', 'Reports: could not save', e));
   }
 });
 
@@ -2334,20 +2423,12 @@ function loadImageAsDataURL(url) {
   });
 }
 
-function fileToImageData(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => resolve({ dataUrl: reader.result, w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = reject;
-      img.src = reader.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// "Next retest due" can be typed ("September 2027") or a date (2027-09-01).
+function dueText(v) {
+  v = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { const d = new Date(v + 'T12:00:00'); if (!isNaN(d)) return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  return v || '-';
 }
-
 function formatDateDMY(dateStr) {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
@@ -2410,6 +2491,15 @@ function qsedOnlyGroups(groups) {
 // sign-off or declarations; a summary of what's changed since the last report
 // first, plus a "Since last report" column and last-time notes on retested items.
 async function generateReport(mode) {
+  if (pdfBusy) return;
+  pdfBusy = true;
+  try { await makeReport(mode); }
+  catch (e) {
+    const b = document.getElementById('banner');
+    b.className = 'banner bad'; b.textContent = 'The report didn\'t finish — ' + failed('load', 'Reports: PDF didn\'t finish', e); b.style.display = 'block';
+  } finally { pdfBusy = false; }
+}
+async function makeReport(mode) {
   const isProgress = mode === 'progress';
   const banner = document.getElementById('banner');
   banner.style.display = 'none';
@@ -2430,11 +2520,24 @@ async function generateReport(mode) {
     if (groups.length === 0) { banner.className = 'banner bad'; banner.textContent = 'Nothing left to report once non-QSed items are excluded.'; banner.style.display = 'block'; return; }
   }
 
+  // Who tested each item: the latest tester's Short name from Management
+  // (initials if there isn't one). Signatures for the sign-off.
+  const people = await loadPeople(true);
+  const testers = testersOf(groups, people), authoriser = authoriserOf(people);
+  if (!isProgress) {
+    const missing = missingSignatures(testers, authoriser);
+    if (missing.length) {
+      banner.className = 'banner bad';
+      banner.innerHTML = 'The Final certificate can\'t be made yet. No signature saved for: ' + missing.map(escHtml).join(', ') + '. Add them in <a href="management.html">Management → Staff</a>.';
+      banner.style.display = 'block';
+      return;
+    }
+  }
   const logo = await loadImageAsDataURL('sw-logo.png').catch(() => null);
-  const inspectedFileInput = document.getElementById('signInspectedFile').files[0];
-  const authFileInput = document.getElementById('signAuthFile').files[0];
-  const inspectedSig = inspectedFileInput ? await fileToImageData(inspectedFileInput).catch(() => null) : null;
-  const authSig = authFileInput ? await fileToImageData(authFileInput).catch(() => null) : null;
+  const initialsOf = r => shortOf(people, String(r.engineerEmail || '').toLowerCase(), r.engineer);
+  // Notes that say nothing ("ok", "no issues") are left off.
+  const EMPTY_NOTE = /^\s*(ok(ay)?|no issues?( found)?|all (good|ok)|n\/?a|none|nothing to report|good|fine|pass(ed)?|-+|\.)?\s*\.?\s*$/i;
+  const realNote = t => (t && !EMPTY_NOTE.test(String(t))) ? String(t).trim() : '';
 
   const certNumber = document.getElementById('metaCertNumber').value.trim() || (siteRef.toUpperCase() + '-' + new Date().toISOString().slice(0, 10));
   const reportRef = isProgress ? (siteRef + ' · ' + formatDateDMY(localToday())) : certNumber;
@@ -2525,7 +2628,7 @@ async function generateReport(mode) {
     ['Address', fullAddress()],
     ['Testing started', formatDateDMY(document.getElementById('metaStarted').value)],
     ['Report generated', formatDateDMY(new Date().toISOString().slice(0, 10))],
-    ['Next retest due', document.getElementById('metaDue').value]
+    ['Next retest due', dueText(document.getElementById('metaDue').value)]
   ];
   metaRows.forEach((r, i) => { ensureRoom(22); y = labelValueRow(y, contentW, r[0], r[1], i % 2 === 1); });
 
@@ -2567,12 +2670,19 @@ async function generateReport(mode) {
   assessmentPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
   pageRefX = marginX + 12; pageRefY = y + 62;
   y += boxH + 10;
+  drawAgreedLimitations();
 
   // Short declaration, with the sign-off flowing directly beneath it under
   // the same heading - this is distinct from the full Final Declaration
   // page at the very end of the document.
+  // v18.0: the declaration and every signature stay together. If they won't
+  // all fit under the limitations, the whole section starts on page 2 (as
+  // long as it fits on one page; a very long list of testers just flows on).
   y += 16;
-  ensureRoom(20 + 50);
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+  const SIG_ROW_H = 34;
+  const signOffH = 20 + 10 + 8 * 11 + 16 + (24 + SIG_ROW_H * testers.length + 12) + (24 + SIG_ROW_H + 12);
+  if (signOffH <= pageH - 80) ensureRoom(signOffH); else ensureRoom(20 + 50);
   y = sectionBar(y, 'Declaration & Sign-off', contentW);
   y += 10;
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
@@ -2582,32 +2692,71 @@ async function generateReport(mode) {
   pdf.text(shortDeclLines, marginX, y);
   y += shortDeclLines.length * 11 + 16;
 
-  function signOffBlock(label, name, position, sig, dateStr) {
-    ensureRoom(90);
+  // v18.0: everyone who tested, then the authoriser, each with their saved
+  // signature (the Final certificate isn't made without them).
+  const todayStr = localToday();
+  function sigTable(label, cols, rows) {
+    const rowH = SIG_ROW_H, colX = [marginX + 8, marginX + 205, marginX + 318, marginX + contentW - 126];
+    ensureRoom(16 + 18 + rowH);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(26, 26, 26);
     pdf.text(label, marginX, y);
-    y += 14;
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
-    pdf.text('Name: ' + (name || '-'), marginX, y);
-    pdf.text('Position: ' + (position || '-'), marginX + 220, y);
-    pdf.text('Date: ' + formatDateDMY(dateStr), marginX + 400, y);
-    y += 10;
-    if (sig) {
-      const sigW = 100, sigH = sigW * (sig.h / sig.w);
-      pdf.addImage(sig.dataUrl, marginX, y, sigW, Math.min(sigH, 45));
-      y += Math.min(sigH, 45) + 10;
-    } else {
-      pdf.setFont('helvetica', 'italic'); pdf.setFontSize(8.5); pdf.setTextColor(150, 150, 150);
-      pdf.text('No signature uploaded', marginX, y + 12);
-      y += 26;
-    }
+    y += 6;
+    const head = () => {
+      pdf.setFillColor(44, 50, 66); pdf.rect(marginX, y, contentW, 16, 'F');
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(255, 255, 255);
+      cols.forEach((c, i) => pdf.text(c, colX[i], y + 11));
+      y += 16;
+    };
+    head();
+    rows.forEach((r, i) => {
+      if (y + rowH > pageH - 40) { pdf.addPage('a4', 'portrait'); pageW = pdf.internal.pageSize.getWidth(); pageH = pdf.internal.pageSize.getHeight(); y = 40; head(); }
+      pdf.setFillColor(i % 2 ? 250 : 255, i % 2 ? 249 : 255, i % 2 ? 247 : 255); pdf.rect(marginX, y, contentW, rowH, 'F');
+      pdf.setDrawColor(225, 223, 218); pdf.line(marginX, y + rowH, marginX + contentW, y + rowH);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9); pdf.setTextColor(26, 26, 26);
+      pdf.text(pdf.splitTextToSize(r[0], 190)[0], colX[0], y + rowH / 2 + 3);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(60, 60, 60);
+      pdf.text(pdf.splitTextToSize(r[1] || '-', 108)[0], colX[1], y + rowH / 2 + 3);
+      pdf.text(String(r[2]), colX[2], y + rowH / 2 + 3);
+      const sig = r[3];
+      if (sig && sig.image) {
+        const maxW = 116, maxH = rowH - 6;
+        const ratio = (sig.w && sig.h) ? sig.w / sig.h : 3;
+        let w = maxW, h = w / ratio;
+        if (h > maxH) { h = maxH; w = h * ratio; }
+        try { pdf.addImage(sig.image, /^data:image\/png/i.test(sig.image) ? 'PNG' : 'JPEG', colX[3], y + (rowH - h) / 2, w, h); } catch (e) {}
+      }
+      y += rowH;
+    });
+    y += 12;
   }
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-  signOffBlock('Inspected and tested by', document.getElementById('signInspectedName').value, document.getElementById('signInspectedPosition').value.trim(), inspectedSig, todayStr);
-  signOffBlock('Report authorised by', document.getElementById('signAuthName').value, document.getElementById('signAuthPosition').value.trim(), authSig, todayStr);
+  sigTable('Inspected and tested by', ['NAME', 'POSITION', 'ITEMS', 'SIGNATURE'],
+    testers.map(t => [t.name + ' (' + t.short + ')', t.position, t.n, t.sig]));
+  sigTable('Report authorised by', ['NAME', 'POSITION', 'DATE', 'SIGNATURE'],
+    [[authoriser.name + ' (' + authoriser.short + ')', authoriser.position, formatDateDMY(todayStr), authoriser.sig]]);
   } else {
     drawProgressSummary();
+  }
+
+  // Agreed limitations: the wording on the front page; each item tested with a
+  // limitation is ticked in the schedule, with the reason on a line under it.
+  function drawAgreedLimitations() {
+    const text = document.getElementById('metaLimitations').value.trim();
+    const withWho = document.getElementById('metaAgreedWith').value.trim();
+    const nLim = groups.filter(g => g.latest && isLimitedRecord(g.latest)).length;
+    y += 16;
+    ensureRoom(20 + 40);
+    y = sectionBar(y, 'Agreed Limitations', contentW);
+    pdf.setFillColor(250, 249, 247); 
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
+    const body = (!text && !nLim) ? 'All identified equipment was fully tested, with no agreed limitations recorded for this site.'
+      : (text || 'Some items could not be fully tested.') + (nLim ? ' ' + nLim + ' item' + (nLim === 1 ? ' was' : 's were') + ' tested with a limitation. Each is marked in the schedule, with the reason underneath.' : '');
+    const lines = pdf.splitTextToSize(body, contentW - 16);
+    const h = lines.length * 11 + 14 + (withWho ? 14 : 0);
+    ensureRoom(h);
+    pdf.rect(marginX, y, contentW, h, 'F'); pdf.setDrawColor(225, 223, 218); pdf.rect(marginX, y, contentW, h);
+    pdf.text(lines, marginX + 8, y + 14);
+    if (withWho) { pdf.setFont('helvetica', 'italic'); pdf.setFontSize(8.5); pdf.setTextColor(110, 110, 110); pdf.text('Agreed with: ' + withWho, marginX + 8, y + 14 + lines.length * 11 + 2); }
+    y += h + 4;
   }
 
   // ---- Progress report: summary of what's changed since the last report ----
@@ -2661,6 +2810,7 @@ async function generateReport(mode) {
     ensureRoom(noteLines.length * 11 + 6);
     pdf.text(noteLines, marginX, y + 4);
     y += noteLines.length * 11 + 6;
+    drawAgreedLimitations();
 
     // Simple portrait list table with repeating header on each new page.
     function listTable(title, cols, rows, emptyText) {
@@ -2733,82 +2883,12 @@ async function generateReport(mode) {
     ], outstanding, 'Nothing is failing.');
   }
 
-  // ---- Agreed Limitations - its own page, so it never pushes the front
-  // page or sign-off onto page 2 ----
-  pdf.addPage('a4', 'portrait');
-  pageW = pdf.internal.pageSize.getWidth();
-  pageH = pdf.internal.pageSize.getHeight();
-  let ly = 40;
-  ly = sectionBar(ly, 'Agreed Limitations', pageW - marginX * 2);
-  ly += 14;
-
-  const limitationsText = document.getElementById('metaLimitations').value.trim();
-  const agreedWithSite = document.getElementById('metaAgreedWith').value.trim();
-  const limitedGroups = groups.filter(g => g.latest && isLimitedRecord(g.latest));
-
-  if (!limitationsText && limitedGroups.length === 0) {
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(60, 60, 60);
-    pdf.text('All identified equipment was fully tested, with no agreed limitations recorded for this site.', marginX, ly);
-  } else {
-    if (limitationsText) {
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
-      const limLines = pdf.splitTextToSize(limitationsText, pageW - marginX * 2);
-      pdf.text(limLines, marginX, ly);
-      ly += limLines.length * 11 + 8;
-      if (agreedWithSite) {
-        pdf.setFont('helvetica', 'italic'); pdf.setFontSize(8.5); pdf.setTextColor(110, 110, 110);
-        pdf.text('Agreed with: ' + agreedWithSite, marginX, ly);
-        ly += 20;
-      }
-    }
-
-    if (limitedGroups.length > 0) {
-      ly += 10;
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5); pdf.setTextColor(26, 26, 26);
-      pdf.text('Items Tested With Agreed Limitations', marginX, ly);
-      ly += 16;
-
-      const limCols = [
-        { key: 'eq', label: 'Equipment ID', w: 130 },
-        { key: 'reason', label: 'Reason', w: (pageW - marginX * 2) - 130 - 110 - 70 },
-        { key: 'agreedWith', label: 'Agreed With', w: 110 },
-        { key: 'date', label: 'Date', w: 70 }
-      ];
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(90, 90, 90);
-      let lx = marginX;
-      limCols.forEach(c => { pdf.text(c.label, lx + 3, ly + 11); lx += c.w; });
-      pdf.setDrawColor(220, 220, 220);
-      pdf.line(marginX, ly + 16, pageW - marginX, ly + 16);
-      ly += 20;
-
-      limitedGroups.forEach((g, idx) => {
-        const latest = g.latest;
-        const rowVals = { eq: g.eq, reason: latest.limitationReason || '-', agreedWith: latest.limitationAgreedWith || '-', date: formatDateDMY(latest.date) };
-        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40);
-        const cellLines = limCols.map(c => pdf.splitTextToSize(String(rowVals[c.key]), c.w - 6));
-        const maxLines = Math.max(1, ...cellLines.map(l => l.length));
-        const rowH = maxLines * 10 + 6;
-        if (ly + rowH > pageH - 40) {
-          pdf.addPage('a4', 'portrait');
-          pageW = pdf.internal.pageSize.getWidth();
-          pageH = pdf.internal.pageSize.getHeight();
-          ly = 40;
-        }
-        if (idx % 2 === 1) { pdf.setFillColor(250, 249, 247); pdf.rect(marginX, ly - 3, pageW - marginX * 2, rowH, 'F'); }
-        let cx = marginX;
-        limCols.forEach((c, ci) => { pdf.text(cellLines[ci], cx + 3, ly + 6); cx += c.w; });
-        ly += rowH;
-      });
-    }
-  }
-
-  // ---- One landscape table per category, sorted by location ----
-  // Observations are collected here and printed on their own page at the end,
-  // rather than as a column in this grid (keeps the grid within page width and
-  // matches how the EIC reference document separates its test schedule from
-  // its narrative comments).
-  const allObservations = [];
-
+  // ---- One landscape table per category, grouped by location ----
+  // v19 (sample): no separate Observations section. A failed or limited item
+  // has its note on a line under its row; Result, Limitation and By (who
+  // tested it) columns; a dark bar for each location; counts at the top.
+  const NAVY = [44, 50, 66];
+  let observationsPageNum = null;
   CATEGORY_NAMES.forEach(cat => {
     const def = CATEGORIES[cat];
     let rowsForCat = groups.filter(g => g.latest && g.latest.category === cat);
@@ -2818,193 +2898,179 @@ async function generateReport(mode) {
     pdf.addPage('a4', 'landscape');
     pageW = pdf.internal.pageSize.getWidth();
     pageH = pdf.internal.pageSize.getHeight();
-    let ty = 40;
-    ty = sectionBar(ty, SECTION_HEADINGS[cat] || cat, pageW - marginX * 2);
-    ty += 10;
     const usableW = pageW - marginX * 2;
+    let ty = sectionBar(40, SECTION_HEADINGS[cat] || cat, usableW) + 10;
 
-    const cols = [{ key: 'location', label: 'Location' }];
+    // Count boxes (like Tradecert's): total / passed / failed / limitation.
+    const nFail = rowsForCat.filter(g => !overallPassOf(g.latest)).length;
+    const nLim = rowsForCat.filter(g => isLimitedRecord(g.latest)).length;
+    const boxes = [['Items', rowsForCat.length, [26, 26, 26]], ['Passed', rowsForCat.length - nFail, PASS_COLOR], ['Failed', nFail, FAIL_COLOR], ['Limitation', nLim, [154, 91, 0]]];
+    const bw = (usableW - 3 * 8) / 4;
+    boxes.forEach((bx, i) => {
+      const bx0 = marginX + i * (bw + 8);
+      pdf.setDrawColor(210, 208, 203); pdf.rect(bx0, ty, bw, 32);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.setTextColor(...bx[2]);
+      pdf.text(String(bx[1]), bx0 + bw / 2, ty + 15, { align: 'center' });
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(110, 110, 110);
+      pdf.text(bx[0], bx0 + bw / 2, ty + 26, { align: 'center' });
+    });
+    ty += 44;
+
+    const cols = [];
     (def.fields || []).forEach(f => { if (f.key !== def.locationKey) cols.push({ key: f.key, label: f.label }); });
     cols.push({ key: 'equipmentId', label: 'Equipment ID', bold: true });
     cols.push({ key: 'manufacturer', label: 'Manufacturer' });
+    cols.push({ key: 'model', label: 'Model' });
     if (def.hasIsolatorSpecs) {
       cols.push({ key: 'currentRating', label: 'Rating' });
       cols.push({ key: 'poles', label: 'Poles' });
-      cols.push({ key: 'auxiliary', label: 'Auxiliary' });
+      cols.push({ key: 'auxiliary', label: 'Aux' });
     }
     const checkCols = def.checks.map((c, i) => ({ key: 'check:' + c.key, label: 'T' + (i + 1), check: true, checkLabel: c.label }));
     cols.push(...checkCols);
-    cols.push({ key: 'model', label: 'Model' });
+    cols.push({ key: 'result', label: 'Result', fixed: 38 });
+    cols.push({ key: 'limitation', label: 'Limitation', fixed: 46 });
+    cols.push({ key: 'by', label: 'By', fixed: 28 });
     if (isProgress && lastDate) cols.push({ key: 'since', label: 'Since last report' });
 
     function cellValue(latest, eq, c, g) {
       if (c.key === 'since') return (g && sinceLabel(g.since)) || '-';
       if (c.key === 'equipmentId') return eq;
-      if (c.key === 'location') return locationOf(latest) || '-';
+      if (c.key === 'by') return initialsOf(latest);
+      if (c.key === 'result') return overallPassOf(latest) ? 'PASS' : 'FAIL';
+      if (c.key === 'limitation') return '';
       const v = latest[c.key];
       return v !== undefined && v !== '' ? String(v) : '-';
     }
 
-    // Legend for the coded check columns, laid out as a clean grid rather than
-    // a single run-on line.
+    // Legend for the coded check columns.
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(110, 110, 110);
-    const colsPerRow = 2;
+    const colsPerRow = 3;
     const legendColW = usableW / colsPerRow;
+    let legendH = 0;
     checkCols.forEach((c, i) => {
       const col = i % colsPerRow, row = Math.floor(i / colsPerRow);
-      const text = c.label + ' — ' + c.checkLabel;
-      const lines = pdf.splitTextToSize(text, legendColW - 10);
-      pdf.text(lines, marginX + col * legendColW, ty + row * (lines.length > 1 ? 18 : 10) + 8);
+      const lines = pdf.splitTextToSize(c.label + ' — ' + c.checkLabel, legendColW - 10);
+      pdf.text(lines, marginX + col * legendColW, ty + row * 18 + 6);
+      legendH = Math.max(legendH, row * 18 + 18);
     });
-    const legendRows = Math.ceil(checkCols.length / colsPerRow);
-    ty += legendRows * 12 + 12;
+    ty += legendH + 6;
 
-    // Dynamic column widths based on header + actual content
     pdf.setFontSize(8);
-    let sumFixed = 0;
     cols.forEach(c => {
-      if (c.check) { c.w = 20; sumFixed += c.w; return; }
+      if (c.check) { c.w = 20; return; }
+      if (c.fixed) { c.w = c.fixed; return; }
       let maxW = pdf.getTextWidth(c.label);
-      rowsForCat.forEach(g => {
-        const w = pdf.getTextWidth(cellValue(g.latest, g.eq, c, g));
-        if (w > maxW) maxW = w;
-      });
-      const cap = (c.key === 'equipmentId' || c.key === 'location') ? 140 : 100;
-      c.w = Math.min(cap, maxW + 12);
-      sumFixed += c.w;
+      rowsForCat.forEach(g => { const w = pdf.getTextWidth(cellValue(g.latest, g.eq, c, g)); if (w > maxW) maxW = w; });
+      c.w = Math.min(c.key === 'equipmentId' ? 140 : 100, maxW + 12);
     });
+    const flex = cols.filter(c => !c.check && !c.fixed);
+    const fixedSum = cols.filter(c => c.check || c.fixed).reduce((sm, c) => sm + c.w, 0);
+    const flexSum = flex.reduce((sm, c) => sm + c.w, 0);
+    if (flexSum > 0) { const ratio = Math.max(0.5, (usableW - fixedSum) / flexSum); flex.forEach(c => { c.w = Math.max(30, Math.round(c.w * ratio)); }); }
+    const rowW = cols.reduce((sm, c) => sm + c.w, 0);
 
-    // Always fill the full page width - shrink OR grow non-check columns
-    // proportionally so every table looks consistent regardless of column count.
-    const shrinkable = cols.filter(c => !c.check);
-    const shrinkableSum = shrinkable.reduce((s, c) => s + c.w, 0);
-    const checkSum = sumFixed - shrinkableSum;
-    const available = usableW - checkSum;
-    if (shrinkableSum > 0 && available > 0) {
-      const ratio = Math.max(0.5, available / shrinkableSum);
-      shrinkable.forEach(c => { c.w = Math.max(30, Math.round(c.w * ratio)); });
-    }
-
-    // Header row - extracted so it can be redrawn on a continuation page.
-    let x;
-    function drawColumnHeaderRow(headerY) {
+    function headerRow(hy) {
+      pdf.setFillColor(...RED); pdf.rect(marginX, hy, rowW, 22, 'F');
       let hx = marginX;
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(90, 90, 90);
-      cols.forEach(c => {
-        const lines = pdf.splitTextToSize(c.label, c.w - 4);
-        pdf.text(lines, hx + 3, headerY + 10);
-        hx += c.w;
-      });
-      pdf.setDrawColor(220, 220, 220);
-      pdf.line(marginX, headerY + 24, marginX + cols.reduce((s,c)=>s+c.w,0), headerY + 24);
-      return headerY + 24 + 4;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5); pdf.setTextColor(255, 255, 255);
+      cols.forEach(c => { const lines = pdf.splitTextToSize(c.label, c.w - 4); pdf.text(lines, hx + (c.check || c.fixed ? c.w / 2 : 3), hy + (lines.length > 1 ? 9 : 13), c.check || c.fixed ? { align: 'center' } : undefined); hx += c.w; });
+      return hy + 22;
     }
-    ty = drawColumnHeaderRow(ty);
+    function locationBar(ly, loc, cont) {
+      const inLoc = rowsForCat.filter(g => locationOf(g.latest) === loc);
+      const f = inLoc.filter(g => !overallPassOf(g.latest)).length;
+      pdf.setFillColor(...NAVY); pdf.rect(marginX, ly, rowW, 16, 'F');
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(255, 255, 255);
+      pdf.text((loc || 'No location') + (cont ? ' (continued)' : ''), marginX + 6, ly + 11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(inLoc.length + ' item' + (inLoc.length === 1 ? '' : 's') + (f ? ' · ' + f + ' failed' : ''), marginX + rowW - 6, ly + 11, { align: 'right' });
+      return ly + 16;
+    }
+    function newPage(loc) {
+      pdf.addPage('a4', 'landscape');
+      pageW = pdf.internal.pageSize.getWidth(); pageH = pdf.internal.pageSize.getHeight();
+      let ny = sectionBar(40, (SECTION_HEADINGS[cat] || cat) + ' — CONTINUED', pageW - marginX * 2) + 10;
+      ny = headerRow(ny);
+      return loc != null ? locationBar(ny, loc, true) : ny;
+    }
+    ty = headerRow(ty);
+    let curLoc = null, alt = false;
 
-    rowsForCat.forEach((g, idx) => {
+    rowsForCat.forEach(g => {
       const latest = g.latest;
-      const cellLines = cols.map(c => c.check ? ['#'] : pdf.splitTextToSize(cellValue(latest, g.eq, c, g), c.w - 6));
-      const maxLines = Math.max(1, ...cellLines.map(l => l.length));
-      const rowH = maxLines * 9 + 6;
-
-      if (ty + rowH > pageH - 40) {
-        pdf.addPage('a4', 'landscape');
-        pageW = pdf.internal.pageSize.getWidth();
-        pageH = pdf.internal.pageSize.getHeight();
-        ty = 40;
-        ty = sectionBar(ty, (SECTION_HEADINGS[cat] || cat) + ' — CONTINUED', pageW - marginX * 2);
-        ty += 10;
-        ty = drawColumnHeaderRow(ty);
+      const loc = locationOf(latest);
+      const cellLines = cols.map(c => c.check || c.fixed ? [''] : pdf.splitTextToSize(cellValue(latest, g.eq, c, g), c.w - 6));
+      const rowH = Math.max(1, ...cellLines.map(l => l.length)) * 9 + 6;
+      // the note line under a failed or limited item
+      let note = '';
+      const failed = !overallPassOf(latest), limited = isLimitedRecord(latest);
+      const sk = g.since ? g.since.kind : 'none';
+      if (isProgress && lastDate) {
+        // progress report: notes only for items that changed since the last report
+        if (g.since && g.since.prev && (sk === 'fixed' || sk === 'stillFailing' || sk === 'newFail')) {
+          const bits = [];
+          if (realNote(g.since.prev.observations)) bits.push('Last time: ' + realNote(g.since.prev.observations));
+          if (realNote(latest.observations)) bits.push('This time: ' + realNote(latest.observations));
+          if (latest.whatWasDone) bits.push('What was done: ' + latest.whatWasDone);
+          note = bits.join('   ');
+        } else if ((sk === 'newItem') && (failed || limited)) note = realNote(latest.observations);
+      } else if (failed || limited) {
+        const bits = [];
+        if (failed && realNote(latest.observations)) bits.push(realNote(latest.observations));
+        if (limited) bits.push('Limitation: ' + (latest.limitationReason || 'not recorded') + (latest.limitationAgreedWith ? ' (agreed with ' + latest.limitationAgreedWith + ')' : ''));
+        if (!failed && limited && realNote(latest.observations)) bits.push(realNote(latest.observations));
+        note = bits.join('   ');
       }
-      const rowW = cols.reduce((s,c)=>s+c.w,0);
-      if (idx % 2 === 1) { pdf.setFillColor(250, 249, 247); pdf.rect(marginX, ty - 3, rowW, rowH, 'F'); }
+      pdf.setFont('helvetica', 'italic'); pdf.setFontSize(7.5);
+      const noteLines = note ? pdf.splitTextToSize(note, rowW - 30) : [];
+      const noteH = noteLines.length ? noteLines.length * 9 + 4 : 0;
 
-      x = marginX;
+      if (loc !== curLoc) {
+        if (ty + 16 + rowH + noteH > pageH - 40) ty = newPage(null);
+        ty = locationBar(ty, loc, false); curLoc = loc; alt = false;
+      }
+      if (ty + rowH + noteH > pageH - 40) ty = newPage(loc);
+
+      if (alt) { pdf.setFillColor(248, 247, 244); pdf.rect(marginX, ty, rowW, rowH + noteH, 'F'); }
+      alt = !alt;
+      let x = marginX;
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40);
       cols.forEach((c, ci) => {
+        const cx = x + c.w / 2, cy = ty + 6;
         if (c.check) {
           const cv = latest.checks ? latest.checks[c.key.split(':')[1]] : '';
-          const cx = x + c.w / 2, cy = ty + 3;
           if (cv === 'Pass') drawTick(pdf, cx, cy, 7, PASS_COLOR);
           else if (cv === 'Fail') drawCross(pdf, cx, cy, 7, FAIL_COLOR);
-          else if (cv === 'N/A') { pdf.setFontSize(6.5); pdf.setTextColor(150, 150, 150); pdf.text('N/A', cx - 6, cy + 3); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40); }
-          else { pdf.setTextColor(180, 180, 180); pdf.text('-', cx - 2, cy + 3); pdf.setTextColor(40, 40, 40); }
+          else if (cv === 'N/A') { pdf.setFontSize(6.5); pdf.setTextColor(150, 150, 150); pdf.text('N/A', cx, cy + 3, { align: 'center' }); pdf.setFontSize(8); pdf.setTextColor(40, 40, 40); }
+          else { pdf.setTextColor(180, 180, 180); pdf.text('-', cx, cy + 3, { align: 'center' }); pdf.setTextColor(40, 40, 40); }
+        } else if (c.key === 'result') {
+          pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...(failed ? FAIL_COLOR : PASS_COLOR));
+          pdf.text(failed ? 'FAIL' : 'PASS', cx, ty + 9, { align: 'center' });
+          pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40, 40, 40);
+        } else if (c.key === 'limitation') {
+          if (limited) drawTick(pdf, cx, cy, 7, [154, 91, 0]);
+        } else if (c.key === 'by') {
+          pdf.text(initialsOf(latest), cx, ty + 9, { align: 'center' });
         } else {
           if (c.bold) pdf.setFont('helvetica', 'bold');
-          pdf.text(cellLines[ci], x + 3, ty + 6);
+          pdf.text(cellLines[ci], x + 3, ty + 9);
           if (c.bold) pdf.setFont('helvetica', 'normal');
         }
         x += c.w;
       });
       ty += rowH;
-
-      const sk = g.since ? g.since.kind : 'none';
-      if (isProgress && g.since && g.since.prev && (sk === 'fixed' || sk === 'stillFailing' || sk === 'newFail')) {
-        // Retested items that changed or still fail: last time's notes next to this time's.
-        const prev = g.since.prev;
-        const parts = [
-          'Last time (' + formatDateDMY(prev.date) + '): ' + (prev.observations || 'no notes'),
-          'This time (' + formatDateDMY(latest.date) + '): ' + (latest.observations || 'no notes')
-        ];
-        if (latest.whatWasDone) parts.push('What was done: ' + latest.whatWasDone);
-        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text: parts.join('\n'), since: sinceLabel(g.since) });
-      } else if (latest.observations || (isProgress && latest.whatWasDone)) {
-        const text = (latest.observations || '') + (isProgress && latest.whatWasDone ? (latest.observations ? '\n' : '') + 'What was done: ' + latest.whatWasDone : '');
-        allObservations.push({ eq: g.eq, category: cat, pass: overallPassOf(latest), text, since: isProgress && lastDate ? sinceLabel(g.since) : '' });
+      if (noteLines.length) {
+        pdf.setFont('helvetica', 'italic'); pdf.setFontSize(7.5);
+        pdf.setTextColor(...(failed ? FAIL_COLOR : [122, 79, 0]));
+        pdf.setFillColor(...(failed ? FAIL_COLOR : [154, 91, 0])); pdf.rect(marginX + 10, ty - 1, 2, noteH - 2, 'F');
+        pdf.setTextColor(60, 60, 60);
+        pdf.text(noteLines, marginX + 20, ty + 6);
+        ty += noteH;
       }
+      pdf.setDrawColor(232, 230, 226); pdf.line(marginX, ty, marginX + rowW, ty);
     });
   });
-
-  // ---- Observations page ----
-  let observationsPageNum = null;
-  if (allObservations.length > 0) {
-    allObservations.sort((a, b) => {
-      if (a.pass !== b.pass) return a.pass ? 1 : -1; // failed items first
-      return a.eq.localeCompare(b.eq);
-    });
-
-    pdf.addPage('a4', 'portrait');
-    pageW = pdf.internal.pageSize.getWidth();
-    pageH = pdf.internal.pageSize.getHeight();
-    observationsPageNum = pdf.internal.getCurrentPageInfo().pageNumber;
-    let oy = 40;
-    oy = sectionBar(oy, 'Observations', pageW - marginX * 2);
-    oy += 14;
-
-    allObservations.forEach((o) => {
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
-      const lines = pdf.splitTextToSize(o.text, pageW - marginX * 2);
-      const entryH = 13 + lines.length * 11 + 6 + 14; // header line + wrapped text + gap + divider gap
-
-      // Measure the whole entry before drawing anything, so a header can never
-      // get stranded at the bottom of a page with its text orphaned on the next.
-      if (oy + entryH > pageH - 40) {
-        pdf.addPage('a4', 'portrait');
-        pageW = pdf.internal.pageSize.getWidth();
-        pageH = pdf.internal.pageSize.getHeight();
-        oy = 40;
-        oy = sectionBar(oy, 'Observations — Continued', pageW - marginX * 2);
-        oy += 14;
-      }
-
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(26, 26, 26);
-      pdf.text(o.eq, marginX, oy);
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(110, 110, 110);
-      pdf.text(o.category + (o.since ? ' · ' + o.since : ''), marginX + 200, oy);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(o.pass ? PASS_COLOR[0] : FAIL_COLOR[0], o.pass ? PASS_COLOR[1] : FAIL_COLOR[1], o.pass ? PASS_COLOR[2] : FAIL_COLOR[2]);
-      pdf.text(o.pass ? 'PASS' : 'FAIL', pageW - marginX - 30, oy, { align: 'right' });
-      oy += 13;
-
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(60, 60, 60);
-      pdf.text(lines, marginX, oy);
-      oy += lines.length * 11 + 6;
-
-      pdf.setDrawColor(230, 230, 230);
-      pdf.line(marginX, oy, pageW - marginX, oy);
-      oy += 14;
-    });
-  }
 
   if (!isProgress) {
   // ---- Final Declaration, Scope and Limitations page ----
@@ -3168,9 +3234,7 @@ async function generateReport(mode) {
     pdf.setPage(assessmentPageNum);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5);
     pdf.setTextColor(192, 39, 45);
-    pdf.text(observationsPageNum
-      ? 'See the Observations section, page ' + observationsPageNum + ', for details of failed items.'
-      : 'See the Observations section for details of failed items.', pageRefX, pageRefY);
+    pdf.text('Failed items are marked FAIL in the schedule, with the reason on the line underneath.', pageRefX, pageRefY);
   }
 
   const totalPages = pdf.internal.getNumberOfPages();
@@ -3240,7 +3304,7 @@ document.getElementById('tidyBackupBtn').addEventListener('click', async (e) => 
   if (!ref) return;
   const btn = e.currentTarget, original = btn.textContent;
   btn.disabled = true; btn.textContent = 'Exporting…';
-  try { await exportSiteBackup(ref); } catch (er) { alert('Could not export — ' + (er.message || er.code || 'unknown error')); }
+  try { await exportSiteBackup(ref); } catch (er) { alert('Could not export — ' + failed('load', 'Reports: could not export', er)); }
   btn.disabled = false; btn.textContent = original;
 });
 
@@ -3435,7 +3499,7 @@ async function runTidy(p) {
     renderTidy();
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Merge';
-    alert('Could not finish — ' + (e.message || e.code || 'unknown error') + '\n\nSome tests may have changed. Press Refresh and check Recent tidy-ups; you can undo what went through.');
+    alert('Could not finish — ' + failed('save', 'Reports: could not finish', e) + '\n\nSome tests may have changed. Press Refresh and check Recent tidy-ups; you can undo what went through.');
     await loadSiteData(); renderTidy();
   }
 }
@@ -3498,51 +3562,12 @@ async function undoTidy(tidyId) {
   try {
     await commitInBatches(updates);
     showBanner('ok', 'Tidy-up undone: ' + updates.length + ' test' + (updates.length === 1 ? '' : 's') + ' put back.');
-  } catch (e) { alert('Could not undo — ' + (e.message || e.code || 'unknown error')); }
+  } catch (e) { alert('Could not undo — ' + failed('save', 'Reports: could not undo', e)); }
   await loadSiteData();
   renderTidy();
 }
 // ═══════════════════════════ end of TIDY NAMES ═════════════════════════════
 </script>
 
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (index, isolator-interlock-test and isolator-interlock-report so
-//  far — keep in step; every other page gets it when it's next changed):
-//  service worker + "A new version is ready" bar. Agreed 20 Oct 2026.
-//  After an upload (with CACHE_NAME bumped), the new service worker installs
-//  in the background and takes over; that's the moment the new files are
-//  saved on the device. The bar then asks to reload onto them. It never
-//  reloads by itself, and a page can stop it while something's unfinished
-//  by setting window.swUpdateBlocker = () => 'reason' (or '' when it's fine).
-//  Checks for an update when the app is opened or brought back to the
-//  front, and every 30 minutes.
-// ═══════════════════════════════════════════════════════════════════════════
-if ("serviceWorker" in navigator) {
-  const swvHadController = !!navigator.serviceWorker.controller;   // first ever install isn't an "update"
-  window.swvShowBar = function () {
-    if (document.getElementById('swvBar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'swvBar'; bar.className = 'swv-bar';
-    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button">Update</button>';
-    bar.querySelector('button').addEventListener('click', () => {
-      const why = typeof window.swUpdateBlocker === 'function' ? window.swUpdateBlocker() : '';
-      if (why) { bar.querySelector('span').textContent = why; bar.classList.add('wait'); return; }
-      bar.querySelector('button').disabled = true;
-      location.reload();
-    });
-    document.body.appendChild(bar);
-    document.body.classList.add('swv-on');
-  };
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swvHadController) window.swvShowBar(); });
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").then(reg => {
-      const check = () => reg.update().catch(() => {});
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
-      setInterval(check, 30 * 60000);
-    }).catch(err => console.error("Service worker registration failed:", err));
-  });
-}
-</script>
 </body>
 </html>
