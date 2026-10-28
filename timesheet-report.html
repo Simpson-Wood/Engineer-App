@@ -3,24 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheets &amp; leave v3.0</title>
+<title>Simpson &amp; Wood — Timesheets &amp; leave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
 <style>
-  :root{
-    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
-    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
-    --amber:#7a4f00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --blue:#1d3c63; --blue-bg:#eef3fa;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
-  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
-  [hidden]{display:none !important;}
-  button{font-family:inherit; color:inherit;}
+  /* v4.0: colours, header, tabs, cards, fields and buttons come from sw-design.css
+     (design guide). Only what's particular to this page, or differs from it, is here. */
 
   #signinScreen, #notAuthorised{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
   #signinScreen img, #notAuthorised img{height:44px; margin-bottom:28px;}
@@ -30,14 +23,10 @@
   #signinErr{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
 
   #appRoot{display:none;}
-  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
   header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
-  header img{height:28px; display:block;}
   header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
-  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
-  header .who{text-align:right; min-width:0;}
-  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  header p{margin:1px 0 0; font-size:11px; color:var(--hdr-muted);}
+  header .who button{background:none; border:none; color:var(--hdr-link); font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
   .wrap{max-width:1500px; margin:0 auto; padding:20px 24px 40px;}
   @media (max-width:640px){ .wrap{padding:14px 10px 30px;} }
 
@@ -56,7 +45,6 @@
   .tick{display:inline-flex; align-items:center; gap:7px; font-size:14.5px; cursor:pointer;}
   .tick input{width:18px; height:18px;}
   .inp{width:100%; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; font-family:'Barlow',sans-serif; font-size:16px; background:#fff;}
-  .inp:focus{outline:none; border-color:var(--red);}
 
   /* ---- week grid ---- */
   .gridwrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -71,9 +59,9 @@
   .grid td.c{height:64px; border-radius:9px; border:1px solid var(--line); background:#fff; text-align:center; cursor:pointer; position:relative; padding:4px;}
   .grid td.c .v{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:21px; line-height:1;}
   .grid td.c .s{font-size:12px; margin-top:2px;}
-  .grid td.c.done{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
-  .grid td.c.off{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
-  .grid td.c.miss{background:var(--red-tint); border-color:#f1c4c6; color:var(--red-dark);}
+  .grid td.c.done{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .grid td.c.off{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .grid td.c.miss{background:var(--red-tint); border-color:var(--bad-line); color:var(--red-dark);}
   .grid td.c.wkend{background:#ecebe7; cursor:default;}
   .grid td.c.future{cursor:default;}
   @media (max-width:640px){
@@ -110,8 +98,7 @@
   .tag.amber{background:#ffcd50; color:var(--ink);}
   .tag.green{background:var(--green); color:#fff;}
   .tag.outline{background:#fff; border:1.5px solid var(--red); color:var(--red);}
-  .tag.test{background:#e9e4f5; color:#5a3d8a;}
-  .tag.warn{background:var(--amber-bg); color:var(--amber);}
+  .tag.test{background:var(--test-bg); color:var(--test-ink);}
 
   /* ---- timesheet view (laid out like the PDF) ---- */
   .sheet{max-width:980px; margin:0 auto;}
@@ -171,11 +158,9 @@
   /* ---- v2.0: tabs, leave, rota, balances, settings ---- */
   .tabs{display:flex; gap:4px; background:var(--card); border-bottom:1px solid var(--line); padding:6px 16px; position:sticky; top:0; z-index:20; overflow-x:auto;}
   .tab{display:flex; align-items:center; gap:7px; background:none; border:none; padding:9px 14px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:16px; cursor:pointer; white-space:nowrap;}
-  .tab i{font-size:19px;}
-  .tab.active{background:var(--red-tint); color:var(--red);}
   .tab .count{background:var(--red); color:#fff; border-radius:9px; font-size:12px; padding:0 6px; line-height:18px; font-family:'Barlow',sans-serif;}
   @media (max-width:640px){ .tabs{padding:6px 8px;} .tab{padding:9px 10px;} }
-  .btn-primary{background:var(--red); color:#fff; border:none; border-radius:9px; padding:10px 16px; font-weight:700; font-size:15px; cursor:pointer;}
+  .btn-primary{width:auto; min-height:0; display:inline-flex; font-family:'Barlow',sans-serif; text-transform:none; letter-spacing:0; background:var(--red); color:#fff; border:none; border-radius:9px; padding:10px 16px; font-weight:700; font-size:15px; cursor:pointer;}
   .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
   .btn-ghost{background:#fff; border:1.5px solid var(--field); border-radius:9px; padding:9px 14px; font-weight:700; font-size:15px; cursor:pointer;}
   .mini{background:#fff; border:1px solid var(--field); border-radius:7px; padding:6px 11px; font-size:14px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
@@ -201,10 +186,7 @@
   .field2{margin-bottom:12px;}
   .field2 label{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; text-transform:uppercase; color:var(--grey); margin-bottom:5px;}
   .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px;}
-  .seg{display:flex; border:1.5px solid var(--field); border-radius:8px; overflow:hidden; background:#fff;}
   .seg button{flex:1; border:none; background:#fff; padding:8px 5px; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; text-transform:uppercase; color:var(--grey); cursor:pointer;}
-  .seg button + button{border-left:1.5px solid var(--field);}
-  .seg button.on{background:var(--red); color:#fff;}
   .dayl{display:grid; grid-template-columns:120px minmax(0,1fr); gap:8px; align-items:center; padding:5px 0; font-size:14.5px;}
   table.rt{width:100%; border-collapse:collapse; background:#fff; font-size:14.5px;}
   .rt th{text-align:left; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; color:var(--grey); font-size:14px; padding:7px 10px; border-bottom:1.5px solid var(--line); background:var(--soft); position:sticky; top:52px;}
@@ -227,14 +209,12 @@
   .namerow b{font-size:15px;}
   .namerow small{display:block; color:var(--grey); font-size:12.5px;}
   .namerow select{padding:7px 9px; font-size:14.5px;}
-  .banner{display:flex; gap:10px; align-items:flex-start; border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
-  .banner > i{font-size:20px; flex:0 0 auto; margin-top:1px;}
-  .banner.warn{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
-  .banner.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .banner.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .banner.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
   .banner a{color:inherit; font-weight:700; cursor:pointer;}
   .log{font-size:13.5px; color:var(--grey); max-height:220px; overflow:auto; border-top:1px solid var(--line); margin-top:10px; padding-top:8px;}
   .log div{padding:3px 0;}
-  .grid td.c.lv{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
+  .grid td.c.lv{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
   .warnline{color:var(--red-dark); font-weight:600;}
   .lvn{display:block; width:100%; text-align:left; border:none; border-radius:5px; padding:2px 5px; margin-top:2px; font-size:13px; font-weight:700; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Barlow',sans-serif;}
   .lvn.hol{background:var(--blue-bg); color:var(--blue);}
@@ -268,7 +248,7 @@
   .rc.pad{visibility:hidden;}
   .rc.past{background:transparent; border-style:dashed; color:var(--grey-2); min-height:40px;}
   .rc.off{background:#f3f2ee;}
-  .rc.mine{background:var(--red-tint); border-color:#f1c4c6;}
+  .rc.mine{background:var(--red-tint); border-color:var(--bad-line);}
   .rc.unset{border-style:dashed;}
   .rc.yday{border:2px solid var(--red);}
   .rc.yday .n, .rc.yday .n em{color:var(--red);}
@@ -285,47 +265,12 @@
     .rc .w small{font-size:10.5px;}
     .rc.past{min-height:30px;}
   }
-
-  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
-  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
-  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-  .sw-hbtn i{font-size:17px;}
-  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
-  .topbar-right .sw-hbtn{margin-right:6px;}
-  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
-  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
-  .sw-vabar i{font-size:18px;}
-  .sw-vabar span{flex:1; min-width:180px;}
-  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
-  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
-  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
-  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
-  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
-  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
-  .sw-news li{margin-bottom:8px;}
-  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
-  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
-  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
-  .sw-people{display:grid; gap:6px;}
-  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
-  .sw-people button:hover{background:#fbe9ea;}
-  .sw-people small{color:#5c5c5c;}
-  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
-  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
-  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
-  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
-  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
-  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
-  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
-  .sw-help summary::-webkit-details-marker{display:none;}
-  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
-  .sw-help details[open] summary::before{content:'–';}
-  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
-  .sw-help details > div p{margin:0 0 8px;}
-  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
-  @media (max-width:640px){ .sw-help{max-width:none;} }
+  header .brand > div{min-width:0;}
+  header h1{white-space:normal;}
+  .wk h2{text-transform:none; letter-spacing:0;}
+  .meta button.btn{background:var(--red); border-color:var(--red); color:#fff; text-decoration:none; font-size:14.5px; padding:9px 14px;}
+  .mailwhy{display:block; font-size:13.5px; color:var(--bad-ink); margin-top:2px;}
+  .meta .btn{margin-top:8px;}
 </style>
 </head>
 <body>
@@ -347,16 +292,18 @@
 
 <div id="appRoot">
   <header>
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html" title="Home">
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheets &amp; leave</h1>
-        <p id="versionLabel">v3.0</p>
+        <p id="versionLabel">v4.0</p>
       </div>
     </a>
-    <div class="who">
-      <div class="name" id="whoName">—</div>
-      <button id="signOutBtn">Sign out</button>
+    <div class="right">
+      <div class="who">
+        <div class="name" id="whoName">—</div>
+        <button id="signOutBtn">Sign out</button>
+      </div>
     </div>
   </header>
   <nav class="tabs">
@@ -374,6 +321,7 @@
           <button class="btn" id="thisWeek">This week</button>
           <span class="grow"></span>
           <label class="tick" id="showTestBox" hidden><input type="checkbox" id="showTest"> Show test</label>
+          <button class="btn" id="sendAllBtn" hidden><i class="ti ti-mail-forward"></i> Send unsent emails <span class="count" id="unsentCount">0</span></button>
           <button class="btn red" id="remindBtn"><i class="ti ti-mail"></i> Send reminders</button>
         </div>
         <div class="gridwrap" id="grid"><div class="empty">Loading…</div></div>
@@ -440,12 +388,25 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
-  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup, reauthenticateWithRedirect as _reauthRedirect
+  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, deleteDoc as _deleteDoc,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, collection, deleteDoc as _deleteDoc,
   setDoc as _setDoc, updateDoc as _updateDoc, writeBatch as _writeBatch, query, where, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// v4.0: View as, What's New, Help, the update bar, the service worker and
+// error reporting come from the shared file (standards §15.0), not copies in
+// this page.
+import * as SWS from './sw-shared.js';
+
+// v4.0 (28 Oct 2026): managers and the office can send a timesheet's email to
+// the office when the engineer's didn't go (one at a time, or "Send unsent
+// emails" for all of them), from their own account, marked "Sent by … for …";
+// the engineer still gets their copy. Also the catch-up to the standards:
+// shared files, error reporting, the update bar, the multi-tab cache and the
+// Microsoft-window rules (standards §1.1: straight from the tap, no going off
+// to Microsoft's page, 2-minute limit).
+const REPORT_VERSION = 'v4.0';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -458,144 +419,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
-// Raw Firestore functions for the shared block below; everything else saves
-// through the guarded versions, so "View as" can never change real data.
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = _setDoc;
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+SWS.swSetup({ db, auth, page: 'timesheet-report', version: REPORT_VERSION });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report and
-//  management — keep in step): access level · View as (Rob only) ·
-//  What's New · Help.   Standards §15: any page changed from now on gets
-//  this block too.
-// ═══════════════════════════════════════════════════════════════════════════
-const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
-const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
-let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
-let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
-const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
-const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
-// Wrap anything that saves, so "View as" can never change real data.
-function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
-function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
-(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
-  const f = window.fetch.bind(window);
-  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
-})();
-// Who someone is: 'management' (Manager / QS / Director, or the console-only
-// managers list), 'office' or 'engineer'.
-async function swAccess(email) {
-  let managers = false, position = '', staff = null;
-  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
-  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
-  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
-  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+// Everything saves through these, so "View as" can never change real data or
+// ask Microsoft for anything.
+const setDoc = SWS.swGuard(_setDoc), updateDoc = SWS.swGuard(_updateDoc), deleteDoc = SWS.swGuard(_deleteDoc), writeBatch = SWS.swGuardBatch(_writeBatch);
+const reauthenticateWithPopup = SWS.swGuard(_reauthPopup);
+const isVaError = e => String((e && e.message) || e || '').includes(SWS.SW_VA_MSG);
+// A save or load that went wrong: record it for Rob (Management → Errors).
+// Never with what was typed.
+function report(kind, what, e) {
+  const why = (e && (e.code || e.message)) || String(e || 'unknown error');
+  if (!isVaError(e)) SWS.swReport(kind, what + ': ' + why);
+  return why;
 }
-function swHeaderButton(id, icon, label, onClick) {
-  if (document.getElementById(id)) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
-  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
-  b.addEventListener('click', onClick);
-  const right = document.querySelector('.topbar-right');
-  if (right) right.prepend(b);
-  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
-}
-function swModal(html, cls) {
-  const bg = document.createElement('div');
-  bg.className = 'sw-modal-bg ' + (cls || '');
-  bg.innerHTML = html;
-  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
-  document.body.appendChild(bg);
-  return bg;
-}
-
-// ---- View as (Rob only) ----------------------------------------------------
-// Rob picks a person and every page shows what they'd see, read-only. The
-// choice lasts for this browser tab (all pages) until he presses Stop. Data is
-// still read with Rob's own access, so it shows screens, not the database rules.
-async function swViewAsInit(user) {
-  const real = String(user.email || '').toLowerCase();
-  if (real !== SW_OWNER) return null;
-  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
-  let v = null;
-  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
-  if (!v) return null;
-  let name = v, position = '';
-  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
-  VIEW_AS = { email: v, name, position };
-  const bar = document.createElement('div');
-  bar.className = 'sw-vabar';
-  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('[data-va]'); if (!b) return;
-    if (b.dataset.va === 'change') swPickViewAs();
-    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
-  });
-  document.body.prepend(bar);
-  document.body.classList.add('sw-va-on');
-  return VIEW_AS;
-}
-async function swPickViewAs() {
-  let people = [];
-  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
-  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
-  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
-  const draw = () => {
-    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
-    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
-  };
-  m.querySelector('[data-q]').addEventListener('input', draw);
-  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
-  draw(); m.querySelector('[data-q]').focus();
-}
-
-// ---- What's New + Help -------------------------------------------------------
-// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
-// (questions; each with the tab it belongs to and, if not everyone, the
-// levels it's for), then calls swExtrasStart().
-function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
-function swShowNews() {
-  const items = swNewsItems();
-  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
-    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-}
-async function swNewsCheck() {
-  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
-  const key = 'seen_' + SW.page;
-  try {
-    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
-    const snap = await swGetDoc(ref);
-    if (snap.exists() && snap.data()[key] === SW.version) return;
-    swShowNews();
-    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
-  } catch (e) { console.warn('What\'s new check failed', e); }
-}
-function swShowHelp() {
-  const tab = SW.tab() || '';
-  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
-  const groups = new Map();
-  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
-  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
-  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
-    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
-    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
-  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
-}
-function swExtrasStart() {
-  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
-  swNewsCheck();
-}
-
-const setDoc = swGuard(_setDoc), updateDoc = swGuard(_updateDoc), deleteDoc = swGuard(_deleteDoc), writeBatch = swGuardBatch(_writeBatch);
-const reauthenticateWithPopup = swGuard(_reauthPopup), reauthenticateWithRedirect = swGuard(_reauthRedirect);
 
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
-// Same as timesheet.html: Mail.Send lets a manager send reminder emails from
-// their own account (Microsoft Graph). Permission + admin consent already set.
+// Same as timesheet.html: Mail.Send lets a manager send emails from their own
+// account (Microsoft Graph). Permission + admin consent already set.
 msProvider.addScope('Mail.Send');
 
 function keepToken(result, key) {
@@ -630,12 +473,13 @@ document.getElementById('msSignInBtn').addEventListener('click', () => {
 const clearTokens = () => { sessionStorage.removeItem('ts-graph'); sessionStorage.removeItem('tr-graph-cal'); };
 document.getElementById('signOutBtn').addEventListener('click', () => { clearTokens(); signOut(auth); });
 document.getElementById('signOutBtn2').addEventListener('click', () => { clearTokens(); signOut(auth); });
-getRedirectResult(auth).then(r => {
-  if (r) keepToken(r, sessionStorage.getItem('tr-want-cal') ? 'tr-graph-cal' : undefined);
-  sessionStorage.removeItem('tr-want-cal');
-}).catch(err => {
+getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
+
+// "A new version is ready" bar (in sw-shared.js): wait while emails are sending.
+let sending = false;
+window.swUpdateBlocker = () => sending ? 'Wait until the emails have finished sending, then tap Update.' : '';
 
 // Standards §1.2 — must match the rules' isManager() exactly (Director added 19 Oct 2026).
 async function checkManager(email){
@@ -665,7 +509,7 @@ async function checkOffice(email){
 // ═══════════════════════════════════════════════════════════════════════════
 //  SHARED WITH timesheet.html (copied, keep in step): settings, helpers, PDF
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'report v3.0';   // shown in PDF footers made from this page
+const VERSION = 'report ' + REPORT_VERSION;   // shown in PDF footers made from this page
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -911,30 +755,45 @@ function pdfName(rec, which) {
 }
 
 
-function storedToken() {
+function storedToken() { return storedTokenKey('ts-graph'); }
+function storedTokenKey(key) {
   try {
-    const o = JSON.parse(sessionStorage.getItem('ts-graph') || 'null');
+    const o = JSON.parse(sessionStorage.getItem(key) || 'null');
     if (o && o.exp > Date.now() && o.who === ME.email) return o.t;
   } catch (e) {}
   return null;
 }
-// Ask Microsoft for a fresh token. Must be called straight from a tap.
-async function tokenInteractive(pendingId) {
-  try {
-    const r = await reauthenticateWithPopup(auth.currentUser, msProvider);
-    keepToken(r);
-    return storedToken();
-  } catch (err) {
-    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      sessionStorage.setItem('ts-pending-send', pendingId || '');
-      await reauthenticateWithRedirect(auth.currentUser, msProvider);
-      return null;
-    }
-    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
-    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
-    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
-  }
+// Ask Microsoft for permission, in a small window (standards §1.1, v4.0):
+//  - called straight from a tap, before anything waits for the network, or
+//    phones block the window;
+//  - window only: going off to Microsoft's page and back loses the result on
+//    iPhones;
+//  - gives up after 2 minutes if the window never finishes (a known Firebase
+//    bug); if it finishes later, the permission is still kept for next time.
+const MS_WINDOW_MS = 2 * 60000;
+function msWhy(err) {
+  const c = (err && err.code) || '';
+  if (isVaError(err)) return SWS.SW_VA_MSG;
+  if (c === 'auth/popup-blocked') return 'Your browser blocked the Microsoft window. Try again.';
+  if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'The Microsoft window was closed before it finished.';
+  if (c === 'auth/user-mismatch') return `That was a different Microsoft account. Choose ${ME.rawEmail}.`;
+  if (c === 'auth/network-request-failed') return 'No signal.';
+  if (c === 'tr/ms-timeout') return 'The Microsoft window didn\'t finish.';
+  return 'Microsoft sign-in failed (' + (c || (err && err.message) || 'unknown') + ').';
 }
+function msToken(provider, key) {
+  const have = storedTokenKey(key);
+  if (have) return Promise.resolve(have);
+  let timer;
+  const p = reauthenticateWithPopup(auth.currentUser, provider);
+  p.then(r => keepToken(r, key), () => {});
+  const late = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'tr/ms-timeout' })), MS_WINDOW_MS); });
+  return Promise.race([p, late]).then(
+    () => { clearTimeout(timer); const t = storedTokenKey(key); if (!t) throw new Error('Microsoft didn\'t give the app permission.'); return t; },
+    err => { clearTimeout(timer); const why = msWhy(err); if (why !== SWS.SW_VA_MSG) SWS.swReport('save', 'Microsoft permission didn\'t come through: ' + why); throw new Error(why); });
+}
+// Email only: either stored permission will do (the calendar one includes email).
+function mailToken() { return Promise.resolve(storedTokenKey('ts-graph') || storedTokenKey('tr-graph-cal')).then(t => t || msToken(msProvider, 'ts-graph')); }
 async function graphSend(token, message) {
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -953,7 +812,6 @@ async function graphSend(token, message) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  TIMESHEETS (managers) — view-only
 // ═══════════════════════════════════════════════════════════════════════════
-const REPORT_VERSION = 'v3.0';
 const APP_LINK = 'https://app.simpsonandwood.co.uk/timesheet.html';
 let ME = null;            // { email, rawEmail, name }
 let STAFF = new Map();    // email -> { name, position, fills }
@@ -1011,6 +869,7 @@ function renderGrid() {
   const end = days[6];
   $('wkTitle').textContent = `${parseISO(weekStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${parseISO(end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
   const people = peopleFor(false).concat(showTest ? peopleFor(true) : []);
+  updateUnsent();
   if (!people.length) { $('grid').innerHTML = '<div class="empty">Nobody to show yet. People appear once they\'re on the staff list (with "Fills in timesheets" on) or have sent a timesheet.</div>'; return; }
   const today = todayISO();
   const head = '<tr><th></th>' + days.map(d => `<th class="${BANK_HOLIDAYS[d] ? 'bh' : ''}">${parseISO(d).toLocaleDateString('en-GB', { weekday: 'short' })}<small>${parseISO(d).getDate()} ${parseISO(d).toLocaleDateString('en-GB', { month: 'short' })}${BANK_HOLIDAYS[d] ? ' · bank hol' : ''}</small></th>`).join('') + '</tr>';
@@ -1030,6 +889,7 @@ function renderGrid() {
     return `<tr><td class="who">${esc(p.name)}${tags}<small>${esc(p.email)}</small></td>${cells}</tr>`;
   }).join('');
   $('grid').innerHTML = `<table class="grid"><colgroup><col class="cw">${days.map(() => '<col>').join('')}</colgroup><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+  updateUnsent();
 }
 
 // ---- one timesheet, laid out like the office PDF ----
@@ -1073,7 +933,10 @@ function sheetHTML(r, opts = {}) {
   if (r.noStaffRecord) h += `<p class="flags">This account wasn't on the staff list when it was sent.</p>`;
   if (!opts.old) {
     const hist = (r.history || []).map(x => `<div>Version ${x.v}: ${x.v === 1 ? 'sent' : 'amended'} ${esc(new Date(x.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))} by ${esc(x.byName || x.by)}${x.v < (r.version || 1) ? `<button data-ver="${x.v}">View</button>` : ''}</div>`).join('');
-    const mail = emailSent(r) ? `Emailed to ${esc(r.email.to || 'the office')}${r.email.sentAt ? ' ' + esc(new Date(r.email.sentAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}` : '<b style="color:var(--red-dark)">The email for this version hasn\'t been sent.</b> The engineer can send it from My timesheets.';
+    const mail = emailSent(r)
+      ? `Emailed to ${esc(r.email.to || 'the office')}${r.email.sentAt ? ' ' + esc(new Date(r.email.sentAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}${r.email.sentByName ? ' by ' + esc(r.email.sentByName) : ''}`
+      : `<b style="color:var(--red-dark)">The email for this version hasn't gone to the office.</b>${r.email && r.email.error ? `<span class="mailwhy">Why: ${esc(r.email.error)}</span>` : ''}
+        <div><button type="button" class="btn red" data-mgr-send><i class="ti ti-mail-forward"></i> Send email to the office</button></div>`;
     h += `<div class="meta">${hist || '<div>No history recorded.</div>'}<div>${mail}</div></div>`;
   }
   return h + '</div>';
@@ -1088,6 +951,7 @@ function openSheet(id) {
   ov.addEventListener('click', async e => {
     if (e.target === ov || e.target.closest('[data-close]')) return close();
     if (e.target.closest('[data-dl]')) { try { buildPDF(r, true).save(pdfName(r, 'office')); } catch (err) { toast(err.message); } return; }
+    if (e.target.closest('[data-mgr-send]')) return sendOne(r, ov);   // straight from the tap
     const vb = e.target.closest('[data-ver]');
     if (vb) {
       const v = +vb.dataset.ver, body = ov.querySelector('[data-body]');
@@ -1102,6 +966,148 @@ function openSheet(id) {
   });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
+}
+
+// ---- v4.0: managers and the office send a timesheet's email (agreed 28 Oct) ----
+// When the engineer's email didn't go, a manager or the office sends it from
+// their own account (the only way Microsoft allows): the office copy to the
+// office, the same as the engineer's but marked "Sent by … for …", and the
+// engineer's own copy to the engineer. Then it's recorded on the timesheet
+// (email.status 'sent', email.sentBy). Test timesheets come to you instead.
+function unsentRecs() {
+  const from = addDays(todayISO(), -LOOKBACK_DAYS);
+  return RECS.filter(r => !emailSent(r) && r.date >= from && (showTest || !r.testData))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.engineerName).localeCompare(String(b.engineerName)));
+}
+function updateUnsent() { const n = unsentRecs().length; $('sendAllBtn').hidden = !n; $('unsentCount').textContent = n; }
+function officeEmailHTML(rec) {
+  const amended = (rec.version || 1) > 1;
+  const st = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a';
+  const td = 'padding:5px 14px 5px 0;border-bottom:1px solid #e5e5e5';
+  let h = `<div style="${st}">`;
+  if (rec.testData) h += `<p style="color:#5a3d8a;font-weight:bold">TEST — not a real timesheet.</p>`;
+  h += `<p style="color:#5c5c5c">Sent by <b>${esc(ME.name)}</b> for ${esc(rec.engineerName)}, because the email from ${esc(firstName(rec.engineerName))}'s timesheet app didn't go.</p>`;
+  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. This replaces the timesheet sent earlier for this day.</p>`;
+  h += `<p style="font-size:16px"><b>${esc(rec.engineerName)}</b> — ${esc(longDate(rec.date))}</p>`;
+  if (rec.kind === 'off') {
+    h += `<p style="font-size:16px">Not working: <b>${esc(REASONS[rec.offReason] || rec.offReason)}</b></p>`;
+    if (rec.offNote) h += `<p>Note: ${esc(rec.offNote)}</p>`;
+  } else {
+    const t = rec.totals || {};
+    const rows = [['Total hours', fmtNum(t.totalMins)], ['At 1×', fmtNum(t.mins1x)], ['At 1.5×', fmtNum(t.mins1_5x)], ['At 2×', fmtNum(t.mins2x)],
+      ['Call-outs', t.callouts || 0], ['Dinner', t.dinners ? 'Yes' : 'No'], ['Started', t.dayStart + (t.startsNextDay ? ' (next day)' : '')], ['Finished', t.dayEnd + (t.endsNextDay ? ' (next day)' : '')]];
+    if (rec.bankHoliday) rows.push(['Bank holiday', rec.bankHoliday]);
+    h += `<table style="border-collapse:collapse;${st}">${rows.map(r => `<tr><td style="${td};color:#6b6b6b">${r[0]}</td><td style="${td}"><b>${esc(r[1])}</b></td></tr>`).join('')}</table>`;
+    h += `<p style="margin-top:16px"><b>Jobs</b></p><table style="border-collapse:collapse;${st}">`;
+    rec.jobs.forEach((j, i) => {
+      const flags = [j.callout === 'Yes' ? 'CALL-OUT' : '', j.testCert === 'Yes' ? 'TEST CERT NEEDED' : '', j.status === 'Return visit needed' ? 'RETURN VISIT NEEDED' : ''].filter(Boolean).join(' · ');
+      h += `<tr><td style="${td}">${i + 1}.</td><td style="${td}"><b>${esc(j.customer)}</b></td><td style="${td}">${esc(j.start)}–${esc(j.end)}</td><td style="${td}">${fmtNum(j.paidMins)} h</td><td style="${td};color:#D0222A"><b>${flags}</b></td></tr>`;
+    });
+    h += `</table><p style="color:#6b6b6b">The office copy is attached as a PDF.</p>`;
+  }
+  if (rec.noStaffRecord) h += `<p style="color:#D0222A"><b>Note:</b> ${esc(rec.engineerEmail)} isn't on the staff list in the management page, so the name above is the email address. Please add them.</p>`;
+  h += `<p style="color:#9a9a9a;font-size:12px">Sent from the Simpson &amp; Wood Timesheets &amp; leave page ${REPORT_VERSION}.</p></div>`;
+  return h;
+}
+const pdfAttachment = (rec, office) => ({ '@odata.type': '#microsoft.graph.fileAttachment', name: pdfName(rec, office ? 'office' : 'engineer'), contentType: 'application/pdf', contentBytes: pdfB64(buildPDF(rec, office)) });
+// "Load failed" / "Failed to fetch" is no real signal.
+function mailWhy(e) {
+  if (isVaError(e)) return SWS.SW_VA_MSG;
+  if (e && e.status === 401) return 'Microsoft needs to check it\'s you again. Press Send again.';
+  if (e instanceof TypeError || /load failed|failed to fetch|network/i.test(String(e && e.message))) return 'No signal.';
+  return (e && e.message) || 'Unknown error.';
+}
+// Sends the office copy (and the engineer's own copy), then records it.
+// Throws only if the office copy didn't go.
+async function sendForEngineer(rec, token) {
+  const amended = (rec.version || 1) > 1, test = !!rec.testData;
+  const to = test ? ME.rawEmail : OFFICE_EMAIL;
+  const prefix = (test ? 'TEST — ' : '') + (amended ? `AMENDED (v${rec.version}) — ` : '');
+  const subject = (rec.kind === 'off'
+    ? `${prefix}Not working — ${rec.engineerName} — ${longDate(rec.date)} — ${REASONS[rec.offReason] || ''}`
+    : `${prefix}Timesheet — ${rec.engineerName} — ${longDate(rec.date)}`) + ` (sent by ${ME.name})`;
+  try {
+    await graphSend(token, { subject, body: { contentType: 'HTML', content: officeEmailHTML(rec) }, toRecipients: addr([to]),
+      attachments: rec.kind === 'off' ? [] : [pdfAttachment(rec, true)] });
+  } catch (e) {
+    if (e.status === 401) clearTokens();
+    report('save', 'Timesheet email (sent from Timesheets & leave) didn\'t send', { message: mailWhy(e) });
+    throw new Error(mailWhy(e));
+  }
+  let copy = null;
+  if (rec.kind !== 'off') {
+    try {
+      await graphSend(token, { subject: `${test ? 'TEST — ' : ''}Your timesheet${amended ? ` (AMENDED v${rec.version})` : ''} — ${longDate(rec.date)}`, toRecipients: addr([test ? ME.rawEmail : rec.engineerEmail]),
+        body: { contentType: 'HTML', content: mailWrap(`<p>Hi ${esc(firstName(rec.engineerName))},</p><p>Your timesheet for <b>${esc(longDate(rec.date))}</b>${amended ? ` (amended, version ${rec.version})` : ''} (<b>${fmtNum(rec.totals ? rec.totals.totalMins : 0)} hours</b>, ${rec.jobs.length} job${rec.jobs.length === 1 ? '' : 's'}) has been sent to the office by ${esc(ME.name)}, because the email from your timesheet app didn't go. Your copy is attached. You don't need to do anything.</p>`) },
+        attachments: [pdfAttachment(rec, false)] });
+      copy = 'sent';
+    } catch (e) { copy = 'failed'; report('save', 'Engineer\'s copy (sent from Timesheets & leave) didn\'t send', { message: mailWhy(e) }); }
+  }
+  const fields = { status: 'sent', sentAt: new Date().toISOString(), version: rec.version || 1, to, error: null, sentBy: ME.email, sentByName: ME.name, engineerCopy: copy };
+  rec.email = Object.assign({}, rec.email || {}, fields);
+  const upd = {}; Object.entries(fields).forEach(([k, v]) => { upd['email.' + k] = v; });
+  try { await updateDoc(doc(db, 'timesheets', rec.id), upd); return { recorded: true, copy }; }
+  catch (e) { report('save', 'Timesheet email was sent but not recorded', e); return { recorded: false, copy, why: e.code || e.message }; }
+}
+const NOT_RECORDED = 'It went, but the app couldn\'t record that it did, so it may still show as not sent. Don\'t send it again: tell Rob.';
+// One timesheet, from its "Send email to the office" button.
+async function sendOne(r, ov) {
+  if (sending) return;
+  let token;
+  try { token = await mailToken(); } catch (err) { toast(err.message); return; }   // straight from the tap
+  sending = true;
+  const btn = ov.querySelector('[data-mgr-send]'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const res = await sendForEngineer(r, token);
+    if (!res.recorded) modal({ title: 'Sent, but…', body: `<p>${esc(NOT_RECORDED)}</p>`, buttons: [{ label: 'OK', value: true, primary: true }] });
+    else toast('Sent to the office' + (res.copy === 'failed' ? `, but ${firstName(r.engineerName)}'s own copy didn't go` : ''));
+  } catch (err) { modal({ title: 'The email didn\'t go', body: `<p>${esc(err.message)}</p>`, buttons: [{ label: 'OK', value: true, primary: true }] }); }
+  finally { sending = false; }
+  const body = ov.querySelector('[data-body]'); if (body) body.innerHTML = sheetHTML(r);
+  renderGrid();
+}
+// "Send unsent emails": every timesheet in the last 31 days whose email hasn't gone.
+function openSendAll() {
+  const list = unsentRecs();
+  if (!list.length) { toast('Nothing to send.'); return; }
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><h3>Send unsent emails</h3><div class="mbody"><p>These timesheets are saved, but the email to the office didn't go. Each one is sent from your account to the office, and the engineer gets their copy. Untick any you don't want to send.</p>
+    ${list.map((r, k) => `<label class="rem"><input type="checkbox" data-k="${k}" checked><span><b>${esc(r.engineerName)}</b> · ${esc(shortDate(r.date))}${r.kind === 'off' ? ' · not working' : ''}${r.testData ? ' <span class="tag test">Test</span>' : ''}<small>${r.email && r.email.error ? 'Why: ' + esc(r.email.error) : 'No reason recorded'}</small></span><span class="res" data-res="${k}"></span></label>`).join('')}</div>
+    <div class="mbtns"><button class="btn" data-cancel>Cancel</button><button class="btn red" data-send>Send emails</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', async e => {
+    if (e.target === bg || e.target.closest('[data-cancel]')) { if (!sending) bg.remove(); return; }
+    const sendBtn = e.target.closest('[data-send]');
+    if (!sendBtn || sending) return;
+    const chosen = [...bg.querySelectorAll('input[data-k]:checked')].map(i => +i.dataset.k);
+    if (!chosen.length) { toast('Nothing ticked.'); return; }
+    let token;
+    try { token = await mailToken(); } catch (err) { toast(err.message); return; }   // straight from the tap
+    sending = true; sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+    let ok = 0, notRec = 0;
+    for (const k of chosen) {
+      const r = list[k], res = bg.querySelector(`[data-res="${k}"]`);
+      if (emailSent(r)) { res.textContent = 'Already sent'; continue; }
+      try {
+        const out = await sendForEngineer(r, token);
+        ok++; if (!out.recorded) notRec++;
+        res.textContent = out.recorded ? (out.copy === 'failed' ? 'Sent (their copy didn\'t)' : 'Sent') : 'Sent, not recorded';
+        res.style.color = out.recorded ? 'var(--green)' : 'var(--red)';
+      } catch (err) {
+        res.textContent = 'Didn\'t go'; res.style.color = 'var(--red)'; res.title = err.message;
+        if (/check it's you again/.test(err.message)) {   // the permission ran out: the rest would fail too
+          chosen.slice(chosen.indexOf(k) + 1).forEach(k2 => { bg.querySelector(`[data-res="${k2}"]`).textContent = 'Not tried'; });
+          break;
+        }
+      }
+    }
+    sending = false;
+    sendBtn.textContent = `${ok} of ${chosen.length} sent`;
+    bg.querySelector('[data-cancel]').textContent = 'Close';
+    if (notRec) bg.querySelector('.mbody').insertAdjacentHTML('beforeend', `<p class="warnline">${esc(NOT_RECORDED)}</p>`);
+    renderGrid();
+  });
 }
 
 // ---- customer search ----
@@ -1139,11 +1145,8 @@ async function openReminders() {
     if (!sendBtn) return;
     const chosen = [...bg.querySelectorAll('input[data-k]:checked')].map(i => +i.dataset.k);
     if (!chosen.length) { toast('Nobody ticked.'); return; }
-    let token = storedToken();
-    if (!token) {
-      try { token = await tokenInteractive(''); } catch (err) { toast(err.message); return; }
-      if (!token) return;
-    }
+    let token;
+    try { token = await mailToken(); } catch (err) { toast(err.message); return; }
     sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
     let ok = 0;
     for (const k of chosen) {
@@ -1158,6 +1161,7 @@ async function openReminders() {
         ok++; res.textContent = 'Sent'; res.style.color = 'var(--green)';
       } catch (err) {
         if (err.status === 401) { sessionStorage.removeItem('ts-graph'); }
+        report('save', 'Timesheet reminder didn\'t send', err);
         res.textContent = 'Failed'; res.style.color = 'var(--red)'; res.title = err.message;
       }
     }
@@ -1176,7 +1180,7 @@ async function loadTidy() {
     TIDY = []; snap.forEach(d => TIDY.push(Object.assign({ id: d.id }, d.data())));
     TIDY.sort((a, b) => String(a.name).localeCompare(String(b.name), 'en', { numeric: true }));
     renderTidy();
-  } catch (e) { $('tidyList').innerHTML = `<div class="empty">Couldn't load (${esc(e.code || e.message)}).</div>`; }
+  } catch (e) { $('tidyList').innerHTML = `<div class="empty">Couldn't load (${esc(report('load', 'Tidy list didn\'t load', e))}).</div>`; }
 }
 function renderTidy() {
   const q = $('tidyQ').value.trim().toLowerCase();
@@ -1372,31 +1376,8 @@ const calProvider = new OAuthProvider('microsoft.com');
 calProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
 calProvider.addScope('Mail.Send');
 calProvider.addScope('Calendars.ReadWrite.Shared');
-function storedTokenKey(key) {
-  try {
-    const o = JSON.parse(sessionStorage.getItem(key) || 'null');
-    if (o && o.exp > Date.now() && o.who === ME.email) return o.t;
-  } catch (e) {}
-  return null;
-}
-async function getCalToken() {
-  const have = storedTokenKey('tr-graph-cal');
-  if (have) return have;
-  try {
-    const r = await reauthenticateWithPopup(auth.currentUser, calProvider);
-    keepToken(r, 'tr-graph-cal');
-    return storedTokenKey('tr-graph-cal');
-  } catch (err) {
-    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      sessionStorage.setItem('tr-want-cal', '1');
-      await reauthenticateWithRedirect(auth.currentUser, calProvider);
-      return null;
-    }
-    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
-    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
-    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
-  }
-}
+// v4.0: calendar + email permission, the same way as email (window only, see msToken).
+function getCalToken() { return msToken(calProvider, 'tr-graph-cal'); }
 async function graphCall(token, method, path, body) {
   const res = await fetch('https://graph.microsoft.com/v1.0' + path, {
     method, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined
@@ -1664,7 +1645,7 @@ async function approveLeave(id) {
   const upd = { status: 'approved', decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp(), cover: covers.map(c => ({ date: c.date, s: c.s, e: c.e, email: c.to, name: nameOf(c.to) })) };
   batch.update(doc(db, 'leave', id), upd);
   try { await batch.commit(); }
-  catch (err) { await modal({ title: 'Not approved', body: `<p>Couldn't save (${esc(err.code || err.message)}).</p>`, buttons: [{ label: 'OK', value: true, primary: true }] }); return; }
+  catch (err) { await modal({ title: 'Not approved', body: `<p>Couldn't save (${esc(report('save', 'Leave approval didn\'t save', err))}).</p>`, buttons: [{ label: 'OK', value: true, primary: true }] }); return; }
   Object.assign(l, upd, { decidedAt: { seconds: Date.now() / 1000 } });
   newDays.forEach(d => ROTA.set(d.date, d));
   indexLeave();
@@ -1680,7 +1661,7 @@ async function approveLeave(id) {
         body: { contentType: 'HTML', content: mailWrap(`<p>Hi ${esc(firstName(personName(l)))},</p><p>Your holiday is <b>approved</b>: ${esc(longDate(l.from))}${l.to !== l.from ? ' to ' + esc(longDate(l.to)) : ''} (${fmtDays(l.total)} day${l.total === 1 ? '' : 's'}).</p>${covers.length ? `<p>On-call cover:<br>${covers.map(c => esc(itemText(c) + ': ' + nameOf(c.to))).join('<br>')}</p>` : ''}<p>Thanks,<br>${esc(ME.name)}</p>`) },
         toRecipients: addr([l.testData ? ME.email : owner])
       });
-    } catch (err) { problems.push(`The email to ${firstName(personName(l))} didn't go: ${err.message}`); }
+    } catch (err) { report('save', 'Leave email didn\'t send', err); problems.push(`The email to ${firstName(personName(l))} didn't go: ${err.message}`); }
   }
   renderLeaveTab(); renderRotaTab();
   if (problems.length) modal({ title: 'Approved, but…', body: problems.map(p => `<p>${esc(p)}</p>`).join(''), buttons: [{ label: 'OK', value: true, primary: true }] });
@@ -1694,7 +1675,7 @@ async function declineLeave(id) {
   try { token = await getCalToken(); } catch (err) { toast(err.message); return; }
   if (!token) return;
   const upd = { status: 'declined', decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp(), declineReason: reason };
-  try { await updateDoc(doc(db, 'leave', id), upd); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
+  try { await updateDoc(doc(db, 'leave', id), upd); } catch (err) { toast(`Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)})`); return; }
   Object.assign(l, upd);
   renderLeaveTab();
   const owner = personEmail(l);
@@ -1716,7 +1697,7 @@ async function cancelLeaveByOffice(id) {
   let token = null;
   if (needsToken) { try { token = await getCalToken(); } catch (err) { toast(err.message); return; } if (!token) return; }
   const upd = { status: 'cancelled', cancelledBy: ME.email, cancelledByName: ME.name, cancelledAt: serverTimestamp(), cancelNote: reason };
-  try { await updateDoc(doc(db, 'leave', id), upd); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
+  try { await updateDoc(doc(db, 'leave', id), upd); } catch (err) { toast(`Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)})`); return; }
   Object.assign(l, upd); indexLeave();
   const problems = [];
   if (token && l.infoCal && (l.infoCal.ids || []).length) { const e = await removeFromDiary(token, 'leave', l); if (e) problems.push('It\'s still in the work diary: ' + e); }
@@ -1753,7 +1734,7 @@ async function approveSwap(id) {
   const newDays = [...work.values()].map(nd => { const orig = nd._orig; delete nd._orig; return rotaWrite(batch, orig, nd, 'Swap approved', id); });
   const upd = { status: 'approved', decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp() };
   batch.update(doc(db, 'oncallSwaps', id), upd);
-  try { await batch.commit(); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
+  try { await batch.commit(); } catch (err) { toast(`Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)})`); return; }
   Object.assign(s, upd); newDays.forEach(d => ROTA.set(d.date, d));
   const problems = [];
   if (!s.testData) { const e = await addToDiary(token, 'oncallSwaps', s, moves.map(m => moveDiaryEvent(m, 'swap with'))); if (e) problems.push('The work diary wasn\'t updated: ' + e); }
@@ -1773,7 +1754,7 @@ async function rejectOrCancelSwap(id, cancel) {
   try { token = await getCalToken(); } catch (err) { toast(err.message); return; }
   if (!token) return;
   const upd = { status: cancel ? 'cancelled' : 'rejected', decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp(), rejectReason: reason };
-  try { await updateDoc(doc(db, 'oncallSwaps', id), upd); } catch (err) { toast(`Couldn't save (${err.code || err.message})`); return; }
+  try { await updateDoc(doc(db, 'oncallSwaps', id), upd); } catch (err) { toast(`Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)})`); return; }
   Object.assign(s, upd);
   renderLeaveTab(); renderRotaTab();
   try {
@@ -1846,7 +1827,7 @@ async function recordLeave() {
       days, total: days.reduce((n, x) => n + dayValue(x.part), 0), year: +from.slice(0, 4), note: q('note').value.trim(),
       oncall: oncallDuring(from, to, who), createdBy: ME.email, createdAt: serverTimestamp(), recordedByOffice: true, ref: ref.id.slice(0, 6).toUpperCase() };
     if (!own) Object.assign(rec, { decidedBy: ME.email, decidedByName: ME.name, decidedAt: serverTimestamp() });
-    try { await setDoc(ref, rec); } catch (err) { q('msg').textContent = `Couldn't save (${err.code || err.message}).`; return; }
+    try { await setDoc(ref, rec); } catch (err) { q('msg').textContent = `Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)}).`; return; }
     const local = Object.assign({ id: ref.id }, rec, { createdAt: { seconds: Date.now() / 1000 } });
     LEAVE.push(local); indexLeave();
     bg.remove();
@@ -1892,7 +1873,7 @@ async function editRotaDay(date) {
     if (describeDay(nd) === describeDay(day)) { bg.remove(); return; }
     const batch = writeBatch(db);
     const saved = rotaWrite(batch, day, nd, 'Changed by hand', '');
-    try { await batch.commit(); } catch (err) { q('msg').textContent = `Couldn't save (${err.code || err.message}).`; return; }
+    try { await batch.commit(); } catch (err) { q('msg').textContent = `Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)}).`; return; }
     ROTA.set(date, saved);
     bg.remove(); renderRotaTab(); toast('Rota updated');
   });
@@ -2049,7 +2030,7 @@ async function saveShutdown(range) {
   map[String(y)] = [...keep(y, '12'), ...dec].sort();
   map[String(y + 1)] = [...keep(y + 1, '01'), ...jan].sort();
   try { await saveSettings({ shutdown: map }); shutPick = null; renderSetTab(); toast(range ? 'Christmas shutdown saved' : 'Christmas shutdown cleared'); }
-  catch (err) { toast(`Couldn't save (${err.code || err.message})`); }
+  catch (err) { toast(`Couldn't save (${report('save', 'Timesheets & leave save didn\'t work', err)})`); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2107,18 +2088,15 @@ document.addEventListener('click', async e => {
 // ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
-const NEWS = {
-  all: [
-    '<b>Leave</b>: holiday to approve is at the top, kept short. Tap <b>Details</b> to see more and pick who covers the on-call. Booked holiday is now shown on a calendar.',
-    '<b>On-call rota</b> is now a calendar from yesterday onwards, and <b>swaps</b> are approved here. On a phone it uses short names (e.g. SB).',
-    '<b>Balances</b> have gone for now: they stay on the holiday spreadsheet.',
-    '<b>Settings</b> is just the Christmas shutdown: tap the first and last day.',
-    'There\'s a <b>Help</b> button at the top of every page.'
-  ]
-};
+// v4.0: What's New is only for new features (standards §15).
+const NEWS_SEND = [
+  'If an engineer\'s timesheet email didn\'t go to the office (the <b>orange dot</b>), you can now send it yourself. Open the timesheet and press <b>Send email to the office</b>, or press <b>Send unsent emails</b> at the top to send them all. It goes from your email, and the engineer gets their copy.'
+];
+const NEWS = { management: NEWS_SEND, office: NEWS_SEND };
 const HELP = [
-  { tab: 'Timesheets', q: 'What do the colours on the week mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. A <b>blue dot</b> means it\'s been changed since it was first sent. An <b>orange dot</b> means the email didn\'t go.</p>' },
+  { tab: 'Timesheets', q: 'What do the colours on the week mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. A <b>blue dot</b> means it\'s been changed since it was first sent. An <b>orange dot</b> means the email to the office didn\'t go: tap it to send it.</p>' },
   { tab: 'Timesheets', q: 'How do I see someone\'s timesheet?', a: '<p>Tap their box for that day. You can download the office copy from there too.</p>' },
+  { tab: 'Timesheets', q: 'The orange dot: the email didn\'t go', a: '<p>The timesheet is saved, but the email to the office didn\'t go. Open it to see why.</p><p>Press <b>Send email to the office</b> to send it yourself, or <b>Send unsent emails</b> at the top for all of them (the last 31 days). It goes from your email, marked "sent by" you, and the engineer gets their copy.</p><p>If a Microsoft window opens, choose your work account.</p>' },
   { tab: 'Timesheets', q: 'How do I chase missing timesheets?', a: '<p>Press <b>Send reminders</b>. You see who\'s missing which days first, and each person gets their own email from you.</p>' },
   { tab: 'Timesheets', q: 'Why isn\'t someone on the list?', a: '<p>Only people with <b>Fills in timesheets</b> ticked in Management are shown.</p>' },
   { tab: 'Leave', q: 'How do I approve holiday?', a: '<p>It\'s at the top under <b>To approve</b>.</p><p>If they\'re on call in that time, press <b>Details and cover</b> and pick who\'s covering each shift (from the printed sheet). Leave it as "No change" if they sorted it themselves.</p><p>Press <b>Approve</b>. The rota changes, it goes in the work diary, and they get an email.</p>' },
@@ -2143,6 +2121,7 @@ async function loadLeaveData() {
   const bad = res.filter(r => r.status === 'rejected');
   if (bad.length) {
     console.error(bad);
+    bad.forEach(r => report('load', 'Leave and rota data didn\'t load', r.reason));
     const denied = bad.some(r => r.reason && r.reason.code === 'permission-denied');
     $('leaveBox').innerHTML = `<div class="empty">Some leave and rota data didn't load${denied ? ' — the new Firestore rules may not be published yet' : ''}.</div>`;
   }
@@ -2160,6 +2139,7 @@ $('thisWeek').addEventListener('click', () => { weekStart = mondayOf(todayISO())
 $('showTest').addEventListener('change', e => { showTest = e.target.checked; renderGrid(); renderCustomerSearch(); });
 $('custQ').addEventListener('input', renderCustomerSearch);
 $('remindBtn').addEventListener('click', openReminders);
+$('sendAllBtn').addEventListener('click', openSendAll);
 $('openTidy').addEventListener('click', () => { $('view-main').hidden = true; $('view-tidy').hidden = false; window.scrollTo(0, 0); loadTidy(); });
 $('backMain').addEventListener('click', () => { $('view-tidy').hidden = true; $('view-main').hidden = false; });
 $('tidyQ').addEventListener('input', renderTidy);
@@ -2180,7 +2160,7 @@ let started = false;
 onAuthStateChanged(auth, async user => {
   const show = id => ['signinScreen', 'notAuthorised', 'appRoot'].forEach(x => { $(x).style.display = x === id ? (x === 'appRoot' ? 'block' : 'flex') : 'none'; });
   if (!user) { show('signinScreen'); return; }
-  const va = await swViewAsInit(user);
+  const va = await SWS.swViewAsInit(user);
   const who = va ? va.email : (user.email || '');
   const isMgr = await checkManager(who);
   IS_OFFICE = !isMgr && await checkOffice(who);
@@ -2197,13 +2177,13 @@ onAuthStateChanged(auth, async user => {
     const sSnap = await getDocs(collection(db, 'staff'));
     sSnap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', short: x.short || '', fills: x.fillsTimesheets !== false }); });
     buildShortNames();
-  } catch (e) { console.error('staff not loaded', e); }
+  } catch (e) { console.error('staff not loaded', e); report('load', 'Staff list didn\'t load', e); }
   if (STAFF.has(ME.email)) ME.name = STAFF.get(ME.email).name;
   $('whoName').textContent = ME.name;
   try {
     const snap = await getDocs(collection(db, 'timesheets'));
     RECS = []; snap.forEach(d => RECS.push(Object.assign({ id: d.id }, d.data())));
-  } catch (e) { $('grid').innerHTML = `<div class="empty">Couldn't load timesheets (${esc(e.code || e.message)}).</div>`; }
+  } catch (e) { $('grid').innerHTML = `<div class="empty">Couldn't load timesheets (${esc(report('load', 'Timesheets didn\'t load', e))}).</div>`; }
   await loadLeaveData();
   renderGrid();
   updateLeaveCount();
@@ -2211,20 +2191,12 @@ onAuthStateChanged(auth, async user => {
   let tab = 'ts';
   try { tab = sessionStorage.getItem('tr-tab') || (pendingLeave().length ? 'leave' : pendingSwaps().length ? 'rota' : 'ts'); } catch (e) {}
   showTab(tab);
-  SW = Object.assign(SW, { page: 'timesheet-report', version: REPORT_VERSION, level: isMgr ? 'management' : 'office', news: NEWS, help: HELP });
-  SW.tab = () => TAB_NAMES[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '';
-  swExtrasStart();
+  SWS.swExtrasStart({ page: 'timesheet-report', version: REPORT_VERSION, level: isMgr ? 'management' : 'office', news: NEWS, help: HELP,
+    tab: () => TAB_NAMES[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '' });
 });
 
 window.__tr = { peopleFor, missingFor, segmentsOf, packDay, reassign, shutdownBlockDays, leaveDiaryEvents, swapValid, SHORT: () => SHORT, get RECS() { return RECS; }, get ROTA() { return ROTA; }, get LEAVE() { return LEAVE; }, get SETTINGS() { return SETTINGS; } };
 
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
-  });
-}
 </script>
 </body>
 </html>

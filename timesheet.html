@@ -3,24 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simpson & Wood — Timesheet v4.4</title>
+<title>Simpson &amp; Wood — Timesheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
 <style>
-  :root{
-    --red:#D0222A; --red-dark:#a51b22; --red-tint:#fbe9ea; --ink:#1a1a1a; --grey:#5c5c5c; --grey-2:#9a9893;
-    --line:#e2e2e2; --field:#cfcfcf; --bg:#f2f1ee; --card:#ffffff; --soft:#f6f5f2;
-    --amber:#7a4f00; --amber-bg:#fff4dd; --green:#1e6b34; --green-bg:#e9f5ec; --blue:#1d3c63; --blue-bg:#eef3fa;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; font-family:'Barlow',sans-serif; background:var(--bg); color:var(--ink); -webkit-text-size-adjust:100%;}
-  h1,h2,h3{font-family:'Barlow Condensed',sans-serif;}
-  [hidden]{display:none !important;}
-  button{font-family:inherit; color:inherit;}
+  /* v5.0: colours, header, tabs, cards, fields and buttons come from sw-design.css
+     (design guide). Only what's particular to this page, or differs from it, is here. */
 
   /* ---- sign-in ---- */
   #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
@@ -32,53 +25,28 @@
 
   /* ---- shell ---- */
   #appRoot{display:none;}
-  header{background:var(--ink); padding:calc(10px + env(safe-area-inset-top)) 20px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
   header .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
-  header img{height:28px; display:block;}
   header h1{font-weight:700; font-size:18px; letter-spacing:.02em; color:#fff; margin:0; text-transform:uppercase;}
-  header p{margin:1px 0 0; font-size:11px; color:#8f8f8f;}
-  header .who{text-align:right; min-width:0;}
-  header .who .name{color:#fff; font-size:12px; font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  header .who button{background:none; border:none; color:#e2b0b3; font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
+  header p{margin:1px 0 0; font-size:11px; color:var(--hdr-muted);}
+  header .who button{background:none; border:none; color:var(--hdr-link); font-size:11px; cursor:pointer; text-decoration:underline; padding:0;}
   .tabs{display:flex; gap:4px; background:var(--card); border-bottom:1px solid var(--line); padding:6px 16px; position:sticky; top:0; z-index:20;}
   .tab{display:flex; align-items:center; gap:7px; background:none; border:none; padding:9px 14px; border-radius:8px; color:var(--grey); font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:16px; cursor:pointer;}
-  .tab i{font-size:19px;}
-  .tab.active{background:var(--red-tint); color:var(--red);}
   .tab .count{background:var(--red); color:#fff; border-radius:9px; font-size:12px; padding:0 6px; line-height:18px; font-family:'Barlow',sans-serif;}
-  .wrap{max-width:1320px; margin:0 auto; padding:20px 24px 40px;}
   @media (max-width:640px){ .wrap{padding:14px 12px 30px;} .tabs{padding:6px 8px;} }
 
   /* ---- banners ---- */
-  .banner{display:flex; gap:10px; align-items:flex-start; border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
-  .banner > i{font-size:20px; flex:0 0 auto; margin-top:1px;}
   .banner b{font-weight:700;}
-  .banner.warn{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
-  .banner.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
-  .banner.info{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
-  .banner.test{background:#e9e4f5; border-color:#d3c8ea; color:#3d2a63;}
-  .banner .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .banner.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .banner.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .banner.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .banner.test{background:var(--test-bg); border-color:var(--test-line); color:var(--test-ink);}
   .mini{background:#fff; border:1px solid currentColor; color:inherit; border-radius:7px; padding:5px 10px; font-size:13.5px; font-weight:600; cursor:pointer;}
 
   /* ---- layout ---- */
-  .layout{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; align-items:start;}
-  .side{position:sticky; top:62px;}
-  @media (max-width:1000px){ .layout{grid-template-columns:1fr;} .side{position:static;} }
-  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
   @media (max-width:640px){ .card{padding:14px;} }
-  .card h2{margin:0 0 12px; font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
 
   /* ---- form ---- */
-  .lbl{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin-bottom:6px;}
   .inp{width:100%; padding:11px 12px; border:1.5px solid var(--field); border-radius:8px; font-family:'Barlow',sans-serif; font-size:16px; color:var(--ink); background:#fff; -webkit-appearance:none; appearance:none;}
-  .inp:focus{outline:none; border-color:var(--red);}
-  .inp:disabled{background:var(--soft); color:var(--grey);}
-  textarea.inp{min-height:104px; resize:vertical; line-height:1.4;}
-  .field{margin-bottom:14px; min-width:0;}
-  .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;}
-  .seg{display:flex; border:1.5px solid var(--field); border-radius:8px; overflow:hidden; background:#fff;}
-  .seg button{flex:1; border:none; background:#fff; padding:11px 6px; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--grey); cursor:pointer; min-width:0;}
-  .seg button + button{border-left:1.5px solid var(--field);}
-  .seg button.on{background:var(--red); color:#fff;}
   .seg button:disabled{opacity:.35; cursor:not-allowed;}
   .seg.wrap4{flex-wrap:wrap;}
   .seg.wrap4 button{flex:1 1 25%;}
@@ -91,30 +59,27 @@
   .tbtn .ph{color:var(--grey-2); font-weight:500; font-size:15.5px;}
   .tbtn i{color:var(--grey-2); font-size:18px;}
   .nd{font-size:13px; color:var(--amber); font-weight:700; margin-top:5px;}
-  .am{display:flex; gap:9px; align-items:flex-start; background:var(--amber-bg); border:1px solid #efd59c; border-radius:8px; padding:10px 12px; margin:-4px 0 14px; font-size:14.5px; cursor:pointer;}
+  .am{display:flex; gap:9px; align-items:flex-start; background:var(--amber-bg); border:1px solid var(--amber-line); border-radius:8px; padding:10px 12px; margin:-4px 0 14px; font-size:14.5px; cursor:pointer;}
   .am input{width:20px; height:20px; margin:0; flex:0 0 auto;}
-  .hint{font-size:12.5px; color:var(--grey); margin-top:5px;}
   .field.bad .inp, .field.bad .seg, .field.bad .tbtn{border-color:var(--red); box-shadow:0 0 0 3px var(--red-tint);}
   .dayrow{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:14px;}
   @media (max-width:640px){ .dayrow{grid-template-columns:1fr;} }
   .daynote{font-size:15px; color:var(--grey); margin-top:-2px;}
   .daynote b{color:var(--ink);}
   .daynote .pay{display:inline-block; background:var(--amber-bg); color:var(--amber); font-weight:700; border-radius:6px; padding:1px 8px; margin-left:4px; font-size:13.5px;}
-  .editing{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--blue-bg); border:1px solid #cfdced; color:var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14.5px;}
+  .editing{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--blue-bg); border:1px solid var(--blue-line); color:var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14.5px;}
 
   /* ---- job cards ---- */
   .job{background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:visible;}
   .job-h{display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--ink); color:#fff; border-radius:11px 11px 0 0;}
   .job-h h3{margin:0; font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
   .job-h .hrs{margin-left:auto; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; white-space:nowrap;}
-  .job-h .x{background:none; border:none; color:#e2b0b3; font-size:20px; cursor:pointer; padding:2px 4px; line-height:1;}
+  .job-h .x{background:none; border:none; color:var(--hdr-link); font-size:20px; cursor:pointer; padding:2px 4px; line-height:1;}
   .job-b{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:0 24px; padding:16px 16px 4px;}
   @media (max-width:900px){ .job-b{grid-template-columns:1fr;} }
   .gear{display:grid; grid-template-columns:76px minmax(0,1fr) 40px; gap:6px; margin-bottom:6px;}
   .gear .inp{padding:9px 10px; font-size:15.5px;}
   .gear .x2{background:none; border:1.5px solid var(--line); border-radius:8px; color:var(--grey); cursor:pointer; font-size:17px;}
-  .addg{width:100%; background:none; border:1.5px dashed var(--field); border-radius:8px; color:var(--grey); padding:9px; font-weight:600; font-size:14.5px; cursor:pointer;}
-  .btn-outline{width:100%; background:#fff; border:2px solid var(--red); color:var(--red); border-radius:10px; padding:13px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer;}
   .btn-outline:disabled{border-color:var(--field); color:var(--grey-2); cursor:not-allowed;}
 
   /* ---- customer suggestions ---- */
@@ -128,20 +93,17 @@
   /* ---- summary / send ---- */
   .sum .big{font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; line-height:1;}
   .sum .sub{color:var(--grey); font-size:13.5px; margin:2px 0 12px;}
-  .kv{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:15px;}
-  .kv span{color:var(--grey);}
   .kv b{text-align:right;}
   .sumnote{font-size:13.5px; color:var(--amber); background:var(--amber-bg); border-radius:8px; padding:8px 10px; margin-top:10px;}
   .btn-primary{width:100%; background:var(--red); color:#fff; border:none; border-radius:10px; padding:15px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;}
   .btn-primary:disabled{background:var(--field); color:#fff; cursor:not-allowed;}
   .btn-ghost{background:#fff; border:1.5px solid var(--field); border-radius:10px; padding:12px 16px; font-weight:700; font-size:15px; cursor:pointer;}
   .small{font-size:12.5px; color:var(--grey); margin:8px 0 0; line-height:1.4;}
-  .errs{background:var(--red-tint); color:#7d1418; border-radius:8px; padding:10px 12px 10px 30px; margin:12px 0 0; font-size:14px; line-height:1.4;}
+  .errs{background:var(--red-tint); color:var(--bad-ink); border-radius:8px; padding:10px 12px 10px 30px; margin:12px 0 0; font-size:14px; line-height:1.4;}
   .errs li{margin-bottom:4px;}
-  .status{border-radius:10px; padding:12px 14px; margin-top:12px; font-size:14.5px; line-height:1.45; border:1px solid;}
-  .status.sending{background:var(--amber-bg); border-color:#efd59c; color:#4d3300;}
-  .status.ok{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
-  .status.bad{background:var(--red-tint); border-color:#f1c4c6; color:#7d1418;}
+  .status.sending{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .status.ok{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .status.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
   .status .acts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
 
   /* ---- my timesheets ---- */
@@ -171,9 +133,9 @@
   .cal .c .s{font-size:12px; line-height:1.2;}
   .cal .c.pad{visibility:hidden;}
   .cal .c.wkend{background:#ecebe7; color:var(--grey);}
-  .cal .c.done{background:var(--green-bg); border-color:#b8dcc2; color:var(--green);}
-  .cal .c.off{background:var(--blue-bg); border-color:#cfdced; color:var(--blue);}
-  .cal .c.miss{background:var(--red-tint); border-color:#f1c4c6; color:var(--red-dark);}
+  .cal .c.done{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .cal .c.off{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .cal .c.miss{background:var(--red-tint); border-color:var(--bad-line); color:var(--red-dark);}
   .cal .c.today{box-shadow:0 0 0 2px var(--ink) inset;}
   .cal .c.future{opacity:.65;}
   .cal .c .dot{position:absolute; top:8px; right:8px; width:10px; height:10px; border-radius:50%; background:#e8a317;}
@@ -192,10 +154,7 @@
   }
   .ac-list .cat{color:var(--grey-2); font-size:12.5px; margin-left:6px;}
   .tag{display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; padding:3px 8px; border-radius:6px; background:#eeece7; color:var(--grey); vertical-align:middle; white-space:nowrap; margin:2px 4px 2px 0;}
-  .tag.ok{background:var(--green-bg); color:var(--green);}
-  .tag.bad{background:var(--red-tint); color:var(--red-dark);}
-  .tag.warn{background:var(--amber-bg); color:var(--amber);}
-  .tag.test{background:#e9e4f5; color:#5a3d8a;}
+  .tag.test{background:var(--test-bg); color:var(--test-ink);}
   .empty{color:var(--grey); font-size:15px; text-align:center; padding:40px 10px; background:#fff; border:1px solid var(--line); border-radius:12px;}
   .notes{margin-top:26px; color:var(--grey); font-size:13.5px; line-height:1.5;}
   .notes h3{font-size:15px; text-transform:uppercase; margin:0 0 6px; color:var(--grey);}
@@ -225,47 +184,6 @@
   .mgrid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
   .mgrid button{padding:18px 4px; border:1px solid var(--line); border-radius:10px; background:#fff; font-size:20px; font-weight:700; cursor:pointer; font-family:'Barlow Condensed',sans-serif;}
   .mgrid button.sel{background:var(--red); border-color:var(--red); color:#fff;}
-
-  /* ---- SHARED (keep in step across pages): View as · What's New · Help ---- */
-  .sw-hbox{display:flex; gap:6px; margin-left:auto;}
-  .sw-hbtn{display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; border-radius:8px; padding:6px 10px; font-family:'Barlow',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-  .sw-hbtn i{font-size:17px;}
-  .sw-hbtn:hover{background:rgba(255,255,255,.2);}
-  .topbar-right .sw-hbtn{margin-right:6px;}
-  @media (max-width:640px){ .sw-hbtn span{display:none;} .sw-hbtn{padding:6px 8px;} }
-  .sw-vabar{position:sticky; top:0; z-index:400; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#e8a317; color:#1a1a1a; padding:8px 16px; font-family:'Barlow',sans-serif; font-size:14px;}
-  .sw-vabar i{font-size:18px;}
-  .sw-vabar span{flex:1; min-width:180px;}
-  .sw-vabar button{background:#fff; border:1px solid #1a1a1a; border-radius:7px; padding:4px 10px; font-weight:700; font-size:13px; cursor:pointer;}
-  .sw-modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; font-family:'Barlow',sans-serif;}
-  .sw-modal{background:#fff; color:#1a1a1a; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:20px;}
-  .sw-modal h3{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0 0 12px;}
-  .sw-modal h3 small{font-size:14px; color:#5c5c5c; font-weight:600;}
-  .sw-news{margin:0; padding-left:20px; font-size:15.5px; line-height:1.5;}
-  .sw-news li{margin-bottom:8px;}
-  .sw-mbtns{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
-  .sw-btn{background:#fff; border:1.5px solid #cfcfcf; border-radius:9px; padding:9px 16px; font-weight:700; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif;}
-  .sw-btn-red{background:#D0222A; border-color:#D0222A; color:#fff;}
-  .sw-inp{width:100%; padding:10px 12px; border:1.5px solid #cfcfcf; border-radius:8px; font-size:16px; font-family:'Barlow',sans-serif; margin-bottom:10px;}
-  .sw-people{display:grid; gap:6px;}
-  .sw-people button{display:flex; justify-content:space-between; gap:10px; text-align:left; background:#fff; border:1px solid #e2e2e2; border-radius:9px; padding:10px 12px; cursor:pointer; font-size:15px; font-family:'Barlow',sans-serif;}
-  .sw-people button:hover{background:#fbe9ea;}
-  .sw-people small{color:#5c5c5c;}
-  .sw-help-bg{justify-content:flex-end; align-items:stretch; padding:0;}
-  .sw-help{background:#fff; color:#1a1a1a; width:100%; max-width:440px; height:100%; overflow:auto; padding:18px 20px 30px; box-shadow:-6px 0 24px rgba(0,0,0,.18);}
-  .sw-help-h{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-  .sw-help-h h3{font-family:'Barlow Condensed',sans-serif; font-size:24px; margin:0; display:flex; align-items:center; gap:6px;}
-  .sw-x{background:none; border:none; font-size:28px; cursor:pointer; line-height:1; color:#5c5c5c;}
-  .sw-help-t{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; text-transform:uppercase; color:#5c5c5c; margin:16px 0 6px;}
-  .sw-help details{border:1px solid #e2e2e2; border-radius:10px; margin-bottom:8px; background:#fff;}
-  .sw-help summary{cursor:pointer; padding:11px 12px; font-weight:700; font-size:15.5px; list-style:none;}
-  .sw-help summary::-webkit-details-marker{display:none;}
-  .sw-help summary::before{content:'+'; display:inline-block; width:18px; color:#D0222A; font-weight:700;}
-  .sw-help details[open] summary::before{content:'–';}
-  .sw-help details > div{padding:0 14px 12px 30px; font-size:15px; line-height:1.5;}
-  .sw-help details > div p{margin:0 0 8px;}
-  .sw-help-f{margin-top:20px; border-top:1px solid #e2e2e2; padding-top:14px; font-size:14px; color:#5c5c5c;}
-  @media (max-width:640px){ .sw-help{max-width:none;} }
 </style>
 </head>
 <body>
@@ -281,16 +199,18 @@
 
 <div id="appRoot">
   <header>
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html" title="Home">
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheet</h1>
-        <p id="versionLabel">v4.4</p>
+        <p id="versionLabel">v5.0</p>
       </div>
     </a>
-    <div class="who">
-      <div class="name" id="whoName">—</div>
-      <button id="signOutBtn">Sign out</button>
+    <div class="right">
+      <div class="who">
+        <div class="name" id="whoName">—</div>
+        <button id="signOutBtn">Sign out</button>
+      </div>
     </div>
   </header>
   <nav class="tabs">
@@ -390,12 +310,27 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
-  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup, reauthenticateWithRedirect as _reauthRedirect
+  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  initializeFirestore, persistentLocalCache, doc, getDoc, getDocs, collection, query, where,
-  writeBatch as _writeBatch, updateDoc as _updateDoc, setDoc as _setDoc, serverTimestamp
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, collection, query, where,
+  writeBatch as _writeBatch, updateDoc as _updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// v5.0: View as, What's New, Help, Not sent yet, the update bar, the service
+// worker and error reporting come from the shared file (standards §15.0),
+// not copies in this page.
+import * as SWS from './sw-shared.js';
+
+// v5.0 (28 Oct 2026): the email fix. Timesheets saved but the email never went,
+// with no error, on iPhones: the Microsoft window opened only after the save
+// had waited for the server, so the phone blocked it, and the fallback (going
+// off to Microsoft's page and back) loses the result on iPhones. Now the save
+// is kept on the phone straight away (Not sent yet), the Microsoft window opens
+// straight from the tap, there's no going off to Microsoft's page, it gives up
+// after 2 minutes if the window never finishes, and every way the email can
+// fail is saved on the timesheet (email.error) and reported to Rob. Also the
+// shared files, the multi-tab cache, the update bar and the design catch-up.
+const VERSION = 'v5.0';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -408,139 +343,24 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, { localCache: persistentLocalCache() });
-// Raw Firestore functions for the shared block below; everything else saves
-// through the guarded versions, so "View as" can never change real data.
-const swDoc = doc, swGetDoc = getDoc, swGetDocs = getDocs, swCollection = collection, swSetDoc = _setDoc;
+// v5.0: the multi-tab cache, so this page, the home page and any second tab
+// share the phone's saved data and unsent saves safely.
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+SWS.swSetup({ db, auth, page: 'timesheet', version: VERSION });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SHARED (copied into index, timesheet, leave, timesheet-report and
-//  management — keep in step): access level · View as (Rob only) ·
-//  What's New · Help.   Standards §15: any page changed from now on gets
-//  this block too.
-// ═══════════════════════════════════════════════════════════════════════════
-const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
-const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
-let VIEW_AS = null;      // { email, name, position } while Rob is viewing the app as someone else
-let SW = { page: '', version: '', level: 'engineer', news: {}, help: [], tab: () => '' };
-const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
-const swEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function swBlocked() { return Promise.reject(new Error(SW_VA_MSG)); }
-// Wrap anything that saves, so "View as" can never change real data.
-function swGuard(fn) { return (...a) => VIEW_AS ? swBlocked() : fn(...a); }
-function swGuardBatch(fn) { return (...a) => { const b = fn(...a); const c = b.commit.bind(b); b.commit = () => VIEW_AS ? swBlocked() : c(); return b; }; }
-(() => {   // and nothing goes to Microsoft (email, calendars) while viewing as someone
-  const f = window.fetch.bind(window);
-  window.fetch = (u, o) => (VIEW_AS && String(u).includes('graph.microsoft.com')) ? swBlocked() : f(u, o);
-})();
-// Who someone is: 'management' (Manager / QS / Director, or the console-only
-// managers list), 'office' or 'engineer'.
-async function swAccess(email) {
-  let managers = false, position = '', staff = null;
-  try { managers = (await swGetDoc(swDoc(db, 'managers', email))).exists(); } catch (e) {}
-  try { const s = await swGetDoc(swDoc(db, 'staff', String(email).toLowerCase())); if (s.exists()) { staff = s.data(); position = staff.position || ''; } } catch (e) {}
-  const level = (managers || SW_MGMT_POSITIONS.includes(position)) ? 'management' : position === 'Office' ? 'office' : 'engineer';
-  return { level, position, staff, isManager: level === 'management', isOffice: level === 'office' };
+// Everything saves through these, so "View as" can never change real data or
+// ask Microsoft for anything.
+const writeBatch = SWS.swGuardBatch(_writeBatch), updateDoc = SWS.swGuard(_updateDoc);
+const reauthenticateWithPopup = SWS.swGuard(_reauthPopup);
+const viewingAs = () => !!SWS.swViewingAs();
+const isVaError = e => String((e && e.message) || e || '').includes(SWS.SW_VA_MSG);
+// A save or load that went wrong: record it for Rob (Management → Errors).
+// Never with what was typed.
+function report(kind, what, e) {
+  const why = (e && (e.code || e.message)) || String(e || 'unknown error');
+  if (!isVaError(e)) SWS.swReport(kind, what + ': ' + why);
+  return why;
 }
-function swHeaderButton(id, icon, label, onClick) {
-  if (document.getElementById(id)) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = id; b.className = 'sw-hbtn'; b.title = label; b.setAttribute('aria-label', label);
-  b.innerHTML = `<i class="ti ${icon}" aria-hidden="true"></i><span>${swEsc(label)}</span>`;
-  b.addEventListener('click', onClick);
-  const right = document.querySelector('.topbar-right');
-  if (right) right.prepend(b);
-  else { const who = document.querySelector('header .who'); let box = document.getElementById('swHbox'); if (!box) { box = document.createElement('div'); box.id = 'swHbox'; box.className = 'sw-hbox'; who.parentNode.insertBefore(box, who); } box.appendChild(b); }
-}
-function swModal(html, cls) {
-  const bg = document.createElement('div');
-  bg.className = 'sw-modal-bg ' + (cls || '');
-  bg.innerHTML = html;
-  bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-swclose]')) bg.remove(); });
-  document.body.appendChild(bg);
-  return bg;
-}
-
-// ---- View as (Rob only) ----------------------------------------------------
-// Rob picks a person and every page shows what they'd see, read-only. The
-// choice lasts for this browser tab (all pages) until he presses Stop. Data is
-// still read with Rob's own access, so it shows screens, not the database rules.
-async function swViewAsInit(user) {
-  const real = String(user.email || '').toLowerCase();
-  if (real !== SW_OWNER) return null;
-  swHeaderButton('swViewAsBtn', 'ti-eye', 'View as', swPickViewAs);
-  let v = null;
-  try { v = sessionStorage.getItem('sw-viewas'); } catch (e) {}
-  if (!v) return null;
-  let name = v, position = '';
-  try { const s = await swGetDoc(swDoc(db, 'staff', v)); if (s.exists()) { name = s.data().name || v; position = s.data().position || ''; } } catch (e) {}
-  VIEW_AS = { email: v, name, position };
-  const bar = document.createElement('div');
-  bar.className = 'sw-vabar';
-  bar.innerHTML = `<i class="ti ti-eye"></i><span>Viewing as <b>${swEsc(name)}</b>${position ? ' (' + swEsc(position) + ')' : ''}. Nothing can be saved or sent.</span><button type="button" data-va="change">Change</button><button type="button" data-va="stop">Stop</button>`;
-  bar.addEventListener('click', e => {
-    const b = e.target.closest('[data-va]'); if (!b) return;
-    if (b.dataset.va === 'change') swPickViewAs();
-    else { try { sessionStorage.removeItem('sw-viewas'); } catch (er) {} location.reload(); }
-  });
-  document.body.prepend(bar);
-  document.body.classList.add('sw-va-on');
-  return VIEW_AS;
-}
-async function swPickViewAs() {
-  let people = [];
-  try { const snap = await swGetDocs(swCollection(db, 'staff')); snap.forEach(d => { const x = d.data(); people.push({ email: d.id.toLowerCase(), name: x.name || d.id, position: x.position || '' }); }); } catch (e) {}
-  people = people.filter(p => p.email !== SW_OWNER).sort((a, b) => a.name.localeCompare(b.name));
-  const m = swModal(`<div class="sw-modal"><h3>View the app as…</h3><input class="sw-inp" placeholder="Type a name" data-q><div class="sw-people" data-list></div>
-    <div class="sw-mbtns"><button type="button" class="sw-btn" data-swclose>Cancel</button></div></div>`);
-  const draw = () => {
-    const q = m.querySelector('[data-q]').value.trim().toLowerCase();
-    m.querySelector('[data-list]').innerHTML = people.filter(p => !q || p.name.toLowerCase().includes(q)).map(p => `<button type="button" data-pick="${swEsc(p.email)}"><b>${swEsc(p.name)}</b><small>${swEsc(p.position || 'No position')}</small></button>`).join('') || '<p>Nobody found.</p>';
-  };
-  m.querySelector('[data-q]').addEventListener('input', draw);
-  m.addEventListener('click', e => { const p = e.target.closest('[data-pick]'); if (!p) return; try { sessionStorage.setItem('sw-viewas', p.dataset.pick); } catch (er) {} location.reload(); });
-  draw(); m.querySelector('[data-q]').focus();
-}
-
-// ---- What's New + Help -------------------------------------------------------
-// Each page sets SW.page, SW.version, SW.news (notes per level) and SW.help
-// (questions; each with the tab it belongs to and, if not everyone, the
-// levels it's for), then calls swExtrasStart().
-function swNewsItems() { return SW.news[SW.level] || SW.news.all || []; }
-function swShowNews() {
-  const items = swNewsItems();
-  swModal(`<div class="sw-modal"><h3>What's new <small>${swEsc(SW.version)}</small></h3>${items.length ? `<ul class="sw-news">${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nothing new for you on this page.</p>'}
-    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
-}
-async function swNewsCheck() {
-  if (VIEW_AS || !swNewsItems().length || !auth.currentUser) return;
-  const key = 'seen_' + SW.page;
-  try {
-    const ref = swDoc(db, 'userPrefs', auth.currentUser.email);
-    const snap = await swGetDoc(ref);
-    if (snap.exists() && snap.data()[key] === SW.version) return;
-    swShowNews();
-    await swSetDoc(ref, { [key]: SW.version }, { merge: true });
-  } catch (e) { console.warn('What\'s new check failed', e); }
-}
-function swShowHelp() {
-  const tab = SW.tab() || '';
-  const mine = SW.help.filter(h => !h.levels || h.levels.includes(SW.level));
-  const groups = new Map();
-  mine.forEach(h => { const g = h.tab || ''; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(h); });
-  const order = [...groups.keys()].sort((a, b) => (a === tab ? -1 : b === tab ? 1 : 0));
-  const m = swModal(`<aside class="sw-help"><div class="sw-help-h"><h3><i class="ti ti-help-circle"></i> Help</h3><button type="button" class="sw-x" data-swclose aria-label="Close">×</button></div>
-    ${order.map(g => `<div class="sw-help-g">${g ? `<div class="sw-help-t">${swEsc(g)}</div>` : ''}${groups.get(g).map(h => `<details ${g === tab && groups.get(g)[0] === h ? 'open' : ''}><summary>${swEsc(h.q)}</summary><div>${h.a}</div></details>`).join('')}</div>`).join('') || '<p>No help for this page yet.</p>'}
-    <div class="sw-help-f"><button type="button" class="sw-btn" data-swnews>What's new in ${swEsc(SW.version)}</button><p>Still stuck? Ask Rob.</p></div></aside>`, 'sw-help-bg');
-  m.querySelector('[data-swnews]').addEventListener('click', () => { m.remove(); swShowNews(); });
-}
-function swExtrasStart() {
-  swHeaderButton('swHelpBtn', 'ti-help-circle', 'Help', swShowHelp);
-  swNewsCheck();
-}
-
-const writeBatch = swGuardBatch(_writeBatch), updateDoc = swGuard(_updateDoc);
-const reauthenticateWithPopup = swGuard(_reauthPopup), reauthenticateWithRedirect = swGuard(_reauthRedirect);
 
 const msProvider = new OAuthProvider('microsoft.com');
 msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
@@ -582,14 +402,19 @@ document.getElementById('msSignInBtn').addEventListener('click', () => {
   });
 });
 document.getElementById('signOutBtn').addEventListener('click', () => { sessionStorage.removeItem('ts-graph'); signOut(auth); });
-const redirectDone = getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => {
+getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => {
   document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
 });
+
+// "A new version is ready" bar (in sw-shared.js): wait while a timesheet is
+// sending, or hasn't reached the server yet.
+let sending = false;
+window.swUpdateBlocker = () => sending ? 'Wait until your timesheet has finished sending, then tap Update.'
+  : SWS.swuMine().some(x => !x.failed) ? 'Wait until your timesheet has sent (the yellow bar goes), then tap Update.' : '';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
-const VERSION = 'v4.4';
 const OFFICE_EMAIL = 'timesheets@simpsonandwood.co.uk';
 const STD_START = 8 * 60;        // 08:00
 const STD_END = 16 * 60 + 30;    // 16:30
@@ -924,6 +749,13 @@ function renderBanners() {
   const b = [];
   if (TEST) b.push(`<div class="banner test"><i class="ti ti-flask"></i><div><b>Test mode.</b> Timesheets here are marked as test data and kept apart from real ones. Emails come to you, not the office. <a href="timesheet.html" style="color:inherit">Leave test mode</a></div></div>`);
   if (ME && !ME.staff) b.push(`<div class="banner bad"><i class="ti ti-user-question"></i><div><b>You're not on the staff list yet</b>, so your timesheets show your email address instead of your name. You can still send them; the office gets a note about it with each one.</div></div>`);
+  // v5.0: saved, but the email to the office hasn't gone (the last 31 days).
+  const unsent = realm().filter(r => r.id !== sendingId && !emailSent(r) && r.date >= addDays(todayISO(), -LOOKBACK_DAYS)).sort((a, c) => a.date.localeCompare(c.date));
+  if (unsent.length) {
+    b.push(`<div class="banner bad"><i class="ti ti-mail-off"></i><div><b>Saved, but the email hasn't gone to the office for ${unsent.length === 1 ? 'this day' : 'these days'}:</b>
+      <div class="acts">${unsent.slice(0, 10).map(r => `<button type="button" class="mini" data-send="${esc(r.id)}"><i class="ti ti-send"></i> Send ${esc(shortDate(r.date))}</button>`).join('')}${unsent.length > 10 ? `<span>+ ${unsent.length - 10} more in My timesheets</span>` : ''}</div>
+      <div class="small" style="color:inherit">Tap a day to send its email now.</div></div></div>`);
+  }
   const miss = missingDays();
   if (miss.length) {
     const shown = miss.slice(0, 10);
@@ -1245,7 +1077,11 @@ function stateFromRecord(rec) {
 }
 function customerKey(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100); }
 
-async function saveRecord(rec) {
+// v5.0: never waits for signal (standards §15.1). The save goes into the
+// phone's copy straight away and is listed in Not sent yet (the yellow bar)
+// until the server has it. Firestore sends it on its own when there's signal.
+function saveRecord(rec) {
+  if (viewingAs()) throw new Error(SWS.SW_VA_MSG);
   const id = recordId(rec.date);
   const existing = MINE.find(r => r.id === id);
   const v = existing ? (existing.version || 1) + 1 : 1;
@@ -1267,7 +1103,11 @@ async function saveRecord(rec) {
       b.set(doc(db, 'timesheetCustomers', key), { name: j.customer.slice(0, 120), key, lastUsed: rec.date, lastUsedBy: ME.email });
     });
   }
-  await b.commit();
+  SWS.swuAdd({ c: 'timesheets', id, label: (TEST ? 'Test timesheet ' : 'Timesheet ') + shortDate(rec.date), app: 'Timesheet', noun: 'timesheet', again: 'Send it again' });
+  b.commit().then(() => SWS.swuSent(id), e => {
+    SWS.swuFailed(id, e.code || e.message);
+    report('save', 'Timesheet didn\'t save', e);
+  });
   if (!TEST) saveNewGear(rec);
   const local = Object.assign({}, full, { id, updatedAt: null, createdAt: (existing && existing.createdAt) || null, history });
   MINE = MINE.filter(r => r.id !== id).concat([local]).sort((a, b2) => b2.date.localeCompare(a.date));
@@ -1291,11 +1131,14 @@ function saveNewGear(rec) {
     b.commit().catch(e => console.warn('gear item not added', g.name, e));
   });
 }
-async function markEmail(rec, fields) {
+// Saves how the email went onto the timesheet (email.status, email.error...).
+// Doesn't wait for signal: it goes up with the timesheet.
+function markEmail(rec, fields) {
   const upd = {};
   Object.entries(fields).forEach(([k, v]) => { upd['email.' + k] = v; });
-  try { await updateDoc(doc(db, 'timesheets', rec.id), upd); } catch (e) { console.warn('email status not saved', e); }
   rec.email = Object.assign({}, rec.email || {}, fields);
+  if (viewingAs()) return;
+  updateDoc(doc(db, 'timesheets', rec.id), upd).catch(e => report('save', 'Timesheet email status didn\'t save', e));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1481,22 +1324,33 @@ function storedToken() {
   } catch (e) {}
   return null;
 }
-// Ask Microsoft for a fresh token. Must be called straight from a tap.
-async function tokenInteractive(pendingId) {
-  try {
-    const r = await reauthenticateWithPopup(auth.currentUser, msProvider);
-    keepToken(r);
-    return storedToken();
-  } catch (err) {
-    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      sessionStorage.setItem('ts-pending-send', pendingId || '');
-      await reauthenticateWithRedirect(auth.currentUser, msProvider);
-      return null;
-    }
-    if (err.code === 'auth/user-mismatch') throw new Error(`That was a different Microsoft account. Choose ${ME.rawEmail}.`);
-    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') throw new Error('The Microsoft window was closed before it finished.');
-    throw new Error(err.code || err.message || 'Microsoft sign-in failed');
-  }
+// Ask Microsoft for a fresh token, in a small window. v5.0:
+//  - It MUST be called straight from a tap, before anything waits for the
+//    network, or phones (iPhones especially) block the window.
+//  - Window only. Going off to Microsoft's page and back (the old fallback)
+//    loses the result on iPhones, so the email silently never went.
+//  - Gives up after 2 minutes if the window never finishes (a known Firebase
+//    bug can leave it hanging). If it finishes later, the token is still kept,
+//    so "Try sending again" goes straight through.
+const MS_WINDOW_MS = 2 * 60000;
+function msWhy(err) {
+  const c = (err && err.code) || '';
+  if (isVaError(err)) return SWS.SW_VA_MSG;
+  if (c === 'auth/popup-blocked') return 'Your phone blocked the Microsoft window.';
+  if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'The Microsoft window was closed before it finished.';
+  if (c === 'auth/user-mismatch') return `That was a different Microsoft account. Choose ${ME.rawEmail}.`;
+  if (c === 'auth/network-request-failed') return 'No signal.';
+  if (c === 'ts/ms-timeout') return 'The Microsoft window didn\'t finish.';
+  return 'Microsoft sign-in failed (' + (c || (err && err.message) || 'unknown') + ').';
+}
+function tokenFromMicrosoft() {
+  let timer;
+  const p = reauthenticateWithPopup(auth.currentUser, msProvider);
+  p.then(keepToken, () => {});
+  const late = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'ts/ms-timeout' })), MS_WINDOW_MS); });
+  return Promise.race([p, late]).then(
+    () => { clearTimeout(timer); const t = storedToken(); if (!t) throw new Error('Microsoft didn\'t give the app permission to send email.'); return t; },
+    err => { clearTimeout(timer); throw new Error(msWhy(err)); });
 }
 function emailHTML(rec) {
   const amended = (rec.version || 1) > 1;
@@ -1562,40 +1416,58 @@ async function sendEngineerCopy(rec, token) {
     attachments: [pdfAttachment(rec, false)] });
 }
 
-// Send the email for a saved record, asking Microsoft for a token if needed.
-async function deliver(rec, opts = {}) {
-  setStatus('sending', 'Saved. Sending the email…');
-  let token = storedToken();
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (!token) {
-      if (!opts.tapped || attempt > 0) {
-        const go = await modal({ title: 'One more tap to send', body: '<p>Your timesheet is <b>saved</b>. To send the email from your account, Microsoft needs to check it\'s you. Usually it just flashes up and closes.</p>',
-          buttons: [{ label: 'Later', value: false }, { label: 'Confirm and send', value: true, primary: true }] });
-        if (!go) { notSent(rec, 'You chose to send it later.'); return false; }
-      }
-      try { token = await tokenInteractive(rec.id); }
-      catch (e) { await markEmail(rec, { status: 'failed', error: e.message }); notSent(rec, e.message); return false; }
-      if (!token) return false;    // gone to Microsoft and will come back here
-    }
-    try {
-      setStatus('sending', 'Sending the email…');
-      const to = await sendEmail(rec, token);
-      await markEmail(rec, { status: 'sent', sentAt: new Date().toISOString(), version: rec.version || 1, to, error: null });
-      let copyOK = true;
-      if (rec.kind !== 'off') {
-        try { await sendEngineerCopy(rec, token); await markEmail(rec, { engineerCopy: 'sent' }); }
-        catch (e2) { copyOK = false; await markEmail(rec, { engineerCopy: 'failed' }); }
-      }
-      sentOK(rec, to, copyOK);
-      return true;
-    } catch (e) {
-      if (e.status === 401 && attempt === 0) { sessionStorage.removeItem('ts-graph'); token = null; continue; }
-      await markEmail(rec, { status: 'failed', error: e.message });
-      notSent(rec, e.message);
+// Send the email for a saved timesheet. v5.0: never fails silently. Every way
+// it can stop is saved on the timesheet (email.status 'failed' + email.error),
+// shown with a "Try sending again" button, and reported to Rob.
+async function deliver(rec, token, why) {
+  if (!token) { notSent(rec, why || 'Microsoft didn\'t give the app permission to send email.'); return false; }
+  sending = true;
+  setStatus('sending', 'Sending the email…');
+  try {
+    let to;
+    try { to = await sendEmail(rec, token); }
+    catch (e) {
+      if (e.status === 401) sessionStorage.removeItem('ts-graph');   // next try asks Microsoft again
+      notSent(rec, e.status === 401 ? 'Microsoft needs to check it\'s you again.' : mailWhy(e));
       return false;
     }
+    markEmail(rec, { status: 'sent', sentAt: new Date().toISOString(), version: rec.version || 1, to, error: null });
+    let copyOK = true;
+    if (rec.kind !== 'off') {
+      try { await sendEngineerCopy(rec, token); markEmail(rec, { engineerCopy: 'sent' }); }
+      catch (e2) { copyOK = false; markEmail(rec, { engineerCopy: 'failed' }); }
+    }
+    sentOK(rec, to, copyOK);
+    return true;
+  } finally { sending = false; }
+}
+// "Load failed" / "Failed to fetch" is the phone having no real signal.
+function mailWhy(e) {
+  if (isVaError(e)) return SWS.SW_VA_MSG;
+  if (e instanceof TypeError || /load failed|failed to fetch|network/i.test(String(e && e.message))) return 'No signal.';
+  return (e && e.message) || 'Unknown error.';
+}
+// Get permission from Microsoft if needed, then send. Called straight from a
+// tap (Send, Try sending again, Send email), so the Microsoft window is allowed.
+let sendingId = null;      // the timesheet being sent right now (kept out of the "email hasn't gone" banner)
+async function getTokenAndDeliver(rec) {
+  sendingId = rec.id;
+  try { return await tokenThenDeliver(rec); }
+  finally { sendingId = null; renderBanners(); }
+}
+async function tokenThenDeliver(rec) {
+  let token = storedToken(), why = '';
+  if (!token && !viewingAs()) {
+    if (!navigator.onLine) why = 'No signal.';
+    else {
+      setStatus('sending', 'Checking with Microsoft that it\'s you. If a Microsoft window opens, choose your work account.');
+      sending = true;
+      try { token = await tokenFromMicrosoft(); } catch (e) { why = e.message; }
+      finally { sending = false; }
+    }
   }
-  return false;
+  if (viewingAs()) why = SWS.SW_VA_MSG;
+  return deliver(rec, token, why);
 }
 function sentOK(rec, to, copyOK = true) {
   const amended = (rec.version || 1) > 1;
@@ -1605,9 +1477,13 @@ function sentOK(rec, to, copyOK = true) {
   renderBanners(); renderMine();
 }
 function notSent(rec, why) {
-  setStatus('bad', `<b>Saved, but the email hasn't gone yet.</b> ${esc(why || '')}
+  if (why !== SWS.SW_VA_MSG) {
+    markEmail(rec, { status: 'failed', error: why, failedAt: new Date().toISOString(), version: rec.version || 1 });
+    SWS.swReport('save', 'Timesheet email didn\'t send: ' + why);
+  }
+  setStatus('bad', `<b>Saved, but the email hasn't gone to the office yet.</b> ${esc(why || '')}
     <div class="acts"><button type="button" class="mini" data-send="${esc(rec.id)}">Try sending again</button></div>
-    <div class="small" style="color:inherit">It's also in My timesheets marked "Email not sent".</div>`);
+    <div class="small" style="color:inherit">It's also at the top of the Timesheet page, and in My timesheets marked "Email not sent".</div>`);
   renderBanners(); renderMine();
 }
 
@@ -1620,7 +1496,6 @@ async function onSend() {
     if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  if (!navigator.onLine) { setStatus('bad', '<b>No signal.</b> Your timesheet is kept on this phone. Press Send again when you have signal.'); return; }
   if (state.mode === 'work' && !state.jobs.some(j => j.dinner === 'Yes')) {
     const ok = await modal({ title: 'No dinner break?', body: '<p>You haven\'t put a dinner break on any job. Send it without one?</p>', buttons: [{ label: 'Go back', value: false }, { label: 'Send without dinner', value: true, primary: true }] });
     if (!ok) return;
@@ -1637,16 +1512,17 @@ async function onSend() {
       buttons: [{ label: 'Go back', value: false }, { label: 'Send amended', value: true, primary: true }] });
     if (!ok) return;
   }
+  // v5.0: from here to the Microsoft window nothing waits (no await), so the
+  // phone still counts it as part of the tap and doesn't block the window.
   const btn = $('sendBtn'); btn.disabled = true;
   try {
-    setStatus('sending', 'Saving…');
     let rec;
-    try { rec = await saveRecord(buildRecord()); }
-    catch (e) { console.error(e); setStatus('bad', `<b>Couldn't save it</b> (${esc(e.code || e.message)}). Nothing has been sent. Check your signal and press Send again.`); return; }
+    try { rec = saveRecord(buildRecord()); }
+    catch (e) { console.error(e); if (!isVaError(e)) report('save', 'Timesheet didn\'t save', e); setStatus('bad', `<b>Couldn't save it</b> (${esc(e.code || e.message)}). Nothing has been sent. Press Send again.`); return; }
     clearDraft();
     state = blankState();
     renderAll();
-    await deliver(rec, { tapped: true });
+    await getTokenAndDeliver(rec);
   } finally { btn.disabled = false; }
 }
 $('sendBtn').addEventListener('click', onSend);
@@ -1743,13 +1619,9 @@ document.addEventListener('click', async e => {
   if (t.dataset.hist) { openHist.has(rec.id) ? openHist.delete(rec.id) : openHist.add(rec.id); renderMine(); return; }
   if (t.dataset.pdf) { try { buildPDF(rec, false).save(pdfName(rec, 'engineer')); } catch (err) { alertBox(err.message); } return; }
   if (t.dataset.send) {
+    if (sending) return;
     showTab('form'); window.scrollTo({ top: 0 });
-    let token = storedToken();
-    if (!token) {
-      try { token = await tokenInteractive(rec.id); } catch (err) { notSent(rec, err.message); return; }
-      if (!token) return;
-    }
-    await deliver(rec);
+    await getTokenAndDeliver(rec);   // straight from the tap, so the Microsoft window is allowed
     return;
   }
   if (t.dataset.edit) {
@@ -1785,14 +1657,14 @@ async function loadLeave() {
     MYLEAVE = new Map();
     lv.forEach(d => { const l = d.data(); if (l.status === 'approved' && !l.testData) (l.days || []).forEach(x => MYLEAVE.set(x.date, { type: l.type, part: x.part })); });
     if (st.exists()) SHUTDOWN = st.data().shutdown || {};
-  } catch (e) { console.warn('leave not loaded', e); }
+  } catch (e) { console.warn('leave not loaded', e); report('load', 'Booked leave didn\'t load', e); }
 }
 async function loadCustomers() {
   const names = new Map();
   try {
     const snap = await getDocs(collection(db, 'timesheetCustomers'));
     snap.forEach(d => { const n = d.data().name; if (n) names.set(n.toLowerCase(), n); });
-  } catch (e) { console.warn('customer list not loaded', e); }
+  } catch (e) { console.warn('customer list not loaded', e); report('load', 'Customer list didn\'t load', e); }
   MINE.forEach(r => (r.jobs || []).forEach(j => { if (j.customer && !names.has(j.customer.toLowerCase())) names.set(j.customer.toLowerCase(), j.customer); }));
   CUSTOMERS = [...names.values()].sort((a, b) => a.localeCompare(b));
 }
@@ -1802,7 +1674,7 @@ async function loadGear() {
   try {
     const snap = await getDocs(collection(db, 'timesheetGear'));
     snap.forEach(d => { const x = d.data(); if (x.name) map.set(x.name.toLowerCase(), { name: x.name, cat: x.category || '' }); });
-  } catch (e) { console.warn('gear list not loaded', e); }
+  } catch (e) { console.warn('gear list not loaded', e); report('load', 'Materials list didn\'t load', e); }
   MINE.forEach(r => (r.jobs || []).forEach(j => (j.materials || []).forEach(m => { if (m.desc && !map.has(m.desc.toLowerCase())) map.set(m.desc.toLowerCase(), { name: m.desc, cat: '' }); })));
   GEAR = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -1810,30 +1682,23 @@ async function loadGear() {
 // ═══════════════════════════════════════════════════════════════════════════
 //  WHAT'S NEW + HELP (plain English; Rob checks it and asks for changes)
 // ═══════════════════════════════════════════════════════════════════════════
-const NEWS = {
-  engineer: [
-    'Holiday the office has approved now shows on <b>My timesheets</b> as <b>H (booked)</b>, so it never counts as a missing day.',
-    'There\'s a <b>Help</b> button at the top of the page if you get stuck.'
-  ],
-  office: [
-    'If "Fills in timesheets" is switched off for you, the app no longer says you\'ve missed days.',
-    'Approved holiday shows as <b>H (booked)</b> on <b>My timesheets</b>.',
-    'There\'s a <b>Help</b> button at the top of the page.'
-  ],
-  management: [
-    'If "Fills in timesheets" is switched off for you, the app no longer says you\'ve missed days.',
-    'Approved holiday shows as <b>H (booked)</b> on <b>My timesheets</b>.',
-    'There\'s a <b>Help</b> button at the top of the page.'
-  ]
-};
+// v5.0: What's New is only for new features (standards §15). The email fix
+// itself isn't one; these two are.
+const NEWS_ALL = [
+  'If the email to the office doesn\'t go, a <b>red box</b> at the top of the page now says which days, with a button to send each one.',
+  'No signal? You can still press <b>Send</b>. Your timesheet is kept on your phone, and a <b>yellow bar</b> shows until it\'s reached the office\'s records. Then send the email from the red box once you have signal.'
+];
+const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
 const HELP = [
   { tab: 'Timesheet', q: 'How do I fill in my timesheet?', a: '<p>1. Check the <b>date</b> and pick <b>Working</b>.</p><p>2. For each job, put in the <b>customer</b>, the <b>start and finish</b> times (tap the hour, then the minutes), what you did, and any materials from stores.</p><p>3. Press <b>Add another job</b> for the next one.</p><p>4. Press <b>Send timesheet</b>. It goes to the office from your own email, and you get a copy.</p>' },
   { tab: 'Timesheet', q: 'I wasn\'t working that day', a: '<p>Pick <b>Not working</b>, then Holiday, Sick, Day off or Bank holiday, and press Send.</p><p>Holiday the office has already approved shows as booked, so you don\'t need to send anything for it.</p>' },
   { tab: 'Timesheet', q: 'My call-out went past midnight', a: '<p>Just put the real finish time. If it\'s earlier than the start time, the app knows it finished the next day.</p>' },
+  { tab: 'Timesheet', q: 'A Microsoft window popped up when I pressed Send', a: '<p>That\'s Microsoft checking it\'s you, because the email goes from your own account. Choose your work account. It usually just flashes up and closes.</p>' },
+  { tab: 'Timesheet', q: 'What\'s the yellow bar?', a: '<p>Your timesheet is saved on your phone but hasn\'t reached the office\'s records yet, usually because there\'s no signal. Keep the app open with signal and it goes on its own.</p><p>Don\'t clear the app or delete it while the bar is showing.</p>' },
   { tab: 'Timesheet', q: 'Why does it say I\'ve missed some days?', a: '<p>Those weekdays have no timesheet yet. Tap a day to fill it in. If you were off, choose <b>Not working</b>.</p>' },
   { tab: 'My timesheets', q: 'What do the colours mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. <b>Grey</b>: a weekend or bank holiday. An <b>orange dot</b> means the email hasn\'t gone yet.</p>' },
   { tab: 'My timesheets', q: 'I made a mistake on a timesheet', a: '<p>Tap the day, change it, and send it again. The office gets the new one, marked as amended.</p>' },
-  { tab: 'My timesheets', q: 'It says the email wasn\'t sent', a: '<p>Your timesheet is saved. Press <b>Send email</b> on that day to try again.</p>' }
+  { tab: 'My timesheets', q: 'It says the email wasn\'t sent', a: '<p>Your timesheet is saved. Tap the day in the <b>red box</b> at the top of the Timesheet page (or <b>Send email</b> on that day here) to try again. If a Microsoft window opens, choose your work account.</p><p>The message says why it didn\'t go, for example no signal.</p>' }
 ];
 
 let started = false;
@@ -1847,17 +1712,17 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('appRoot').style.display = 'block';
   if (started) return;
   started = true;
-  const va = await swViewAsInit(user);
+  const va = await SWS.swViewAsInit(user);
   const raw = va ? va.email : (user.email || '');
-  const acc = await swAccess(raw);
+  const acc = await SWS.swAccess(raw);
   ME = { email: raw.toLowerCase(), rawEmail: raw, name: raw, staff: false, fills: true };
   try {
     const s = await getDoc(doc(db, 'staff', ME.email));
     if (s.exists()) ME.fills = s.data().fillsTimesheets !== false;
     if (s.exists() && s.data().name) { ME.name = s.data().name; ME.staff = true; }
-  } catch (e) { console.error('staff lookup failed', e); }
+  } catch (e) { console.error('staff lookup failed', e); report('load', 'Your staff record didn\'t load', e); }
   $('whoName').textContent = ME.name;
-  try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); }
+  try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); report('load', 'My timesheets didn\'t load', e); }
   await Promise.all([loadCustomers(), loadGear(), loadLogo(), loadLeave()]);
   const draft = loadDraft();
   if (draft) {
@@ -1869,35 +1734,19 @@ onAuthStateChanged(auth, async user => {
     if (recordFor(state.date)) state = stateFromRecord(recordFor(state.date));
   }
   renderAll();
-  SW = Object.assign(SW, { page: 'timesheet', version: VERSION, level: acc.level, news: NEWS, help: HELP });
-  SW.tab = () => ({ form: 'Timesheet', mine: 'My timesheets' })[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '';
-  swExtrasStart();
-  // Back from Microsoft with an email waiting to go?
-  await redirectDone;
-  const pending = sessionStorage.getItem('ts-pending-send');
-  if (pending) {
-    sessionStorage.removeItem('ts-pending-send');
-    const rec = MINE.find(r => r.id === pending);
-    const token = storedToken();
-    if (rec && token) await deliver(rec);
-  }
+  SWS.swExtrasStart({ page: 'timesheet', version: VERSION, level: acc.level, news: NEWS, help: HELP,
+    tab: () => ({ form: 'Timesheet', mine: 'My timesheets' })[((document.querySelector('.tab.active') || {}).dataset || {}).tab] || '' });
+  SWS.swuStart();
 });
 document.addEventListener('click', e => {
   if (e.target.id === 'freshStart') { clearDraft(); state = blankState(); if (recordFor(state.date)) state = stateFromRecord(recordFor(state.date)); setStatus(null); renderAll(); }
 });
 window.addEventListener('beforeunload', e => {
-  if ($('sendBtn').disabled) { e.preventDefault(); e.returnValue = ''; }
+  if ($('sendBtn').disabled || sending) { e.preventDefault(); e.returnValue = ''; }
 });
 
 // Test hooks (used only by Claude's automatic checks; harmless otherwise).
 window.__ts = { compute: st => compute(st), buildPDF: (r, o) => buildPDF(r, o), missingDays: () => missingDays(), get state() { return state; }, get MINE() { return MINE; } };
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(err => console.error("Service worker registration failed:", err));
-  });
-}
 </script>
 </body>
 </html>

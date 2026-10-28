@@ -264,7 +264,7 @@
       <div class="notes">
         <h3>Good to know</h3>
         <p>Problems the apps hit: crashes, saves that failed and things that didn't load. Only you can see this. The same error, for the same person, on the same page and day is one line with a count. Errors are cleared after 90 days.</p>
-        <p>So far only the home page and this page report errors. The isolator apps follow in the next release, and the rest after that.</p>
+        <p>So far the home page, this page and the timesheet report errors. The other pages follow as they're next changed. Errors marked <b>not ours to fix</b> come from someone else's code (for example Firebase), so we can't fix them.</p>
       </div>
     </section>
   </div>
@@ -285,10 +285,12 @@ import {
 // from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
+// v4.1 (28 Oct 2026): Errors tab marks known Firebase bugs "Firebase's — not
+// ours to fix" (still listed and counted, so you can see how often).
 // v4.0 (27 Oct 2026): shared files; design catch-up (full width, tabs,
 // guide fields and buttons, notes at the bottom); Errors tab (Rob only);
 // failed saves and loads are reported; multi-tab cache.
-const VERSION = "v4.0";
+const VERSION = "v4.1";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -1184,6 +1186,12 @@ window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
 // per page, per day, with a count. Cleared after 90 days when this tab opens.
 let ERRS = [], errFilter = 'open', errTidied = false;
 const ERR_KIND = { crash: 'Crash', save: 'Didn\'t save', load: 'Didn\'t load' };
+// v4.1: errors that come from a bug in someone else's code, which we can't fix.
+// They're still listed and counted, just marked. Add to this list as we find them.
+const NOT_OURS = [
+  { re: /Pending promise was never set/i, who: 'Firebase', why: 'A known bug in Firebase\'s Microsoft sign-in window. It usually works on the second try.' }
+];
+const notOurs = r => NOT_OURS.find(x => x.re.test(String(r.message || '')));
 function errWhen(r) {
   const t = r.lastAt && r.lastAt.toDate ? r.lastAt.toDate() : null;
   const d = t || new Date(r.day + 'T12:00:00');
@@ -1228,7 +1236,8 @@ async function renderErrors(reload) {
     return `<div class="err-row${r.dealt ? ' dealt' : ''}">
       <div class="err-when"><b>${escapeHtml(w.day)}</b><span>${escapeHtml(w.time ? 'last at ' + w.time : '')}</span>${(r.count || 1) > 1 ? `<div><span class="err-n">×${r.count}</span></div>` : ''}</div>
       <div><div class="err-msg">${escapeHtml(r.message || '')}</div>
-        <div class="err-meta"><span class="tag ${r.kind === 'crash' ? 'bad' : 'warn'}">${escapeHtml(ERR_KIND[r.kind] || r.kind || '')}</span><span><b>${escapeHtml(r.page || '')}</b> ${escapeHtml(r.version || '')}</span><span>${escapeHtml(staffName(r.email))}</span><span>${escapeHtml([r.device, r.browser].filter(Boolean).join(' · '))}</span></div>
+        <div class="err-meta"><span class="tag ${r.kind === 'crash' ? 'bad' : 'warn'}">${escapeHtml(ERR_KIND[r.kind] || r.kind || '')}</span>${notOurs(r) ? `<span class="tag">${escapeHtml(notOurs(r).who)}'s — not ours to fix</span>` : ''}<span><b>${escapeHtml(r.page || '')}</b> ${escapeHtml(r.version || '')}</span><span>${escapeHtml(staffName(r.email))}</span><span>${escapeHtml([r.device, r.browser].filter(Boolean).join(' · '))}</span></div>
+        ${notOurs(r) ? `<div class="err-meta">${escapeHtml(notOurs(r).why)}</div>` : ''}
         ${r.where ? `<div class="err-where">${escapeHtml(r.where)}</div>` : ''}
         ${r.dealt && r.dealtBy ? `<div class="err-meta">Dealt with by ${escapeHtml(staffName(r.dealtBy))}</div>` : ''}</div>
       <div class="err-acts">${r.dealt ? `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="open">Not dealt with</button>` : `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="dealt"><i class="ti ti-check"></i> Dealt with</button>`}</div>
@@ -1282,7 +1291,8 @@ const HELP = [
   { tab: 'Fire toolkit', q: 'What are fire toolkit corrections?', a: '<p>Suggestions engineers send from the fire toolkit. <b>Accept</b> means it goes into the content at the next update. <b>Dismiss</b> means it doesn\'t.</p>' }
 ];
 const OWNER_HELP = [
-  { tab: 'Errors', q: 'What\'s on the Errors tab?', a: '<p>Problems the apps hit: crashes, saves that failed and things that didn\'t load. Each line says what, where, who, when, and on what phone or computer. The same error for the same person, page and day is one line, with a count.</p><p>Press <b>Dealt with</b> once it\'s sorted. If it happens again, it comes back.</p><p>Only you can see this tab. Errors are cleared after 90 days.</p>' }
+  { tab: 'Errors', q: 'What\'s on the Errors tab?', a: '<p>Problems the apps hit: crashes, saves that failed and things that didn\'t load. Each line says what, where, who, when, and on what phone or computer. The same error for the same person, page and day is one line, with a count.</p><p>Press <b>Dealt with</b> once it\'s sorted. If it happens again, it comes back.</p><p>Only you can see this tab. Errors are cleared after 90 days.</p>' },
+  { tab: 'Errors', q: 'What does "not ours to fix" mean?', a: '<p>The error comes from a bug in someone else\'s code (for example Firebase, which does the Microsoft sign-in), not from our apps. We can\'t fix it, but it\'s still listed so you can see how often it happens.</p>' }
 ];
 const TAB_NAMES = { staff: 'Staff', import: 'Data import', corrections: 'Fire toolkit', errors: 'Errors' };
 

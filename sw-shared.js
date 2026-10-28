@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  sw-shared.js — Simpson & Wood engineer apps, shared code   v1.0
-//  27 Oct 2026. One copy of the blocks every page needs, instead of a copy
+//  sw-shared.js — Simpson & Wood engineer apps, shared code   v1.1
+//  27 Oct 2026 (v1.1, 28 Oct: Not sent yet can name what's waiting, e.g.
+//  "timesheet", instead of always "test"). One copy of the blocks every page needs, instead of a copy
 //  pasted into each page:
 //    · access level · View as (Rob only) · What's New · Help   (standards §15)
 //    · Not sent yet                                             (standards §15.1)
@@ -21,7 +22,7 @@ import {
   doc, getDoc, getDocs, collection, setDoc, getDocFromServer, increment, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-export const SW_SHARED_VERSION = '1.0';
+export const SW_SHARED_VERSION = '1.1';
 export const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
 export const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
 export const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
@@ -170,7 +171,9 @@ export function swExtrasStart(opts) {
 //  closed or reloaded. Every page that uses it checks the list against the
 //  server when it opens, when signal comes back and every minute, so anything
 //  that went up in the background clears itself.
-//  An item: { c: collection, id: doc id, label, app, site, at, by, failed?, why? }
+//  An item: { c: collection, id: doc id, label, app, site, at, by, failed?, why?,
+//            noun?, again? }  noun: what it is (default 'test'); again: what
+//            to do if it didn't save (default 'Log it again').
 //  Fires a 'swu-change' event on document with { waiting, failed }.
 // ═══════════════════════════════════════════════════════════════════════════
 const SWU_KEY = 'sw-unsent-v1';
@@ -216,9 +219,10 @@ function swuRender() {
   bar.hidden = false;
   bar.classList.toggle('bad', bad.length > 0);
   const n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
+  const noun = list => { const w = [...new Set(list.map(x => x.noun || 'test'))]; return w.length === 1 ? w[0] : 'save'; };
   bar.innerHTML = bad.length
-    ? `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${n(bad.length, 'test')} didn't save. Tap to see which, then log ${bad.length === 1 ? 'it' : 'them'} again.</span>`
-    : `<i class="ti ti-cloud-upload" aria-hidden="true"></i><span>${n(wait.length, 'test')} not sent yet. ` +
+    ? `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${n(bad.length, noun(bad))} didn't save. Tap to see which${noun(bad) === 'test' ? `, then log ${bad.length === 1 ? 'it' : 'them'} again` : ''}.</span>`
+    : `<i class="ti ti-cloud-upload" aria-hidden="true"></i><span>${n(wait.length, noun(wait))} not sent yet. ` +
       (navigator.onLine ? 'Sending… keep the app open.' : `No signal. ${wait.length === 1 ? 'It' : 'They'}'ll send when you're back in signal. Don't clear the app.`) + `</span>`;
 }
 function swuShowList() {
@@ -226,12 +230,12 @@ function swuShowList() {
   const slow = x => !x.failed && navigator.onLine && Date.now() - x.at > SWU_SLOW_MS;
   const row = x => `<div class="swu-row ${x.failed ? 'bad' : ''}"><div><b>${swEsc(x.label || x.id)}</b>
       <small>${swEsc([x.app, x.site].filter(Boolean).join(' · '))}${x.app || x.site ? ' · ' : ''}saved ${swuAgo(x.at)}</small>
-      ${x.failed ? `<small class="swu-why">Didn't save${x.why ? ' (' + swEsc(x.why) + ')' : ''}. Log it again, then press Remove.</small>` : ''}
+      ${x.failed ? `<small class="swu-why">Didn't save${x.why ? ' (' + swEsc(x.why) + ')' : ''}. ${swEsc(x.again || 'Log it again')}, then press Remove.</small>` : ''}
       ${slow(x) ? `<small class="swu-why">Still not sent. Open ${swEsc(x.app || 'the app')} with signal. If it stays here, tell the office.</small>` : ''}</div>
       ${x.failed ? `<button type="button" class="sw-btn" data-swudrop="${swEsc(x.id)}">Remove</button>` : '<span class="swu-pill">Waiting</span>'}</div>`;
   const m = swModal(`<div class="sw-modal"><h3>Not sent yet</h3>
     ${mine.length ? `<div class="swu-list">${mine.map(row).join('')}</div>` : '<p>Everything has been sent.</p>'}
-    <p class="swu-note">Tests stay safe on this phone until the office has them. Keep the app open with signal and they go up on their own. Don't clear the app's data or uninstall it while anything is waiting.</p>
+    <p class="swu-note">${mine.length && mine.every(x => (x.noun || 'test') === 'test') ? 'Tests stay' : 'Everything here stays'} safe on this phone until the office has ${mine.length === 1 ? 'it' : 'them'}. Keep the app open with signal and they go up on their own. Don't clear the app's data or uninstall it while anything is waiting.</p>
     <div class="sw-mbtns"><button type="button" class="sw-btn" data-swucheck>Check again</button><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
   m.addEventListener('click', e => {
     const d = e.target.closest('[data-swudrop]');
