@@ -65,6 +65,9 @@
   .dayrow{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:14px;}
   @media (max-width:640px){ .dayrow{grid-template-columns:1fr;} }
   .daynote{font-size:15px; color:var(--grey); margin-top:-2px;}
+  /* v5.0: the date, big, above the hours (and bigger at the top when the hours box is at the bottom) */
+  .sumdate{font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; line-height:1.05; padding-bottom:10px; margin-bottom:12px; border-bottom:1px solid var(--line);}
+  @media (max-width:1000px){ .daynote b{font-family:'Barlow Condensed',sans-serif; font-size:24px; display:block; line-height:1.15;} }
   .daynote b{color:var(--ink);}
   .daynote .pay{display:inline-block; background:var(--amber-bg); color:var(--amber); font-weight:700; border-radius:6px; padding:1px 8px; margin-left:4px; font-size:13.5px;}
   .editing{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--blue-bg); border:1px solid var(--blue-line); color:var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14.5px;}
@@ -268,6 +271,7 @@
 
         <aside class="side">
           <div class="card sum" id="sumCard">
+            <div class="sumdate" id="sumDate"></div>
             <div id="sumWork">
               <div class="big" id="sumTotal">0.00 h</div>
               <div class="sub">total hours (dinner taken off)</div>
@@ -330,6 +334,9 @@ import * as SWS from './sw-shared.js';
 // after 2 minutes if the window never finishes, and every way the email can
 // fail is saved on the timesheet (email.error) and reported to Rob. Also the
 // shared files, the multi-tab cache, the update bar and the design catch-up.
+// Also (agreed 28 Oct, same release): a warning if the day hasn't finished
+// yet, opening on the last working day before midday, and the date big above
+// the hours.
 const VERSION = 'v5.0';
 
 const firebaseConfig = {
@@ -491,8 +498,22 @@ function bookedFull(date) { const l = MYLEAVE.get(date); return !!(l && l.part =
 function blankJob(start = '') {
   return { customer: '', start, end: '', afterMidnight: false, details: '', callout: 'No', dinner: '', testCert: '', status: '', materials: [] };
 }
+// v5.0 (agreed 28 Oct): which day a fresh timesheet opens on. Before midday,
+// the last working day (Monday morning → Friday; bank holidays, shutdown days
+// and booked leave skipped), unless it's already been sent; after midday, today.
+function defaultDate() {
+  const today = todayISO();
+  if (new Date().getHours() >= 12) return today;
+  let d = addDays(today, -1);
+  for (let k = 0; k < 14; k++, d = addDays(d, -1)) {
+    const w = dow(d);
+    if (w === 0 || w === 6 || BANK_HOLIDAYS[d] || isShutdown(d) || (!TEST && bookedFull(d))) continue;
+    return recordFor(d) ? today : d;
+  }
+  return today;
+}
 function blankState(date) {
-  return { date: date || todayISO(), mode: 'work', offReason: '', offNote: '', jobs: [blankJob()], editing: null, tried: false };
+  return { date: date || defaultDate(), mode: 'work', offReason: '', offNote: '', jobs: [blankJob()], editing: null, tried: false };
 }
 function realm() { return MINE.filter(r => !!r.testData === TEST); }
 function recordFor(date) { return realm().find(r => r.date === date) || null; }
@@ -732,6 +753,7 @@ function renderDay() {
     if (t === 'bh') note += ` · bank holiday (${esc(BANK_HOLIDAYS[d])})`;
   }
   $('dayNote').innerHTML = note;
+  $('sumDate').textContent = d ? parseISO(d).toLocaleDateString('en-GB', Object.assign({ weekday: 'short', day: 'numeric', month: 'short' }, d.slice(0, 4) !== todayISO().slice(0, 4) ? { year: 'numeric' } : {})).replace(/,/g, '') : 'Pick the date';
   $('workPane').hidden = state.mode !== 'work';
   $('offPane').hidden = state.mode !== 'off';
   $('sumWork').hidden = state.mode !== 'work';
@@ -1500,6 +1522,17 @@ async function onSend() {
     const ok = await modal({ title: 'No dinner break?', body: '<p>You haven\'t put a dinner break on any job. Send it without one?</p>', buttons: [{ label: 'Go back', value: false }, { label: 'Send without dinner', value: true, primary: true }] });
     if (!ok) return;
   }
+  // v5.0 (agreed 28 Oct): warn, but allow, if the day hasn't finished yet.
+  if (state.mode === 'work') {
+    const c = compute(state);
+    const end = parseISO(state.date); end.setMinutes(end.getMinutes() + (c.end || 0));
+    if (c.end != null && end > new Date()) {
+      const endDay = isoOf(end), when = timeLabel(c.end % 1440) + (endDay === todayISO() ? '' : endDay === addDays(todayISO(), 1) ? ' tomorrow' : ' on ' + shortDate(endDay));
+      const ok = await modal({ title: 'Your day hasn\'t finished yet', body: `<p>This timesheet finishes at <b>${esc(when)}</b>. Send it now anyway?</p><p>If your hours change, you can change it later. The office gets it marked as amended.</p>`,
+        buttons: [{ label: 'Go back', value: false }, { label: 'Send anyway', value: true, primary: true }] });
+      if (!ok) return;
+    }
+  }
   if (!state.editing) {
     const earlier = missingDays().filter(d => d < state.date);
     if (earlier.length) {
@@ -1685,12 +1718,13 @@ async function loadGear() {
 // v5.0: What's New is only for new features (standards §15). The email fix
 // itself isn't one; these two are.
 const NEWS_ALL = [
+  'In the morning, the timesheet now opens on your <b>last working day</b> (on a Monday, Friday). After midday it opens on today. The date is big at the top.',
   'If the email to the office doesn\'t go, a <b>red box</b> at the top of the page now says which days, with a button to send each one.',
   'No signal? You can still press <b>Send</b>. Your timesheet is kept on your phone, and a <b>yellow bar</b> shows until it\'s reached the office\'s records. Then send the email from the red box once you have signal.'
 ];
 const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
 const HELP = [
-  { tab: 'Timesheet', q: 'How do I fill in my timesheet?', a: '<p>1. Check the <b>date</b> and pick <b>Working</b>.</p><p>2. For each job, put in the <b>customer</b>, the <b>start and finish</b> times (tap the hour, then the minutes), what you did, and any materials from stores.</p><p>3. Press <b>Add another job</b> for the next one.</p><p>4. Press <b>Send timesheet</b>. It goes to the office from your own email, and you get a copy.</p>' },
+  { tab: 'Timesheet', q: 'How do I fill in my timesheet?', a: '<p>1. Check the <b>date</b> and pick <b>Working</b>. In the morning it opens on your last working day; after midday, on today.</p><p>2. For each job, put in the <b>customer</b>, the <b>start and finish</b> times (tap the hour, then the minutes), what you did, and any materials from stores.</p><p>3. Press <b>Add another job</b> for the next one.</p><p>4. Press <b>Send timesheet</b>. It goes to the office from your own email, and you get a copy.</p>' },
   { tab: 'Timesheet', q: 'I wasn\'t working that day', a: '<p>Pick <b>Not working</b>, then Holiday, Sick, Day off or Bank holiday, and press Send.</p><p>Holiday the office has already approved shows as booked, so you don\'t need to send anything for it.</p>' },
   { tab: 'Timesheet', q: 'My call-out went past midnight', a: '<p>Just put the real finish time. If it\'s earlier than the start time, the app knows it finished the next day.</p>' },
   { tab: 'Timesheet', q: 'A Microsoft window popped up when I pressed Send', a: '<p>That\'s Microsoft checking it\'s you, because the email goes from your own account. Choose your work account. It usually just flashes up and closes.</p>' },
