@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v28';
+const CACHE_NAME = 'sw-engineer-apps-shell-v29';
 
 const APP_SHELL = [
   './',
@@ -24,6 +24,9 @@ const APP_SHELL = [
   'fire-toolkit.html',
   'isolator-interlock-test.html',
   'isolator-interlock-report.html',
+  'gate-test.html',
+  'gate-report.html',
+  'gate-shared.js',
   'timesheet.html',
   'timesheet-report.html',
   'leave.html',
@@ -46,6 +49,7 @@ const APP_SHELL = [
 // v26 (27 Oct 2026): adds the shared files sw-design.css and sw-shared.js.
 // v27 (28 Oct 2026): timesheet v5.0, Timesheets & leave v4.0, management v4.1, sw-shared.js v1.1.
 // v28 (28 Oct 2026): isolator test v19.0, isolator reports v18.0, management v4.2, home page v4.1.
+// v29 (9 Nov 2026): gate and door app v1.0 (gate-test.html, gate-report.html, gate-shared.js), management v4.3, home page v4.2.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>

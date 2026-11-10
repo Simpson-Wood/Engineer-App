@@ -207,7 +207,7 @@ import {
 // reporting come from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
-const VERSION = "v4.1";
+const VERSION = "v4.2";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -268,7 +268,7 @@ const TOOLS = [
   { section: "Reference", id: "firetoolkit", name: "Fire toolkit", icon: "ti-flame", href: "fire-toolkit.html", pairKey: "firetoolkit" },
   { section: "Customer reports", id: "isolator", name: "Isolator testing", icon: "ti-bolt", href: "isolator-interlock-test.html", pairKey: "isolator" },
   { section: "Customer reports", id: "aov", name: "AOV testing", icon: "ti-window", href: "aov-test.html", pairKey: "aov" },
-  { section: "Customer reports", id: "gate", name: "Gate service", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
+  { section: "Customer reports", id: "gate", name: "Gates & doors", icon: "ti-fence", href: "gate-test.html", pairKey: "gate" },
   { section: "Customer reports", id: "cctv", name: "CCTV service", icon: "ti-video", href: "cctv-service.html", pairKey: "cctv" },
   { section: "Customer reports", id: "pfc", name: "Power factor correction", icon: "ti-circuit-capacitor", href: "pfc-service.html", pairKey: "pfc" },
   { section: "Admin & compliance", id: "vancheck", name: "Van check", icon: "ti-truck", href: "van-check.html", pairKey: "vancheck" },
@@ -422,6 +422,12 @@ async function loadQsCounts(reportEntries){
   try { const c = await getDoc(doc(db, 'config', 'isolatorPhotos')); photosOut = c.exists() && !!c.data().removedAt; } catch (e) {}
   await Promise.all(reportEntries.map(async ({ tool }) => {
     try {
+      // v4.2: gates and doors count what is waiting for QS (submitted or in review, not practice, not drafts).
+      if (tool.id === 'gate') {
+        const gs = await getDocs(query(collection(db, 'gateTests'), where('qsed', '==', false)));
+        let gn = 0; gs.forEach(d => { const r = d.data(); if (!r.deletedFlag && !r.testData && ['Submitted', 'In review'].includes(r.status)) gn++; });
+        if (gn) countsByTool.gate = gn; return;
+      }
       if (tool.id === 'isolator' && photosOut) { const n = await isolatorQsCount(); if (n) countsByTool.isolator = n; return; }
       const snap = await getDocs(query(collection(db, tool.id + 'Tests'), orderBy('date', 'desc'), limit(30)));
       snap.forEach(d => {

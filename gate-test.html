@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gates &amp; Doors Inspection — Simpson &amp; Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  body{padding-bottom:40px;}
+  .wrap{max-width:1500px; margin:0 auto; padding:0;}
+  header .brand{flex:1 1 auto;} header .brand > div{min-width:0;}   /* long title: … rather than running under the buttons */
+
+  /* ---- sign-in ---- */
+  #signinScreen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+  .ms-btn{display:flex;}
+  #appRoot{display:none;}
+
+  /* ---- site bar ---- */
+  .site-bar{background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px;}
+  .site-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .site-row select{flex:1 1 260px; max-width:520px; margin:0;}
+  .site-btn{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:9px 14px; font-size:14.5px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; white-space:nowrap;}
+  .site-btn i{font-size:17px;}
+  .site-btn.dark{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .site-btn.dashed{border-style:dashed; color:var(--grey);}
+  .site-status{font-size:12.5px; color:var(--grey); margin:5px 0 0;}
+  .site-note{border-radius:8px; padding:10px 12px; font-size:14px; font-weight:600; margin-top:8px; border:1px solid;}
+  .site-note.bad{background:var(--red-tint); color:var(--bad-ink); border-color:var(--bad-line);}
+  #addSiteForm{margin-top:12px; max-width:900px;}
+
+  /* ---- tabs: the guide's red-tint pills ---- */
+  .tabs .wrap{display:flex; gap:4px; width:100%;}
+  header .who button{white-space:nowrap;}
+
+  main{padding:16px;}
+  .log-layout{display:grid; grid-template-columns:minmax(0,1fr); gap:0 16px; align-items:start;}
+  @media (min-width:1100px){ .log-layout{grid-template-columns:320px minmax(0,1fr);} .log-side{position:sticky; top:70px;} }
+  .card{min-width:0; padding:16px;}
+  .section-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:20px; color:var(--ink); margin:0 0 12px;}
+
+  /* ---- fields: labels are the guide's .lbl ---- */
+  .fld > label, .card > label, .site-bar label, .edit-panel label{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:0 0 6px;}
+  label .req{color:var(--red);}
+  label .hint{display:block; font-family:'Barlow',sans-serif; font-weight:400; text-transform:none; letter-spacing:0; color:var(--grey); font-size:12.5px; margin-top:2px;}
+  input[type=text], input[type=date], select, textarea, input[type=file]{
+    width:100%; min-height:44px; padding:10px 12px; font-family:'Barlow',sans-serif; font-size:16px;
+    border:1.5px solid var(--field); border-radius:8px; background:#fff; color:var(--ink); margin-bottom:14px;
+  }
+  input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+  textarea{resize:vertical; min-height:64px; line-height:1.4;}
+  select{appearance:none; -webkit-appearance:none; padding-right:34px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%235c5c5c' d='M5 7l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; background-size:18px;}
+  select:disabled{background-color:var(--soft); color:var(--grey);}
+  select:disabled option:disabled{color:#ccc;}
+  .field-error{border-color:var(--red) !important; box-shadow:0 0 0 3px var(--red-tint);}
+  .error-msg{color:var(--red); font-size:13px; margin:-10px 0 12px; display:none;}
+
+  /* form grid: label + box + error stay together in a .fld */
+  .fgrid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:16px;}
+  .fgrid > .full{grid-column:1 / -1;}
+  .fgrid > .contents{display:contents;}
+  .fld{min-width:0;}
+  @media (min-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1300px){ .fgrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .checks-grid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:28px; margin-bottom:6px;}
+  @media (min-width:1000px){ .checks-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .checks-grid .check-item:nth-child(2){border-top:none; padding-top:0;} }
+
+  .radio-row{display:flex; gap:6px; margin:0; flex-shrink:0; flex-wrap:wrap;}
+  .radio-opt{display:flex; align-items:center; justify-content:center; min-height:44px; border:1.5px solid var(--field); border-radius:8px; padding:8px 14px; text-align:center; font-weight:700; font-size:15px; cursor:pointer; user-select:none; color:var(--grey); min-width:62px; background:#fff;}
+  .radio-opt input{display:none;}
+  .radio-opt.pass-sel{border-color:var(--green); background:var(--green-bg); color:var(--green);}
+  .radio-opt.fail-sel{border-color:var(--red); background:var(--red-tint); color:var(--red-dark);}
+  .radio-opt.na-sel{border-color:var(--grey); background:var(--soft); color:var(--grey);}
+  .edit-panel{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; width:100%;}
+  .edit-panel .check-item{padding:6px 0;}
+  .id-locked-note{font-size:12.5px; color:var(--grey); margin:0 0 12px; font-style:italic;}
+  .edited-marker{font-size:11px; font-weight:700; color:var(--amber); background:var(--amber-bg); padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em;}
+  .btn-edit-own, .del-btn, .restore-btn, .photos-btn{min-height:40px; background:#fff; border:1.5px solid var(--field); color:var(--ink); font-size:14px; font-weight:700; padding:7px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
+  .btn-edit-own i, .photos-btn i{font-size:16px;}
+  .del-btn{border-color:var(--red); color:var(--red);}
+  .restore-btn{border-color:var(--ink);}
+  .btn-save-edit{flex:1; min-height:44px; background:var(--green); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .btn-cancel-edit{flex:1; min-height:44px; background:#fff; border:1.5px solid var(--field); color:var(--ink); padding:10px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .loading-spinner{display:flex; align-items:center; gap:8px; color:var(--grey); font-size:13.5px; padding:10px 0 0;}
+  .loading-spinner .dot{width:7px; height:7px; border-radius:50%; background:var(--red); animation:pulse 1s infinite ease-in-out;}
+  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+
+  /* photos (v19.0: kept apart from the test, loaded when asked for) */
+  .photo-row{display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 4px;}
+  .photo-row figure{margin:0;}
+  .photo-row img, .reference-photo{display:block; width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line); cursor:zoom-in; background:var(--soft);}
+  .photo-row figcaption{font-size:12px; color:var(--grey); margin-top:3px;}
+  .photo-note{font-size:13px; color:var(--grey); margin:6px 0;}
+  .photo-full{max-width:100%; max-height:76vh; display:block; margin:0 auto; border-radius:8px;}
+  .sw-modal.photo-modal{max-width:900px;}
+
+  .id-preview{background:var(--soft); border:1.5px dashed var(--field); border-radius:8px; padding:10px 12px; font-size:16px; font-weight:700; color:var(--ink); margin-bottom:6px; min-height:44px; letter-spacing:.02em; word-break:break-word;}
+  .id-preview.pending{color:var(--grey); font-weight:400; font-style:italic; font-size:14px;}
+  .id-note{font-size:12.5px; color:var(--grey); margin:0 0 14px;}
+  .id-note.retest{color:var(--red); font-weight:600;}
+
+  .check-item{display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--line); padding:9px 0; flex-wrap:wrap;}
+  .check-item:first-child{border-top:none; padding-top:0;}
+  .check-item .check-label{flex:1; min-width:160px; font-size:15px; font-weight:600; color:var(--ink);}
+  .check-item .error-msg{width:100%; margin:2px 0 0;}
+
+  .entry{border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden;}
+  .entry-head{background:var(--ink); color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .entry-head .etag{background:var(--red); font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; padding:3px 9px; border-radius:6px; text-transform:uppercase; flex-shrink:0;}
+  .entry-head .eq-id{font-weight:600; font-size:14px; flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .entry-head button{background:none; border:none; color:var(--hdr-link); font-size:14px; cursor:pointer; font-weight:600; flex-shrink:0; min-height:36px;}
+  .entry-body{padding:14px;}
+
+  .add-btn{width:100%; min-height:52px; padding:13px; background:#fff; border:2px dashed var(--red); color:var(--red); border-radius:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; margin-bottom:6px;}
+  .empty-note{text-align:center; color:var(--grey); font-size:14.5px; padding:18px 0;}
+
+  .save-entry-btn{width:100%; min-height:52px; padding:14px; background:var(--red); color:#fff; border:none; border-radius:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; margin-top:6px;}
+  .save-entry-btn:hover{background:var(--red-dark);}
+  @media (min-width:1000px){ .save-entry-btn{max-width:420px;} }
+
+  .banner{display:none; font-weight:600;}
+  .banner.ok{background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+  .banner.wait{background:var(--amber-bg); color:#4d3300; border-color:var(--amber-line);}
+  .banner button{background:#fff; border:1.5px solid currentColor; color:inherit; border-radius:8px; padding:4px 10px; font-weight:700; font-size:13.5px; cursor:pointer; margin-left:8px;}
+
+  .today-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; border-top:1px solid var(--line);}
+  .today-item:first-child{border-top:none;}
+  .today-item .id{font-weight:700; font-size:15px; word-break:break-word;}
+  .today-item .cat{font-size:12.5px; color:var(--grey);}
+  .sent-tag{font-size:12px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap;}
+  .sent-tag.ok{background:var(--green-bg); color:var(--green);}
+  .sent-tag.wait{background:var(--amber-bg); color:var(--amber);}
+
+  /* ---- register ---- */
+  .reg-count{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin:0 0 14px;}
+  .reg-count .n{font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700; line-height:1.05;}
+  .reg-count .l{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .reg-count .of{font-size:13.5px; color:var(--grey); font-weight:600; align-self:center;}
+  .reg-tools{display:grid; grid-template-columns:minmax(0,1fr); gap:0 12px;}
+  @media (min-width:900px){ .reg-tools{grid-template-columns:minmax(0,2fr) minmax(0,3fr);} }
+  .reg-filters-btn{display:none; width:100%; min-height:44px; padding:10px; margin-bottom:12px; background:#fff; border:1.5px solid var(--field); border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .reg-filters{display:flex; gap:8px 12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .reg-filters select{flex:1 1 200px; margin:0;}
+  .reg-filters label.tick{align-items:center; font-size:15px; font-weight:600; margin:0; min-height:40px;}
+  @media (max-width:699px){
+    .reg-filters-btn{display:block;}
+    .reg-filters{display:none;}
+    .reg-filters.open{display:flex;}
+    .reg-filters select{flex-basis:100%;}
+  }
+  .reg-subtabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .reg-subtabs .chip{min-height:38px;}
+  #regList{display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-items:start;}
+  @media (min-width:700px){ #regList{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ #regList{grid-template-columns:repeat(auto-fill,minmax(330px,1fr));} }
+  #regList .reg-item.editing-full{grid-column:1 / -1;}
+  #regList > .history-empty, #regList > .loading-note{grid-column:1 / -1;}
+
+  .reg-item{border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; background:#fff;}
+  .reg-item.overdue{border-color:var(--red); background:#fff8f8;}
+  .reg-item-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px;}
+  .reg-item .eq{font-weight:700; font-size:16px; word-break:break-word; overflow-wrap:anywhere;}
+  .reg-item .cat{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .reg-item .meta{font-size:13px; color:var(--grey); margin-top:4px;}
+  .reg-item .meta.overdue-text{color:var(--red); font-weight:700;}
+  .st{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;}
+  .st.pass{background:var(--green-bg); color:var(--green);}
+  .st.fail{background:var(--red-tint); color:var(--red-dark);}
+  .st.overdue{background:var(--red); color:#fff;}
+  .st.wait{background:var(--amber-bg); color:var(--amber);}
+  .st.flagged{background:#eeece7; color:var(--grey);}
+  .reg-item-bottom{display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;}
+  .expand-btn{background:none; border:none; color:var(--grey); font-size:14px; font-weight:600; cursor:pointer; text-decoration:underline; padding:10px 0; min-height:40px;}
+  .retest-btn{min-height:44px; background:#fff; border:1.5px solid var(--red); color:var(--red); font-size:15px; font-weight:700; padding:8px 16px; border-radius:8px; cursor:pointer;}
+  .hist-list{margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;}
+  .hist-row{padding:8px 0; border-bottom:1px solid var(--line);}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-row-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;}
+  .hist-btns{display:flex; gap:6px; flex-wrap:wrap;}
+  .hist-date{font-size:14px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .hist-meta{font-size:12.5px; color:var(--grey); margin-top:1px;}
+  .history-empty{color:var(--grey); font-size:14px; text-align:center; padding:16px 0;}
+  .loading-note{color:var(--grey); font-size:14px; text-align:center; padding:6px 0;}
+
+  /* last time / since last report */
+  .last-time{background:var(--soft); border:1px solid var(--line); border-left:4px solid var(--grey); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:14px;}
+  .last-time.was-fail{border-left-color:var(--red);}
+  .last-time .lt-head{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-size:15px; margin:0 0 6px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .last-time .lt-row{margin:4px 0 0;}
+  .lt-label{font-weight:700; color:var(--grey); font-size:12px; text-transform:uppercase; letter-spacing:.03em; display:block;}
+  .lt-text{white-space:pre-wrap;}
+  .hist-detail{font-size:13.5px; color:var(--ink); margin-top:4px; line-height:1.45;}
+  .hist-detail .lt-label{font-size:11.5px; margin-top:4px;}
+  .since-tag{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; display:inline-block; margin-top:5px;}
+  .since-tag.retested{background:var(--green-bg); color:var(--green);}
+  .since-tag.newitem{background:var(--blue-bg); color:var(--blue);}
+  .since-tag.notyet{background:#eeece7; color:var(--grey);}
+  .since-tag.notyet.was-fail{background:var(--red-tint); color:var(--red-dark);}
+  .retest-summary{display:none; background:var(--amber-bg); color:#4d3300; border:1px solid var(--amber-line); border-radius:10px; padding:10px 12px; font-size:14.5px; font-weight:600; margin-bottom:12px; cursor:pointer;}
+  .retest-summary .sub{display:block; font-weight:400; font-size:13.5px; margin-top:2px;}
+
+  .undo-toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:400; display:flex; align-items:center; gap:12px; background:var(--ink); color:#fff; padding:11px 14px; border-radius:10px; font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.25); width:max-content; max-width:calc(100vw - 24px);}
+  .undo-toast button{background:#fff; color:var(--ink); border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:14px; cursor:pointer; flex-shrink:0;}
+
+  /* type-ahead suggestions */
+  .sug-box{position:absolute; z-index:300; background:#fff; border:1.5px solid var(--ink); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-height:300px; overflow:auto;}
+  .sug-head{font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; padding:8px 12px 2px;}
+  .sug-opt{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 12px; font-size:15.5px; cursor:pointer; border-top:1px solid var(--line);}
+  .sug-opt:first-child, .sug-head + .sug-opt{border-top:none;}
+  .sug-opt small{color:var(--grey); font-size:12.5px; white-space:nowrap;}
+  .sug-opt:hover, .sug-opt.on{background:var(--red-tint);}
+  .sug-note{position:absolute; z-index:300; background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:6px 10px; border-radius:6px;}
+
+  @media (max-width:640px){
+    header h1{font-size:16px;}
+    header .who .name{display:none;}
+    main{padding:12px;}
+    .card{padding:14px;}
+    .tabs .wrap{gap:2px;}
+  }
+  /* ---- gates & doors (v1.0): additions to the isolator page's styles ---- */
+  .wrap{max-width:1200px;}
+  .gt-title{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:22px; margin:0 0 4px;}
+  .gt-sub{color:var(--grey); font-size:14px; margin:0 0 12px;}
+  .inst-grid{display:grid; grid-template-columns:minmax(0,1fr); gap:10px;}
+  @media (min-width:760px){ .inst-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ .inst-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .inst-card{border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff; cursor:pointer;}
+  .inst-card:hover{border-color:var(--ink);}
+  .inst-card .nm{font-weight:700; font-size:16px;} .inst-card .ty{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; background:#eeece7; color:var(--grey);}
+  .tag.ok{background:var(--green-bg); color:var(--green);} .tag.bad{background:var(--red-tint); color:var(--red-dark);}
+  .tag.wait{background:var(--amber-bg); color:var(--amber);} .tag.info{background:var(--blue-bg); color:var(--blue);} .tag.dark{background:var(--ink); color:#fff;}
+  .tag.over{background:var(--red); color:#fff;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:9px 16px; font-size:15px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; color:var(--ink);}
+  .btn.red{background:var(--red); border-color:var(--red); color:#fff;} .btn.dark{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .btn.green{background:var(--green); border-color:var(--green); color:#fff;} .btn.sm{min-height:38px; padding:6px 12px; font-size:14px;}
+  .btn.warn{border-color:var(--red); color:var(--red);} .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btns{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .crumb{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 12px; font-size:14px;}
+  .crumb a{color:var(--grey); cursor:pointer; font-weight:600; text-decoration:underline;}
+  .box{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 12px; background:#fff;}
+  .box.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .box.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .box.good{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .box.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .box h4{margin:0 0 6px; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:17px;}
+  .q{border-top:1px solid var(--line); padding:12px 0;} .q:first-of-type{border-top:none; padding-top:0;}
+  .q .ql{font-weight:600; font-size:15px; margin:0 0 6px;} .q .qn{font-size:12.5px; color:var(--grey); margin:0 0 6px;}
+  .q .row{display:flex; gap:8px; flex-wrap:wrap;} .q .row > *{flex:1 1 180px; margin-bottom:8px;}
+  .opt-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .opt{min-height:44px; padding:8px 14px; border:1.5px solid var(--field); border-radius:8px; background:#fff; font-weight:700; font-size:15px; cursor:pointer; color:var(--grey);}
+  .opt.on{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .steps{display:flex; gap:4px; flex-wrap:wrap; margin:0 0 14px;}
+  .steps .s{font-size:12.5px; font-weight:700; padding:5px 10px; border-radius:20px; background:#eeece7; color:var(--grey); cursor:pointer;}
+  .steps .s.on{background:var(--ink); color:#fff;} .steps .s.done{background:var(--green-bg); color:var(--green);}
+  .sec{border:1px solid var(--line); border-radius:12px; background:#fff; margin:0 0 12px; overflow:hidden;}
+  .sec > summary{list-style:none; cursor:pointer; padding:13px 14px; display:flex; align-items:center; gap:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.02em;}
+  .sec > summary::-webkit-details-marker{display:none;} .sec > summary .grow{flex:1;}
+  .sec > .in{padding:0 14px 14px;}
+  .pt{text-align:left; border:1px solid var(--line); border-radius:10px; padding:10px; margin:0 0 10px; background:#fff;}
+  .pt.pass{border-left:5px solid var(--green);} .pt.fail{border-left:5px solid var(--red);} .pt.review{border-left:5px solid var(--amber);} .pt.incomplete{border-left:5px solid #e7b94a;}
+  .pt .pl{font-weight:700; font-size:15px;} .pt .how{font-size:13px; color:var(--grey); margin:2px 0 8px;}
+  .rd{display:grid; grid-template-columns:28px repeat(4,minmax(0,1fr)); gap:6px; align-items:center; margin:0 0 6px;}
+  .rd .n{font-weight:700; color:var(--grey); font-size:14px;}
+  .rd input{margin:0 !important; min-height:46px; text-align:center; padding:6px 4px; font-weight:700;}
+  .rd.hd{font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase;} .rd.hd span{text-align:center;}
+  .rd input.over{border-color:var(--red); background:var(--red-tint);} .rd input.unusual{border-color:var(--amber); background:var(--amber-bg);}
+  .cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px;} .cmp td,.cmp th{border-top:1px solid var(--line); padding:4px 6px; text-align:right;} .cmp th:first-child,.cmp td:first-child{text-align:left;}
+  .small{font-size:13px; color:var(--grey);}
+  .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
+  .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .list-line:first-child{border-top:none;}
+  .ph-grid{display:flex; flex-wrap:wrap; gap:10px;} .ph-grid figure{margin:0; width:150px;} .ph-grid img{width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .ph-grid figcaption{font-size:12px; color:var(--grey);}
+  textarea.t2{min-height:96px;}
+  .locked{opacity:.6; pointer-events:none;}
+  @media (max-width:520px){ .rd{grid-template-columns:22px repeat(4,minmax(0,1fr)); gap:4px;} .rd input{font-size:15px; min-height:44px;} }
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>Gates &amp; Doors Inspection</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to set up or inspect a gate or door.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html" title="Home">
+      <img src="sw-logo-white.png" alt="Simpson & Wood">
+      <div><h1>Gates &amp; Doors Inspection</h1><p id="versionLabel">v1.0</p></div>
+    </a>
+    <div class="right"><div class="who"><div class="name" id="whoName">—</div><button id="signOutBtn">Sign out</button></div></div>
+  </header>
+  <main><div class="wrap">
+    <div id="banner" class="banner"></div>
+    <div id="view"><div class="loading-note">Loading…</div></div>
+  </div></main>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
+  getDocs, doc, getDoc, query, where, serverTimestamp,
+  setDoc as fsSetDoc, writeBatch as fsWriteBatch
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import * as SWS from './sw-shared.js';
+import * as G from './gate-shared.js';
+const { esc, TYPES, typeLabel, leafList, ANSWER_STATES, NOT_DONE_STATES, TASK_OUTCOMES, PROTECTION, INTERVALS, METRICS } = G;
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
+console.log('Gates & doors inspection', VERSION, 'shared', G.GATE_SHARED_VERSION);
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+msProvider.addScope('Mail.Send');   // for the unsafe notice only (standards §1.1)
+
+SWS.swSetup({ db, auth, page: 'gate-test', version: VERSION });
+const viewingAs = () => SWS.swViewingAs();
+const isVaError = e => e && String(e.message || '').includes(SWS.SW_VA_MSG);
+const setDoc = SWS.swGuard(fsSetDoc), writeBatch = SWS.swGuardBatch(fsWriteBatch);
+const reauthenticateWithPopup = SWS.swGuard(_reauthPopup);
+
+// ── State ─────────────────────────────────────────────────────────────────
+const S = {
+  user: null, level: 'engineer', sites: [], site: null, insts: [], inst: null, test: null, tests: [], prev: null,
+  rules: G.clone(G.DEFAULT_RULES), rulesApproved: false, rulesId: null, testers: [], directors: [], view: 'home',
+  wiz: { step: 0 }, open: new Set(['checks', 'force']), photos: [], access: null, plan: null
+};
+const $ = id => document.getElementById(id);
+const meEmail = () => { const va = viewingAs(); return va ? va.email : String((S.user && S.user.email) || '').toLowerCase(); };
+const meName = () => { const va = viewingAs(); return va ? va.name : ((S.user && (S.user.displayName || S.user.email)) || ''); };
+const K = id => String(id).replace(/[.\/]/g, '_');      // Firestore-safe key
+const banner = (txt, cls = 'wait') => { const b = $('banner'); if (!txt) { b.style.display = 'none'; return; } b.className = 'banner ' + cls; b.textContent = txt; b.style.display = 'block'; };
+const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+// Every write goes through this: not awaited (offline-safe), failures reported.
+function write(p, what) {
+  Promise.resolve(p).catch(e => {
+    if (isVaError(e)) { banner(SWS.SW_VA_MSG, 'wait'); return; }
+    console.error(what, e); SWS.swReport('save', what + ' didn\'t save: ' + (e && (e.code || e.message) || 'unknown'));
+    banner(what + ' did not save (' + (e && (e.code || e.message) || 'error') + '). Tell Rob if it keeps happening.', 'wait');
+  });
+}
+const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k[0] === '_' ? undefined : (v === undefined ? null : v))));
+const audit = (action, extra = {}) => { if (viewingAs()) return; write(setDoc(doc(collection(db, 'gateAudit')), { at: serverTimestamp(), atISO: new Date().toISOString(), by: meEmail(), action, ...extra }), 'Audit record'); };
+
+// ── Sign-in ───────────────────────────────────────────────────────────────
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+function keepToken(result) {
+  try {
+    const cred = OAuthProvider.credentialFromResult(result);
+    if (cred && cred.accessToken) sessionStorage.setItem('gate-graph', JSON.stringify({ t: cred.accessToken, exp: Date.now() + 50 * 60000, who: ((result.user && result.user.email) || '').toLowerCase() }));
+  } catch (e) { console.warn('token not kept', e); }
+}
+const storedToken = () => { try { const o = JSON.parse(sessionStorage.getItem('gate-graph') || 'null'); return o && o.exp > Date.now() && o.who === String(auth.currentUser && auth.currentUser.email || '').toLowerCase() ? o.t : null; } catch (e) { return null; } };
+$('msSignInBtn').addEventListener('click', () => {
+  const errBox = $('signinErr'); errBox.textContent = '';
+  signInWithPopup(auth, msProvider).then(keepToken).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const m = describeAuthError(err2); if (m) errBox.textContent = m; });
+      return;
+    }
+    const m = describeAuthError(err); if (m) errBox.textContent = m;
+  });
+});
+$('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => { $('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.'); });
+
+let booted = false;
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (!user) { $('signinScreen').style.display = 'flex'; $('appRoot').style.display = 'none'; return; }
+  $('signinScreen').style.display = 'none'; $('appRoot').style.display = 'block';
+  if (booted) return; booted = true;
+  const va = await SWS.swViewAsInit(user);
+  $('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  try { S.level = (await SWS.swAccess(va ? va.email : user.email)).level; } catch (e) {}
+  SWS.swExtrasStart({ page: 'gate-test', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => ({ home: 'Sites', inst: 'Gate or door', wiz: 'Set-up', insp: 'Inspection' }[S.view] || '') });
+  SWS.swuStart();
+  boot();
+});
+window.swUpdateBlocker = () => {
+  if (S.test && S.test._dirty) return 'Your inspection is still saving. Wait a moment, then tap Update.';
+  if (S.view === 'insp' || S.view === 'wiz') return 'Finish or leave the form you are in, then tap Update.';
+  if (SWS.swuMine().some(x => !x.failed)) return 'Wait until your work has sent (the yellow bar goes), then tap Update.';
+  return '';
+};
+
+// ── Loading ───────────────────────────────────────────────────────────────
+async function boot() {
+  try {
+    const [sitesS, rulesS, testersS, staffS] = await Promise.all([
+      getDocs(collection(db, 'gateSites')), getDocs(collection(db, 'gateRules')),
+      getDocs(collection(db, 'gateTesters')), getDocs(query(collection(db, 'staff'), where('position', '==', 'Director')))
+    ]);
+    S.sites = sitesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => !s.deletedFlag).sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
+    const approved = rulesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'Approved').sort((a, b) => (b.version || 0) - (a.version || 0));
+    if (approved.length) { S.rules = approved[0].rules; S.rulesApproved = true; S.rulesId = approved[0].id; S.rulesVersion = approved[0].version; }
+    S.testers = testersS.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.active !== false);
+    S.directors = staffS.docs.map(d => String(d.data().email || d.id).toLowerCase());
+  } catch (e) {
+    console.error(e); if (navigator.onLine) SWS.swReport('load', 'Gate lists didn\'t load: ' + (e.code || e.message));
+    banner('The site list could not load (' + (e.code || e.message) + '). If you have no signal, anything already saved on this phone still shows.', 'wait');
+  }
+  const want = new URLSearchParams(location.search).get('site');
+  if (want) { const s = S.sites.find(x => x.siteRef === want || x.id === want); if (s) { S.site = s; await loadInsts(); } }
+  go('home');
+}
+async function loadInsts() {
+  S.insts = [];
+  if (!S.site) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'gateInstallations'), where('siteRef', '==', S.site.siteRef)));
+    S.insts = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(i => !i.deletedFlag).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  } catch (e) { if (navigator.onLine) SWS.swReport('load', 'Gate list didn\'t load: ' + (e.code || e.message)); }
+}
+async function loadTests(instId) {
+  try {
+    const snap = await getDocs(query(collection(db, 'gateTests'), where('installationId', '==', instId)));
+    S.tests = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(t => !t.deletedFlag).sort((a, b) => String(b.date).localeCompare(String(a.date)) || 0);
+  } catch (e) { S.tests = []; if (navigator.onLine) SWS.swReport('load', 'Past inspections didn\'t load: ' + (e.code || e.message)); }
+  S.prev = S.tests.find(t => t.kind === 'periodic' && t.status === 'Approved' && !t.testData) || null;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function go(view) {
+  S.view = view; banner('');
+  const v = $('view');
+  v.innerHTML = ({ home: homeHTML, inst: instHTML, wiz: wizHTML, insp: inspHTML }[view])();
+  scrollTop();
+}
+function rerender() {
+  const y = window.scrollY, v = $('view');
+  v.innerHTML = ({ home: homeHTML, inst: instHTML, wiz: wizHTML, insp: inspHTML }[S.view])();
+  window.scrollTo(0, y);
+}
+const crumb = (...parts) => `<div class="crumb">${parts.map(p => p).join(' <span class="small">›</span> ')}</div>`;
+const link = (act, txt, extra = '') => `<a data-act="${act}" ${extra}>${txt}</a>`;
+const statusTags = i => {
+  const t = [];
+  const st = G.dueState(i.dueMonth);
+  if (!i.setupStatus || i.setupStatus === 'Draft') t.push('<span class="tag wait">Set-up not approved</span>');
+  else t.push('<span class="tag ok">Set-up approved</span>');
+  if (i.dueMonth) t.push(`<span class="tag ${st === 'overdue' ? 'over' : st === 'due' ? 'bad' : 'info'}">${st === 'overdue' ? 'Overdue since ' + G.monthLabel(G.addMonths(i.dueMonth, 1)) : 'Due ' + G.monthLabel(i.dueMonth)}</span>`);
+  if (i.testData) t.push('<span class="tag dark">Practice</span>');
+  return t.join('');
+};
+
+// ═══ HOME: pick a site, see its gates ═══
+function homeHTML() {
+  const opts = S.sites.map(s => `<option value="${esc(s.id)}" ${S.site && S.site.id === s.id ? 'selected' : ''}>${esc(s.siteName)} (${esc(s.siteRef)})</option>`).join('');
+  let h = `<div class="card"><p class="section-label">Site</p>
+    <div class="site-row"><select id="siteSel"><option value="">Choose a site…</option>${opts}</select>
+    <button class="btn" data-act="refresh"><i class="ti ti-refresh"></i> Refresh</button>
+    <button class="btn" data-act="newsite"><i class="ti ti-plus"></i> Add a new site</button></div>
+    <div id="newSiteBox"></div></div>`;
+  if (!S.rulesApproved) h += `<div class="box warn"><h4>Practice only for force tests</h4>The test rules have not been approved yet, so any inspection you start is saved as <b>practice</b>. Real force testing starts once management approves the rules.</div>`;
+  if (S.site) {
+    h += `<div class="card"><p class="section-label">${esc(S.site.siteName)}</p><p class="gt-sub">${esc([S.site.addressLine, S.site.postcode].filter(Boolean).join(', '))}</p>`;
+    if (!S.insts.length) h += `<div class="empty-note">No gates or doors on this site yet.</div>`;
+    else h += `<div class="inst-grid">${S.insts.map(i => `<div class="inst-card" data-act="openinst" data-id="${esc(i.id)}"><div class="ty">${esc(typeLabel(i.type))}</div><div class="nm">${esc(i.name)}</div><div class="small">${esc(i.location || '')}</div><div class="chips">${statusTags(i)}</div></div>`).join('')}</div>`;
+    h += `<div class="btns"><button class="btn red" data-act="newinst"><i class="ti ti-plus"></i> Add a gate or door</button></div></div>`;
+  }
+  return h;
+}
+function newSiteForm() {
+  return `<div class="fgrid" style="margin-top:12px"><div class="fld"><label>Customer / site name</label><input type="text" id="nsName"></div>
+  <div class="fld"><label>Site reference <span class="hint">Suggested. It can't be changed later.</span></label><input type="text" id="nsRef"></div>
+  <div class="fld"><label>Address line</label><input type="text" id="nsAddr"></div>
+  <div class="fld"><label>Postcode</label><input type="text" id="nsPost" style="text-transform:uppercase"></div>
+  <div class="fld full"><label>Agreed with / limits</label><input type="text" id="nsAgreed"></div></div>
+  <button class="btn dark" data-act="savesite">Add site</button>`;
+}
+function suggestRef(name) { const w = String(name).toUpperCase().replace(/[^A-Z0-9 ]/g, '').split(/\s+/).filter(Boolean); let r = (w.length > 1 ? w.map(x => x[0]).join('') : (w[0] || 'SITE').slice(0, 5)); let n = r, k = 1; while (S.sites.some(s => s.siteRef === n)) n = r + (++k); return n; }
+async function saveSite() {
+  const name = $('nsName').value.trim(), ref = ($('nsRef').value.trim() || suggestRef(name)).toUpperCase().replace(/\s+/g, '-');
+  if (!name) return alert('Give the site a name.');
+  if (S.sites.some(s => s.siteRef === ref)) return alert('That site reference is already used.');
+  const rec = { siteRef: ref, siteName: name, addressLine: $('nsAddr').value.trim(), postcode: $('nsPost').value.trim().toUpperCase(), agreedWith: $('nsAgreed').value.trim(), createdBy: meEmail(), createdAt: serverTimestamp() };
+  write(setDoc(doc(db, 'gateSites', ref), rec), 'New site'); audit('site-created', { siteRef: ref });
+  const local = { id: ref, ...rec, createdAt: null }; S.sites.push(local); S.sites.sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
+  S.site = local; S.insts = []; rerender();
+}
+
+// ═══ ONE GATE OR DOOR ═══
+async function openInst(id) {
+  S.inst = S.insts.find(i => i.id === id); if (!S.inst) return;
+  S.access = null; S.tests = []; S.prev = null;
+  go('inst');
+  await loadTests(id);
+  try { const a = await getDoc(doc(db, 'gateAccess', id)); S.access = a.exists() ? (a.data().codes || '') : ''; } catch (e) { S.access = ''; }
+  if (S.view === 'inst' && S.inst && S.inst.id === id) rerender();
+}
+function instHTML() {
+  const i = S.inst; if (!i) return '';
+  const mine = (S.tests || []).filter(t => t.kind === 'periodic' && ['Draft', 'Returned'].includes(t.status) && t.engineerEmail === meEmail());
+  const setupT = (S.tests || []).find(t => t.kind === 'setup');
+  const hasPlan = (i.hazards || []).length > 0 && !(TYPES[i.type] || {}).unsupported;
+  let h = crumb(link('home', 'Sites'), link('home', esc(S.site ? S.site.siteName : '')), `<b>${esc(i.name)}</b>`);
+  h += `<div class="card"><div class="ty small">${esc(typeLabel(i.type))} · ${i.operation === 'Manual' ? 'Manual' : 'Powered'}</div><h2 class="gt-title">${esc(i.name)}</h2><p class="gt-sub">${esc(i.location || '')}</p><div class="chips">${statusTags(i)}${i.intervalMonths ? `<span class="tag info">Every ${i.intervalMonths} months</span>` : ''}</div>`;
+  if (setupT && setupT.status !== 'Approved') h += `<div class="box info" style="margin-top:10px">Set-up sent to QS: <b>${esc(setupT.status)}</b>${setupT.returnNote ? ' — ' + esc(setupT.returnNote) : ''}</div>`;
+  if (i.setupChangedAfterApproval) h += `<div class="box warn" style="margin-top:10px">The set-up was changed after it was approved. Send it to QS again.</div>`;
+  h += `<div class="btns"><button class="btn red" data-act="startinsp" ${hasPlan ? '' : 'disabled'}><i class="ti ti-clipboard-check"></i> Start inspection</button>
+   <button class="btn" data-act="editsetup"><i class="ti ti-edit"></i> ${i.setupStatus === 'Approved' ? 'View / change set-up' : 'Set-up and risk assessment'}</button></div>`;
+  if (!hasPlan) h += `<p class="small">${(TYPES[i.type] || {}).unsupported ? 'Pedestrian doors have their own module later.' : 'Finish the set-up (hazards and how each is protected) before inspecting.'}</p>`;
+  h += `</div>`;
+  if (mine.length) h += `<div class="card"><p class="section-label">Your unfinished inspections</p>${mine.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> <span class="tag ${t.status === 'Returned' ? 'bad' : 'wait'}">${t.status}</span>${t.testData ? ' <span class="tag dark">Practice</span>' : ''}${t.returnNote ? `<div class="small">QS: ${esc(t.returnNote)}</div>` : ''}</div><button class="btn sm" data-act="resumeinsp" data-id="${esc(t._id)}">Continue</button></div>`).join('')}</div>`;
+  h += `<div class="card"><p class="section-label">Access</p><textarea id="accessCodes" placeholder="Gate codes, key safes, who to contact (not shown to anyone outside Simpson &amp; Wood)">${esc(S.access == null ? '' : S.access)}</textarea><button class="btn sm" data-act="saveaccess">Save access notes</button></div>`;
+  const devs = (i.devices || []).filter(d => !d.retired);
+  h += `<div class="card"><p class="section-label">Devices and batteries</p>${devs.length ? devs.map(d => { const b = G.batteryNextDue(d, []); return `<div class="list-line"><div><b>${esc(d.name)}</b> <span class="small">${esc(d.kind || '')}${d.location ? ' · ' + esc(d.location) : ''}</span></div><div>${d.battery && d.battery.intervalMonths ? (b.state === 'unknown' ? '<span class="tag wait">Last battery change unknown</span>' : `<span class="tag ${b.state === 'overdue' ? 'over' : b.state === 'due' ? 'bad' : 'ok'}">Battery ${b.state === 'overdue' ? 'overdue' : 'due ' + G.monthLabel(b.due)}</span>`) : ''}</div></div>`; }).join('') : '<div class="empty-note">No devices recorded yet.</div>'}</div>`;
+  h += `<div class="card"><p class="section-label">History</p>${(S.tests || []).length ? S.tests.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> ${t.kind === 'setup' ? 'Set-up' : 'Inspection'} <span class="tag ${t.status === 'Approved' ? 'ok' : t.status === 'Returned' ? 'bad' : 'wait'}">${esc(t.status || '')}</span>${t.testData ? ' <span class="tag dark">Practice</span>' : ''}${t.limited ? ' <span class="tag wait">Limited</span>' : ''}</div><div class="small">${esc(t.engineer || '')}</div></div>`).join('') : '<div class="empty-note">Nothing recorded yet.</div>'}</div>`;
+  return h;
+}
+
+// ═══ SET-UP WIZARD ═══
+const WSTEPS = ['Start', 'Basics', 'About it', 'Its type', 'Hazards', 'Devices & checks', 'Review'];
+function newInstObj(route) {
+  return { id: G.newId('g'), siteRef: S.site.siteRef, siteName: S.site.siteName, name: '', location: '', type: '', operation: 'Powered', route, answers: {}, hazards: [], devices: [], tasks: G.starterTasks(), intervalMonths: 6, intervalWhy: '', setupStatus: 'Draft', createdBy: meEmail(), testData: !S.rulesApproved ? true : false, leaves: null, notes: '' };
+}
+function startWizard(inst, step) { S.inst = inst; S.wiz = { step: step || 0, isNew: !S.insts.some(i => i.id === inst.id) }; go('wiz'); }
+function saveInst() {
+  const i = S.inst; if (!i) return;
+  if (i.setupStatus === 'Approved') i.setupChangedAfterApproval = true;
+  const rec = clean(i); rec.updatedAt = serverTimestamp(); rec.updatedBy = meEmail();
+  if (S.wiz.isNew && !i._saved) { rec.createdAt = serverTimestamp(); i._saved = true; }
+  write(setDoc(doc(db, 'gateInstallations', i.id), rec, { merge: true }), 'Gate or door');
+  if (!S.insts.some(x => x.id === i.id)) S.insts.push(i);
+}
+let saveTimer = null;
+function queueInstSave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { if (S.inst && S.view === 'wiz' && (S.inst.name || S.inst.type)) saveInst(); }, 800); }
+
+function qHTML(base, q) {
+  const a = (S.inst.answers[q.id]) || {};
+  const st = a.st || '';
+  const stBtns = Object.entries(ANSWER_STATES).map(([k, t]) => `<button type="button" class="opt ${st === k ? 'on' : ''}" data-act="set" data-path="inst.answers.${q.id}.st" data-val="${k}">${esc(t)}</button>`).join('');
+  let val = '';
+  if (st === 'confirmed') {
+    if (q.kind === 'choice' || q.kind === 'yn') {
+      const os = q.kind === 'yn' ? ['Yes', 'No'] : q.options;
+      val = `<div class="opt-row">${os.map(o => `<button type="button" class="opt ${a.v === o ? 'on' : ''}" data-act="set" data-path="inst.answers.${q.id}.v" data-val="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    } else if (q.kind === 'multi') {
+      const cur = Array.isArray(a.v) ? a.v : [];
+      val = `<div class="opt-row">${q.options.map(o => `<button type="button" class="opt ${cur.includes(o) ? 'on' : ''}" data-act="multi" data-path="inst.answers.${q.id}.v" data-val="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    } else if (q.kind === 'num') val = `<input type="text" inputmode="decimal" data-bind="inst.answers.${q.id}.v" value="${esc(a.v ?? '')}">`;
+    else val = `<textarea data-bind="inst.answers.${q.id}.v">${esc(a.v ?? '')}</textarea>`;
+  } else if (st === 'na' || st === 'unable') {
+    val = `<label>Why? <span class="req">*</span></label><textarea data-bind="inst.answers.${q.id}.why">${esc(a.why ?? '')}</textarea>`;
+  } else if (st === 'unsure') val = `<div class="box warn">This goes to QS to check. Add what you do know:</div><textarea data-bind="inst.answers.${q.id}.why">${esc(a.why ?? '')}</textarea>`;
+  return `<div class="q"><p class="ql">${esc(q.label)}</p>${q.note ? `<p class="qn">${esc(q.note)}</p>` : ''}<div class="opt-row">${stBtns}</div>${val}</div>`;
+}
+const answered = q => { const a = S.inst.answers[q.id]; return a && a.st && (a.st === 'unsure' || ((a.st === 'na' || a.st === 'unable') ? String(a.why || '').trim() : (a.v != null && String(a.v).length))); };
+
+function wizHTML() {
+  const i = S.inst, s = S.wiz.step, t = TYPES[i.type] || {};
+  let h = crumb(link('home', 'Sites'), i.name ? esc(i.name) : 'New gate or door', 'Set-up');
+  h += `<div class="steps">${WSTEPS.map((n, k) => `<span class="s ${k === s ? 'on' : (k < s ? 'done' : '')}" data-act="step" data-n="${k}">${k + 1}. ${n}</span>`).join('')}</div><div class="card">`;
+  if (s === 0) {
+    h += `<p class="section-label">How are we coming to this one?</p><div class="opt-row" style="flex-direction:column">` + [['new', 'A new installation', 'We installed it, or it is just being finished.'], ['takenOver', 'Taken over from someone else', 'We have not looked after it before. We need to learn how it is set up.'], ['maintained', 'One we already maintain', 'We know it already. Record what we know now.']].map(([k, tt, d]) => `<button type="button" class="opt ${i.route === k ? 'on' : ''}" style="text-align:left" data-act="set" data-path="inst.route" data-val="${k}"><b>${tt}</b><br><span style="font-weight:400">${d}</span></button>`).join('') + `</div>`;
+    if (i.route === 'takenOver' || i.route === 'maintained') h += `<label>${i.route === 'takenOver' ? 'What do we know about its condition and history?' : 'Where are the earlier records (old reports, last test results)?'}</label><textarea data-bind="inst.notes">${esc(i.notes || '')}</textarea>`;
+    h += `<p class="small">Whichever you choose, the same questions follow. The answers just differ in how much we already know.</p>`;
+  } else if (s === 1) {
+    h += `<p class="section-label">The basics</p><div class="fgrid">
+      <div class="fld"><label>Name <span class="req">*</span><span class="hint">E.g. "Main entrance sliding gate"</span></label><input type="text" data-bind="inst.name" value="${esc(i.name)}"></div>
+      <div class="fld"><label>Where is it? <span class="req">*</span></label><input type="text" data-bind="inst.location" value="${esc(i.location)}"></div>
+      <div class="fld"><label>Type <span class="req">*</span></label><select data-bind="inst.type" data-rr="1"><option value="">Choose…</option>${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${i.type === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>
+      <div class="fld"><label>Powered or manual?</label><select data-bind="inst.operation" data-rr="1"><option ${i.operation !== 'Manual' ? 'selected' : ''}>Powered</option><option ${i.operation === 'Manual' ? 'selected' : ''}>Manual</option></select></div>
+      <div class="fld"><label>How often should it be inspected?</label><select data-bind="inst.intervalMonths" data-num="1">${INTERVALS.map(o => `<option value="${o.v}" ${Number(i.intervalMonths) === o.v ? 'selected' : ''}>${o.t}</option>`).join('')}</select></div>
+      <div class="fld"><label>Why that often? <span class="hint">Use, risk, what the customer agreed</span></label><input type="text" data-bind="inst.intervalWhy" value="${esc(i.intervalWhy || '')}"></div></div>`;
+    if (t.leaves === 2 || (i.leaves && i.leaves.length > 1)) h += `<p class="small">Two leaves: Left-hand leaf and Right-hand leaf. These names are used in the tests.</p>`;
+  } else if (s === 2) {
+    h += `<p class="gt-sub">For each question: say what it is, or say why you can't. "Unsure" is fine: it goes to QS.</p>` + G.SETUP_TOPICS.map(tp => `<div class="box"><h4>${esc(tp.title)}</h4><p class="small">${esc(tp.intro)}</p>${tp.questions.map(q => qHTML('', q)).join('')}</div>`).join('');
+  } else if (s === 3) {
+    const qs = G.BRANCH_QUESTIONS[t.branch];
+    h += qs ? `<p class="section-label">${esc(t.label)}</p>` + qs.map(q => qHTML('', q)).join('') : `<div class="empty-note">${t.unsupported ? 'Pedestrian doors have their own module later.' : 'Choose a type on the Basics step first.'}</div>`;
+  } else if (s === 4) {
+    h += `<p class="section-label">Hazards and how each is protected</p><p class="gt-sub">Confirm, rename, delete or add. "Main edge" means the leading edge that gets the full force tests.</p>`;
+    if (!(i.hazards || []).length && t.branch) h += `<div class="box info">Start from the usual list for this type? <button class="btn sm" data-act="seedhz">Add the usual hazards</button></div>`;
+    h += (i.hazards || []).map((z, k) => hazardHTML(z, k)).join('') + `<div class="btns"><button class="btn" data-act="addhz"><i class="ti ti-plus"></i> Add a hazard</button></div>`;
+  } else if (s === 5) {
+    h += `<p class="section-label">Devices (sensors, edges, fobs, panels)</p>` + (i.devices || []).map((d, k) => deviceHTML(d, k)).join('') + `<div class="btns"><button class="btn" data-act="adddev"><i class="ti ti-plus"></i> Add a device</button></div>`;
+    h += `<p class="section-label" style="margin-top:18px">Service checklist</p>` + (i.tasks || []).map((tk, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-bind="inst.tasks.${k}.text" value="${esc(tk.text)}" ${i.setupStatus === 'Approved' ? 'disabled' : ''}>${i.setupStatus === 'Approved' ? '' : `<button class="btn sm warn" data-act="deltask" data-n="${k}">Remove</button>`}</div>`).join('') + (i.setupStatus === 'Approved' ? `<div class="btns"><button class="btn sm" data-act="proposetask">Propose a change to the checklist</button></div><p class="small">This list was approved. A change goes to QS first.</p>` : `<div class="btns"><button class="btn sm" data-act="addtask"><i class="ti ti-plus"></i> Add a check</button></div>`);
+  } else {
+    h += reviewSetupHTML();
+  }
+  h += `</div><div class="btns"><button class="btn" data-act="back" ${s === 0 ? 'disabled' : ''}>Back</button>${s < WSTEPS.length - 1 ? `<button class="btn dark" data-act="next">Next</button>` : ''}<button class="btn" data-act="savedraft">Save and leave</button></div>`;
+  return h;
+}
+function hazardHTML(z, k) {
+  const main = z.mainEdge;
+  return `<div class="hz"><div class="fgrid"><div class="fld full"><label>Hazard</label><input type="text" data-bind="inst.hazards.${k}.label" value="${esc(z.label)}"></div>
+   <div class="fld"><label>Where</label><input type="text" data-bind="inst.hazards.${k}.location" value="${esc(z.location || '')}"></div>
+   <div class="fld"><label>Movement</label><select data-bind="inst.hazards.${k}.movement"><option value="closing" ${z.movement === 'closing' ? 'selected' : ''}>Closing</option><option value="opening" ${z.movement === 'opening' ? 'selected' : ''}>Opening</option><option value="both" ${z.movement === 'both' ? 'selected' : ''}>Both ways</option><option value="static" ${z.movement === 'static' ? 'selected' : ''}>Does not move (structure)</option></select></div>
+   <div class="fld"><label>Kind</label><select data-bind="inst.hazards.${k}.cls"><option value="crush" ${z.cls === 'crush' ? 'selected' : ''}>Crush, shear or draw-in</option><option value="impact" ${z.cls === 'impact' ? 'selected' : ''}>Impact only</option><option value="structural" ${z.cls === 'structural' ? 'selected' : ''}>Structure / fall-back</option></select></div>
+   <div class="fld"><label>How is it protected?</label><select data-bind="inst.hazards.${k}.protection" data-rr="1">${Object.entries(PROTECTION).map(([pk, pt]) => `<option value="${pk}" ${z.protection === pk ? 'selected' : ''}>${esc(pt)}</option>`).join('')}</select></div>
+   <div class="fld full"><label>What shows that? <span class="hint">Describe the guarding, edge or device</span></label><input type="text" data-bind="inst.hazards.${k}.evidence" value="${esc(z.evidence || '')}"></div></div>
+   <label class="tick"><input type="checkbox" ${main ? 'checked' : ''} data-bind="inst.hazards.${k}.mainEdge" data-bool="1" data-rr="1"> Main edge (gets the full force tests)</label>
+   ${!main && z.cls !== 'structural' ? `<label>How is it checked?</label><select data-bind="inst.hazards.${k}.verifyBy"><option value="direct" ${z.verifyBy !== 'inferred' ? 'selected' : ''}>Test at the hazard</option><option value="inferred" ${z.verifyBy === 'inferred' ? 'selected' : ''}>Verify from the main-edge result (say why testing there isn't possible or safe)</option></select>` : ''}
+   ${z.protection === 'noncontact' ? `<p class="small">A presence detector alone does not replace force tests. Force tests stay until QS approves that route for this hazard.</p>` : ''}
+   <div class="btns"><button class="btn sm warn" data-act="delhz" data-n="${k}">Delete this hazard</button></div></div>`;
+}
+function deviceHTML(d, k) {
+  return `<div class="hz"><div class="fgrid"><div class="fld"><label>Name</label><input type="text" data-bind="inst.devices.${k}.name" value="${esc(d.name)}"></div>
+  <div class="fld"><label>Kind</label><select data-bind="inst.devices.${k}.kind">${G.DEVICE_KINDS.map(o => `<option ${d.kind === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>
+  <div class="fld"><label>Where</label><input type="text" data-bind="inst.devices.${k}.location" value="${esc(d.location || '')}"></div>
+  <div class="fld"><label>Battery change every (months, blank if none)</label><input type="text" inputmode="numeric" data-bind="inst.devices.${k}.battery.intervalMonths" data-num="1" value="${esc((d.battery && d.battery.intervalMonths) || '')}"></div>
+  <div class="fld"><label>Battery last replaced</label><input type="date" data-bind="inst.devices.${k}.battery.lastReplaced" value="${esc((d.battery && d.battery.lastReplaced) || '')}"></div></div>
+  <div class="btns"><button class="btn sm warn" data-act="deldev" data-n="${k}">Remove</button></div></div>`;
+}
+function setupGaps() {
+  const i = S.inst, gaps = [], flags = [], t = TYPES[i.type] || {};
+  if (!i.name) gaps.push('Give it a name.'); if (!i.location) gaps.push('Say where it is.'); if (!i.type) gaps.push('Choose the type.');
+  if (i.route !== 'new' && i.route !== 'takenOver' && i.route !== 'maintained') gaps.push('Say how we are coming to it (Start step).');
+  const qs = [...G.SETUP_TOPICS.flatMap(x => x.questions), ...(G.BRANCH_QUESTIONS[t.branch] || [])];
+  qs.forEach(q => { if (!answered(q)) gaps.push('Not answered: ' + q.label); else if ((i.answers[q.id] || {}).st === 'unsure') flags.push(q.label); });
+  if (!t.unsupported && !(i.hazards || []).length) gaps.push('Add the hazards.');
+  (i.hazards || []).forEach(z => { if (z.protection === 'none' && z.cls !== 'structural') flags.push('Protection not established: ' + z.label); });
+  return { gaps, flags };
+}
+function reviewSetupHTML() {
+  const i = S.inst, { gaps, flags } = setupGaps();
+  let h = `<p class="section-label">Check and send</p><div class="box"><b>${esc(i.name || '(no name)')}</b> · ${esc(typeLabel(i.type))} · every ${i.intervalMonths} months · ${(i.hazards || []).length} hazards · ${(i.devices || []).length} devices</div>`;
+  if (gaps.length) h += `<div class="box bad"><h4>Still to do</h4>${gaps.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  if (flags.length) h += `<div class="box warn"><h4>QS will check these</h4>${flags.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  if (!gaps.length) h += `<div class="box good">All questions answered.</div>`;
+  h += `<div class="btns"><button class="btn red" data-act="submitsetup" ${gaps.length ? 'disabled' : ''}>Send set-up to QS</button></div><p class="small">You can still inspect it before QS approves the set-up. QS sees the draft risk assessment and tests flagged "set-up not approved".</p>`;
+  return h;
+}
+function submitSetup() {
+  const i = S.inst; saveInst();
+  const id = `${i.id}_setup_${Date.now().toString(36)}`;
+  const snap = clean({ type: i.type, operation: i.operation, route: i.route, answers: i.answers, hazards: i.hazards, devices: i.devices, tasks: i.tasks, intervalMonths: i.intervalMonths, intervalWhy: i.intervalWhy, notes: i.notes });
+  const rec = { kind: 'setup', installationId: i.id, installationName: i.name, siteRef: i.siteRef, siteName: i.siteName, date: G.todayISO(), engineer: meName(), engineerEmail: meEmail(), status: 'Submitted', qsed: false, testData: !!i.testData, snapshot: snap, flags: setupGaps().flags, createdAt: serverTimestamp() };
+  write(setDoc(doc(db, 'gateTests', id), rec), 'Set-up'); SWS.swuAdd({ c: 'gateTests', id, label: i.name, app: 'Gates and doors', site: i.siteName, noun: 'set-up' });
+  audit('setup-submitted', { installationId: i.id });
+  banner('Set-up sent to QS. It is saved on this phone and goes up as soon as there is signal.', 'ok');
+  S.tests = [{ _id: id, ...rec, createdAt: null }, ...(S.tests || [])];
+  go('inst'); loadTests(i.id).then(() => { if (S.view === 'inst') rerender(); });
+}
+
+// ═══ INSPECTION ═══
+function newTest() {
+  const i = S.inst;
+  return { _id: doc(collection(db, 'gateTests')).id, kind: 'periodic', installationId: i.id, installationName: i.name, installationType: i.type, siteRef: i.siteRef, siteName: i.siteName,
+    date: G.todayISO(), engineer: meName(), engineerEmail: meEmail(), rulesVersion: S.rulesVersion || null, rulesApproved: S.rulesApproved,
+    testData: !S.rulesApproved || !!i.testData, tester: null, status: 'Draft', qsed: false, readings: {}, history: {}, notDone: {}, retestNeeded: {},
+    checks: {}, tasks: {}, devices: {}, adjustments: [], defects: [], batteries: [], notes: '', limited: null, signOff: null, _created: false };
+}
+async function startInspection(resumeId) {
+  const i = S.inst;
+  if (resumeId) { const t = (S.tests || []).find(x => x._id === resumeId); if (!t) return; S.test = { ...G.clone(t), _id: t._id, _created: true }; }
+  else S.test = newTest();
+  ['readings', 'history', 'notDone', 'retestNeeded', 'checks', 'tasks', 'devices'].forEach(k => S.test[k] = S.test[k] || {});
+  ['adjustments', 'defects', 'batteries'].forEach(k => S.test[k] = S.test[k] || []);
+  S.photos = []; S.open = new Set(['checks', 'force']); S.noticeBusy = null;
+  const rules = S.rules; S.plan = G.buildTestPlan(i, rules);
+  if (!i.tasks || !i.tasks.length) i.tasks = G.starterTasks();
+  go('insp');
+  try {
+    const snap = await getDocs(query(collection(db, 'gatePhotos'), where('testId', '==', S.test._id)));
+    S.photos = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.n - b.n);
+    if (S.view === 'insp') rerender();
+  } catch (e) {}
+}
+function saveTest(immediate) {
+  const t = S.test; if (!t) return;
+  t._dirty = true;
+  clearTimeout(t._timer);
+  const doIt = () => {
+    const rec = clean(t); rec.updatedAt = serverTimestamp();
+    if (!t._created) { rec.createdAt = serverTimestamp(); t._created = true; }
+    write(setDoc(doc(db, 'gateTests', t._id), rec, { merge: false }), 'Inspection'); t._dirty = false;
+  };
+  if (immediate) doIt(); else t._timer = setTimeout(doIt, 700);
+}
+const calOK = t => t && t.calibrationDue && t.calibrationDue >= G.todayISO();
+const canTest = () => S.test.testData || (S.test.tester && calOK(S.test.tester));
+const prevReadings = pk => (S.prev && S.prev.readings && S.prev.readings[pk]) || null;
+
+function rowHTML(pk, idx, r, off) {
+  r = r || {};
+  return `<div class="rd" data-row="${pk}:${idx}"><span class="n">${idx + 1}</span>${METRICS.map(m => `<input class="rdi" type="text" inputmode="decimal" autocomplete="off" aria-label="${m.t} reading ${idx + 1}" data-pk="${pk}" data-i="${idx}" data-m="${m.k}" value="${r[m.k] == null ? '' : r[m.k]}" ${off ? 'disabled' : ''}>`).join('')}</div>`;
+}
+function sumHTML(p) {
+  const pk = K(p.id), rds = S.test.readings[pk] || [], ev = G.evaluatePoint(p, rds, S.rules);
+  if (ev.state === 'empty') return `<span class="small">Limit: ${ev.lim.fd}N · ${ev.lim.td}s · ${ev.lim.fs}N · ${ev.lim.fe}N</span>`;
+  const tag = { pass: ['ok', 'Pass'], fail: ['bad', 'Over the limit'], review: ['wait', 'Passes on average, but a single reading was over'], incomplete: ['wait', `Needs ${ev.required} readings (${ev.count} so far)`] }[ev.state];
+  let h = `<span class="tag ${tag[0]}">${tag[1]}</span>`;
+  if (ev.needsRepeat && ev.state === 'incomplete') h += `<div class="small">First reading is over 90% of a limit. Repeat to three.</div>`;
+  if (ev.avg && ev.complete) {
+    h += `<div class="small">${ev.required > 1 ? 'Average' : 'Reading'}: ${METRICS.map(m => `${m.t.split(' ')[0]} ${G.fmt(ev.avg[m.k], m.dp)}${ev.over[m.k] ? ' ▲' : ''}`).join(' · ')}</div>`;
+    if (ev.individualOver.length) h += `<div class="small" style="color:var(--red-dark)">Over the limit: ${ev.individualOver.map(x => `reading ${x.n} ${x.k.toUpperCase()} ${x.v}`).join(', ')}. Every reading is kept.</div>`;
+    const cl = G.classify(p, ev, S.rules); if (cl) h += `<div class="small" style="color:var(--red-dark);font-weight:700">${esc(cl)}</div>`;
+    const pr = prevReadings(pk);
+    if (pr) {
+      const pe = G.evaluatePoint(p, pr, S.rules), c = G.comparePoint(ev, pe, true);
+      if (c) h += `<table class="cmp"><tr><th>Last time (${G.shortDate(S.prev.date)})</th><th>Now</th><th>Change</th></tr>${c.rows.map(r => `<tr><td>${METRICS.find(m => m.k === r.k).t}: ${G.fmt(r.prev, METRICS.find(m => m.k === r.k).dp)}</td><td>${G.fmt(r.cur, METRICS.find(m => m.k === r.k).dp)}</td><td>${r.abs > 0 ? '+' : ''}${G.fmt(r.abs, METRICS.find(m => m.k === r.k).dp)}${r.pct == null ? '' : ` (${r.pct > 0 ? '+' : ''}${G.fmt(r.pct, 0)}%)`}</td></tr>`).join('')}</table>`;
+    }
+  }
+  return h;
+}
+function pointHTML(p) {
+  const pk = K(p.id), t = S.test, rds = t.readings[pk] || [], ev = G.evaluatePoint(p, rds, S.rules), nd = t.notDone[pk];
+  const off = !canTest();
+  let tgt = '';
+  if (p.kind === 'followup') {
+    const f = G.followUpTarget(S.plan, p, t.readings, S.rules);
+    tgt = f && f.waiting ? `<div class="box info">Do this after the three tests above are complete. It repeats the point with the highest reading.</div>` : (f && f.point ? `<div class="box info">Repeat at: <b>${esc(f.point.label)}</b> (highest reading)</div>` : '');
+  }
+  const needed = Math.max(rds.length ? ev.required : 1, rds.length || 1);
+  let h = `<div class="pt ${nd ? '' : ev.state}" id="pt_${pk}"><div class="pl">${esc(p.label)}</div><div class="how">${esc(p.how || '')}</div>${tgt}`;
+  if (t.retestNeeded[pk]) h += `<div class="box warn">Settings changed since this was measured. <button class="btn sm" data-act="startretest" data-pk="${pk}">Start the retest</button> <span class="small">The earlier readings are kept.</span></div>`;
+  if (nd) {
+    h += `<div class="box">Not done: <b>${esc(NOT_DONE_STATES[nd.st] || nd.st)}</b>${nd.note ? ' — ' + esc(nd.note) : ''} <button class="btn sm" data-act="undonot" data-pk="${pk}">Test it after all</button></div>`;
+  } else {
+    h += `<div class="rd hd"><span></span>${METRICS.map(m => `<span>${m.t}</span>`).join('')}</div><div id="rows_${pk}">${Array.from({ length: needed }, (_, k) => rowHTML(pk, k, rds[k], off)).join('')}</div><div id="rerr_${pk}" class="error-msg" style="display:none;margin:0"></div><div class="small">Blank is not zero. Enter 0 if the tester shows 0.</div><div id="sum_${pk}" style="margin-top:6px">${sumHTML(p)}</div>
+    <details style="margin-top:6px"><summary class="small" style="cursor:pointer">Can't do this test?</summary><div class="opt-row" style="margin-top:6px">${Object.entries(NOT_DONE_STATES).map(([k, v]) => `<button class="opt" data-act="notdone" data-pk="${pk}" data-val="${k}">${v}</button>`).join('')}</div></details>`;
+  }
+  return h + `</div>`;
+}
+function sec(id, title, status, body) {
+  return `<details class="sec" data-sec="${id}" ${S.open.has(id) ? 'open' : ''}><summary><span class="grow">${title}</span>${status || ''}</summary><div class="in">${body}</div></details>`;
+}
+function inspHTML() {
+  const i = S.inst, t = S.test; if (!t) return '';
+  const plan = S.plan, rules = S.rules;
+  let h = crumb(link('inst', esc(i.name)), 'Inspection');
+  h += `<div class="card"><h2 class="gt-title">${esc(i.name)}</h2><p class="gt-sub">${esc(typeLabel(i.type))} · ${esc(i.location || '')}</p>
+   <div class="fgrid"><div class="fld"><label>Date</label><input type="date" data-bind="test.date" value="${esc(t.date)}"></div>
+   <div class="fld"><label>Force tester ${t.testData ? '' : '<span class="req">*</span>'}</label><select data-bind="test.testerId" data-rr="1"><option value="">${S.testers.length ? 'Choose the tester…' : 'No testers registered'}</option>${S.testers.map(x => `<option value="${esc(x.id)}" ${t.tester && t.tester.id === x.id ? 'selected' : ''}>${esc(x.name)} (${esc(x.serial || '')}) — calibrated until ${G.shortDate(x.calibrationDue)}</option>`).join('')}</select></div></div>`;
+  if (t.tester && !calOK(t.tester)) h += `<div class="box bad">This tester's calibration ran out on ${G.shortDate(t.tester.calibrationDue)}. Force tests are locked. Choose a tester in date, or ask a manager.</div>`;
+  if (!S.rulesApproved) h += `<div class="box warn"><h4>Practice run</h4>The test rules haven't been approved by management yet. Everything you do here is saved as <b>practice</b> and is never used as a real result.</div>`;
+  else h += `<label class="tick" style="margin-bottom:6px"><input type="checkbox" ${t.testData ? 'checked' : ''} data-bind="test.testData" data-bool="1" data-rr="1"> This is a practice run (not a real inspection)</label>`;
+  if (i.setupStatus !== 'Approved') h += `<div class="box info">This gate's set-up has not been approved by QS yet. You can inspect it; QS will see that.</div>`;
+  (plan.notes || []).forEach(n => h += `<div class="box warn">${esc(n)}</div>`);
+  h += `</div>`;
+
+  // 1 checks + devices
+  const devs = (i.devices || []).filter(d => !d.retired);
+  const CK = ['Satisfactory', 'Defect', 'Not applicable', 'Unable to check'];
+  const chkBody = (plan.checks || []).map(c => { const o = t.checks[K(c.id)] || {}; return `<div class="q"><p class="ql">${esc(c.label)}</p><div class="opt-row">${CK.map(x => `<button class="opt ${o.st === x ? 'on' : ''}" data-act="check" data-pk="${K(c.id)}" data-val="${x}">${x}</button>`).join('')}</div>${o.st && o.st !== 'Satisfactory' ? `<textarea data-bind="test.checks.${K(c.id)}.note" placeholder="${o.st === 'Defect' ? 'What is wrong?' : 'Why?'}">${esc(o.note || '')}</textarea>` : ''}</div>`; }).join('')
+    + devs.map(d => { const o = t.devices[d.id] || {}; return `<div class="q"><p class="ql">${esc(d.name)} <span class="small">${esc(d.kind || '')}</span></p><div class="opt-row">${['Working', 'Faulty', 'Not accessible', 'Replaced'].map(x => `<button class="opt ${o.result === x ? 'on' : ''}" data-act="device" data-id="${esc(d.id)}" data-val="${x}">${x}</button>`).join('')}</div>${o.result && o.result !== 'Working' ? `<textarea data-bind="test.devices.${d.id}.note" placeholder="What did you find or do?">${esc(o.note || '')}</textarea>` : ''}</div>`; }).join('');
+  const gapsNow = G.missingItems(t, i, plan, i.tasks, rules);
+  const cnt = k => gapsNow.filter(g => g.kind === k).length;
+  h += sec('checks', 'Condition checks and devices', cnt('check') + cnt('device') ? `<span class="tag wait">${cnt('check') + cnt('device')} left</span>` : '<span class="tag ok">Done</span>', chkBody || '<div class="empty-note">Nothing to check here.</div>');
+
+  // 2 force tests
+  const lock = !canTest();
+  const pts = plan.points.map(pointHTML).join('');
+  h += sec('force', 'Force tests', cnt('test') ? `<span class="tag wait">${cnt('test')} left</span>` : (plan.points.length ? '<span class="tag ok">Done</span>' : ''),
+    (lock ? `<div class="box bad">Choose a force tester that is in calibration, above, before entering readings.</div>` : '') + `<div class="small" style="margin-bottom:8px">Limits come from rules version ${S.rulesApproved ? esc(String(S.rulesVersion)) : '(unapproved draft)'}: ${esc(rules.source)}. Test each position once; if any reading is over 90% of its limit, repeat to three.</div>` + (pts || '<div class="empty-note">No force tests for this gate as set up.</div>'));
+
+  // 3 tasks + batteries
+  const tkBody = (i.tasks || []).map(tk => { const o = t.tasks[tk.id] || {}; return `<div class="q"><p class="ql">${esc(tk.text)}</p><div class="opt-row">${Object.entries(TASK_OUTCOMES).map(([k, v]) => `<button class="opt ${o.outcome === k ? 'on' : ''}" data-act="task" data-id="${esc(tk.id)}" data-val="${k}">${v}</button>`).join('')}</div>${o.outcome && o.outcome !== 'done' ? `<textarea data-bind="test.tasks.${tk.id}.why" placeholder="Why?">${esc(o.why || '')}</textarea>` : ''}</div>`; }).join('');
+  const batDevs = devs.filter(d => d.battery && d.battery.intervalMonths);
+  const batBody = batDevs.map(d => { const b = G.batteryNextDue(d, S.test.batteries.map(x => ({ deviceId: x.deviceId, replacedOn: x.replacedOn }))); const did = t.batteries.find(x => x.deviceId === d.id); return `<div class="list-line"><div><b>${esc(d.name)}</b><div class="small">${b.state === 'unknown' ? 'Last change unknown' : `Last changed ${G.shortDate(b.last)} · due ${G.monthLabel(b.due)}`}</div></div><div>${did ? '<span class="tag ok">Replaced today</span>' : `<span class="tag ${b.state === 'overdue' ? 'over' : b.state === 'due' ? 'bad' : 'info'}">${b.state === 'overdue' ? 'Overdue' : b.state === 'due' ? 'Due now' : b.state === 'unknown' ? 'Unknown' : 'OK'}</span> <button class="btn sm" data-act="battery" data-id="${esc(d.id)}">Replaced today</button>`}</div></div>`; }).join('');
+  h += sec('tasks', 'Service checklist and batteries', cnt('task') ? `<span class="tag wait">${cnt('task')} left</span>` : '<span class="tag ok">Done</span>', tkBody + (batBody ? `<p class="section-label" style="margin-top:14px">Batteries</p><p class="small">Only a battery you really replace resets that device's date.</p>${batBody}` : ''));
+
+  // 4 adjustments
+  const adjBody = (t.adjustments.length ? t.adjustments.map(a => `<div class="list-line"><div><b>${esc((G.ADJUST_CATEGORIES.find(c => c.k === a.category) || {}).t || 'Unsure')}</b> ${a.leaf && a.leaf !== 'ALL' ? '· ' + esc(a.leafLabel || a.leaf) : ''} ${a.direction && a.direction !== 'both' ? '· ' + esc(a.direction) : ''}<div class="small">${esc(a.what || '')}</div><div class="small">${esc(a.why || '')} ${a.ids ? a.ids.length + ' test(s) to repeat.' : ''}</div></div></div>`).join('') : '<div class="empty-note">No adjustments made.</div>')
+    + `<details><summary class="btn sm" style="display:inline-flex">+ I changed a setting</summary><div style="margin-top:10px"><div class="fgrid"><div class="fld"><label>What changed?</label><select id="adjCat"><option value="">Not sure</option>${G.ADJUST_CATEGORIES.map(c => `<option value="${c.k}">${c.t}</option>`).join('')}</select></div>
+     <div class="fld"><label>Which leaf?</label><select id="adjLeaf"><option value="ALL">All / not leaf-specific</option>${leafList(i).map(l => `<option value="${l.id}">${esc(l.label)}</option>`).join('')}</select></div>
+     <div class="fld"><label>Which direction?</label><select id="adjDir"><option value="both">Both</option><option value="closing">Closing</option><option value="opening">Opening</option></select></div></div>
+     <label>What did you change, and by how much?</label><textarea id="adjWhat"></textarea><button class="btn dark sm" data-act="addadj">Save the adjustment</button></div></details>`;
+  h += sec('adj', 'Adjustments and retests', t.adjustments.length ? `<span class="tag info">${t.adjustments.length}</span>` : '', adjBody);
+
+  // 5 defects
+  const SEV = ['Advisory', 'Requires improvement', 'Safety critical', 'Unsafe'];
+  const defBody = (t.defects.length ? t.defects.map((d, k) => `<div class="hz"><div class="fgrid"><div class="fld"><label>How serious?</label><select data-bind="test.defects.${k}.severity" data-rr="1">${SEV.map(s => `<option ${d.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="fld"><label>Where?</label><input type="text" data-bind="test.defects.${k}.where" value="${esc(d.where || '')}"></div><div class="fld full"><label>What is wrong?</label><textarea data-bind="test.defects.${k}.text">${esc(d.text || '')}</textarea></div><div class="fld full"><label>What should be done?</label><textarea data-bind="test.defects.${k}.rec">${esc(d.rec || '')}</textarea></div></div>
+     ${d.severity === 'Unsafe' ? noticeBoxHTML(d) : ''}<div class="btns"><button class="btn sm warn" data-act="deldef" data-n="${k}">Remove</button></div></div>`).join('') : '<div class="empty-note">No defects recorded.</div>')
+    + `<div class="btns"><button class="btn" data-act="adddef"><i class="ti ti-plus"></i> Record a defect</button></div><p class="small">"Unsafe" means it must be taken out of use now. The unsafe notice goes to the office straight away; it does not wait for QS.</p>`;
+  h += sec('def', 'Defects', t.defects.length ? `<span class="tag ${t.defects.some(d => d.severity === 'Unsafe') ? 'over' : 'bad'}">${t.defects.length}</span>` : '', defBody);
+
+  // 6 photos + notes
+  h += sec('photos', 'Photos and notes', S.photos.length ? `<span class="tag info">${S.photos.length}</span>` : '', `<div class="ph-grid">${S.photos.map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('')}</div><div class="btns"><label class="btn"><i class="ti ti-camera"></i> Add a photo<input type="file" accept="image/*" capture="environment" id="photoIn" hidden></label></div><label>Caption for the next photo</label><input type="text" id="photoCap"><label>Notes for QS</label><textarea class="t2" data-bind="test.notes">${esc(t.notes || '')}</textarea>`);
+
+  // 7 review
+  h += sec('review', 'Review and send', '', reviewInspHTML());
+  return h;
+}
+function noticeBoxHTML(d) {
+  const n = (S.test.notices || {})[d.id];
+  const busy = S.noticeBusy === d.id;
+  if (n && n.sent) return `<div class="box good">Unsafe notice <b>sent</b> ${n.sentAt ? G.shortDate(String(n.sentAt).slice(0, 10)) : ''} to ${esc((n.to || []).join(', '))}.</div>`;
+  return `<div class="box bad"><h4>Unsafe: raise the notice now</h4>${n && n.err ? `<p><b>It did not send:</b> ${esc(n.err)}</p>` : ''}<p class="small">Switch the gate off and tell the customer first. The notice goes to the office, John and Rob. A Microsoft window may open: finish it.</p><button class="btn red" data-act="sendnotice" data-id="${esc(d.id)}" ${busy ? 'disabled' : ''}>${busy ? 'Sending…' : (n && n.err ? 'Try sending again' : 'Send the unsafe notice')}</button></div>`;
+}
+function reviewInspHTML() {
+  const t = S.test, i = S.inst;
+  const gaps = G.missingItems(t, i, S.plan, i.tasks, S.rules), ov = G.overallLabel(t, S.plan, S.rules);
+  let h = `<div class="box ${ov.label === 'Pass' ? 'good' : ov.label === 'Fail' ? 'bad' : 'warn'}"><h4>${ov.label}</h4>${ov.pass} passed · ${ov.fail} over the limit · ${ov.review} to review · ${ov.pending} not finished</div>`;
+  const unsent = t.defects.filter(d => d.severity === 'Unsafe' && !((t.notices || {})[d.id] || {}).sent);
+  if (unsent.length) h += `<div class="box bad">An unsafe defect has no sent notice yet. Send it above before you finish.</div>`;
+  if (gaps.length) {
+    h += `<div class="box warn"><h4>Not finished</h4>${gaps.slice(0, 25).map(g => '• ' + esc(g.text)).join('<br>')}${gaps.length > 25 ? `<br>…and ${gaps.length - 25} more` : ''}</div>
+     <p class="small">If you can't finish, send it as a <b>limited inspection</b>: say why and who agreed. QS decides what happens to the due date.</p>
+     <label>Why wasn't it finished? <span class="req">*</span></label><textarea data-bind="test.limited.reason">${esc((t.limited || {}).reason || '')}</textarea><label>Who agreed? (customer or manager)</label><input type="text" data-bind="test.limited.agreedWith" value="${esc((t.limited || {}).agreedWith || '')}">`;
+  } else h += `<div class="box good">Everything is answered.</div>`;
+  h += `<label class="tick"><input type="checkbox" id="signChk"> I carried out this inspection and the readings are as shown, as ${esc(meName())}</label>
+   <div class="btns"><button class="btn red" data-act="submitinsp">${gaps.length ? 'Send as a limited inspection' : 'Send to QS'}</button><button class="btn" data-act="saveleave">Save and leave</button></div>`;
+  return h;
+}
+
+// ═══ Photos ═══
+function compressImage(file, maxSide = 1280, targetKB = 200) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const sc = Math.min(1, maxSide / Math.max(img.width, img.height)), w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+      let q = 0.8, out = c.toDataURL('image/jpeg', q);
+      while (out.length * 0.75 > targetKB * 1024 && q > 0.35) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      URL.revokeObjectURL(url); resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That photo could not be read.')); };
+    img.src = url;
+  });
+}
+async function addPhoto(file) {
+  if (!file) return;
+  try {
+    const data = await compressImage(file), n = (S.photos.reduce((m, p) => Math.max(m, p.n || 0), 0)) + 1, cap = ($('photoCap') || {}).value || '';
+    const id = `${S.test._id}_${n}`;
+    const rec = { testId: S.test._id, installationId: S.inst.id, siteRef: S.inst.siteRef, n, caption: cap, photoBase64: data, engineerEmail: meEmail(), testData: !!S.test.testData, createdAt: serverTimestamp() };
+    saveTest(true);
+    write(setDoc(doc(db, 'gatePhotos', id), rec), 'Photo');
+    S.photos.push({ id, ...rec, createdAt: null }); S.open.add('photos'); rerender();
+  } catch (e) { alert(e.message || 'Photo failed.'); }
+}
+
+// ═══ Unsafe notice (Mail.Send, standards §1.1) ═══
+const MS_WINDOW_MS = 2 * 60000;
+function msWhy(err) {
+  const c = (err && err.code) || '';
+  if (isVaError(err)) return SWS.SW_VA_MSG;
+  if (c === 'auth/popup-blocked') return 'Your phone blocked the Microsoft window.';
+  if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'The Microsoft window was closed before it finished.';
+  if (c === 'auth/user-mismatch') return 'That was a different Microsoft account. Choose your Simpson & Wood one.';
+  if (c === 'auth/network-request-failed') return 'No signal.';
+  if (c === 'gate/ms-timeout') return 'The Microsoft window did not finish.';
+  return 'Microsoft sign-in failed (' + (c || (err && err.message) || 'unknown') + ').';
+}
+function getToken() {   // must be called straight from the tap: the window opens at once
+  const t = storedToken(); if (t) return Promise.resolve(t);
+  let timer; const p = reauthenticateWithPopup(auth.currentUser, msProvider);
+  p.then(keepToken, () => {});
+  const late = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'gate/ms-timeout' })), MS_WINDOW_MS); });
+  return Promise.race([p, late]).then(() => { clearTimeout(timer); const x = storedToken(); if (!x) throw new Error('Microsoft did not give the app permission to send email.'); return x; }, err => { clearTimeout(timer); throw new Error(msWhy(err)); });
+}
+async function graphSend(token, message) {
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ message, saveToSentItems: true }) });
+  if (res.status === 202 || res.ok) return;
+  let detail = ''; try { const j = await res.json(); detail = (j.error && (j.error.code + ': ' + j.error.message)) || ''; } catch (e) {}
+  throw new Error(res.status === 403 ? 'Microsoft has not given the app permission to send email yet (an Entra setting: tell Rob).' : `Microsoft said ${res.status}${detail ? ' (' + detail + ')' : ''}.`);
+}
+function noticeRecipients() {
+  if (S.test.testData) return [meEmail()];
+  return [...new Set(['info@simpsonandwood.co.uk', G_OWNER, ...S.directors])];
+}
+const G_OWNER = SWS.SW_OWNER;
+function noticeHTML(d) {
+  const i = S.inst, t = S.test, st = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a';
+  return `<div style="${st}">${t.testData ? '<p style="color:#5a3d8a;font-weight:bold">TEST: not a real notice.</p>' : ''}<p style="color:#D0222A;font-weight:bold;font-size:18px">UNSAFE: TAKE OUT OF USE</p>
+  <p><b>${esc(i.name)}</b> (${esc(typeLabel(i.type))})<br>${esc(i.siteName)} · ${esc(i.location || '')}</p>
+  <p><b>Defect:</b> ${esc(d.text || '')}<br><b>Where:</b> ${esc(d.where || '')}<br><b>Recommended:</b> ${esc(d.rec || '')}</p>
+  <p>Found by ${esc(meName())} on ${esc(G.longDate(t.date))}. This notice was sent from the field and has not been checked by QS.</p>
+  <p style="color:#9a9a9a;font-size:12px">Simpson &amp; Wood gates and doors app ${VERSION}.</p></div>`;
+}
+async function sendNotice(defId) {
+  const d = S.test.defects.find(x => x.id === defId); if (!d) return;
+  if (viewingAs()) return alert(SWS.SW_VA_MSG);
+  if (!String(d.text || '').trim()) return alert('Say what is wrong first.');
+  const tokenP = getToken();      // first: opens the Microsoft window straight from the tap
+  const nid = `${S.test._id}_${defId}`, to = noticeRecipients();
+  S.test.notices = S.test.notices || {};
+  const base = { testId: S.test._id, installationId: S.inst.id, installationName: S.inst.name, siteRef: S.inst.siteRef, siteName: S.inst.siteName, defectId: defId, text: d.text, where: d.where || '', rec: d.rec || '', to, raisedBy: meEmail(), testData: !!S.test.testData, sent: false, attempts: 1, createdAt: serverTimestamp() };
+  write(setDoc(doc(db, 'gateNotices', nid), base), 'Unsafe notice');
+  saveTest(true);
+  S.noticeBusy = defId; rerender();
+  try {
+    const token = await tokenP;
+    await graphSend(token, { subject: `${S.test.testData ? 'TEST — ' : ''}UNSAFE: ${S.inst.name}, ${S.inst.siteName}`, body: { contentType: 'HTML', content: noticeHTML(d) }, toRecipients: to.map(a => ({ emailAddress: { address: a } })), importance: 'high' });
+    const at = new Date().toISOString();
+    S.test.notices[defId] = { sent: true, sentAt: at, to };
+    write(setDoc(doc(db, 'gateNotices', nid), { sent: true, sentAt: at, sentBy: meEmail(), sendError: null }, { merge: true }), 'Unsafe notice record');
+    audit('unsafe-notice-sent', { installationId: S.inst.id, testId: S.test._id });
+  } catch (e) {
+    const why = e.message || 'Not sent.';
+    S.test.notices[defId] = { sent: false, err: (navigator.onLine ? '' : 'No signal: it is NOT sent. ') + why };
+    write(setDoc(doc(db, 'gateNotices', nid), { sendError: S.test.notices[defId].err }, { merge: true }), 'Unsafe notice record');
+  }
+  S.noticeBusy = null; saveTest(true); rerender();
+}
+
+// ═══ Submit an inspection ═══
+function submitInsp() {
+  const t = S.test, i = S.inst;
+  if (!$('signChk') || !$('signChk').checked) return alert('Tick the box to say you carried out the inspection.');
+  const gaps = G.missingItems(t, i, S.plan, i.tasks, S.rules);
+  if (gaps.length && !(t.limited && String(t.limited.reason || '').trim())) return alert('Say why it was not finished, so it can be sent as a limited inspection.');
+  if (t.defects.some(d => d.severity === 'Unsafe' && !((t.notices || {})[d.id] || {}).sent)) return alert('Send the unsafe notice first (Defects).');
+  const bad = t.defects.find(d => !String(d.text || '').trim()); if (bad) return alert('A defect has no description.');
+  t.limited = gaps.length ? { ...t.limited, items: gaps.map(g => g.text).slice(0, 60) } : null;
+  t.planSnapshot = S.plan.points.map(p => ({ id: K(p.id), label: p.label, kind: p.kind, hazardClass: p.hazardClass, direction: p.direction, leaf: p.leaf, group: p.group || null }));
+  t.checkSnapshot = S.plan.checks.map(c => ({ id: K(c.id), label: c.label, kind: c.kind }));
+  t.taskSnapshot = (i.tasks || []).map(x => ({ id: x.id, text: x.text }));
+  t.deviceSnapshot = (i.devices || []).filter(d => !d.retired).map(d => ({ id: d.id, name: d.name, kind: d.kind || '' }));
+  t.hazardSnapshot = (i.hazards || []).map(h => ({ id: h.id, label: h.label, protection: h.protection, cls: h.cls }));
+  t.overall = G.overallLabel(t, S.plan, S.rules).label;
+  t.intervalMonths = i.intervalMonths; t.setupStatusAtTest = i.setupStatus || 'Draft';
+  t.signOff = { name: meName(), at: new Date().toISOString() };
+  t.status = 'Submitted'; t.qsed = false;
+  saveTest(true);
+  SWS.swuAdd({ c: 'gateTests', id: t._id, label: i.name, app: 'Gates and doors', site: i.siteName });
+  audit('inspection-submitted', { installationId: i.id, testId: t._id });
+  S.tests = [{ ...G.clone(t), _id: t._id }, ...(S.tests || []).filter(x => x._id !== t._id)];
+  banner(`${i.name} saved on this phone. Sending to the office…`, 'wait');
+  S.test = null; go('inst');
+}
+
+// ═══ Events ═══
+function setPath(path, val) {
+  const parts = path.split('.'); let o = parts[0] === 'inst' ? S.inst : S.test;
+  for (let k = 1; k < parts.length - 1; k++) { if (o[parts[k]] == null || typeof o[parts[k]] !== 'object') o[parts[k]] = {}; o = o[parts[k]]; }
+  o[parts[parts.length - 1]] = val;
+}
+const touched = path => { if (path.startsWith('inst')) queueInstSave(); else saveTest(); };
+
+function onReading(el) {
+  const pk = el.dataset.pk, idx = +el.dataset.i, m = el.dataset.m, t = S.test;
+  const p = S.plan.points.find(x => K(x.id) === pk); if (!p) return;
+  const rds = t.readings[pk] = t.readings[pk] || [];
+  while (rds.length <= idx) rds.push({ fd: null, td: null, fs: null, fe: null });
+  const r = G.parseReading(el.value), errEl = $('rerr_' + pk);
+  rds[idx][m] = r.value != null ? r.value : null;
+  const lim = G.pointLimits(p, S.rules);
+  el.classList.toggle('over', r.value != null && r.value > lim[m]);
+  el.classList.toggle('unusual', r.value != null && G.isUnusual(m, r.value));
+  if (r.error) { errEl.textContent = r.error; errEl.style.display = 'block'; } else if (r.value != null && G.isUnusual(m, r.value)) { errEl.textContent = 'That is a very high number. Check the tester screen.'; errEl.style.display = 'block'; } else errEl.style.display = 'none';
+  const ev = G.evaluatePoint(p, rds, S.rules);
+  if (ev.state !== 'empty' && !rds[idx].at && METRICS.every(x => rds[idx][x.k] != null)) rds[idx].at = new Date().toISOString();
+  const card = $('pt_' + pk); card.className = 'pt ' + ev.state;
+  $('sum_' + pk).innerHTML = sumHTML(p);
+  const rowsEl = $('rows_' + pk), want = Math.max(rds.length, ev.required || 1);
+  for (let k = rowsEl.children.length; k < want; k++) rowsEl.insertAdjacentHTML('beforeend', rowHTML(pk, k, rds[k], false));
+  if (ev.complete && p.kind !== 'followup') { /* follow-up targets update when sections next render */ }
+  saveTest();
+}
+
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.classList && el.classList.contains('rdi')) return onReading(el);
+  const bind = el.dataset && el.dataset.bind; if (!bind || el.tagName === 'SELECT' || el.type === 'checkbox') return;
+  let v = el.value; if (el.dataset.num) v = v === '' ? null : Number(v);
+  setPath(bind, v); touched(bind);
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'siteSel') { S.site = S.sites.find(s => s.id === el.value) || null; loadInsts().then(rerender); return; }
+  if (el.id === 'photoIn') { addPhoto(el.files[0]); el.value = ''; return; }
+  const bind = el.dataset && el.dataset.bind; if (!bind) return;
+  if (el.tagName !== 'SELECT' && el.type !== 'checkbox') return;
+  let v = el.type === 'checkbox' ? el.checked : el.value; if (el.dataset.num) v = v === '' ? null : Number(v);
+  if (bind === 'test.testerId') { const tt = S.testers.find(x => x.id === v); S.test.tester = tt ? { id: tt.id, name: tt.name, serial: tt.serial || '', calibrationDue: tt.calibrationDue || '', calibrationDate: tt.calibrationDate || '' } : null; saveTest(); return rerender(); }
+  if (bind === 'inst.type' && S.inst.hazards && S.inst.hazards.length && !confirm('Changing the type keeps your hazards. Check them again on the Hazards step. Continue?')) return rerender();
+  if (bind === 'inst.type') S.inst.leaves = null;
+  setPath(bind, v); touched(bind);
+  if (el.dataset.rr) rerender();
+});
+document.addEventListener('toggle', e => { const s = e.target.dataset && e.target.dataset.sec; if (s) { if (e.target.open) S.open.add(s); else S.open.delete(s); } }, true);
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, i = S.inst, t = S.test;
+  switch (a) {
+    case 'home': S.inst = null; S.test = null; await loadInsts(); return go('home');
+    case 'inst': if (S.view === 'insp' && t && t._dirty) saveTest(true); if (S.view === 'wiz') saveInst(); S.test = null; if (i) { await openInst(i.id); } return;
+    case 'refresh': await boot(); return;
+    case 'newsite': $('newSiteBox').innerHTML = newSiteForm(); $('nsName').addEventListener('input', () => { if (!$('nsRef').dataset.touched) $('nsRef').value = suggestRef($('nsName').value); }); $('nsRef').addEventListener('input', () => $('nsRef').dataset.touched = '1'); return;
+    case 'savesite': return saveSite();
+    case 'openinst': return openInst(el.dataset.id);
+    case 'newinst': return startWizard(newInstObj(''), 0);
+    case 'editsetup': return startWizard(i, 1);
+    case 'startinsp': return startInspection();
+    case 'resumeinsp': return startInspection(el.dataset.id);
+    case 'saveaccess': write(setDoc(doc(db, 'gateAccess', i.id), { codes: $('accessCodes').value, installationId: i.id, siteRef: i.siteRef, updatedBy: meEmail(), updatedAt: serverTimestamp() }), 'Access notes'); S.access = $('accessCodes').value; banner('Access notes saved.', 'ok'); return;
+    // wizard
+    case 'set': setPath(el.dataset.path, el.dataset.val); queueInstSave(); return rerender();
+    case 'multi': { const parts = el.dataset.path; const cur = (() => { const pp = parts.split('.'); let o = S.inst; for (let k = 1; k < pp.length; k++) o = o && o[pp[k]]; return Array.isArray(o) ? o : []; })(); const v = el.dataset.val; setPath(parts, cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v]); queueInstSave(); return rerender(); }
+    case 'step': S.wiz.step = +el.dataset.n; if (i.name || i.type) saveInst(); return rerender();
+    case 'next': if (S.wiz.step === 1 && (!i.name || !i.type || !i.location)) return alert('Give it a name, say where it is and choose the type.'); if (S.wiz.step === 0 && !i.route) return alert('Choose how we are coming to this one.'); S.wiz.step++; saveInst(); return go('wiz');
+    case 'back': S.wiz.step--; return go('wiz');
+    case 'savedraft': if (i.name || i.type) { saveInst(); banner('Saved.', 'ok'); } S.test = null; await loadInsts(); return i.name ? openInst(i.id) : go('home');
+    case 'seedhz': i.hazards = G.seedHazards(i.type); saveInst(); return rerender();
+    case 'addhz': i.hazards = [...(i.hazards || []), { id: G.newId('h'), label: '', location: '', movement: 'both', cls: 'crush', mainEdge: false, protection: 'none', evidence: '', verifyBy: 'direct' }]; return rerender();
+    case 'delhz': if (confirm('Delete this hazard?')) { i.hazards.splice(+el.dataset.n, 1); saveInst(); rerender(); } return;
+    case 'adddev': i.devices = [...(i.devices || []), { id: G.newId('d'), name: '', kind: G.DEVICE_KINDS[0], location: '', battery: {} }]; return rerender();
+    case 'deldev': if (confirm('Remove this device?')) { i.devices.splice(+el.dataset.n, 1); saveInst(); rerender(); } return;
+    case 'addtask': i.tasks = [...(i.tasks || []), { id: G.newId('t'), text: '' }]; return rerender();
+    case 'deltask': i.tasks.splice(+el.dataset.n, 1); return rerender();
+    case 'proposetask': { const txt = prompt('What change to the checklist do you propose?'); if (txt && txt.trim()) { write(setDoc(doc(collection(db, 'gateProposals')), { installationId: i.id, installationName: i.name, siteRef: i.siteRef, text: txt.trim(), by: meEmail(), status: 'Open', createdAt: serverTimestamp() }), 'Proposal'); banner('Sent to QS for approval.', 'ok'); } return; }
+    case 'submitsetup': return submitSetup();
+    // inspection
+    case 'check': { const o = t.checks[el.dataset.pk] = t.checks[el.dataset.pk] || {}; o.st = el.dataset.val; saveTest(); return rerender(); }
+    case 'device': { const o = t.devices[el.dataset.id] = t.devices[el.dataset.id] || {}; o.result = el.dataset.val; saveTest(); return rerender(); }
+    case 'task': { const o = t.tasks[el.dataset.id] = t.tasks[el.dataset.id] || {}; o.outcome = el.dataset.val; saveTest(); return rerender(); }
+    case 'notdone': { const note = prompt('Why? (a few words)') || ''; t.notDone[el.dataset.pk] = { st: el.dataset.val, note }; saveTest(); return rerender(); }
+    case 'undonot': delete t.notDone[el.dataset.pk]; saveTest(); return rerender();
+    case 'startretest': { const pk = el.dataset.pk, rds = t.readings[pk] || []; if (rds.length) (t.history[pk] = t.history[pk] || []).push({ at: new Date().toISOString(), reason: 'Settings changed', readings: rds }); t.readings[pk] = []; t.retestNeeded[pk] = false; saveTest(); return rerender(); }
+    case 'battery': {
+      const d = i.devices.find(x => x.id === el.dataset.id); if (!d || t.batteries.some(x => x.deviceId === d.id)) return;
+      const on = G.todayISO(); t.batteries.push({ deviceId: d.id, deviceName: d.name, replacedOn: on });
+      write(setDoc(doc(db, 'gateBatteryLog', `${t._id}_${d.id}`), { installationId: i.id, siteRef: i.siteRef, deviceId: d.id, deviceName: d.name, replacedOn: on, testId: t._id, by: meEmail(), testData: !!t.testData, createdAt: serverTimestamp() }), 'Battery record');
+      if (!t.testData) { d.battery = { ...(d.battery || {}), lastReplaced: on }; write(setDoc(doc(db, 'gateInstallations', i.id), { devices: clean(i.devices) }, { merge: true }), 'Battery date'); }
+      saveTest(); return rerender();
+    }
+    case 'addadj': {
+      const cat = $('adjCat').value, leafId = $('adjLeaf').value, lf = leafList(i).find(l => l.id === leafId);
+      const adj = { id: G.newId('a'), category: cat || null, leaf: leafId, leafLabel: lf ? lf.label : '', direction: $('adjDir').value, what: $('adjWhat').value.trim(), unsure: !cat, at: new Date().toISOString() };
+      if (!adj.what) return alert('Say what you changed.');
+      const r = G.suggestRetest(adj, S.plan, S.rules); adj.ids = r.ids.map(K); adj.why = r.why;
+      adj.ids.forEach(pk => { if ((t.readings[pk] || []).length) t.retestNeeded[pk] = true; });
+      t.adjustments.push(adj); S.open.add('adj'); S.open.add('force'); saveTest(); return rerender();
+    }
+    case 'adddef': t.defects.push({ id: G.newId('f'), severity: 'Advisory', where: '', text: '', rec: '' }); S.open.add('def'); saveTest(); return rerender();
+    case 'deldef': if (confirm('Remove this defect?')) { t.defects.splice(+el.dataset.n, 1); saveTest(); rerender(); } return;
+    case 'sendnotice': return sendNotice(el.dataset.id);
+    case 'submitinsp': return submitInsp();
+    case 'saveleave': saveTest(true); S.test = null; return openInst(i.id);
+  }
+});
+window.addEventListener('beforeunload', e => { if (S.test && S.test._dirty) { saveTest(true); } });
+
+// ═══ WHAT'S NEW + HELP ═══
+const NEWS_ALL = [
+  '<b>Gates and doors</b> is new. Set up a gate or door, answer the questions about it, then inspect it: force tests, checks, batteries, defects and photos, all in one place.',
+  'If a gate is <b>unsafe</b>, record the defect and tap <b>Send the unsafe notice</b>: it goes to the office at once.'
+];
+const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
+const HELP = [
+  { tab: 'Sites', q: 'How do I start?', a: '<p>Pick the site (or add it), then <b>Add a gate or door</b>. The set-up asks about the gate once. After that, each visit is <b>Start inspection</b>.</p>' },
+  { tab: 'Set-up', q: 'What if I don\'t know an answer?', a: '<p>Choose <b>Unsure</b>. It goes to QS to check. If a question doesn\'t apply, choose <b>Not applicable</b> and say why.</p>' },
+  { tab: 'Inspection', q: 'What are the four numbers?', a: '<p>They come from the force tester: <b>Fd</b> dynamic force, <b>Td</b> time, <b>Fs</b> static force and <b>Fe</b> end force. Type what it shows. Blank is not zero: type 0 if it shows 0.</p>' },
+  { tab: 'Inspection', q: 'Why does it ask for three readings?', a: '<p>If the first reading is over 90% of a limit, repeat to three. All readings are kept, even one that is over the limit.</p>' },
+  { tab: 'Inspection', q: 'I changed a setting. What now?', a: '<p>Use <b>I changed a setting</b> under Adjustments. The app marks the tests that need repeating. If you aren\'t sure, it marks them all.</p>' },
+  { tab: 'Inspection', q: 'I can\'t finish it', a: '<p>Send it as a <b>limited inspection</b>: say why and who agreed. QS decides what happens to the due date.</p>' },
+  { tab: 'Inspection', q: 'It says Practice', a: '<p>The test rules need approving by management before real force tests count. Until then, everything is saved as practice.</p>' },
+  { q: 'What\'s the yellow bar at the top?', a: '<p>Work that hasn\'t reached the office yet. Keep the app open with signal and it clears on its own.</p>' }
+];
+</script>
+</body>
+</html>

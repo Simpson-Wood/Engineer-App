@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gates &amp; Doors Reports — Simpson &amp; Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  body{padding-bottom:40px;}
+  .wrap{max-width:1500px; margin:0 auto; padding:0;}
+  header .brand{flex:1 1 auto;} header .brand > div{min-width:0;}   /* long title: … rather than running under the buttons */
+
+  /* ---- sign-in ---- */
+  #signinScreen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+  .ms-btn{display:flex;}
+  #appRoot{display:none;}
+
+  /* ---- site bar ---- */
+  .site-bar{background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px;}
+  .site-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .site-row select{flex:1 1 260px; max-width:520px; margin:0;}
+  .site-btn{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:9px 14px; font-size:14.5px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; white-space:nowrap;}
+  .site-btn i{font-size:17px;}
+  .site-btn.dark{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .site-btn.dashed{border-style:dashed; color:var(--grey);}
+  .site-status{font-size:12.5px; color:var(--grey); margin:5px 0 0;}
+  .site-note{border-radius:8px; padding:10px 12px; font-size:14px; font-weight:600; margin-top:8px; border:1px solid;}
+  .site-note.bad{background:var(--red-tint); color:var(--bad-ink); border-color:var(--bad-line);}
+  #addSiteForm{margin-top:12px; max-width:900px;}
+
+  /* ---- tabs: the guide's red-tint pills ---- */
+  .tabs .wrap{display:flex; gap:4px; width:100%;}
+  header .who button{white-space:nowrap;}
+
+  main{padding:16px;}
+  .log-layout{display:grid; grid-template-columns:minmax(0,1fr); gap:0 16px; align-items:start;}
+  @media (min-width:1100px){ .log-layout{grid-template-columns:320px minmax(0,1fr);} .log-side{position:sticky; top:70px;} }
+  .card{min-width:0; padding:16px;}
+  .section-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:20px; color:var(--ink); margin:0 0 12px;}
+
+  /* ---- fields: labels are the guide's .lbl ---- */
+  .fld > label, .card > label, .site-bar label, .edit-panel label{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:0 0 6px;}
+  label .req{color:var(--red);}
+  label .hint{display:block; font-family:'Barlow',sans-serif; font-weight:400; text-transform:none; letter-spacing:0; color:var(--grey); font-size:12.5px; margin-top:2px;}
+  input[type=text], input[type=date], select, textarea, input[type=file]{
+    width:100%; min-height:44px; padding:10px 12px; font-family:'Barlow',sans-serif; font-size:16px;
+    border:1.5px solid var(--field); border-radius:8px; background:#fff; color:var(--ink); margin-bottom:14px;
+  }
+  input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+  textarea{resize:vertical; min-height:64px; line-height:1.4;}
+  select{appearance:none; -webkit-appearance:none; padding-right:34px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%235c5c5c' d='M5 7l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; background-size:18px;}
+  select:disabled{background-color:var(--soft); color:var(--grey);}
+  select:disabled option:disabled{color:#ccc;}
+  .field-error{border-color:var(--red) !important; box-shadow:0 0 0 3px var(--red-tint);}
+  .error-msg{color:var(--red); font-size:13px; margin:-10px 0 12px; display:none;}
+
+  /* form grid: label + box + error stay together in a .fld */
+  .fgrid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:16px;}
+  .fgrid > .full{grid-column:1 / -1;}
+  .fgrid > .contents{display:contents;}
+  .fld{min-width:0;}
+  @media (min-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1300px){ .fgrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .checks-grid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:28px; margin-bottom:6px;}
+  @media (min-width:1000px){ .checks-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .checks-grid .check-item:nth-child(2){border-top:none; padding-top:0;} }
+
+  .radio-row{display:flex; gap:6px; margin:0; flex-shrink:0; flex-wrap:wrap;}
+  .radio-opt{display:flex; align-items:center; justify-content:center; min-height:44px; border:1.5px solid var(--field); border-radius:8px; padding:8px 14px; text-align:center; font-weight:700; font-size:15px; cursor:pointer; user-select:none; color:var(--grey); min-width:62px; background:#fff;}
+  .radio-opt input{display:none;}
+  .radio-opt.pass-sel{border-color:var(--green); background:var(--green-bg); color:var(--green);}
+  .radio-opt.fail-sel{border-color:var(--red); background:var(--red-tint); color:var(--red-dark);}
+  .radio-opt.na-sel{border-color:var(--grey); background:var(--soft); color:var(--grey);}
+  .edit-panel{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; width:100%;}
+  .edit-panel .check-item{padding:6px 0;}
+  .id-locked-note{font-size:12.5px; color:var(--grey); margin:0 0 12px; font-style:italic;}
+  .edited-marker{font-size:11px; font-weight:700; color:var(--amber); background:var(--amber-bg); padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em;}
+  .btn-edit-own, .del-btn, .restore-btn, .photos-btn{min-height:40px; background:#fff; border:1.5px solid var(--field); color:var(--ink); font-size:14px; font-weight:700; padding:7px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;}
+  .btn-edit-own i, .photos-btn i{font-size:16px;}
+  .del-btn{border-color:var(--red); color:var(--red);}
+  .restore-btn{border-color:var(--ink);}
+  .btn-save-edit{flex:1; min-height:44px; background:var(--green); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .btn-cancel-edit{flex:1; min-height:44px; background:#fff; border:1.5px solid var(--field); color:var(--ink); padding:10px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .loading-spinner{display:flex; align-items:center; gap:8px; color:var(--grey); font-size:13.5px; padding:10px 0 0;}
+  .loading-spinner .dot{width:7px; height:7px; border-radius:50%; background:var(--red); animation:pulse 1s infinite ease-in-out;}
+  .loading-spinner .dot:nth-child(2){animation-delay:.15s;} .loading-spinner .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+
+  /* photos (v19.0: kept apart from the test, loaded when asked for) */
+  .photo-row{display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 4px;}
+  .photo-row figure{margin:0;}
+  .photo-row img, .reference-photo{display:block; width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line); cursor:zoom-in; background:var(--soft);}
+  .photo-row figcaption{font-size:12px; color:var(--grey); margin-top:3px;}
+  .photo-note{font-size:13px; color:var(--grey); margin:6px 0;}
+  .photo-full{max-width:100%; max-height:76vh; display:block; margin:0 auto; border-radius:8px;}
+  .sw-modal.photo-modal{max-width:900px;}
+
+  .id-preview{background:var(--soft); border:1.5px dashed var(--field); border-radius:8px; padding:10px 12px; font-size:16px; font-weight:700; color:var(--ink); margin-bottom:6px; min-height:44px; letter-spacing:.02em; word-break:break-word;}
+  .id-preview.pending{color:var(--grey); font-weight:400; font-style:italic; font-size:14px;}
+  .id-note{font-size:12.5px; color:var(--grey); margin:0 0 14px;}
+  .id-note.retest{color:var(--red); font-weight:600;}
+
+  .check-item{display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--line); padding:9px 0; flex-wrap:wrap;}
+  .check-item:first-child{border-top:none; padding-top:0;}
+  .check-item .check-label{flex:1; min-width:160px; font-size:15px; font-weight:600; color:var(--ink);}
+  .check-item .error-msg{width:100%; margin:2px 0 0;}
+
+  .entry{border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden;}
+  .entry-head{background:var(--ink); color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .entry-head .etag{background:var(--red); font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; padding:3px 9px; border-radius:6px; text-transform:uppercase; flex-shrink:0;}
+  .entry-head .eq-id{font-weight:600; font-size:14px; flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .entry-head button{background:none; border:none; color:var(--hdr-link); font-size:14px; cursor:pointer; font-weight:600; flex-shrink:0; min-height:36px;}
+  .entry-body{padding:14px;}
+
+  .add-btn{width:100%; min-height:52px; padding:13px; background:#fff; border:2px dashed var(--red); color:var(--red); border-radius:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:17px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; margin-bottom:6px;}
+  .empty-note{text-align:center; color:var(--grey); font-size:14.5px; padding:18px 0;}
+
+  .save-entry-btn{width:100%; min-height:52px; padding:14px; background:var(--red); color:#fff; border:none; border-radius:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; margin-top:6px;}
+  .save-entry-btn:hover{background:var(--red-dark);}
+  @media (min-width:1000px){ .save-entry-btn{max-width:420px;} }
+
+  .banner{display:none; font-weight:600;}
+  .banner.ok{background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+  .banner.wait{background:var(--amber-bg); color:#4d3300; border-color:var(--amber-line);}
+  .banner button{background:#fff; border:1.5px solid currentColor; color:inherit; border-radius:8px; padding:4px 10px; font-weight:700; font-size:13.5px; cursor:pointer; margin-left:8px;}
+
+  .today-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; border-top:1px solid var(--line);}
+  .today-item:first-child{border-top:none;}
+  .today-item .id{font-weight:700; font-size:15px; word-break:break-word;}
+  .today-item .cat{font-size:12.5px; color:var(--grey);}
+  .sent-tag{font-size:12px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap;}
+  .sent-tag.ok{background:var(--green-bg); color:var(--green);}
+  .sent-tag.wait{background:var(--amber-bg); color:var(--amber);}
+
+  /* ---- register ---- */
+  .reg-count{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin:0 0 14px;}
+  .reg-count .n{font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700; line-height:1.05;}
+  .reg-count .l{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .reg-count .of{font-size:13.5px; color:var(--grey); font-weight:600; align-self:center;}
+  .reg-tools{display:grid; grid-template-columns:minmax(0,1fr); gap:0 12px;}
+  @media (min-width:900px){ .reg-tools{grid-template-columns:minmax(0,2fr) minmax(0,3fr);} }
+  .reg-filters-btn{display:none; width:100%; min-height:44px; padding:10px; margin-bottom:12px; background:#fff; border:1.5px solid var(--field); border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;}
+  .reg-filters{display:flex; gap:8px 12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .reg-filters select{flex:1 1 200px; margin:0;}
+  .reg-filters label.tick{align-items:center; font-size:15px; font-weight:600; margin:0; min-height:40px;}
+  @media (max-width:699px){
+    .reg-filters-btn{display:block;}
+    .reg-filters{display:none;}
+    .reg-filters.open{display:flex;}
+    .reg-filters select{flex-basis:100%;}
+  }
+  .reg-subtabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .reg-subtabs .chip{min-height:38px;}
+  #regList{display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-items:start;}
+  @media (min-width:700px){ #regList{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ #regList{grid-template-columns:repeat(auto-fill,minmax(330px,1fr));} }
+  #regList .reg-item.editing-full{grid-column:1 / -1;}
+  #regList > .history-empty, #regList > .loading-note{grid-column:1 / -1;}
+
+  .reg-item{border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; background:#fff;}
+  .reg-item.overdue{border-color:var(--red); background:#fff8f8;}
+  .reg-item-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px;}
+  .reg-item .eq{font-weight:700; font-size:16px; word-break:break-word; overflow-wrap:anywhere;}
+  .reg-item .cat{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .reg-item .meta{font-size:13px; color:var(--grey); margin-top:4px;}
+  .reg-item .meta.overdue-text{color:var(--red); font-weight:700;}
+  .st{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;}
+  .st.pass{background:var(--green-bg); color:var(--green);}
+  .st.fail{background:var(--red-tint); color:var(--red-dark);}
+  .st.overdue{background:var(--red); color:#fff;}
+  .st.wait{background:var(--amber-bg); color:var(--amber);}
+  .st.flagged{background:#eeece7; color:var(--grey);}
+  .reg-item-bottom{display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;}
+  .expand-btn{background:none; border:none; color:var(--grey); font-size:14px; font-weight:600; cursor:pointer; text-decoration:underline; padding:10px 0; min-height:40px;}
+  .retest-btn{min-height:44px; background:#fff; border:1.5px solid var(--red); color:var(--red); font-size:15px; font-weight:700; padding:8px 16px; border-radius:8px; cursor:pointer;}
+  .hist-list{margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;}
+  .hist-row{padding:8px 0; border-bottom:1px solid var(--line);}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-row-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;}
+  .hist-btns{display:flex; gap:6px; flex-wrap:wrap;}
+  .hist-date{font-size:14px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .hist-meta{font-size:12.5px; color:var(--grey); margin-top:1px;}
+  .history-empty{color:var(--grey); font-size:14px; text-align:center; padding:16px 0;}
+  .loading-note{color:var(--grey); font-size:14px; text-align:center; padding:6px 0;}
+
+  /* last time / since last report */
+  .last-time{background:var(--soft); border:1px solid var(--line); border-left:4px solid var(--grey); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:14px;}
+  .last-time.was-fail{border-left-color:var(--red);}
+  .last-time .lt-head{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-size:15px; margin:0 0 6px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .last-time .lt-row{margin:4px 0 0;}
+  .lt-label{font-weight:700; color:var(--grey); font-size:12px; text-transform:uppercase; letter-spacing:.03em; display:block;}
+  .lt-text{white-space:pre-wrap;}
+  .hist-detail{font-size:13.5px; color:var(--ink); margin-top:4px; line-height:1.45;}
+  .hist-detail .lt-label{font-size:11.5px; margin-top:4px;}
+  .since-tag{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; display:inline-block; margin-top:5px;}
+  .since-tag.retested{background:var(--green-bg); color:var(--green);}
+  .since-tag.newitem{background:var(--blue-bg); color:var(--blue);}
+  .since-tag.notyet{background:#eeece7; color:var(--grey);}
+  .since-tag.notyet.was-fail{background:var(--red-tint); color:var(--red-dark);}
+  .retest-summary{display:none; background:var(--amber-bg); color:#4d3300; border:1px solid var(--amber-line); border-radius:10px; padding:10px 12px; font-size:14.5px; font-weight:600; margin-bottom:12px; cursor:pointer;}
+  .retest-summary .sub{display:block; font-weight:400; font-size:13.5px; margin-top:2px;}
+
+  .undo-toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:400; display:flex; align-items:center; gap:12px; background:var(--ink); color:#fff; padding:11px 14px; border-radius:10px; font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.25); width:max-content; max-width:calc(100vw - 24px);}
+  .undo-toast button{background:#fff; color:var(--ink); border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:14px; cursor:pointer; flex-shrink:0;}
+
+  /* type-ahead suggestions */
+  .sug-box{position:absolute; z-index:300; background:#fff; border:1.5px solid var(--ink); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.18); max-height:300px; overflow:auto;}
+  .sug-head{font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; padding:8px 12px 2px;}
+  .sug-opt{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 12px; font-size:15.5px; cursor:pointer; border-top:1px solid var(--line);}
+  .sug-opt:first-child, .sug-head + .sug-opt{border-top:none;}
+  .sug-opt small{color:var(--grey); font-size:12.5px; white-space:nowrap;}
+  .sug-opt:hover, .sug-opt.on{background:var(--red-tint);}
+  .sug-note{position:absolute; z-index:300; background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:6px 10px; border-radius:6px;}
+
+  @media (max-width:640px){
+    header h1{font-size:16px;}
+    header .who .name{display:none;}
+    main{padding:12px;}
+    .card{padding:14px;}
+    .tabs .wrap{gap:2px;}
+  }
+  /* ---- gates & doors (v1.0): additions to the isolator page's styles ---- */
+  .wrap{max-width:1200px;}
+  .gt-title{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:22px; margin:0 0 4px;}
+  .gt-sub{color:var(--grey); font-size:14px; margin:0 0 12px;}
+  .inst-grid{display:grid; grid-template-columns:minmax(0,1fr); gap:10px;}
+  @media (min-width:760px){ .inst-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ .inst-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .inst-card{border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff; cursor:pointer;}
+  .inst-card:hover{border-color:var(--ink);}
+  .inst-card .nm{font-weight:700; font-size:16px;} .inst-card .ty{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; background:#eeece7; color:var(--grey);}
+  .tag.ok{background:var(--green-bg); color:var(--green);} .tag.bad{background:var(--red-tint); color:var(--red-dark);}
+  .tag.wait{background:var(--amber-bg); color:var(--amber);} .tag.info{background:var(--blue-bg); color:var(--blue);} .tag.dark{background:var(--ink); color:#fff;}
+  .tag.over{background:var(--red); color:#fff;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:9px 16px; font-size:15px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; color:var(--ink);}
+  .btn.red{background:var(--red); border-color:var(--red); color:#fff;} .btn.dark{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .btn.green{background:var(--green); border-color:var(--green); color:#fff;} .btn.sm{min-height:38px; padding:6px 12px; font-size:14px;}
+  .btn.warn{border-color:var(--red); color:var(--red);} .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btns{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .crumb{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 12px; font-size:14px;}
+  .crumb a{color:var(--grey); cursor:pointer; font-weight:600; text-decoration:underline;}
+  .box{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 12px; background:#fff;}
+  .box.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .box.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .box.good{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .box.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .box h4{margin:0 0 6px; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:17px;}
+  .q{border-top:1px solid var(--line); padding:12px 0;} .q:first-of-type{border-top:none; padding-top:0;}
+  .q .ql{font-weight:600; font-size:15px; margin:0 0 6px;} .q .qn{font-size:12.5px; color:var(--grey); margin:0 0 6px;}
+  .q .row{display:flex; gap:8px; flex-wrap:wrap;} .q .row > *{flex:1 1 180px; margin-bottom:8px;}
+  .opt-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .opt{min-height:44px; padding:8px 14px; border:1.5px solid var(--field); border-radius:8px; background:#fff; font-weight:700; font-size:15px; cursor:pointer; color:var(--grey);}
+  .opt.on{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .steps{display:flex; gap:4px; flex-wrap:wrap; margin:0 0 14px;}
+  .steps .s{font-size:12.5px; font-weight:700; padding:5px 10px; border-radius:20px; background:#eeece7; color:var(--grey); cursor:pointer;}
+  .steps .s.on{background:var(--ink); color:#fff;} .steps .s.done{background:var(--green-bg); color:var(--green);}
+  .sec{border:1px solid var(--line); border-radius:12px; background:#fff; margin:0 0 12px; overflow:hidden;}
+  .sec > summary{list-style:none; cursor:pointer; padding:13px 14px; display:flex; align-items:center; gap:10px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.02em;}
+  .sec > summary::-webkit-details-marker{display:none;} .sec > summary .grow{flex:1;}
+  .sec > .in{padding:0 14px 14px;}
+  .pt{text-align:left; border:1px solid var(--line); border-radius:10px; padding:10px; margin:0 0 10px; background:#fff;}
+  .pt.pass{border-left:5px solid var(--green);} .pt.fail{border-left:5px solid var(--red);} .pt.review{border-left:5px solid var(--amber);} .pt.incomplete{border-left:5px solid #e7b94a;}
+  .pt .pl{font-weight:700; font-size:15px;} .pt .how{font-size:13px; color:var(--grey); margin:2px 0 8px;}
+  .rd{display:grid; grid-template-columns:28px repeat(4,minmax(0,1fr)); gap:6px; align-items:center; margin:0 0 6px;}
+  .rd .n{font-weight:700; color:var(--grey); font-size:14px;}
+  .rd input{margin:0 !important; min-height:46px; text-align:center; padding:6px 4px; font-weight:700;}
+  .rd.hd{font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase;} .rd.hd span{text-align:center;}
+  .rd input.over{border-color:var(--red); background:var(--red-tint);} .rd input.unusual{border-color:var(--amber); background:var(--amber-bg);}
+  .cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px;} .cmp td,.cmp th{border-top:1px solid var(--line); padding:4px 6px; text-align:right;} .cmp th:first-child,.cmp td:first-child{text-align:left;}
+  .small{font-size:13px; color:var(--grey);}
+  .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
+  .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .list-line:first-child{border-top:none;}
+  .ph-grid{display:flex; flex-wrap:wrap; gap:10px;} .ph-grid figure{margin:0; width:150px;} .ph-grid img{width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .ph-grid figcaption{font-size:12px; color:var(--grey);}
+  textarea.t2{min-height:96px;}
+  .locked{opacity:.6; pointer-events:none;}
+  @media (max-width:520px){ .rd{grid-template-columns:22px repeat(4,minmax(0,1fr)); gap:4px;} .rd input{font-size:15px; min-height:44px;} }
+  .tab .cnt{font-weight:700;} .reg-count{display:flex; gap:22px; flex-wrap:wrap; margin:0 0 14px;}
+</style>
+</head>
+<body>
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>Gates &amp; Doors Reports</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to see the register and reports.</p>
+  <button class="ms-btn" id="msSignInBtn">Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html" title="Home"><img src="sw-logo-white.png" alt="Simpson & Wood"><div><h1>Gates &amp; Doors Reports</h1><p id="versionLabel">v1.0</p></div></a>
+    <div class="right"><div class="who"><div class="name" id="whoName">—</div><button id="signOutBtn">Sign out</button></div></div>
+  </header>
+  <nav class="tabs"><div class="wrap" id="tabsBar"></div></nav>
+  <main><div class="wrap"><div id="banner" class="banner"></div><div id="view"></div></div></main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut, reauthenticateWithPopup as _reauthPopup
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
+  getDocs, doc, getDoc, query, where, serverTimestamp, setDoc as fsSetDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import * as SWS from './sw-shared.js';
+import * as G from './gate-shared.js';
+const { esc, typeLabel, METRICS } = G;
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
+console.log('Gates & doors reports', VERSION);
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw", authDomain: "simpson-wood-engineer-app.firebaseapp.com", projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app", messagingSenderId: "201961281346", appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+msProvider.addScope('Mail.Send');
+SWS.swSetup({ db, auth, page: 'gate-report', version: VERSION });
+const viewingAs = () => SWS.swViewingAs();
+const isVaError = e => e && String(e.message || '').includes(SWS.SW_VA_MSG);
+const setDoc = SWS.swGuard(fsSetDoc);
+const reauthenticateWithPopup = SWS.swGuard(_reauthPopup);
+
+const S = { viewT: null, user: null, level: 'engineer', position: '', isDirector: false, sites: [], insts: [], tests: [], rules: [], testers: [], notices: [], proposals: [], audit: [], staff: {}, sigs: {}, tab: 'register', filter: 'all', q: '', sel: null, review: null };
+const $ = id => document.getElementById(id);
+const meEmail = () => { const va = viewingAs(); return va ? va.email : String((S.user && S.user.email) || '').toLowerCase(); };
+const meName = () => { const va = viewingAs(); return va ? va.name : ((S.user && (S.user.displayName || S.user.email)) || ''); };
+const isMgmt = () => S.level === 'management';
+const banner = (txt, cls = 'wait') => { const b = $('banner'); if (!txt) { b.style.display = 'none'; return; } b.className = 'banner ' + cls; b.textContent = txt; b.style.display = 'block'; };
+const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k[0] === '_' ? undefined : (v === undefined ? null : v))));
+function write(p, what) {
+  return Promise.resolve(p).then(() => true).catch(e => {
+    if (isVaError(e)) { banner(SWS.SW_VA_MSG, 'wait'); return false; }
+    console.error(what, e); SWS.swReport('save', what + ' didn\'t save: ' + (e && (e.code || e.message) || 'unknown'));
+    banner(what + ' did not save (' + (e && (e.code || e.message) || 'error') + ').', 'wait'); return false;
+  });
+}
+const audit = (action, extra = {}) => { if (viewingAs()) return; write(setDoc(doc(collection(db, 'gateAudit')), { at: serverTimestamp(), atISO: new Date().toISOString(), by: meEmail(), action, ...extra }), 'Audit record'); };
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+function keepToken(result) { try { const c = OAuthProvider.credentialFromResult(result); if (c && c.accessToken) sessionStorage.setItem('gate-graph', JSON.stringify({ t: c.accessToken, exp: Date.now() + 50 * 60000, who: ((result.user && result.user.email) || '').toLowerCase() })); } catch (e) {} }
+const storedToken = () => { try { const o = JSON.parse(sessionStorage.getItem('gate-graph') || 'null'); return o && o.exp > Date.now() && o.who === String(auth.currentUser && auth.currentUser.email || '').toLowerCase() ? o.t : null; } catch (e) { return null; } };
+$('msSignInBtn').addEventListener('click', () => {
+  const errBox = $('signinErr'); errBox.textContent = '';
+  signInWithPopup(auth, msProvider).then(keepToken).catch(err => {
+    if (err.code === 'auth/popup-blocked') { signInWithRedirect(auth, msProvider).catch(e2 => { const m = describeAuthError(e2); if (m) errBox.textContent = m; }); return; }
+    const m = describeAuthError(err); if (m) errBox.textContent = m;
+  });
+});
+$('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).then(r => { if (r) keepToken(r); }).catch(err => { $('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.'); });
+
+let booted = false;
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (!user) { $('signinScreen').style.display = 'flex'; $('appRoot').style.display = 'none'; return; }
+  $('signinScreen').style.display = 'none'; $('appRoot').style.display = 'block';
+  if (booted) return; booted = true;
+  const va = await SWS.swViewAsInit(user);
+  $('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; } catch (e) {}
+  S.isDirector = S.position === 'Director' || meEmail() === SWS.SW_OWNER;
+  SWS.swExtrasStart({ page: 'gate-report', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => TABS.find(t => t[0] === S.tab)[1] });
+  SWS.swuStart();
+  buildTabs(); load();
+});
+window.swUpdateBlocker = () => (S.review && S.review.busy) ? 'Finish what you are doing, then tap Update.' : '';
+
+const TABS = [['register', 'Register', 'ti-list-details'], ['review', 'To review', 'ti-checklist'], ['rules', 'Rules', 'ti-ruler-2'], ['testers', 'Testers', 'ti-gauge'], ['notices', 'Notices', 'ti-alert-triangle'], ['proposals', 'Checklist ideas', 'ti-bulb'], ['audit', 'Audit', 'ti-history']];
+function buildTabs() {
+  $('tabsBar').innerHTML = TABS.filter(t => isMgmt() || ['register', 'notices'].includes(t[0])).map(t => `<button type="button" class="tab ${S.tab === t[0] ? 'active' : ''}" data-tab="${t[0]}"><i class="ti ${t[2]}"></i> ${t[1]}<span class="cnt" id="cnt_${t[0]}"></span></button>`).join('');
+}
+async function load() {
+  $('view').innerHTML = '<div class="loading-note">Loading…</div>';
+  const g = async (c, f) => { try { return (await getDocs(collection(db, c))).docs.map(d => ({ id: d.id, ...d.data() })); } catch (e) { if (navigator.onLine && !f) SWS.swReport('load', `Gate reports: ${c} didn't load: ${e.code || e.message}`); return []; } };
+  const [sites, insts, tests, rules, testers, notices, props, staff] = await Promise.all([g('gateSites'), g('gateInstallations'), g('gateTests'), g('gateRules'), g('gateTesters'), g('gateNotices'), g('gateProposals'), g('staff')]);
+  S.sites = sites.filter(x => !x.deletedFlag); S.insts = insts.filter(x => !x.deletedFlag);
+  S.tests = tests.filter(x => !x.deletedFlag).map(t => ({ ...t, _id: t.id }));
+  S.rules = rules.sort((a, b) => (b.version || 0) - (a.version || 0)); S.testers = testers; S.notices = notices; S.proposals = props;
+  S.staff = {}; staff.forEach(s => S.staff[String(s.email || s.id).toLowerCase()] = s);
+  S.sigs = {}; if (isMgmt()) (await g('staffSignatures', true)).forEach(s => S.sigs[s.id.toLowerCase()] = s);
+  if (isMgmt()) S.audit = (await g('gateAudit', true)).sort((a, b) => String(b.atISO || '').localeCompare(String(a.atISO || ''))).slice(0, 200);
+  const want = new URLSearchParams(location.search).get('site'); if (want && !S.q) S.q = want;
+  render();
+}
+const instTests = id => S.tests.filter(t => t.installationId === id);
+const lastApproved = id => instTests(id).filter(t => t.kind === 'periodic' && t.status === 'Approved' && !t.testData).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+const pendingTests = () => S.tests.filter(t => ['Submitted', 'In review'].includes(t.status) && !t.testData);
+const openDefects = id => { const t = lastApproved(id); return t ? (t.defects || []) : []; };
+const rulesFor = t => { const r = S.rules.find(x => x.version === t.rulesVersion && x.status !== 'Draft') || S.rules.find(x => x.status === 'Approved'); return r ? r.rules : G.DEFAULT_RULES; };
+function render() {
+  buildTabs();
+  const p = pendingTests().length; const c = $('cnt_review'); if (c) c.textContent = p ? ` (${p})` : '';
+  const un = S.notices.filter(n => !n.sent && !n.testData).length; const c2 = $('cnt_notices'); if (c2) c2.textContent = un ? ` (${un})` : '';
+  $('view').innerHTML = ({ register: registerHTML, review: reviewHTML, rules: rulesHTML, testers: testersHTML, notices: noticesHTML, proposals: proposalsHTML, audit: auditHTML }[S.tab])();
+}
+const tag = (c, t) => `<span class="tag ${c}">${esc(t)}</span>`;
+const dueTag = i => { if (!i.dueMonth) return tag('', 'No approved inspection yet'); const s = G.dueState(i.dueMonth); return tag(s === 'overdue' ? 'over' : s === 'due' ? 'bad' : 'info', s === 'overdue' ? 'Overdue since ' + G.monthLabel(G.addMonths(i.dueMonth, 1)) : 'Due ' + G.monthLabel(i.dueMonth)); };
+
+// ═══ REGISTER ═══
+const FILTERS = [['all', 'All'], ['due', 'Due this month'], ['overdue', 'Overdue'], ['pending', 'Waiting for QS'], ['defects', 'Has defects'], ['setup', 'Set-up not approved'], ['practice', 'Practice only']];
+function matchFilter(i) {
+  const st = G.dueState(i.dueMonth);
+  switch (S.filter) {
+    case 'due': return st === 'due'; case 'overdue': return st === 'overdue';
+    case 'pending': return instTests(i.id).some(t => ['Submitted', 'In review'].includes(t.status));
+    case 'defects': return openDefects(i.id).length > 0;
+    case 'setup': return i.setupStatus !== 'Approved';
+    case 'practice': return !!i.testData;
+  } return true;
+}
+var registerHTML = function () {
+  const q = S.q.toLowerCase();
+  const list = S.insts.filter(i => matchFilter(i) && (!q || [i.name, i.siteName, i.siteRef, i.location].some(x => String(x || '').toLowerCase().includes(q)))).sort((a, b) => (a.dueMonth || '9999').localeCompare(b.dueMonth || '9999') || String(a.siteName).localeCompare(String(b.siteName)));
+  const months = {}; S.insts.forEach(i => { if (i.dueMonth) months[i.dueMonth] = (months[i.dueMonth] || 0) + 1; });
+  const thisM = G.monthOf(G.todayISO());
+  const dueNow = S.insts.filter(i => G.dueState(i.dueMonth) === 'due').length, over = S.insts.filter(i => G.dueState(i.dueMonth) === 'overdue').length;
+  let h = `<div class="card"><div class="reg-count"><div><div class="n">${S.insts.length}</div><div class="l">Gates and doors</div></div><div><div class="n">${dueNow}</div><div class="l">Due this month</div></div><div><div class="n" style="color:var(--red)">${over}</div><div class="l">Overdue</div></div><div><div class="n">${pendingTests().length}</div><div class="l">Waiting for QS</div></div></div>
+   <input type="text" id="regQ" placeholder="Search by site, gate name, location…" value="${esc(S.q)}">
+   <div class="reg-subtabs">${FILTERS.map(f => `<button class="chip ${S.filter === f[0] ? 'on' : ''}" data-filter="${f[0]}">${f[1]}</button>`).join('')}</div>`;
+  const mk = Object.keys(months).sort();
+  if (mk.length) h += `<details class="small"><summary style="cursor:pointer">Due by month</summary><div class="chips">${mk.map(m => `<span class="tag ${G.dueState(m) === 'overdue' ? 'over' : m === thisM ? 'bad' : 'info'}">${G.monthLabel(m)}: ${months[m]}</span>`).join('')}</div></details>`;
+  h += `<div class="inst-grid" style="margin-top:12px">${list.map(i => { const la = lastApproved(i.id), df = openDefects(i.id); return `<div class="inst-card" data-open="${esc(i.id)}"><div class="ty">${esc(i.siteName)} · ${esc(typeLabel(i.type))}</div><div class="nm">${esc(i.name)}</div><div class="small">${esc(i.location || '')}</div><div class="chips">${dueTag(i)}${i.setupStatus !== 'Approved' ? tag('wait', 'Set-up not approved') : ''}${df.length ? tag('bad', df.length + ' defect' + (df.length > 1 ? 's' : '')) : ''}${i.testData ? tag('dark', 'Practice') : ''}${instTests(i.id).some(t => ['Submitted', 'In review'].includes(t.status)) ? tag('wait', 'With QS') : ''}</div><div class="small" style="margin-top:6px">${la ? 'Last approved ' + G.shortDate(la.date) : 'Not inspected yet'}</div></div>`; }).join('') || '<div class="empty-note">Nothing matches.</div>'}</div></div>`;
+  if (S.sel) h += instPanelHTML(S.insts.find(i => i.id === S.sel));
+  return h;
+}
+function instPanelHTML(i) {
+  if (!i) return '';
+  const ts = instTests(i.id).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  let h = `<div class="card" id="instPanel"><div class="btns" style="margin-top:0"><button class="btn sm" data-close="1">Close</button></div><h2 class="gt-title">${esc(i.name)}</h2><p class="gt-sub">${esc(i.siteName)} · ${esc(typeLabel(i.type))} · ${esc(i.location || '')}</p><div class="chips">${dueTag(i)}${tag('info', 'Every ' + i.intervalMonths + ' months')}</div>`;
+  h += `<div class="btns"><a class="btn sm" href="gate-test.html?site=${encodeURIComponent(i.siteRef)}">Open in the engineer app</a>${i.setupStatus === 'Approved' ? `<button class="btn sm" data-pdf="risk" data-id="${esc(i.id)}"><i class="ti ti-file-download"></i> Risk assessment PDF</button>` : `<span class="small">The risk assessment PDF is available once QS approves the set-up.</span>`}</div>`;
+  if (isMgmt()) h += `<details style="margin:8px 0"><summary class="small" style="cursor:pointer">Change the inspection interval</summary><div style="margin-top:8px"><select id="newInt">${G.INTERVALS.map(o => `<option value="${o.v}" ${o.v === i.intervalMonths ? 'selected' : ''}>${o.t}</option>`).join('')}</select><div id="intPrev" class="small"></div><button class="btn sm dark" data-act="applyint" data-id="${esc(i.id)}">Apply</button></div></details>`;
+  h += `<p class="section-label" style="margin-top:12px">History</p>` + (ts.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> ${t.kind === 'setup' ? 'Set-up' : 'Inspection'} ${tag(t.status === 'Approved' ? 'ok' : t.status === 'Returned' ? 'bad' : 'wait', t.status || '')}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag(t.overall === 'Pass' ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}<div class="small">${esc(t.engineer || '')}${t.approvedBy ? ' · approved by ' + esc(t.approvedByName || t.approvedBy) : ''}</div></div><div class="btns" style="margin:0"><button class="btn sm" data-view="${esc(t._id)}">View</button>${t.kind === 'periodic' && t.status === 'Approved' && !t.testData ? `<button class="btn sm" data-pdf="report" data-id="${esc(t._id)}"><i class="ti ti-file-download"></i> Report PDF</button>` : ''}</div></div>`).join('') || '<div class="empty-note">No records.</div>');
+  return h + '</div>';
+}
+
+// ═══ REVIEW (QS / Manager / Director) ═══
+function reviewHTML() {
+  const list = S.tests.filter(t => ['Submitted', 'In review'].includes(t.status)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  let h = `<div class="card"><p class="section-label">Waiting for QS</p>` + (list.map(t => `<div class="list-line"><div><b>${esc(t.installationName || '')}</b> <span class="small">${esc(t.siteName || '')}</span><br>${t.kind === 'setup' ? 'Set-up' : 'Inspection'} · ${G.longDate(t.date)} · ${esc(t.engineer || '')} ${tag(t.status === 'In review' ? 'info' : 'wait', t.status)}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag(t.overall === 'Pass' ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}</div><button class="btn sm dark" data-review="${esc(t._id)}">Open</button></div>`).join('') || '<div class="empty-note">Nothing waiting.</div>') + '</div>';
+  if (S.review) { const t = S.tests.find(x => x._id === S.review.id); if (t) h += reviewPanelHTML(t); }
+  return h;
+}
+function evalSnapshot(t) {
+  const rules = rulesFor(t);
+  return (t.planSnapshot || []).map(p => { const rds = (t.readings || {})[p.id] || [], ev = G.evaluatePoint(p, rds, rules); return { p, rds, ev, nd: (t.notDone || {})[p.id], cl: G.classify(p, ev, rules) }; });
+}
+function testSummaryHTML(t) {
+  if (t.kind === 'setup') {
+    const s = t.snapshot || {};
+    const ans = Object.entries(s.answers || {});
+    return `<div class="box info">${esc(typeLabel(s.type))} · ${esc(s.operation || '')} · route: ${esc(s.route || '')} · every ${s.intervalMonths} months ${s.intervalWhy ? '(' + esc(s.intervalWhy) + ')' : ''}</div>` +
+      ((t.flags || []).length ? `<div class="box warn"><h4>Engineer marked as unsure</h4>${t.flags.map(f => '• ' + esc(f)).join('<br>')}</div>` : '') +
+      `<p class="section-label">Hazards</p>${(s.hazards || []).map(z => `<div class="list-line"><div><b>${esc(z.label)}</b> <span class="small">${esc(z.location || '')} · ${esc(z.movement)} · ${esc(z.cls)}${z.mainEdge ? ' · main edge' : ''}</span><div class="small">${esc(G.PROTECTION[z.protection] || z.protection)}${z.evidence ? ' — ' + esc(z.evidence) : ''}${z.verifyBy === 'inferred' ? ' · verified from main edge' : ''}</div></div>${z.protection === 'none' ? tag('bad', 'Not established') : ''}</div>`).join('')}` +
+      `<p class="section-label">Answers</p>${ans.map(([k, a]) => `<div class="list-line"><div class="small"><b>${esc(qLabel(k))}</b><br>${esc(G.ANSWER_STATES[a.st] || a.st || '')}: ${esc(Array.isArray(a.v) ? a.v.join(', ') : (a.v ?? a.why ?? ''))}${a.st === 'confirmed' ? '' : ''}</div></div>`).join('')}` +
+      `<p class="section-label">Devices</p>${(s.devices || []).map(d => `<div class="small">• ${esc(d.name)} (${esc(d.kind || '')})${d.battery && d.battery.intervalMonths ? ' · battery every ' + d.battery.intervalMonths + ' months' : ''}</div>`).join('') || '<div class="small">None.</div>'}` + (s.notes ? `<p class="small">Notes: ${esc(s.notes)}</p>` : '');
+  }
+  const rows = evalSnapshot(t);
+  const th = `<tr><th>Test</th>${METRICS.map(m => `<th>${m.t}</th>`).join('')}<th>Result</th></tr>`;
+  let h = `<div class="box ${t.overall === 'Pass' ? 'good' : t.overall === 'Fail' ? 'bad' : 'warn'}"><h4>${esc(t.overall || '')}</h4>Tester: ${esc((t.tester && t.tester.name) || 'none')} ${t.tester ? '(' + esc(t.tester.serial || '') + ', calibrated until ' + G.shortDate(t.tester.calibrationDue) + ')' : ''} · rules v${esc(String(t.rulesVersion || 'draft'))}${t.rulesApproved ? '' : ' (unapproved)'}${t.setupStatusAtTest !== 'Approved' ? ' · set-up was not approved at the time' : ''}</div>`;
+  if (t.limited) h += `<div class="box warn"><h4>Limited inspection</h4>${esc(t.limited.reason || '')}${t.limited.agreedWith ? '<br>Agreed with: ' + esc(t.limited.agreedWith) : ''}<br><span class="small">${(t.limited.items || []).map(esc).join('; ')}</span></div>`;
+  h += `<p class="section-label">Force tests</p><div style="overflow:auto"><table class="cmp">${th}${rows.map(r => `<tr><td>${esc(r.p.label)}${r.nd ? `<br><span class="small">Not done: ${esc(G.NOT_DONE_STATES[r.nd.st] || r.nd.st)} ${esc(r.nd.note || '')}</span>` : ''}</td>${METRICS.map(m => `<td>${r.rds.map(x => x[m.k] == null ? '–' : G.fmt(x[m.k], m.dp)).join(' / ')}${r.ev.avg && r.ev.required > 1 ? `<br><b>${G.fmt(r.ev.avg[m.k], m.dp)}</b>` : ''}</td>`).join('')}<td>${r.nd ? tag('', 'Not done') : tag(r.ev.state === 'pass' ? 'ok' : r.ev.state === 'fail' ? 'bad' : 'wait', r.ev.state)}${r.cl ? `<br><span class="small">${esc(r.cl)}</span>` : ''}${(t.history || {})[r.p.id] ? `<br><span class="small">${t.history[r.p.id].length} earlier attempt(s) kept</span>` : ''}</td></tr>`).join('')}</table></div>`;
+  const ck = (t.checkSnapshot || []).map(c => { const o = (t.checks || {})[c.id] || {}; return `<div class="small">• ${esc(c.label)}: <b>${esc(o.st || '–')}</b> ${esc(o.note || '')}</div>`; }).join('');
+  const dv = (t.deviceSnapshot || []).map(d => { const o = (t.devices || {})[d.id] || {}; return `<div class="small">• ${esc(d.name)}: <b>${esc(o.result || '–')}</b> ${esc(o.note || '')}</div>`; }).join('');
+  const tk = (t.taskSnapshot || []).map(d => { const o = (t.tasks || {})[d.id] || {}; return `<div class="small">• ${esc(d.text)}: <b>${esc(G.TASK_OUTCOMES[o.outcome] || '–')}</b> ${esc(o.why || '')}</div>`; }).join('');
+  h += `<p class="section-label">Checks and devices</p>${ck}${dv}<p class="section-label">Service checklist</p>${tk}`;
+  if ((t.batteries || []).length) h += `<p class="section-label">Batteries replaced</p>${t.batteries.map(b => `<div class="small">• ${esc(b.deviceName)} on ${G.shortDate(b.replacedOn)}</div>`).join('')}`;
+  if ((t.adjustments || []).length) h += `<p class="section-label">Adjustments</p>${t.adjustments.map(a => `<div class="small">• ${esc(a.what)} (${esc(a.category || 'unsure')}) — ${esc(a.why || '')}</div>`).join('')}`;
+  if ((t.defects || []).length) h += `<p class="section-label">Defects</p>${t.defects.map(d => `<div class="box ${d.severity === 'Unsafe' || d.severity === 'Safety critical' ? 'bad' : 'warn'}"><b>${esc(d.severity)}</b> · ${esc(d.where || '')}<br>${esc(d.text)}<br><span class="small">Do: ${esc(d.rec || '')}</span>${((t.notices || {})[d.id] || {}).sent ? '<br>' + tag('ok', 'Notice sent') : ''}</div>`).join('')}`;
+  if (t.notes) h += `<p class="small">Notes: ${esc(t.notes)}</p>`;
+  return h;
+}
+let QLABELS = null;
+function qLabel(id) { if (!QLABELS) { QLABELS = {}; [...G.SETUP_TOPICS.flatMap(x => x.questions), ...Object.values(G.BRANCH_QUESTIONS).flat()].forEach(q => QLABELS[q.id] = q.label); } return QLABELS[id] || id; }
+function reviewPanelHTML(t) {
+  const inst = S.insts.find(i => i.id === t.installationId);
+  let h = `<div class="card" id="revPanel"><div class="btns" style="margin-top:0"><button class="btn sm" data-close="1">Close</button></div><h2 class="gt-title">${esc(t.installationName || '')}</h2><p class="gt-sub">${esc(t.siteName || '')} · ${t.kind === 'setup' ? 'Set-up' : 'Inspection'} ${G.longDate(t.date)} · ${esc(t.engineer || '')}${t.signOff ? ' · signed off ' + esc(t.signOff.name) : ''}</p>${testSummaryHTML(t)}`;
+  if (t.testData) return h + `<div class="box info">Practice record: it can't be approved. <button class="btn sm" data-act="discard" data-id="${esc(t._id)}">Discard it</button></div></div>`;
+  if (t.photoCount || true) h += `<div id="revPhotos"></div><button class="btn sm" data-act="photos" data-id="${esc(t._id)}"><i class="ti ti-photo"></i> Show photos</button>`;
+  h += `<p class="section-label" style="margin-top:14px">Decision</p>`;
+  if (t.kind === 'periodic' && t.limited) h += `<div class="box warn"><b>Limited inspection.</b> Should this reset the due date?<div class="opt-row"><label class="tick"><input type="radio" name="resetDue" value="reset"> Yes, treat as done: due ${G.monthLabel(G.dueMonthFrom(t.date, inst ? inst.intervalMonths : 6))}</label><label class="tick"><input type="radio" name="resetDue" value="retain" checked> No, keep the existing due date${inst && inst.dueMonth ? ' (' + G.monthLabel(inst.dueMonth) + ')' : ''}</label></div></div>`;
+  else if (t.kind === 'periodic' && inst) h += `<div class="small">Approving sets the next inspection due in <b>${G.monthLabel(G.dueMonthFrom(t.date, inst.intervalMonths))}</b> (counted from the inspection date). It is overdue from the 1st of the month after.</div>`;
+  h += `<label>Note (needed to return it)</label><textarea id="revNote"></textarea><div class="btns"><button class="btn green" data-act="approve" data-id="${esc(t._id)}">Approve</button><button class="btn warn" data-act="return" data-id="${esc(t._id)}">Return to the engineer</button>${t.status === 'Submitted' ? `<button class="btn" data-act="inreview" data-id="${esc(t._id)}">Take for review</button>` : ''}</div></div>`;
+  return h;
+}
+async function saveTestFields(t, fields) { Object.assign(t, fields); return write(setDoc(doc(db, 'gateTests', t._id), clean(fields), { merge: true }), 'Record'); }
+async function approve(id) {
+  const t = S.tests.find(x => x._id === id); if (!t || t.testData) return;
+  const inst = S.insts.find(i => i.id === t.installationId); if (!inst) return alert('The gate or door record is missing.');
+  const now = new Date().toISOString(), by = { status: 'Approved', qsed: true, approvedBy: meEmail(), approvedByName: meName(), approvedAt: now, returnNote: null };
+  let instFields;
+  if (t.kind === 'setup') instFields = { setupStatus: 'Approved', setupApprovedAt: now, setupApprovedBy: meEmail(), setupChangedAfterApproval: false };
+  else {
+    const reset = !t.limited || (document.querySelector('input[name=resetDue]:checked') || {}).value === 'reset';
+    if (t.limited) by.limitedDecision = reset ? 'reset' : 'retained';
+    instFields = reset ? { lastApprovedDate: t.date, lastApprovedTestId: t._id, dueMonth: G.dueMonthFrom(t.date, inst.intervalMonths), basis: 'actual inspection date' } : { lastLimitedDate: t.date };
+  }
+  S.review.busy = true;
+  const ok1 = await saveTestFields(t, by); if (!ok1) { S.review.busy = false; return; }
+  Object.assign(inst, instFields);
+  await write(setDoc(doc(db, 'gateInstallations', inst.id), instFields, { merge: true }), 'Gate or door record');
+  audit(t.kind === 'setup' ? 'setup-approved' : 'inspection-approved', { installationId: inst.id, testId: t._id, ...(instFields.dueMonth ? { dueMonth: instFields.dueMonth } : {}) });
+  S.review = null; banner('Approved.', 'ok'); render();
+}
+async function returnIt(id) {
+  const note = ($('revNote').value || '').trim(); if (!note) return alert('Write a note so the engineer knows what to fix.');
+  const t = S.tests.find(x => x._id === id);
+  await saveTestFields(t, { status: 'Returned', returnNote: note, returnedBy: meEmail(), returnedAt: new Date().toISOString() });
+  audit('returned', { testId: id, installationId: t.installationId }); S.review = null; banner('Returned to the engineer.', 'ok'); render();
+}
+
+// ═══ RULES ═══
+function rulesHTML() {
+  const cur = S.rules.find(r => r.status === 'Approved'), draft = S.rules.find(r => r.status === 'Draft');
+  let h = `<div class="card"><p class="section-label">Test rules</p><div class="box ${cur ? 'good' : 'warn'}">${cur ? `<b>Version ${cur.version} is in force</b> (approved ${G.shortDate(String(cur.approvedAt || '').slice(0, 10))} by ${esc(cur.approvedByName || cur.approvedBy || '')}).` : '<b>No rules have been approved.</b> Engineers can only do practice runs until a version is approved.'}<br><span class="small">${esc(((cur || draft || {}).rules || G.DEFAULT_RULES).source)}</span></div>`;
+  if (!draft) h += `<div class="btns"><button class="btn dark" data-act="newrules">${S.rules.length ? 'Start a new draft from the current version' : 'Create the first draft from the DHF code of practice'}</button></div>`;
+  h += '</div>';
+  if (draft) {
+    const R = draft.rules, L = R.limits;
+    const num = (path, v, lab) => `<div class="fld"><label>${lab}</label><input type="text" inputmode="decimal" data-rule="${path}" value="${esc(v)}" ${isMgmt() ? '' : 'disabled'}></div>`;
+    h += `<div class="card"><p class="section-label">Draft version ${draft.version}</p><p class="small">Edit the numbers, then have the review list checked. Approval is for Directors.</p><div class="fgrid">${num('limits.fdCrush', L.fdCrush, 'Fd: crush, shear, draw-in (N)')}${num('limits.fdImpact', L.fdImpact, 'Fd: impact only (N)')}${num('limits.td', L.td, 'Td (s)')}${num('limits.fs', L.fs, 'Fs (N)')}${num('limits.fe', L.fe, 'Fe (N)')}${num('repeat.trigger', R.repeat.trigger, 'Repeat when over this share of a limit (0.9 = 90%)')}${num('repeat.total', R.repeat.total, 'Readings when repeating')}</div>
+     <p class="section-label">Technical review: confirm each point</p>${R.reviewList.map((x, k) => `<label class="tick" style="margin-bottom:8px"><input type="checkbox" class="rvchk" ${draft.checked && draft.checked[k] ? 'checked' : ''} data-k="${k}"> ${esc(x)}</label>`).join('')}
+     <details class="small"><summary style="cursor:pointer">Test methods, classification and the other tables in this version</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(JSON.stringify({ testMethods: R.testMethods, classification: R.classification, dependencies: R.dependencies }, null, 1))}</pre></details>
+     <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}" ${isMgmt() ? '' : 'disabled'}>Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only a Director can approve the rules.</p>'}</div>`;
+  }
+  h += `<div class="card"><p class="section-label">Versions</p>${S.rules.map(r => `<div class="list-line"><div><b>Version ${r.version}</b> ${tag(r.status === 'Approved' ? 'ok' : r.status === 'Draft' ? 'wait' : '', r.status)}<div class="small">Fd ${r.rules.limits.fdCrush}/${r.rules.limits.fdImpact} N · Td ${r.rules.limits.td} s · Fs ${r.rules.limits.fs} N · Fe ${r.rules.limits.fe} N</div></div></div>`).join('') || '<div class="empty-note">None yet.</div>'}</div>`;
+  return h;
+}
+async function newRules() {
+  const base = (S.rules.find(r => r.status === 'Approved') || {}).rules || G.DEFAULT_RULES;
+  const v = (S.rules.reduce((m, r) => Math.max(m, r.version || 0), 0)) + 1, id = 'v' + v;
+  const rec = { version: v, status: 'Draft', rules: G.clone(base), createdBy: meEmail(), createdAt: new Date().toISOString(), checked: {} };
+  if (await write(setDoc(doc(db, 'gateRules', id), clean(rec)), 'Rules draft')) { S.rules.unshift({ id, ...rec }); audit('rules-draft', { version: v }); render(); }
+}
+function readDraftForm(d) {
+  document.querySelectorAll('[data-rule]').forEach(el => { const [a, b] = el.dataset.rule.split('.'); const n = Number(el.value); if (!isNaN(n) && el.value !== '') d.rules[a][b] = n; });
+  d.checked = {}; document.querySelectorAll('.rvchk').forEach(c => { d.checked[c.dataset.k] = c.checked; });
+}
+async function saveDraft(id, silent) { const d = S.rules.find(r => r.id === id); readDraftForm(d); const ok = await write(setDoc(doc(db, 'gateRules', id), clean({ rules: d.rules, checked: d.checked }), { merge: true }), 'Rules draft'); if (ok && !silent) banner('Draft saved.', 'ok'); return ok; }
+async function approveRules(id) {
+  const d = S.rules.find(r => r.id === id); readDraftForm(d);
+  if (!d.rules.reviewList.every((_, k) => d.checked[k])) return alert('Tick every point on the technical review list first.');
+  if (!confirm(`Approve version ${d.version}? Engineers will use it for real force tests straight away.`)) return;
+  const now = new Date().toISOString();
+  for (const o of S.rules.filter(r => r.status === 'Approved')) { o.status = 'Superseded'; await write(setDoc(doc(db, 'gateRules', o.id), { status: 'Superseded' }, { merge: true }), 'Rules'); }
+  Object.assign(d, { status: 'Approved', approvedAt: now, approvedBy: meEmail(), approvedByName: meName() });
+  await write(setDoc(doc(db, 'gateRules', id), clean(d), { merge: true }), 'Rules approval');
+  audit('rules-approved', { version: d.version }); banner(`Version ${d.version} approved.`, 'ok'); render();
+}
+
+// ═══ TESTERS ═══
+function testersHTML() {
+  return `<div class="card"><p class="section-label">Force testers</p>${S.testers.map(t => { const ok = t.calibrationDue && t.calibrationDue >= G.todayISO(); return `<div class="list-line"><div><b>${esc(t.name)}</b> <span class="small">serial ${esc(t.serial || '')}</span><div class="small">Calibrated ${G.shortDate(t.calibrationDate)} · due ${G.shortDate(t.calibrationDue)}</div></div><div>${ok ? tag('ok', 'In calibration') : tag('over', 'Out of calibration')}${t.active === false ? ' ' + tag('', 'Retired') : ''} <button class="btn sm" data-act="edittester" data-id="${esc(t.id)}">Edit</button></div></div>`; }).join('') || '<div class="empty-note">No testers yet. Engineers can only do practice runs until one is added.</div>'}
+  <p class="section-label" style="margin-top:14px" id="tfTitle">Add a tester</p><div class="fgrid"><div class="fld"><label>Name / model</label><input type="text" id="tfName"></div><div class="fld"><label>Serial number</label><input type="text" id="tfSerial"></div><div class="fld"><label>Calibrated on</label><input type="date" id="tfCal"></div><div class="fld"><label>Calibration runs out</label><input type="date" id="tfDue"></div></div><label class="tick"><input type="checkbox" id="tfActive" checked> In use</label><input type="hidden" id="tfId"><div class="btns"><button class="btn dark" data-act="savetester">Save tester</button></div></div>`;
+}
+async function saveTester() {
+  const name = $('tfName').value.trim(), serial = $('tfSerial').value.trim(), cal = $('tfCal').value, due = $('tfDue').value;
+  if (!name || !serial || !due) return alert('Name, serial number and the calibration end date are needed.');
+  const id = $('tfId').value || serial.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
+  const rec = { name, serial, calibrationDate: cal, calibrationDue: due, active: $('tfActive').checked, updatedBy: meEmail() };
+  if (await write(setDoc(doc(db, 'gateTesters', id), rec, { merge: true }), 'Tester')) { const i = S.testers.findIndex(t => t.id === id); if (i >= 0) S.testers[i] = { id, ...rec }; else S.testers.push({ id, ...rec }); audit('tester-saved', { tester: id }); render(); }
+}
+
+// ═══ NOTICES ═══
+function noticesHTML() {
+  const list = [...S.notices].sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || '')));
+  return `<div class="card"><p class="section-label">Unsafe notices</p>${list.map(n => `<div class="hz"><b>${esc(n.installationName || '')}</b> <span class="small">${esc(n.siteName || '')}</span> ${n.sent ? tag('ok', 'Sent') : tag('over', 'NOT sent')}${n.testData ? ' ' + tag('dark', 'Practice') : ''}<div>${esc(n.text || '')}</div><div class="small">${esc(n.where || '')} · raised by ${esc(n.raisedBy || '')}${n.sentAt ? ' · sent ' + G.shortDate(String(n.sentAt).slice(0, 10)) : ''}${n.sendError ? '<br>Last problem: ' + esc(n.sendError) : ''}</div><div class="btns">${n.sent ? '' : `<button class="btn red sm" data-act="resend" data-id="${esc(n.id)}">Send it now</button>`}<button class="btn sm" data-pdf="notice" data-id="${esc(n.id)}"><i class="ti ti-file-download"></i> Notice PDF</button></div></div>`).join('') || '<div class="empty-note">No notices.</div>'}</div>`;
+}
+const MS_WINDOW_MS = 2 * 60000;
+function getToken() {
+  const t = storedToken(); if (t) return Promise.resolve(t);
+  let timer; const p = reauthenticateWithPopup(auth.currentUser, msProvider); p.then(keepToken, () => {});
+  const late = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('The Microsoft window did not finish.'), { code: 'x' })), MS_WINDOW_MS); });
+  return Promise.race([p, late]).then(() => { clearTimeout(timer); const x = storedToken(); if (!x) throw new Error('Microsoft did not give the app permission to send email.'); return x; }, err => { clearTimeout(timer); throw new Error(isVaError(err) ? SWS.SW_VA_MSG : (err.message || 'Microsoft sign-in failed.')); });
+}
+async function resend(id) {
+  const n = S.notices.find(x => x.id === id); if (!n) return;
+  if (viewingAs()) return alert(SWS.SW_VA_MSG);
+  const tokenP = getToken();
+  try {
+    const token = await tokenP, st = 'font-family:Arial,sans-serif;font-size:14px';
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { subject: `${n.testData ? 'TEST — ' : ''}UNSAFE: ${n.installationName}, ${n.siteName}`, body: { contentType: 'HTML', content: `<div style="${st}"><p style="color:#D0222A;font-weight:bold;font-size:18px">UNSAFE: TAKE OUT OF USE</p><p><b>${esc(n.installationName)}</b>, ${esc(n.siteName)}</p><p>${esc(n.text)}<br>${esc(n.where || '')}<br>Recommended: ${esc(n.rec || '')}</p><p>Raised by ${esc(n.raisedBy)}. Re-sent by ${esc(meName())}.</p></div>` }, toRecipients: (n.testData ? [meEmail()] : n.to).map(a => ({ emailAddress: { address: a } })), importance: 'high' }, saveToSentItems: true }) });
+    if (!(res.status === 202 || res.ok)) throw new Error('Microsoft said ' + res.status + '.');
+    const at = new Date().toISOString(); Object.assign(n, { sent: true, sentAt: at, sendError: null });
+    await write(setDoc(doc(db, 'gateNotices', id), { sent: true, sentAt: at, sentBy: meEmail(), sendError: null }, { merge: true }), 'Notice');
+    audit('unsafe-notice-sent', { testId: n.testId }); banner('Notice sent.', 'ok');
+  } catch (e) { n.sendError = e.message; await write(setDoc(doc(db, 'gateNotices', id), { sendError: e.message, attempts: (n.attempts || 1) + 1 }, { merge: true }), 'Notice'); banner('It did not send: ' + e.message, 'wait'); }
+  render();
+}
+
+// ═══ CHECKLIST IDEAS, AUDIT ═══
+function proposalsHTML() {
+  return `<div class="card"><p class="section-label">Checklist ideas from engineers</p>${S.proposals.filter(p => p.status === 'Open').map(p => `<div class="list-line"><div><b>${esc(p.installationName || '')}</b><div>${esc(p.text)}</div><div class="small">${esc(p.by)}</div></div><div class="btns" style="margin:0"><button class="btn sm green" data-act="applyprop" data-id="${esc(p.id)}">Add to checklist</button><button class="btn sm" data-act="dismissprop" data-id="${esc(p.id)}">Dismiss</button></div></div>`).join('') || '<div class="empty-note">Nothing open.</div>'}</div>`;
+}
+async function propAct(id, apply) {
+  const p = S.proposals.find(x => x.id === id); if (!p) return;
+  if (apply) { const i = S.insts.find(x => x.id === p.installationId); if (i) { i.tasks = [...(i.tasks || []), { id: G.newId('t'), text: p.text }]; await write(setDoc(doc(db, 'gateInstallations', i.id), { tasks: clean(i.tasks) }, { merge: true }), 'Checklist'); } }
+  p.status = apply ? 'Applied' : 'Dismissed'; await write(setDoc(doc(db, 'gateProposals', id), { status: p.status, decidedBy: meEmail() }, { merge: true }), 'Proposal'); audit('proposal-' + p.status.toLowerCase(), { installationId: p.installationId }); render();
+}
+function auditHTML() {
+  return `<div class="card"><p class="section-label">Audit (latest 200)</p><div style="overflow:auto"><table class="cmp"><tr><th>When</th><th>Who</th><th>What</th><th>Detail</th></tr>${S.audit.map(a => `<tr><td>${esc(String(a.atISO || '').replace('T', ' ').slice(0, 16))}</td><td>${esc(a.by)}</td><td>${esc(a.action)}</td><td>${esc([a.siteRef, a.installationId, a.testId, a.version, a.dueMonth].filter(Boolean).join(' · '))}</td></tr>`).join('')}</table></div></div>`;
+}
+
+// ═══ PDFs (jsPDF, client side; footer with company, ref and Page X of Y) ═══
+const lat = s => String(s ?? '').replace(/[^\x20-\x7E\xA0-\xFF–—‘’“”]/g, c => ({ '▲': '^', '›': '>', '•': '-' }[c] || '?'));
+async function logoData() {
+  try { const r = await fetch('sw-logo.png'); const b = await r.blob(); const url = URL.createObjectURL(b); const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); return { d: c.toDataURL('image/png'), w: img.width, h: img.height }; } catch (e) { return null; }
+}
+async function newPdf(title, ref) {
+  if (!window.jspdf) { alert('The PDF tool did not load. Check your signal and try again.'); return null; }
+  const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+  const P = { pdf, y: 40, x: 40, w: 515, ref, title };
+  const logo = await logoData();
+  if (logo) { const h = 34, w = logo.w * h / logo.h; try { pdf.addImage(logo.d, 'PNG', 40, 30, w, h); } catch (e) {} P.y = 76; }
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(17); pdf.text(lat(title), 40, P.y); P.y += 8;
+  pdf.setDrawColor(208, 34, 42); pdf.setLineWidth(1.5); pdf.line(40, P.y, 555, P.y); P.y += 16;
+  P.ens = h => { if (P.y + h > 790) { pdf.addPage(); P.y = 50; } };
+  P.h = t => { P.ens(30); P.y += 6; pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12); pdf.setTextColor(208, 34, 42); pdf.text(lat(t).toUpperCase(), 40, P.y); pdf.setTextColor(26, 26, 26); P.y += 14; };
+  P.p = (t, o = {}) => { pdf.setFont('helvetica', o.bold ? 'bold' : 'normal'); pdf.setFontSize(o.size || 10); const ls = pdf.splitTextToSize(lat(t), o.w || 515); ls.forEach(l => { P.ens(13); pdf.text(l, o.x || 40, P.y); P.y += 12.5; }); };
+  P.kv = (k, v) => { P.ens(14); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.text(lat(k), 40, P.y); pdf.setFont('helvetica', 'normal'); const ls = pdf.splitTextToSize(lat(v || '-'), 380); ls.forEach((l, i) => { if (i) P.ens(13); pdf.text(l, 165, P.y); if (i < ls.length - 1) P.y += 12.5; }); P.y += 14; };
+  P.table = (heads, rows, ws) => {
+    const draw = (cells, bold) => {
+      pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(8.5);
+      const wrapped = cells.map((c, i) => pdf.splitTextToSize(lat(c), ws[i] - 6)), lines = Math.max(...wrapped.map(a => a.length)), hgt = lines * 10.5 + 6;
+      P.ens(hgt + 2);
+      if (bold) { pdf.setFillColor(242, 241, 238); pdf.rect(40, P.y - 9, 515, hgt, 'F'); }
+      let x = 40; wrapped.forEach((a, i) => { a.forEach((l, k) => pdf.text(l, x + 3, P.y + k * 10.5)); x += ws[i]; });
+      P.y += hgt; pdf.setDrawColor(220, 220, 220); pdf.setLineWidth(.5); pdf.line(40, P.y - 9, 555, P.y - 9);
+    };
+    draw(heads, true); rows.forEach(r => draw(r, false)); P.y += 4;
+  };
+  return P;
+}
+function finishPdf(P, name) {
+  const pdf = P.pdf, n = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { pdf.setPage(i); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(120, 120, 120); pdf.text(lat(`Simpson & Wood  |  ${P.ref}`), 40, 820); pdf.text(`Page ${i} of ${n}`, 555, 820, { align: 'right' }); }
+  pdf.save(name);
+}
+function signBlock(P, label, email, name, at) {
+  P.ens(80); P.p(label, { bold: true });
+  const sg = S.sigs[String(email || '').toLowerCase()];
+  if (sg && sg.image) { try { P.pdf.addImage(sg.image, /^data:image\/png/i.test(sg.image) ? 'PNG' : 'JPEG', 40, P.y - 4, 110, 40); P.y += 42; } catch (e) {} }
+  P.p(`${name || email || ''}${at ? ' on ' + G.longDate(String(at).slice(0, 10)) : ''}`);
+}
+async function pdfRisk(i) {
+  const P = await newPdf('Gate / Door Risk Assessment', `RA-${i.siteRef}-${String(i.id).slice(-4).toUpperCase()}`); if (!P) return;
+  P.kv('Site', `${i.siteName} (${i.siteRef})`); P.kv('Gate / door', i.name); P.kv('Type', typeLabel(i.type) + ' - ' + (i.operation || 'Powered')); P.kv('Location', i.location); P.kv('Inspection interval', `Every ${i.intervalMonths} months${i.intervalWhy ? ' (' + i.intervalWhy + ')' : ''}`);
+  P.kv('Set-up approved', G.longDate(String(i.setupApprovedAt || '').slice(0, 10)));
+  P.h('Hazards and protection');
+  P.table(['Hazard', 'Where', 'Kind', 'Protection', 'Evidence'], (i.hazards || []).map(z => [z.label, z.location || '', z.cls + (z.mainEdge ? ' (main edge)' : ''), G.PROTECTION[z.protection] || z.protection, z.evidence || '']), [150, 80, 85, 100, 100]);
+  P.h('What we know about it');
+  [...G.SETUP_TOPICS.flatMap(t => t.questions), ...(G.BRANCH_QUESTIONS[(G.TYPES[i.type] || {}).branch] || [])].forEach(q => { const a = (i.answers || {})[q.id]; if (a) P.table([q.label.slice(0, 90), ''], [[G.ANSWER_STATES[a.st] || '', Array.isArray(a.v) ? a.v.join(', ') : (a.v ?? a.why ?? '')]], [300, 215]); });
+  P.h('Devices'); P.table(['Device', 'Kind', 'Where', 'Battery'], (i.devices || []).filter(d => !d.retired).map(d => [d.name, d.kind || '', d.location || '', d.battery && d.battery.intervalMonths ? `every ${d.battery.intervalMonths} months` : '']), [150, 120, 130, 115]);
+  P.h('Service checklist'); (i.tasks || []).forEach(t => P.p('- ' + t.text));
+  signBlock(P, 'Approved by', i.setupApprovedBy, (S.staff[i.setupApprovedBy] || {}).name || i.setupApprovedBy, i.setupApprovedAt);
+  finishPdf(P, `Risk assessment ${i.siteRef} ${i.name}.pdf`.replace(/[\\/:*?"<>|]/g, '-'));
+}
+async function pdfReport(t) {
+  const i = S.insts.find(x => x.id === t.installationId) || {};
+  const P = await newPdf('Gate / Door Periodic Inspection and Test Report', G.reportRef(i, t)); if (!P) return;
+  P.kv('Site', `${t.siteName} (${t.siteRef})`); P.kv('Gate / door', `${t.installationName} - ${typeLabel(t.installationType || i.type)}`); P.kv('Inspection date', G.longDate(t.date)); P.kv('Inspected by', t.engineer);
+  P.kv('Force tester', t.tester ? `${t.tester.name}, serial ${t.tester.serial}, calibrated until ${G.shortDate(t.tester.calibrationDue)}` : 'Not used');
+  P.kv('Test rules', `Version ${t.rulesVersion || '-'} (${rulesFor(t).source})`); P.kv('Overall', t.overall || '');
+  if (t.limited) { P.h('Limited inspection'); P.p(t.limited.reason || ''); if (t.limited.agreedWith) P.p('Agreed with: ' + t.limited.agreedWith); (t.limited.items || []).forEach(x => P.p('- ' + x, { size: 9 })); }
+  const rows = evalSnapshot(t);
+  P.h('Force tests (every reading shown; average where three were taken)');
+  P.table(['Test', 'Fd (N)', 'Td (s)', 'Fs (N)', 'Fe (N)', 'Result'], rows.map(r => [r.p.label, ...METRICS.map(m => r.rds.map(x => x[m.k] == null ? '-' : G.fmt(x[m.k], m.dp)).join(' / ') + (r.ev.avg && r.ev.required > 1 ? ` (avg ${G.fmt(r.ev.avg[m.k], m.dp)})` : '')), r.nd ? 'Not done: ' + (G.NOT_DONE_STATES[r.nd.st] || '') : ((r.ev.state === 'pass' ? 'Pass' : r.ev.state === 'fail' ? 'Over limit' : r.ev.state === 'review' ? 'Review' : 'Incomplete') + (r.cl ? ' - ' + r.cl.split(':')[0] : ''))]), [165, 62, 55, 62, 62, 109]);
+  const L = rulesFor(t).limits; P.p(`Limits: Fd ${L.fdCrush} N (crush, shear, draw-in) / ${L.fdImpact} N (impact only), Td ${L.td} s, Fs ${L.fs} N, Fe ${L.fe} N.`, { size: 8.5 });
+  P.h('Condition checks'); (t.checkSnapshot || []).forEach(c => { const o = (t.checks || {})[c.id] || {}; P.p(`- ${c.label}: ${o.st || '-'}${o.note ? ' (' + o.note + ')' : ''}`, { size: 9 }); });
+  P.h('Devices'); (t.deviceSnapshot || []).forEach(d => { const o = (t.devices || {})[d.id] || {}; P.p(`- ${d.name}: ${o.result || '-'}${o.note ? ' (' + o.note + ')' : ''}`, { size: 9 }); });
+  P.h('Service checklist'); (t.taskSnapshot || []).forEach(d => { const o = (t.tasks || {})[d.id] || {}; P.p(`- ${d.text}: ${G.TASK_OUTCOMES[o.outcome] || '-'}${o.why ? ' (' + o.why + ')' : ''}`, { size: 9 }); });
+  if ((t.batteries || []).length) { P.h('Batteries replaced'); t.batteries.forEach(b => P.p(`- ${b.deviceName} on ${G.shortDate(b.replacedOn)}`, { size: 9 })); }
+  if ((t.adjustments || []).length) { P.h('Adjustments'); t.adjustments.forEach(a => P.p(`- ${a.what} (${a.category || 'not sure'}); ${a.why || ''}`, { size: 9 })); }
+  P.h('Defects'); if (!(t.defects || []).length) P.p('None recorded.'); (t.defects || []).forEach(d => P.p(`- [${d.severity}] ${d.where ? d.where + ': ' : ''}${d.text}. Recommended: ${d.rec || '-'}`, { size: 9 }));
+  if (t.notes) { P.h('Notes'); P.p(t.notes); }
+  signBlock(P, 'Inspected by', t.engineerEmail, t.signOff ? t.signOff.name : t.engineer, t.signOff && t.signOff.at);
+  signBlock(P, 'Approved by (QS)', t.approvedBy, t.approvedByName || t.approvedBy, t.approvedAt);
+  finishPdf(P, `Inspection report ${t.siteRef} ${t.installationName} ${t.date}.pdf`.replace(/[\\/:*?"<>|]/g, '-'));
+}
+async function pdfNotice(n) {
+  const P = await newPdf('Unsafe Gate / Door Notice', `NOTICE-${n.siteRef}-${String(n.id).slice(-6).toUpperCase()}`); if (!P) return;
+  P.p('UNSAFE: THIS EQUIPMENT SHOULD BE TAKEN OUT OF USE', { bold: true, size: 13 });
+  P.kv('Site', `${n.siteName} (${n.siteRef})`); P.kv('Gate / door', n.installationName); P.kv('Where', n.where); P.kv('Raised by', n.raisedBy); P.kv('Emailed', n.sent ? 'Yes, ' + G.shortDate(String(n.sentAt).slice(0, 10)) : 'Not yet sent');
+  P.h('Defect'); P.p(n.text); P.h('Recommended action'); P.p(n.rec || '-');
+  P.p('This notice was raised in the field and has not been checked by QS.', { size: 9 });
+  finishPdf(P, `Unsafe notice ${n.siteRef} ${n.installationName}.pdf`.replace(/[\\/:*?"<>|]/g, '-'));
+}
+function viewerHTML() {
+  const t = S.tests.find(x => x._id === S.viewT); if (!t) return '';
+  return `<div class="card"><div class="btns" style="margin-top:0"><button class="btn sm" data-closeview="1">Close</button></div><h2 class="gt-title">${esc(t.installationName || '')}</h2><p class="gt-sub">${t.kind === 'setup' ? 'Set-up' : 'Inspection'} ${G.longDate(t.date)} · ${esc(t.engineer || '')} · ${esc(t.status || '')}</p>${testSummaryHTML(t)}<div id="revPhotos"></div><button class="btn sm" data-act="photos" data-id="${esc(t._id)}"><i class="ti ti-photo"></i> Show photos</button></div>`;
+}
+
+// ═══ Events ═══
+document.addEventListener('input', e => {
+  if (e.target.id === 'regQ') { S.q = e.target.value; render(); const r = $('regQ'); r.focus(); r.setSelectionRange(r.value.length, r.value.length); }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'newInt') { const i = S.insts.find(x => x.id === S.sel); $('intPrev').textContent = i.lastApprovedDate ? `Next due would become ${G.monthLabel(G.dueMonthFrom(i.lastApprovedDate, Number(e.target.value)))} (now ${i.dueMonth ? G.monthLabel(i.dueMonth) : 'none'}).` : 'No approved inspection yet, so no due date to change.'; }
+});
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab],[data-filter],[data-open],[data-close],[data-review],[data-view],[data-closeview],[data-pdf],[data-act]'); if (!t) return;
+  const d = t.dataset;
+  if (d.tab) { S.tab = d.tab; S.review = null; return render(); }
+  if (d.filter) { S.filter = d.filter; return render(); }
+  if (d.open) { S.sel = d.open; render(); const p = $('instPanel'); if (p) p.scrollIntoView({ behavior: 'smooth' }); return; }
+  if (d.close) { S.sel = null; S.review = null; return render(); }
+  if (d.closeview) { S.viewT = null; return render(); }
+  if (d.review) { S.review = { id: d.review }; render(); const p = $('revPanel'); if (p) p.scrollIntoView({ behavior: 'smooth' }); return; }
+  if (d.view) { S.viewT = d.view; render(); return; }
+  if (d.pdf) {
+    if (d.pdf === 'risk') return pdfRisk(S.insts.find(x => x.id === d.id));
+    if (d.pdf === 'report') return pdfReport(S.tests.find(x => x._id === d.id));
+    if (d.pdf === 'notice') return pdfNotice(S.notices.find(x => x.id === d.id));
+  }
+  switch (d.act) {
+    case 'approve': return approve(d.id);
+    case 'return': return returnIt(d.id);
+    case 'inreview': { const tt = S.tests.find(x => x._id === d.id); await saveTestFields(tt, { status: 'In review', reviewer: meEmail() }); audit('in-review', { testId: d.id }); return render(); }
+    case 'discard': { if (!confirm('Discard this practice record?')) return; const tt = S.tests.find(x => x._id === d.id); await saveTestFields(tt, { deletedFlag: true, deletedBy: meEmail(), deletedAt: new Date().toISOString() }); S.tests = S.tests.filter(x => x._id !== d.id); S.review = null; return render(); }
+    case 'photos': { const box = $('revPhotos'); box.innerHTML = 'Loading…'; try { const s = await getDocs(query(collection(db, 'gatePhotos'), where('testId', '==', d.id))); box.innerHTML = `<div class="ph-grid">${s.docs.map(x => x.data()).sort((a, b) => a.n - b.n).map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('') || '<span class="small">No photos.</span>'}</div>`; } catch (er) { box.textContent = 'Photos did not load.'; } return; }
+    case 'applyint': { const i = S.insts.find(x => x.id === d.id), v = Number($('newInt').value); const f = { intervalMonths: v }; if (i.lastApprovedDate) f.dueMonth = G.dueMonthFrom(i.lastApprovedDate, v); Object.assign(i, f); await write(setDoc(doc(db, 'gateInstallations', i.id), f, { merge: true }), 'Interval'); audit('interval-changed', { installationId: i.id, ...(f.dueMonth ? { dueMonth: f.dueMonth } : {}) }); return render(); }
+    case 'newrules': return newRules();
+    case 'savedraft': return saveDraft(d.id);
+    case 'approverules': return approveRules(d.id);
+    case 'edittester': { const x = S.testers.find(q => q.id === d.id); $('tfName').value = x.name; $('tfSerial').value = x.serial || ''; $('tfCal').value = x.calibrationDate || ''; $('tfDue').value = x.calibrationDue || ''; $('tfActive').checked = x.active !== false; $('tfId').value = x.id; $('tfTitle').scrollIntoView({ behavior: 'smooth' }); return; }
+    case 'savetester': return saveTester();
+    case 'resend': return resend(d.id);
+    case 'applyprop': return propAct(d.id, true);
+    case 'dismissprop': return propAct(d.id, false);
+  }
+});
+// registerHTML shows a read-only record viewer too
+const _reg = registerHTML; registerHTML = function () { return _reg() + (S.viewT ? viewerHTML() : ''); };
+
+const NEWS_ALL = ['<b>Gates and doors reports</b> is new: the register, QS review, test rules, testers and unsafe notices.'];
+const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
+const HELP = [
+  { tab: 'Register', q: 'What do the due dates mean?', a: '<p>Due is a calendar month. An inspection in November on a six-month cycle is due in May, and is <b>overdue from 1 June</b>. The date comes from the approved inspection date.</p>' },
+  { tab: 'To review', q: 'How do I approve an inspection?', a: '<p>Open it, check the readings, defects and photos, then <b>Approve</b> or <b>Return</b> with a note. A limited inspection asks whether it should reset the due date.</p>' },
+  { tab: 'Rules', q: 'Why can\'t engineers do real force tests?', a: '<p>Until a Director approves a version of the rules, force tests are saved as practice only.</p>' },
+  { tab: 'Notices', q: 'A notice says NOT sent', a: '<p>Tap <b>Send it now</b>. A Microsoft window opens: finish it. It only says Sent when Microsoft accepts it.</p>' },
+  { q: 'Where are the PDFs?', a: '<p>Open a gate on the Register. The risk assessment and report PDFs appear once QS has approved them. Notices have their own PDF.</p>' }
+];
+</script>
+</body>
+</html>
