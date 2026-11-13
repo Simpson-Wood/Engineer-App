@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Simpson &amp; Wood — Christmas party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  /* v1.0 (13 Nov 2026): colours, header, tabs, cards, fields and buttons come
+     from sw-design.css (design guide). Only what's particular to this page is here. */
+
+  /* ---- sign-in ---- */
+  #signinScreen{display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  .ms-btn{display:flex; align-items:center; gap:10px; background:var(--ink); color:var(--card); border:none; padding:13px 22px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;}
+  #signinErr{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+
+  /* ---- shell ---- */
+  #appRoot{display:none;}
+  .tabs[hidden]{display:none;}
+
+  /* ---- the invite (festive touch) ---- */
+  .invite{position:relative; overflow:hidden; background:var(--ink); color:var(--card); border:0; padding:28px 26px 26px;}
+  .invite::before{content:""; position:absolute; inset:0; pointer-events:none; opacity:.55;
+    background-image:
+      radial-gradient(2px 2px at 20px 30px, var(--card) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 90px 80px, var(--card) 50%, transparent 51%),
+      radial-gradient(2.5px 2.5px at 150px 20px, var(--card) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 210px 110px, var(--card) 50%, transparent 51%),
+      radial-gradient(2px 2px at 60px 140px, var(--card) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 260px 60px, var(--card) 50%, transparent 51%);
+    background-size:280px 160px; animation:snow 14s linear infinite;}
+  @keyframes snow{from{background-position:0 0;} to{background-position:40px 160px;}}
+  @media (prefers-reduced-motion:reduce){ .invite::before{animation:none;} }
+  .invite::after{content:""; position:absolute; left:0; right:0; bottom:0; height:6px;
+    background:repeating-linear-gradient(90deg, var(--red) 0 18px, var(--card) 18px 24px, var(--green) 24px 42px, var(--card) 42px 48px);}
+  .invite > *{position:relative;}
+  .invite .kick{display:inline-flex; align-items:center; gap:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.12em; font-size:14px; color:var(--hdr-link);}
+  .invite .kick i{font-size:18px; color:var(--card);}
+  .invite h2{font-size:40px; line-height:1; font-weight:700; margin:10px 0 6px; text-transform:none; letter-spacing:0;}
+  .invite .sub{color:var(--line); font-size:16px; margin:0 0 20px;}
+  .facts{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;}
+  .fact{background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:12px 14px;}
+  .fact .k{display:flex; align-items:center; gap:6px; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--hdr-muted);}
+  .fact .k i{font-size:16px; color:var(--hdr-link);}
+  .fact .v{font-family:'Barlow Condensed',sans-serif; font-size:21px; font-weight:700; margin-top:4px; line-height:1.15;}
+  .fact .v small{display:block; font-family:'Barlow',sans-serif; font-size:13.5px; font-weight:500; color:var(--line); margin-top:2px;}
+  .fact a{color:var(--card);}
+  .byline{margin-top:16px; font-size:14px; color:var(--line); display:flex; align-items:center; gap:8px;}
+  .byline i{color:var(--hdr-link); font-size:17px;}
+
+  /* ---- reply form ---- */
+  #answerSeg button{display:flex; align-items:center; justify-content:center; gap:7px; min-height:48px;}
+  #answerSeg button i{font-size:18px;}
+  .diet{border-top:1px solid var(--line); padding-top:14px; margin-top:14px;}
+  .diet h3{font-size:17px; font-weight:700; margin:0 0 10px; display:flex; align-items:center; gap:7px;}
+  .diet h3 i{color:var(--red); font-size:18px;}
+  .ticks{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-bottom:12px;}
+  .ticks .tick{align-items:center; border:1.5px solid var(--field); border-radius:8px; padding:10px 12px; min-height:44px; font-weight:500; user-select:none;}
+  .ticks .tick:has(input:checked){border-color:var(--red); background:var(--red-tint);}
+  .sum-line{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14.5px;}
+  .sum-line:last-of-type{border-bottom:0;}
+  .sum-line .k{color:var(--grey);}
+  .sum-line .v{font-weight:600; text-align:right;}
+  .small{font-size:13px; color:var(--grey);}
+  .status{display:flex; gap:8px; align-items:center;}
+
+  /* ---- responses ---- */
+  .page-h{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .stats{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+  .stat .n{font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; line-height:1;}
+  .stat .l{font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; text-transform:uppercase; color:var(--grey); letter-spacing:.04em; margin-top:4px;}
+  .stat.main{border-color:var(--red);}
+  .stat.main .n{color:var(--red);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .dietchips .chip{cursor:default; color:var(--ink);}
+  table.list{width:100%; border-collapse:collapse; font-size:14.5px;}
+  table.list th{text-align:left; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; text-transform:uppercase; color:var(--grey); letter-spacing:.04em; padding:8px 10px; border-bottom:1.5px solid var(--line);}
+  table.list td{padding:10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  table.list tr.plus td{background:var(--soft);}
+  table.list tr.plus td:first-child{padding-left:28px; color:var(--grey);}
+  .muted{color:var(--grey-2);}
+
+  @media (max-width:1000px){ .stats{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  @media (max-width:900px){ .facts{grid-template-columns:1fr;} }
+  @media (max-width:640px){
+    .card.invite{padding:22px 16px 20px;}
+    .invite h2{font-size:32px;}
+    #answerSeg{flex-direction:column;}
+    #answerSeg button{justify-content:flex-start; padding-left:14px;}
+    #answerSeg button + button{border-left:0; border-top:1.5px solid var(--field);}
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .stat .n{font-size:38px;}
+    table.list thead{display:none;}
+    table.list, table.list tbody, table.list tr, table.list td{display:block; width:100%;}
+    table.list tr{border-bottom:1px solid var(--line); padding:8px 0;}
+    table.list td{border:0; padding:3px 4px;}
+    table.list td[data-l]::before{content:attr(data-l) ": "; color:var(--grey); font-size:12.5px;}
+    table.list tr.plus td:first-child{padding-left:14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- SIGN-IN SCREEN -->
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson &amp; Wood">
+  <h2>Christmas party</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account to reply.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html" title="Home">
+      <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
+      <div>
+        <h1>Christmas party</h1>
+        <p id="versionLabel">v1.0</p>
+      </div>
+    </a>
+    <div class="right">
+      <div class="who">
+        <div class="name" id="whoName">—</div>
+        <button id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <nav class="tabs" id="tabsBar" hidden>
+    <button class="tab active" data-tab="reply"><i class="ti ti-christmas-tree"></i> My reply</button>
+    <button class="tab" data-tab="responses"><i class="ti ti-users"></i> Responses <span class="count" id="tabCount" hidden></span></button>
+  </nav>
+
+  <main class="wrap">
+    <!-- ===== MY REPLY ===== -->
+    <section id="view-reply">
+      <div class="layout">
+        <div>
+          <div class="card invite">
+            <div class="kick"><i class="ti ti-snowflake"></i>You're invited</div>
+            <h2>Simpson &amp; Wood Christmas party</h2>
+            <p class="sub">Come and celebrate the end of the year with the team.</p>
+            <div class="facts">
+              <div class="fact"><div class="k"><i class="ti ti-calendar-event"></i>When</div><div class="v">Friday 18 December<small>2026</small></div></div>
+              <div class="fact"><div class="k"><i class="ti ti-clock"></i>Time</div><div class="v">7:30pm</div></div>
+              <div class="fact"><div class="k"><i class="ti ti-map-pin"></i>Where</div><div class="v">The Raj<small><a href="https://www.google.com/maps/search/?api=1&query=The+Raj+21-22+Bootham+York+YO30+7BW" target="_blank" rel="noopener">21–22 Bootham, York YO30 7BW</a></small></div></div>
+            </div>
+            <div class="byline"><i class="ti ti-mail-opened"></i><span id="replyBy">Please reply by Friday 20 November.</span></div>
+          </div>
+
+          <div class="card">
+            <h2>Your reply</h2>
+            <div id="replyLoading" class="loading">Loading…</div>
+            <div id="replyForm" hidden>
+              <div class="field">
+                <span class="lbl">Can you come? <span class="req">*</span></span>
+                <div class="seg" id="answerSeg" role="radiogroup">
+                  <button type="button" data-v="no" role="radio"><i class="ti ti-x"></i>Can't make it</button>
+                  <button type="button" data-v="yes" role="radio"><i class="ti ti-check"></i>I'll be there</button>
+                  <button type="button" data-v="plus1" role="radio"><i class="ti ti-users"></i>I'll be there plus 1</button>
+                </div>
+              </div>
+
+              <div class="diet" id="dietMe" hidden>
+                <h3><i class="ti ti-tools-kitchen-2"></i>Your food needs</h3>
+                <div class="ticks" data-who="me"></div>
+                <div class="field" style="margin-bottom:0">
+                  <label class="lbl" for="otherMe">Anything else <span class="opt">(optional)</span></label>
+                  <input class="inp" id="otherMe" maxlength="200" placeholder="e.g. no mushrooms, shellfish allergy">
+                </div>
+              </div>
+
+              <div class="diet" id="dietPlus" hidden>
+                <h3><i class="ti ti-tools-kitchen-2"></i>Your +1's food needs</h3>
+                <div class="ticks" data-who="plus"></div>
+                <div class="field" style="margin-bottom:0">
+                  <label class="lbl" for="otherPlus">Anything else <span class="opt">(optional)</span></label>
+                  <input class="inp" id="otherPlus" maxlength="200" placeholder="e.g. no mushrooms, shellfish allergy">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="card">
+            <h2>Summary</h2>
+            <div id="sumBox"><div class="small">Choose an answer to reply.</div></div>
+            <div style="margin-top:14px">
+              <button class="btn-primary" id="saveBtn" disabled><i class="ti ti-send"></i><span id="saveLbl">Send reply</span></button>
+              <div id="saveStatus" hidden></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <p class="notes">You can change your reply at any time on this page.</p>
+    </section>
+
+    <!-- ===== RESPONSES (QS / Manager / Director / Office) ===== -->
+    <section id="view-responses" hidden>
+      <div class="page-h">
+        <h2>Responses</h2>
+        <button class="btn" id="csvBtn"><i class="ti ti-file-download"></i>Download list</button>
+      </div>
+      <div id="respLoading" class="card loading">Loading…</div>
+      <div id="respBody" hidden>
+        <div class="stats">
+          <div class="stat main"><div class="n" id="stHeads">0</div><div class="l">Coming in total</div></div>
+          <div class="stat"><div class="n" id="stStaff">0</div><div class="l">Staff coming</div></div>
+          <div class="stat"><div class="n" id="stPlus">0</div><div class="l">+1s</div></div>
+          <div class="stat"><div class="n" id="stNo">0</div><div class="l">Can't make it</div></div>
+          <div class="stat"><div class="n" id="stWait">0</div><div class="l">Not replied</div></div>
+        </div>
+
+        <div class="card">
+          <h2>Food needs</h2>
+          <div class="chips dietchips" id="dietTotals"></div>
+        </div>
+
+        <div class="card">
+          <div class="chips" id="filterChips" style="margin-bottom:14px">
+            <button class="chip on" data-f="all">All</button>
+            <button class="chip" data-f="coming">Coming</button>
+            <button class="chip" data-f="no">Can't make it</button>
+            <button class="chip" data-f="wait">Not replied</button>
+          </div>
+          <table class="list">
+            <thead><tr><th>Name</th><th>Reply</th><th>Food needs</th><th>Replied</th></tr></thead>
+            <tbody id="respRows"></tbody>
+          </table>
+          <div id="respEmpty" class="empty" hidden></div>
+        </div>
+        <p class="notes">"Not replied" is everyone on the staff list who hasn't answered yet.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  doc, getDoc, getDocs, setDoc as _setDoc, updateDoc as _updateDoc, onSnapshot, collection, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// View as, What's New, Help, Not sent yet, the update bar, the service worker
+// and error reporting come from the shared file (standards §15.0).
+import * as SWS from './sw-shared.js';
+
+// v1.0 (13 Nov 2026): the staff Christmas party invite and replies. Each
+// person has one reply (christmasRsvp/{email lowercased}) they can change at
+// any time. QS, Manager, Director and Office see everyone's on Responses.
+const VERSION = 'v1.0';
+const COLL = 'christmasRsvp';
+const DEADLINE = new Date('2026-11-21T00:00:00Z');   // end of Fri 20 Nov 2026, London (GMT)
+const DIETS = [['veg', 'Vegetarian'], ['vegan', 'Vegan'], ['gf', 'Gluten-free'], ['nut', 'Nut allergy'], ['dairy', 'Dairy-free']];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+SWS.swSetup({ db, auth, page: 'christmas', version: VERSION });
+
+// Everything saves through these, so "View as" can never change real data.
+const setDoc = SWS.swGuard(_setDoc), updateDoc = SWS.swGuard(_updateDoc);
+const isVaError = e => String((e && e.message) || e || '').includes(SWS.SW_VA_MSG);
+function report(kind, what, e) {
+  const why = (e && (e.code || e.message)) || String(e || 'unknown error');
+  if (!isVaError(e)) SWS.swReport(kind, what + ': ' + why);
+  return why;
+}
+
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+document.getElementById('msSignInBtn').addEventListener('click', () => {
+  const errBox = document.getElementById('signinErr');
+  errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
+      return;
+    }
+    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
+  });
+});
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => {
+  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+});
+
+// "A new version is ready" bar: wait while a reply hasn't reached the server.
+window.swUpdateBlocker = () => SWS.swuMine().some(x => !x.failed && x.c === COLL)
+  ? 'Wait until your reply has sent (the yellow bar goes), then tap Update.' : '';
+
+// ===== Helpers =====
+const $ = id => document.getElementById(id);
+const esc = SWS.swEsc;
+const tsDate = t => t && typeof t.toDate === 'function' ? t.toDate() : null;
+const fmtShort = d => d ? d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/London' }) : '';
+const isLate = r => { const d = tsDate(r.firstRepliedAt); return !!d && d >= DEADLINE; };
+const ANSWER_TXT = { no: "Can't make it", yes: "I'll be there", plus1: "I'll be there plus 1" };
+function dietText(d) {
+  if (!d) return '';
+  const bits = DIETS.filter(([k]) => d[k]).map(([, l]) => l);
+  if (d.other) bits.push(d.other);
+  return bits.join(', ');
+}
+
+if (new Date() >= DEADLINE) $('replyBy').textContent = 'The reply date has passed, but you can still let us know.';
+
+document.querySelectorAll('.ticks').forEach(box => {
+  const who = box.dataset.who;
+  box.innerHTML = DIETS.map(([k, l]) => `<label class="tick"><input type="checkbox" data-k="${k}" data-who="${who}"> ${l}</label>`).join('');
+});
+
+// ===== State =====
+let me = null;           // { lower, name } — the person whose reply this is (the viewed person under View as)
+let existing = null;     // their saved reply, or null
+let loaded = false, dirty = false, answer = null;
+
+// ===== Tabs =====
+const currentTab = () => ((document.querySelector('.tab.active') || {}).dataset || {}).tab || 'reply';
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $('view-reply').hidden = t.dataset.tab !== 'reply';
+  $('view-responses').hidden = t.dataset.tab !== 'responses';
+  window.scrollTo(0, 0);
+}));
+
+// ===== Reply form =====
+function readDiet(who) {
+  const d = {};
+  document.querySelectorAll(`.ticks input[data-who="${who}"]`).forEach(i => d[i.dataset.k] = i.checked);
+  d.other = $(who === 'me' ? 'otherMe' : 'otherPlus').value.trim().slice(0, 200);
+  return d;
+}
+function writeDiet(who, d) {
+  d = d || {};
+  document.querySelectorAll(`.ticks input[data-who="${who}"]`).forEach(i => i.checked = !!d[i.dataset.k]);
+  $(who === 'me' ? 'otherMe' : 'otherPlus').value = d.other || '';
+}
+function setAnswer(v) {
+  answer = v;
+  document.querySelectorAll('#answerSeg button').forEach(b => {
+    const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on);
+  });
+  $('dietMe').hidden = !(v === 'yes' || v === 'plus1');
+  $('dietPlus').hidden = v !== 'plus1';
+  refreshSummary();
+}
+document.querySelectorAll('#answerSeg button').forEach(b => b.addEventListener('click', () => { dirty = true; setAnswer(b.dataset.v); }));
+document.querySelectorAll('#replyForm input').forEach(i => i.addEventListener('input', () => { dirty = true; refreshSummary(); }));
+
+function refreshSummary() {
+  if (!answer) $('sumBox').innerHTML = '<div class="small">Choose an answer to reply.</div>';
+  else {
+    const lines = [['Reply', ANSWER_TXT[answer]]];
+    if (answer !== 'no') lines.push(['Your food needs', dietText(readDiet('me')) || 'None']);
+    if (answer === 'plus1') lines.push(["Your +1's food needs", dietText(readDiet('plus')) || 'None']);
+    let html = lines.map(([k, v]) => `<div class="sum-line"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
+    if (existing) {
+      const d = tsDate(existing.updatedAt);
+      html += `<div class="small" style="margin-top:8px">${dirty ? 'You have changes not sent yet.' : 'Sent' + (d ? ' ' + fmtShort(d) : '') + '.'}</div>`;
+    }
+    $('sumBox').innerHTML = html;
+  }
+  $('saveBtn').disabled = !loaded || !answer || (!!existing && !dirty);
+  $('saveLbl').textContent = existing ? 'Update reply' : 'Send reply';
+}
+function fillFromDoc(data) {
+  setAnswer(data ? data.answer : null);
+  writeDiet('me', data && data.diet);
+  writeDiet('plus', data && data.plusDiet);
+  refreshSummary();
+}
+function showStatus(kind, html) {
+  const s = $('saveStatus');
+  s.className = 'status ' + kind; s.innerHTML = html; s.hidden = false;
+}
+
+$('saveBtn').addEventListener('click', () => {
+  if (!answer || !me) return;
+  const payload = {
+    email: me.lower,
+    name: me.name,
+    answer,
+    diet: answer === 'no' ? {} : readDiet('me'),
+    plusDiet: answer === 'plus1' ? readDiet('plus') : {},
+    updatedAt: serverTimestamp()
+  };
+  const ref = doc(db, COLL, me.lower);
+  let p;
+  try {
+    p = existing ? updateDoc(ref, payload) : setDoc(ref, { ...payload, firstRepliedAt: serverTimestamp() });
+  } catch (e) { p = Promise.reject(e); }
+  const viewing = !!SWS.swViewingAs();
+  if (!viewing) SWS.swuAdd({ c: COLL, id: me.lower, label: 'Christmas party reply', app: 'Christmas party', noun: 'reply', again: 'Send it again' });
+  dirty = false;
+  showStatus('sending', '<i class="ti ti-cloud-upload"></i>Saved on this phone, sending…');
+  refreshSummary();
+  p.then(() => {
+    SWS.swuSent(me.lower);
+    showStatus('ok', '<i class="ti ti-circle-check"></i>Sent. Thanks, you can change this any time.');
+  }).catch(e => {
+    console.error('reply save failed', e);
+    const why = report('save', 'Christmas reply didn\'t save', e);
+    if (!viewing) SWS.swuFailed(me.lower, why);
+    dirty = true; refreshSummary();
+    showStatus('bad', '<i class="ti ti-alert-triangle"></i>' + (isVaError(e) ? esc(SWS.SW_VA_MSG) : 'Didn\'t send (' + esc(why) + '). Press the button to try again.'));
+  });
+});
+
+// ===== Responses =====
+let rsvps = [], staff = [], filter = 'all', unsubResp = null;
+
+document.querySelectorAll('#filterChips .chip').forEach(c => c.addEventListener('click', () => {
+  filter = c.dataset.f;
+  document.querySelectorAll('#filterChips .chip').forEach(x => x.classList.toggle('on', x === c));
+  renderResponses();
+}));
+
+function renderResponses() {
+  const list = rsvps;
+  const replied = new Set(list.map(r => r.email));
+  const waiting = staff.filter(s => !replied.has(s.email)).sort((a, b) => a.name.localeCompare(b.name));
+  const coming = list.filter(r => r.answer === 'yes' || r.answer === 'plus1');
+  const plus = list.filter(r => r.answer === 'plus1');
+  const no = list.filter(r => r.answer === 'no');
+  const heads = coming.length + plus.length;
+
+  $('stHeads').textContent = heads;
+  $('stStaff').textContent = coming.length;
+  $('stPlus').textContent = plus.length;
+  $('stNo').textContent = no.length;
+  $('stWait').textContent = waiting.length;
+  $('tabCount').textContent = heads;
+  $('tabCount').hidden = !heads;
+
+  const totals = {}; DIETS.forEach(([k]) => totals[k] = 0);
+  let others = 0;
+  coming.forEach(r => {
+    DIETS.forEach(([k]) => { if (r.diet && r.diet[k]) totals[k]++; });
+    if (r.diet && r.diet.other) others++;
+    if (r.answer === 'plus1') {
+      DIETS.forEach(([k]) => { if (r.plusDiet && r.plusDiet[k]) totals[k]++; });
+      if (r.plusDiet && r.plusDiet.other) others++;
+    }
+  });
+  $('dietTotals').innerHTML = DIETS.map(([k, l]) => `<span class="chip">${l} <b>${totals[k]}</b></span>`).join('')
+    + (others ? `<span class="chip">Other notes <b>${others}</b></span>` : '');
+
+  const order = { yes: 0, plus1: 0, no: 1 };
+  const sorted = [...list].sort((a, b) => (order[a.answer] - order[b.answer]) || String(a.name).localeCompare(String(b.name)));
+  const rows = [];
+  if (filter !== 'wait') {
+    sorted.filter(r => filter === 'all' || (filter === 'coming' ? r.answer !== 'no' : r.answer === 'no')).forEach(r => {
+      const tag = r.answer === 'no' ? '<span class="tag">Can\'t make it</span>'
+        : r.answer === 'plus1' ? '<span class="tag ok">Coming +1</span>' : '<span class="tag ok">Coming</span>';
+      const d = tsDate(r.firstRepliedAt);
+      const late = isLate(r) ? ' <span class="tag warn">Late</span>' : '';
+      rows.push(`<tr><td><b>${esc(r.name)}</b></td><td data-l="Reply">${tag}</td>`
+        + `<td data-l="Food needs">${r.answer === 'no' ? '<span class="muted">—</span>' : (esc(dietText(r.diet)) || '<span class="muted">None</span>')}</td>`
+        + `<td data-l="Replied">${d ? fmtShort(d) : '<span class="muted">Sending…</span>'}${late}</td></tr>`);
+      if (r.answer === 'plus1') {
+        rows.push(`<tr class="plus"><td>${esc(r.name)}'s +1</td><td data-l="Reply"><span class="tag ok">Coming</span></td>`
+          + `<td data-l="Food needs">${esc(dietText(r.plusDiet)) || '<span class="muted">None</span>'}</td><td></td></tr>`);
+      }
+    });
+  }
+  if (filter === 'all' || filter === 'wait') {
+    waiting.forEach(s => rows.push(`<tr><td>${esc(s.name)}</td><td data-l="Reply"><span class="tag warn">Not replied</span></td><td></td><td></td></tr>`));
+  }
+  $('respRows').innerHTML = rows.join('');
+  $('respEmpty').hidden = rows.length > 0;
+  $('respEmpty').textContent = filter === 'wait' ? 'Everyone has replied.' : 'No replies yet. They\'ll show here as people answer.';
+  $('respLoading').hidden = true;
+  $('respBody').hidden = false;
+}
+
+function startResponses() {
+  getDocs(collection(db, 'staff')).then(snap => {
+    staff = snap.docs.map(d => ({ email: d.id.toLowerCase(), name: d.data().name || d.id }));
+    renderResponses();
+  }).catch(e => { console.error('staff list failed', e); report('load', 'Staff list didn\'t load', e); });
+  unsubResp = onSnapshot(collection(db, COLL), snap => {
+    rsvps = snap.docs.map(d => d.data());
+    renderResponses();
+  }, e => {
+    console.error('responses load failed', e);
+    report('load', 'Christmas replies didn\'t load', e);
+    $('respLoading').textContent = 'Couldn\'t load the replies (' + (e.code || e.message) + ').';
+  });
+}
+
+$('csvBtn').addEventListener('click', () => {
+  const replied = new Set(rsvps.map(r => r.email));
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const out = [['Name', 'Reply', 'Vegetarian', 'Vegan', 'Gluten-free', 'Nut allergy', 'Dairy-free', 'Other', 'First replied', 'Late'].map(q).join(',')];
+  const dietCols = d => DIETS.map(([k]) => (d && d[k]) ? 'Yes' : '').concat([(d && d.other) || '']);
+  [...rsvps].sort((a, b) => String(a.name).localeCompare(String(b.name))).forEach(r => {
+    const d = tsDate(r.firstRepliedAt);
+    const when = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/London' }) : '';
+    out.push([r.name, ANSWER_TXT[r.answer] || r.answer, ...(r.answer === 'no' ? ['', '', '', '', '', ''] : dietCols(r.diet)), when, isLate(r) ? 'Late' : ''].map(q).join(','));
+    if (r.answer === 'plus1') out.push([r.name + "'s +1", "I'll be there", ...dietCols(r.plusDiet), '', ''].map(q).join(','));
+  });
+  staff.filter(s => !replied.has(s.email)).sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(s => out.push([s.name, 'Not replied', '', '', '', '', '', '', '', ''].map(q).join(',')));
+  const blob = new Blob(['﻿' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Christmas party replies.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+// ===== Help (shared drawer) =====
+const NEWS = {};   // a new page: no What's New popup
+const HELP = [
+  { tab: 'My reply', q: 'How do I reply?', a: '<p>Pick one of the three answers, tick anything you can\'t eat, then press <b>Send reply</b>.</p>' },
+  { tab: 'My reply', q: 'Can I change my answer?', a: '<p>Yes. Come back to this page any time, change it and press <b>Update reply</b>.</p>' },
+  { tab: 'My reply', q: 'Can I bring someone?', a: '<p>Yes. Choose <b>I\'ll be there plus 1</b>. You don\'t need to give their name, just tick anything they can\'t eat.</p>' },
+  { tab: 'My reply', q: 'Where do I put allergies?', a: '<p>Tick the boxes that apply. If yours isn\'t listed, type it in <b>Anything else</b>.</p>' },
+  { tab: 'My reply', q: 'I\'ve missed the reply date', a: '<p>You can still reply. Just do it as soon as you can.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'How do I see who\'s coming?', a: '<p>Open the <b>Responses</b> tab. The numbers at the top update by themselves as people reply.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'How do I get the list for the restaurant?', a: '<p>Press <b>Download list</b>. It opens in Excel with everyone coming and what they can\'t eat.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'What does "Late" mean?', a: '<p>That person first replied after Friday 20 November.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'Who is "Not replied"?', a: '<p>Everyone on the staff list who hasn\'t answered yet, so you know who to chase.</p>' }
+];
+
+// ===== Sign-in =====
+let started = false;
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    $('signinScreen').style.display = 'flex';
+    $('appRoot').style.display = 'none';
+    return;
+  }
+  $('signinScreen').style.display = 'none';
+  $('appRoot').style.display = 'block';
+  if (started) return;
+  started = true;
+  const va = await SWS.swViewAsInit(user);
+  const raw = va ? va.email : (user.email || '');
+  const acc = await SWS.swAccess(raw);
+  const lower = raw.trim().toLowerCase();
+  me = { lower, name: (acc.staff && acc.staff.name) || (va ? va.name : user.displayName) || lower };
+  $('whoName').textContent = me.name;
+
+  onSnapshot(doc(db, COLL, lower), snap => {
+    existing = snap.exists() ? snap.data() : null;
+    if (!loaded) {
+      loaded = true;
+      $('replyLoading').hidden = true; $('replyForm').hidden = false;
+      fillFromDoc(existing);
+      if (existing) showStatus('ok', '<i class="ti ti-circle-check"></i>You\'ve replied. Change it below if you need to.');
+    } else if (!dirty) fillFromDoc(existing);
+    else refreshSummary();
+  }, e => {
+    console.error('own reply load failed', e);
+    report('load', 'Your Christmas reply didn\'t load', e);
+    $('replyLoading').textContent = 'Couldn\'t load your reply (' + (e.code || e.message) + '). Try refreshing.';
+  });
+
+  if (acc.level === 'management' || acc.level === 'office') {
+    $('tabsBar').hidden = false;
+    startResponses();
+  }
+  SWS.swExtrasStart({ page: 'christmas', version: VERSION, level: acc.level, news: NEWS, help: HELP,
+    tab: () => ({ reply: 'My reply', responses: 'Responses' })[currentTab()] || '' });
+  SWS.swuStart();
+});
+</script>
+</body>
+</html>
