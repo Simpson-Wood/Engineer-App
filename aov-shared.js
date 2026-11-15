@@ -13,7 +13,7 @@
 //  equipment and scenarios (its "set-up") are approved. Until then results
 //  are kept as "Unverified": the evidence is saved, QS decides.
 // ═══════════════════════════════════════════════════════════════════════════
-export const AOV_SHARED_VERSION = '1.0';
+export const AOV_SHARED_VERSION = '1.1';
 
 // ── Small helpers (same as gate-shared.js) ─────────────────────────────────
 export const newId = (p = '') => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -182,7 +182,11 @@ export function buildPlan(site, visit) {
   (site.systems || []).filter(s => sys.includes(s.id) && s.comfortVent && !partial).forEach(s => out.push({ key: 'comfort_' + s.id, kind: 'comfort', group: 'Scenarios', title: 'Fire signal overrides comfort ventilation', sub: systemName(site, s.id), systemId: s.id }));
   // D: power, one supply at a time
   const supplies = (site.supplies || []).filter(p => !p.retired && (p.systems || []).some(id => sys.includes(id)) && (!partial || (visit.change && (visit.change.supplies || []).includes(p.id)) || (p.systems || []).some(id => scenarios.some(s => s.systemId === id))));
-  supplies.forEach(p => out.push({ key: 'pw_' + p.id, kind: 'power', group: 'Power and faults', title: p.name || 'Power supply', supplyId: p.id }));
+  // v1.1 (Rob, 15 Nov): one power screen per riser / system, listing every supply
+  // that feeds it (a central panel or one per door). A supply that feeds several
+  // systems is shown once, under the first of them in this visit.
+  const bySys = {}; supplies.forEach(p => { const home = (p.systems || []).find(id => sys.includes(id)); (bySys[home] = bySys[home] || []).push(p.id); });
+  sys.forEach(id => { if (bySys[id]) out.push({ key: 'pw_' + id, kind: 'power', group: 'Power and faults', title: 'Power and faults', sub: systemName(site, id), systemId: id, supplyIds: bySys[id] }); });
   if (type === 'takeover' || type === 'commissioning') {
     supplies.forEach(p => out.push({ key: 'cur_' + p.id, kind: 'currents', group: 'Power and faults', title: 'Measured currents: ' + (p.name || 'supply'), supplyId: p.id }));
     supplies.forEach(p => out.push({ key: 'calc_' + p.id, kind: 'calc', group: 'Power and faults', title: 'Battery suitability: ' + (p.name || 'supply'), supplyId: p.id }));
@@ -225,7 +229,12 @@ export function missingInResult(check, r, site) {
       break;
     }
     case 'comfort': if (!r.answer) m.push('Answer the question'); break;
-    case 'power': ['mainsOff', 'onBattery', 'mainsBack', 'faultMains', 'faultBattery', 'faultActuator', 'label'].forEach(k => { if (!r[k]) m.push('Answer: ' + POWER_Q[k]); }); if (!(r.readings || []).some(x => x && x.v != null && x.v !== '')) m.push('Record the battery readings'); break;
+    case 'power': (check.supplyIds || []).forEach(pid => {
+      const p = (site.supplies || []).find(x => x.id === pid) || {}, q = (r.sup || {})[pid] || {}, nm = p.name || 'supply';
+      if (q.cant) { if (!String(q.cantWhy || '').trim()) m.push(nm + ': say why it could not be tested'); return; }
+      powerQs(p).forEach(k => { if (!q[k]) m.push(nm + ': ' + POWER_Q[k]); });
+      if (!(q.readings || []).some(x => x && x.v != null && x.v !== '')) m.push(nm + ': record the battery readings');
+    }); break;
     case 'currents': if (num(r.standbyA) == null || num(r.fireA) == null) m.push('Enter both currents'); break;
     case 'calc': break;   // checked from the supply record (calcMissing)
     case 'inlets': if (!r.countMatches) m.push('Do the numbers match the design?'); if (r.countMatches === 'no' && !String(r.note || '').trim()) m.push('Say what is different'); break;
@@ -237,6 +246,11 @@ export function missingInResult(check, r, site) {
   }
   return m;
 }
+// Which power questions a supply gets. One that shares a mains supply with another
+// isn't switched off on its own, so it skips the mains questions.
+export const POWER_REQUIRED = ['mainsOff', 'onBattery', 'mainsBack', 'faultMains', 'faultBattery', 'faultActuator', 'label'];
+export const powerQs = p => POWER_REQUIRED.filter(k => p.ownMains !== false || !['mainsOff', 'mainsBack', 'faultMains'].includes(k));
+export const powerFeeds = (site, p) => (p.items || []).map(id => (site.assets || []).find(a => a.id === id)).filter(Boolean);
 export const POWER_Q = {
   mainsOff: 'Mains off: battery took over straight away and the panel showed the mains fault',
   onBattery: 'With mains off, a full fire scenario still worked on battery',
@@ -283,13 +297,19 @@ export function evaluate(check, r, ctx) {
     }
     case 'comfort': if (no(r.answer)) fail.push('Comfort ventilation did not give way to the fire signal'); break;
     case 'power': {
-      Object.keys(POWER_Q).forEach(k => { if (no(r[k])) fail.push(POWER_Q[k]); });
-      const p = (site.supplies || []).find(x => x.id === check.supplyId) || {};
-      const lim = num(p.minVolts);
-      if (lim == null) unv.push('No maker\'s battery limit recorded for this supply');
-      else (r.readings || []).forEach((x, i) => { const v = num(x && x.v); if (v != null && v < lim) fail.push(`Battery ${i + 1}: ${v} V is below the maker's limit of ${lim} V`); });
-      const age = batteryAge(p, ctx.rules); if (age.state === 'over') fail.push(`Batteries past their replace-by date (${shortDate(age.replaceBy)})`);
-      if (!(p.batteries && p.batteries.count)) fail.push('No batteries recorded for this supply');
+      let tested = 0;
+      (check.supplyIds || []).forEach(pid => {
+        const p = (site.supplies || []).find(x => x.id === pid) || {}, q = (r.sup || {})[pid] || {}, nm = p.name || 'Supply';
+        if (q.cant) { unv.push(nm + ' not tested: ' + (q.cantWhy || '')); return; }
+        tested++;
+        Object.keys(POWER_Q).forEach(k => { if (no(q[k])) fail.push(nm + ': ' + POWER_Q[k]); });
+        const lim = num(p.minVolts);
+        if (lim == null) unv.push(nm + ': no maker\'s battery limit recorded');
+        else (q.readings || []).forEach((x, i) => { const v = num(x && x.v); if (v != null && v < lim) fail.push(`${nm} battery ${i + 1}: ${v} V is below the maker's limit of ${lim} V`); });
+        const age = batteryAge(p, ctx.rules); if (age.state === 'over') fail.push(`${nm}: batteries past their replace-by date (${shortDate(age.replaceBy)})`);
+        if (!(p.batteries && p.batteries.count)) fail.push(nm + ': no batteries recorded');
+      });
+      if (!tested && !fail.length) return { state: 'nottested', why: unv.join('; ') };
       break;
     }
     case 'currents': break;

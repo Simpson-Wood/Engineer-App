@@ -64,6 +64,7 @@
   .status-row .name i{color:var(--red); font-size:18px; width:20px;}
   .status-row .inp{width:200px; min-height:40px; padding:8px 10px;}
   .status-row.changed{background:var(--amber-bg);}
+  .appr-tag{display:inline-block; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:var(--green-bg); color:var(--green); text-transform:uppercase; vertical-align:middle;}
   .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
   .switch input{opacity:0; width:0; height:0;}
   .switch .track{position:absolute; inset:0; background:#d6d4cd; border-radius:24px; cursor:pointer; transition:0.15s;}
@@ -186,8 +187,8 @@
                 <option>Apprentice electrician</option>
                 <option>Electrical improver</option>
                 <option>Electrician</option>
-                <option>QS</option>
                 <option>Office</option>
+                <option>QS</option>
                 <option>Manager</option>
                 <option>Director</option>
               </select>
@@ -303,7 +304,7 @@ import * as SWS from './sw-shared.js';
 // v4.0 (27 Oct 2026): shared files; design catch-up (full width, tabs,
 // guide fields and buttons, notes at the bottom); Errors tab (Rob only);
 // failed saves and loads are reported; multi-tab cache.
-const VERSION = "v4.3";
+const VERSION = "v4.4";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -411,31 +412,43 @@ async function checkManager(email){
   return false;
 }
 
+// v4.4 (Rob, 15 Nov 2026): positions in order, lowest first. A manager can only
+// give someone a position at or below their own, and can't change or remove
+// someone above them. Only Rob (the owner) can go higher, and only Rob sets the
+// Approver tick (who approves AOV and gate rules, AOV site set-ups, and gets gate
+// unsafe notices). The Firestore rules enforce the same.
+const POSITIONS = ['Apprentice electrician', 'Electrical improver', 'Electrician', 'Office', 'QS', 'Manager', 'Director'];
+const posRank = p => POSITIONS.indexOf(p) + 1;
+let MY_RANK = 0;
+function limitAddPositions() {
+  document.querySelectorAll('#newStaffPosition option').forEach(o => { if (o.value === '' && o.disabled) return; o.disabled = !IS_OWNER && posRank(o.textContent) > MY_RANK; });
+}
 async function renderStaffList() {
   const list = document.getElementById('staffList');
-  const POSITIONS = ['Apprentice electrician', 'Electrical improver', 'Electrician', 'QS', 'Office', 'Manager', 'Director'];
   try {
     const [snap, sigs] = await Promise.all([getDocs(collection(db, 'staff')), loadSignatures()]);
     if (snap.empty) { list.innerHTML = '<div class="empty-note">No staff added yet.</div>'; return; }
     const rows = [];
     snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
     rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const canEdit = r => IS_OWNER || posRank(r.position) <= MY_RANK;
     list.innerHTML = rows.map(r => `
       <div class="staff-item">
         <div>
-          <div class="name">${r.name || r.id}</div>
+          <div class="name">${r.name || r.id}${r.approver ? ' <span class="appr-tag">Approver</span>' : ''}</div>
           <div class="meta">${r.id}</div>
         </div>
         <div class="staff-ctl">
           <label class="tick" title="Expected to fill in a timesheet every weekday">
-            <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'}> Fills in timesheets
+            <input type="checkbox" class="fills-ts" data-email="${r.id}" ${r.fillsTimesheets === false ? '' : 'checked'} ${canEdit(r) ? '' : 'disabled'}> Fills in timesheets
           </label>
           ${sigs ? sigButton(r.id, sigs[r.id.toLowerCase()]) : ''}
-          <input class="inp short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" aria-label="Short name" title="Short name on the on-call calendar (phones). Blank = initials.">
-          <select class="inp position-select" data-email="${r.id}" aria-label="Position">
-            ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''}>${p}</option>`).join('')}
+          <input class="inp short-in" data-short="${r.id}" value="${escapeHtml(r.short || '')}" placeholder="Short" maxlength="5" ${canEdit(r) ? '' : 'disabled'} aria-label="Short name" title="Short name on the on-call calendar (phones). Blank = initials.">
+          ${IS_OWNER ? `<label class="tick" title="Approves AOV and gate test rules and AOV site set-ups, and gets gate unsafe notices"><input type="checkbox" class="approver-cb" data-email="${r.id}" ${r.approver ? 'checked' : ''}> Approver</label>` : ''}
+          <select class="inp position-select" data-email="${r.id}" aria-label="Position" ${canEdit(r) ? '' : 'disabled title="Only Rob can change someone above your own position"'}>
+            ${POSITIONS.map(p => `<option ${r.position === p ? 'selected' : ''} ${!IS_OWNER && posRank(p) > MY_RANK ? 'disabled' : ''}>${p}</option>`).join('')}${r.position && !POSITIONS.includes(r.position) ? `<option selected>${escapeHtml(r.position)}</option>` : ''}
           </select>
-          <button type="button" class="remove-btn" data-email="${r.id}">Remove</button>
+          ${canEdit(r) ? `<button type="button" class="remove-btn" data-email="${r.id}">Remove</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -449,6 +462,13 @@ async function renderStaffList() {
         } catch (err) {
           showToast('Could not update — ' + failed('save', 'Staff position didn\'t save', err));
         }
+      });
+    });
+    list.querySelectorAll('.approver-cb').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const email = e.target.dataset.email, on = e.target.checked;
+        try { await setDoc(doc(db, 'staff', email), { approver: on }, { merge: true }); showToast(email + (on ? ' is an Approver' : ' is no longer an Approver')); renderStaffList(); }
+        catch (err) { e.target.checked = !on; showToast('Could not update — ' + failed('save', 'Approver tick didn\'t save', err)); }
       });
     });
     list.querySelectorAll('[data-short]').forEach(inp => {
@@ -1009,6 +1029,7 @@ document.getElementById('addStaffBtn').addEventListener('click', async () => {
   const email = document.getElementById('newStaffEmail').value.trim().toLowerCase();
   const position = document.getElementById('newStaffPosition').value.trim();
   if (!name || !email) { showToast('Name and email are both required.'); return; }
+  if (!IS_OWNER && posRank(position) > MY_RANK) { showToast('Only Rob can add someone above your own position.'); return; }
   try {
     await setDoc(doc(db, 'staff', email), { name, position });
     ['newStaffName','newStaffEmail','newStaffPosition'].forEach(id => document.getElementById(id).value = '');
@@ -1414,12 +1435,13 @@ async function loadErrorCount() {
 // What's New is only for new features (standards §15). Nothing new for
 // managers in v4.0; the Errors tab is Rob's, so his note is added at sign-in.
 const NEWS = { management: [
-  '<b>Signatures</b>: on the Staff tab, press <b>Add signature</b> next to someone and take a photo of their signature. The isolator Final certificate uses them.'
+  'You can only give someone a position at or below your own. Only Rob can give a higher one.'
 ] };
-const OWNER_NEWS = NEWS.management;
+const OWNER_NEWS = ['<b>Approver</b> tick on the Staff tab (only you see it): Approvers approve the AOV and gate test rules and AOV site set-ups, and get gate unsafe notices.', ...NEWS.management];
 const HELP = [
   { tab: 'Staff', q: 'How do I add someone?', a: '<p>On the <b>Staff</b> tab, fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add staff member</b>.</p>' },
-  { tab: 'Staff', q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p>' },
+  { tab: 'Staff', q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p><p>You can only give someone a position at or below your own, and can\'t change someone above you. Only Rob can.</p>' },
+  { tab: 'Staff', q: 'What does Approver mean?', a: '<p>Approvers approve the AOV and gate test rules and each AOV site\'s equipment and scenarios, and get gate unsafe notices. Only Rob can tick it.</p>' },
   { tab: 'Staff', q: 'What\'s "Fills in timesheets"?', a: '<p>Tick it for anyone who does a timesheet every weekday. Untick it for office staff and anyone else who doesn\'t, so they\'re never chased for missing days.</p>' },
   { tab: 'Staff', q: 'How do I add someone\'s signature?', a: '<p>Press <b>Add signature</b> next to their name. Take a photo of their signature in dark pen on plain white paper, close up. The page whitens the paper and trims it; press <b>Save</b> if it looks right.</p><p>Tap a saved signature to change or remove it. Only Manager, QS and Director can see signatures.</p><p>The isolator Final certificate can\'t be made until everyone who tested, and whoever authorises it, has one.</p>' },
   { tab: 'Staff', q: 'What\'s the short name?', a: '<p>It\'s what shows on the on-call calendar on phones, where full names don\'t fit, and at the end of each row on the isolator certificate. Leave it blank and the app uses their initials, adding a letter if two people would match (ACa, ACo).</p>' },
@@ -1468,6 +1490,8 @@ onAuthStateChanged(auth, async (user) => {
   // Data import: everyone with management access (v3.0).
   document.getElementById('importCard').hidden = false;
   await Promise.all([loadLeaveSettings(), loadStaffRows()]);
+  try { const me = await getDoc(doc(db, 'staff', String(va ? va.email : user.email).toLowerCase())); MY_RANK = me.exists() ? posRank(me.data().position) : 0; } catch (e) {}
+  limitAddPositions();
   initImportPanel();
   renderStaffList();
   renderSuggestions();

@@ -97,6 +97,18 @@
   .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
   .calc{background:var(--soft); border-radius:10px; padding:12px; margin:0 0 12px;}
   .calc .big{font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700;}
+  /* v1.1: equipment and scenarios as a list + one item */
+  .ed{display:grid; grid-template-columns:minmax(0,1fr); gap:14px; align-items:start;}
+  @media (min-width:1000px){ .ed{grid-template-columns:380px minmax(0,1fr);} .editem{position:sticky; top:10px;} .ednav .btn{display:none;} }
+  @media (max-width:999px){ .ed.has-item .edlist{display:none;} .ed:not(.has-item) .editem{display:none;} }
+  .edgrp{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; color:var(--grey); font-size:14px; margin:12px 0 4px;}
+  .edrow{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:10px 10px; min-height:52px; border:1px solid var(--line); border-radius:8px; margin:0 0 6px; cursor:pointer; background:#fff;}
+  .edrow:hover{border-color:var(--ink);} .edrow.on{background:var(--red-tint); border-color:var(--red);}
+  .edmain{min-width:0;} .edtags{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
+  .ednav{display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 0 10px;}
+  .ibtn{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; border:1.5px solid var(--grey); background:#fff; color:var(--grey); font:700 13px 'Barlow',sans-serif; cursor:pointer; vertical-align:middle; margin-left:4px; padding:0; text-transform:none;}
+  .itext{display:block; font-family:'Barlow',sans-serif; text-transform:none; letter-spacing:0; font-weight:400; font-size:13px; color:var(--blue); background:var(--blue-bg); border:1px solid var(--blue-line); border-radius:8px; padding:8px 10px; margin:6px 0;}
+  .sup{border:1px solid var(--line); border-radius:10px; margin:0 0 10px; background:#fff;} .sup > summary{list-style:none; cursor:pointer; padding:12px; display:flex; justify-content:space-between; gap:8px; align-items:center; font-weight:700;} .sup > summary::-webkit-details-marker{display:none;} .sup > .in{padding:0 12px 12px;}
   @media (max-width:640px){ main{padding:12px;} .card{padding:14px;} header h1{font-size:16px;} header .who .name{display:none;} }
   @media (max-width:700px){ table.sch .hide-s{display:none;} }
 </style>
@@ -139,7 +151,7 @@ import * as SWS from './sw-shared.js';
 import * as A from './aov-shared.js';
 const { esc } = A;
 
-const VERSION = "v1.0";
+const VERSION = "v1.1";
 document.getElementById('versionLabel').textContent = VERSION;
 console.log('AOV testing', VERSION, 'shared', A.AOV_SHARED_VERSION);
 
@@ -281,7 +293,7 @@ function homeHTML() {
   if (!S.sites.length) h += `<div class="empty-note">No AOV sites yet. Add the first one.</div>`;
   else h += `<div class="grid">${S.sites.map(s => `<div class="item" data-act="opensite" data-id="${esc(s.id)}" style="cursor:pointer"><div class="ty">${esc(s.siteRef)}</div><div class="nm">${esc(s.siteName)}</div><div class="small">${esc([s.addressLine, s.postcode].filter(Boolean).join(', '))}</div><div class="chips">${setupTag(s)}${dueTag(s)}</div></div>`).join('')}</div>`;
   h += `</div>`;
-  if (!S.rulesApproved) h += `<div class="box warn"><h4>Test rules not approved yet</h4>Until a Director approves the AOV test rules, every result is kept as <b>Unverified</b>. Your answers are still saved and go to QS.</div>`;
+  if (!S.rulesApproved) h += `<div class="box warn"><h4>Test rules not approved yet</h4>Until an Approver approves the AOV test rules, every result is kept as <b>Unverified</b>. Your answers are still saved and go to QS.</div>`;
   return h;
 }
 function newSiteForm() {
@@ -323,7 +335,7 @@ function newVisitForm() {
   const sys = S.site.systems || [];
   return `<div class="card"><p class="section-label">New visit</p><div class="fgrid"><div class="fld"><label>What kind of visit?</label><select id="nvType">${Object.entries(A.VISIT_TYPES).map(([k, v]) => `<option value="${k}" ${k === (S.site.setupStatus === 'Approved' ? 'service' : 'takeover') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>
    <div class="fld"><label>Date</label><input type="date" id="nvDate" value="${A.todayISO()}"></div></div>
-   ${sys.length > 1 ? `<label class="l">Which systems? <span class="hint">Leave all ticked for a full visit.</span></label>${sys.map(x => `<label class="tick"><input type="checkbox" class="nvSys" value="${esc(x.id)}" checked> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}` : ''}
+   ${sys.length > 1 ? `<label class="l">Which systems? ${info(SYS_INFO)} <span class="hint">Leave all ticked for a full visit.</span></label>${sys.map(x => `<label class="tick"><input type="checkbox" class="nvSys" value="${esc(x.id)}" checked> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}` : ''}
    <label class="tick"><input type="checkbox" id="nvPractice"> This is a practice run (not a real visit)</label>
    <div class="btns"><button class="btn red" data-act="createvisit">Start</button></div></div>`;
 }
@@ -358,80 +370,95 @@ function queueSiteSave(why) { clearTimeout(S.siteTimer); S.siteTimer = setTimeou
 function flushSite() { if (S.siteTimer) { clearTimeout(S.siteTimer); S.siteTimer = null; saveSite_('edit'); } }
 const locked = () => S.site.setupStatus === 'Ready for QS';
 const STABS = [['systems', 'Blocks and systems', 'ti-building'], ['assets', 'Equipment', 'ti-window'], ['scenarios', 'Scenarios', 'ti-bolt'], ['power', 'Power', 'ti-battery-2'], ['send', 'Check and send', 'ti-send']];
+// v1.1: each tab is a short list. Tap a line to open that one item: on a PC it
+// opens on the right, on a phone it fills the screen, with Back to the list,
+// Previous, Save and Next (Rob, 15 Nov: long lists were a pain on a phone).
+const SYS_INFO = 'A system is a riser, a stairwell, or anything with its own cause-and-effect. It is not the fire alarm panel: one fire alarm panel can cover several systems.';
+const info = (txt) => `<button type="button" class="ibtn" data-act="info" aria-label="What does this mean?" title="${esc(txt)}">i</button><span class="itext" hidden>${esc(txt)}</span>`;
+function edRows() {   // [{ k, html }] for the current tab, in list order (Previous / Next follow this)
+  const s = S.site, t = S.setupTab, f = S.edFilter || '';
+  const sysOk = id => !f || f === id;
+  if (t === 'systems') return (s.systems || []).map((x, k) => ({ k, grp: '', html: `<b>${esc(x.name || 'New system')}</b><div class="small">${esc(((s.blocks || []).find(b => b.id === x.blockId) || {}).name || 'No block')} · ${esc(x.kind || '')}</div>`, tags: '' }));
+  if (t === 'assets') {
+    const out = [];
+    [...(s.systems || []), { id: '__none' }].forEach(x => (s.assets || []).forEach((a, k) => {
+      const inSys = x.id === '__none' ? !(s.systems || []).some(y => y.id === a.systemId) : a.systemId === x.id;
+      if (!inSys || !sysOk(a.systemId)) return;
+      const unmapped = a.status !== 'retired' && (A.ASSET_TYPES[a.type] || {}).moves && !(s.scenarios || []).some(c => !c.retired && (c.expected || {})[a.id] === 'open');
+      out.push({ k, grp: x.id === '__none' ? 'Not in a system' : A.systemName(s, x.id), html: `<b>${esc(A.assetName(a))}</b><div class="small">${esc(a.location || 'Where?')}</div>`, tags: (a.status === 'retired' ? '<span class="tag">Retired</span>' : '') + (A.clientNoteForAsset(a) ? '<span class="tag info">Note</span>' : '') + (unmapped ? '<span class="tag wait">No scenario</span>' : '') + (a.status !== 'retired' && !a.location ? '<span class="tag wait">Where?</span>' : '') });
+    }));
+    return out;
+  }
+  if (t === 'scenarios') return (s.scenarios || []).map((c, k) => ({ c, k })).filter(o => !o.c.retired && sysOk(o.c.systemId)).map(({ c, k }) => { const n = Object.values(c.expected || {}).filter(v => v === 'open').length; return { k, grp: A.systemName(s, c.systemId), html: `<b>${esc(c.name || 'New scenario')}</b><div class="small">${n} open${c.inputRef || c.inputAssetId ? '' : ' · trigger not set'}</div>`, tags: n ? '' : '<span class="tag wait">Nothing opens</span>' }; });
+  if (t === 'power') return (s.supplies || []).map((p, k) => ({ p, k })).filter(o => !o.p.retired && (!f || (o.p.systems || []).includes(f))).map(({ p, k }) => { const c = A.batteryCalc(p, S.rules), feeds = A.powerFeeds(s, p); return { k, grp: '', html: `<b>${esc(p.name || 'New power supply')}</b><div class="small">${esc((p.systems || []).map(id => A.systemName(s, id)).join(', ') || 'No system')}${feeds.length ? ' · ' + esc(feeds.map(A.assetName).join(', ')) : ''}</div>`, tags: c.missing.length ? '<span class="tag wait">Figures missing</span>' : c.ok ? '' : '<span class="tag bad">Too small</span>' }; });
+  return [];
+}
 function setupHTML() {
-  const s = S.site;
+  const s = S.site, t = S.setupTab;
   let h = crumb(link('home', 'Sites'), link('site', esc(s.siteName)), 'Equipment and scenarios');
-  if (S.back) h += `<div class="btns"><button class="btn dark" data-act="backtovisit"><i class="ti ti-arrow-left"></i> Back to the visit</button></div>`;
-  h += `<div class="stabs">${STABS.map(t => `<button class="tab ${S.setupTab === t[0] ? 'active' : ''}" data-act="stab" data-t="${t[0]}"><i class="ti ${t[2]}"></i> ${t[1]}</button>`).join('')}</div>`;
+  if (S.back != null) h += `<div class="btns"><button class="btn dark" data-act="backtovisit"><i class="ti ti-arrow-left"></i> Back to the visit</button></div>`;
+  h += `<div class="stabs">${STABS.map(x => `<button class="tab ${t === x[0] ? 'active' : ''}" data-act="stab" data-t="${x[0]}"><i class="ti ${x[2]}"></i> ${x[1]}</button>`).join('')}</div>`;
   if (locked()) h += `<div class="box info">This set-up is with QS. Changing anything takes it back to draft.</div>`;
   if (s.setupStatus === 'Approved') h += `<div class="box info">Approved by QS. If you change anything it goes back to QS to approve again. Equipment that has gone is <b>retired</b>, not deleted, so old reports stay the same.</div>`;
-  h += `<div class="card">` + ({ systems: sysTabHTML, assets: assetsTabHTML, scenarios: scenTabHTML, power: powerTabHTML, send: sendTabHTML }[S.setupTab])() + `</div>`;
-  return h;
+  if (t === 'send') return h + `<div class="card">${sendTabHTML()}</div>`;
+  if (t !== 'systems' && !(s.systems || []).length) return h + `<div class="card"><div class="empty-note">Add a system first (Blocks and systems).</div></div>`;
+  const rows = edRows(), sel = S.edSel, open_ = sel != null && rows.some(r => r.k === sel);
+  // list
+  let L = '';
+  if (t === 'systems') {
+    L += `<p class="section-label">Blocks</p>` + ((s.blocks || []).map((b, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-sbind="blocks.${k}.name" value="${esc(b.name)}" placeholder="Block name"><button class="btn sm warn" data-act="delblock" data-n="${k}">Remove</button></div>`).join('') || '<div class="small">No blocks yet. A single building can be one block.</div>')
+      + `<div class="btns"><button class="btn sm" data-act="addblock"><i class="ti ti-plus"></i> Add a block</button></div><p class="section-label" style="margin-top:14px">Systems ${info(SYS_INFO)}</p>`;
+  } else if ((s.systems || []).length > 1) {
+    L += `<div class="fld"><label>System ${info(SYS_INFO)}</label><select id="edFilter"><option value="">All systems</option>${(s.systems || []).map(x => `<option value="${esc(x.id)}" ${S.edFilter === x.id ? 'selected' : ''}>${esc(A.systemName(s, x.id))}</option>`).join('')}</select></div>`;
+  }
+  if (t === 'scenarios') L += `<p class="small">One scenario for each thing that sets it off. Each landing detector gets its own, even if they share the roof vent.</p>`;
+  let g = null;
+  L += rows.map(r => { let x = ''; if (r.grp && r.grp !== g) { g = r.grp; x += `<div class="edgrp">${esc(g)}</div>`; } return x + `<div class="edrow ${r.k === sel ? 'on' : ''}" data-act="edopen" data-k="${r.k}"><div class="edmain">${r.html}</div><div class="edtags">${r.tags}</div></div>`; }).join('') || `<div class="empty-note">${{ systems: 'No systems yet.', assets: 'No equipment yet.', scenarios: 'No scenarios yet.', power: 'No power supplies yet.' }[t]}</div>`;
+  const addSys = S.edFilter || ((s.systems || [])[0] || {}).id || '';
+  L += `<div class="btns">` + ({ systems: `<button class="btn" data-act="addsys"><i class="ti ti-plus"></i> Add a system</button>`, assets: `<button class="btn" data-act="addasset" data-sys="${esc(addSys)}"><i class="ti ti-plus"></i> Add equipment</button>`, scenarios: `<button class="btn" data-act="addscen" data-sys="${esc(addSys)}"><i class="ti ti-plus"></i> Add a scenario</button><button class="btn" data-act="autoscen" data-sys="${esc(addSys)}">One for each detector${(s.systems || []).length > 1 ? ' (this system)' : ''}</button>`, power: `<button class="btn" data-act="addsupply"><i class="ti ti-plus"></i> Add a power supply</button>` }[t]) + `</div>`;
+  if (t === 'systems') L += `<p class="section-label" style="margin-top:14px">Times</p><div class="fld"><label>System fully working within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.systemS" data-num="1" value="${esc((s.timings || {}).systemS ?? 90)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div>
+    <div class="fld"><label>Doors, dampers and inlets open within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.openS" data-num="1" value="${esc((s.timings || {}).openS ?? 60)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div>
+    <p class="small">The standard times are 90 and 60 seconds. Only change them if the fire strategy says something different.</p>`;
+  // one item
+  let R = '';
+  if (open_) {
+    const i = rows.findIndex(r => r.k === sel);
+    const body = { systems: () => sysItemHTML(s.systems[sel], sel), assets: () => assetHTML(s.assets[sel], sel), scenarios: () => scenHTML(s.scenarios[sel], sel), power: () => supplyHTML(s.supplies[sel], sel) }[t]();
+    R = `<div class="ednav top"><button class="btn sm" data-act="edlist"><i class="ti ti-arrow-left"></i> Back to the list</button><span class="small">${i + 1} of ${rows.length}</span></div>${body}
+      <div class="stepnav"><button class="btn" data-act="edprev" ${i <= 0 ? 'disabled' : ''}>Previous</button><button class="btn" data-act="edsave">Save</button><button class="btn dark" data-act="ednext" ${i >= rows.length - 1 ? 'disabled' : ''}>Next</button></div>`;
+  } else R = `<div class="empty-note">Tap a line on the list to open it.</div>`;
+  return h + `<div class="ed ${open_ ? 'has-item' : ''}"><div class="card edlist">${L}</div><div class="card editem">${R}</div></div>`;
 }
-function sysTabHTML() {
+function sysItemHTML(x, k) {
   const s = S.site;
-  let h = `<p class="section-label">Blocks</p>`;
-  h += (s.blocks || []).map((b, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-sbind="blocks.${k}.name" value="${esc(b.name)}" placeholder="Block name"><button class="btn sm warn" data-act="delblock" data-n="${k}">Remove</button></div>`).join('') || '<div class="small">No blocks yet. A single building can be one block.</div>';
-  h += `<div class="btns"><button class="btn sm" data-act="addblock"><i class="ti ti-plus"></i> Add a block</button></div>`;
-  h += `<p class="section-label" style="margin-top:16px">Systems</p><p class="small">A riser, a stairwell, or anything with its own panel or cause-and-effect.</p>`;
-  h += (s.systems || []).map((x, k) => `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="systems.${k}.name" value="${esc(x.name)}" placeholder="E.g. Riser 2"></div>
+  return `<p class="section-label">System ${info(SYS_INFO)}</p><div class="fgrid"><div class="fld"><label>Name</label><input type="text" data-sbind="systems.${k}.name" value="${esc(x.name)}" placeholder="E.g. Riser 2"></div>
     <div class="fld"><label>Block</label><select data-sbind="systems.${k}.blockId"><option value="">—</option>${(s.blocks || []).map(b => `<option value="${esc(b.id)}" ${x.blockId === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></div>
     <div class="fld"><label>Kind</label><select data-sbind="systems.${k}.kind">${['Smoke shaft / riser', 'Stairwell', 'Corridor windows', 'Other'].map(o => `<option ${x.kind === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div></div>
     <label class="tick"><input type="checkbox" data-sbind="systems.${k}.comfortVent" data-bool="1" ${x.comfortVent ? 'checked' : ''}> It also opens for everyday (comfort) ventilation</label>
-    <div class="btns"><button class="btn sm warn" data-act="delsys" data-n="${k}">Remove</button></div></div>`).join('');
-  h += `<div class="btns"><button class="btn" data-act="addsys"><i class="ti ti-plus"></i> Add a system</button></div>`;
-  h += `<p class="section-label" style="margin-top:16px">Times</p><div class="fgrid"><div class="fld"><label>System fully working within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.systemS" data-num="1" value="${esc((s.timings || {}).systemS ?? 90)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div>
-    <div class="fld"><label>Doors, dampers and inlets open within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.openS" data-num="1" value="${esc((s.timings || {}).openS ?? 60)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div></div>
-    <p class="small">The standard times are 90 and 60 seconds. Only change them if the fire strategy says something different.</p>`;
-  return h;
-}
-function assetsTabHTML() {
-  const s = S.site, sys = s.systems || [];
-  if (!sys.length) return `<div class="empty-note">Add a system first (Blocks and systems).</div>`;
-  let h = '';
-  sys.forEach(x => {
-    const list = (s.assets || []).map((a, k) => ({ a, k })).filter(o => o.a.systemId === x.id);
-    h += `<p class="section-label" style="margin-top:6px">${esc(A.systemName(s, x.id))}</p>`;
-    h += list.map(({ a, k }) => assetHTML(a, k)).join('') || '<div class="small">Nothing yet.</div>';
-    h += `<div class="btns"><button class="btn" data-act="addasset" data-sys="${esc(x.id)}"><i class="ti ti-plus"></i> Add equipment</button></div>`;
-  });
-  const lost = (s.assets || []).map((a, k) => ({ a, k })).filter(o => !sys.some(x => x.id === o.a.systemId));
-  if (lost.length) h += `<p class="section-label">Not in a system</p>` + lost.map(({ a, k }) => assetHTML(a, k)).join('');
-  return h;
+    <div class="btns"><button class="btn sm warn" data-act="delsys" data-n="${k}">Remove this system</button></div>`;
 }
 function assetHTML(a, k) {
   const s = S.site, t = A.ASSET_TYPES[a.type] || {};
-  if (a.status === 'retired') return `<div class="list-line"><div><b>${esc(A.assetName(a))}</b> <span class="tag">Retired ${A.shortDate(a.retiredOn)}</span> <span class="small">${esc(a.location || '')}</span></div></div>`;
+  if (a.status === 'retired') return `<p class="section-label">${esc(A.assetName(a))}</p><div class="box">Retired on ${A.shortDate(a.retiredOn)}${a.retiredWhy ? ': ' + esc(a.retiredWhy) : ''}. ${esc(a.location || '')}</div>`;
   const note = A.clientNoteForAsset(a);
-  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>What is it?</label><select data-sbind="assets.${k}.type" data-rr="1">${Object.entries(A.ASSET_TYPES).map(([tk, tv]) => `<option value="${tk}" ${a.type === tk ? 'selected' : ''}>${esc(tv.label)}</option>`).join('')}</select></div>
+  return `<p class="section-label">${esc(A.assetName(a)) || 'New equipment'}</p><div class="fgrid"><div class="fld"><label>What is it?</label><select data-sbind="assets.${k}.type" data-rr="1">${Object.entries(A.ASSET_TYPES).map(([tk, tv]) => `<option value="${tk}" ${a.type === tk ? 'selected' : ''}>${esc(tv.label)}</option>`).join('')}</select></div>
    <div class="fld"><label>ID / label</label><input type="text" data-sbind="assets.${k}.ref" value="${esc(a.ref || '')}" placeholder="As on the equipment or drawing"></div>
    <div class="fld"><label>Where is it? <span class="req">*</span></label><input type="text" data-sbind="assets.${k}.location" value="${esc(a.location || '')}" placeholder="E.g. Floor 3 lobby"></div>
    <div class="fld"><label>Floor</label><input type="text" data-sbind="assets.${k}.floor" value="${esc(a.floor || '')}"></div>
-   <div class="fld"><label>System</label><select data-sbind="assets.${k}.systemId" data-rr="1">${(s.systems || []).map(x => `<option value="${esc(x.id)}" ${a.systemId === x.id ? 'selected' : ''}>${esc(A.systemName(s, x.id))}</option>`).join('')}</select></div>
+   <div class="fld"><label>System ${info(SYS_INFO)}</label><select data-sbind="assets.${k}.systemId" data-rr="1">${(s.systems || []).map(x => `<option value="${esc(x.id)}" ${a.systemId === x.id ? 'selected' : ''}>${esc(A.systemName(s, x.id))}</option>`).join('')}</select></div>
    <div class="fld"><label>Panel / zone / channel (optional)</label><input type="text" data-sbind="assets.${k}.panelZone" value="${esc(a.panelZone || '')}"></div>
    ${a.type === 'shaftDoor' || a.type === 'damper' ? `<div class="fld"><label>How is it held shut?</label><select data-sbind="assets.${k}.holdMethod" data-rr="1"><option value="">Choose…</option>${A.HOLD_METHODS.map(o => `<option ${a.holdMethod === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
    <div class="fld"><label>How does it open?</label><select data-sbind="assets.${k}.openMethod" data-rr="1"><option value="">Choose…</option>${A.OPEN_METHODS.map(o => `<option ${a.openMethod === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>` : ''}
    <div class="fld full"><label>Access notes (optional)</label><input type="text" data-sbind="assets.${k}.access" value="${esc(a.access || '')}" placeholder="Ladder needed, key, roof hatch…"></div></div>
    ${note ? `<div class="box info">This goes on the report as a note for the client: ${esc(note)}</div>` : ''}
-   <div class="btns">${a.everTested ? '' : `<button class="btn sm warn" data-act="delasset" data-n="${k}">Delete</button>`}<button class="btn sm" data-act="retireasset" data-n="${k}">It has gone (retire)</button><button class="btn sm" data-act="replaceasset" data-n="${k}">It was replaced</button></div></div>`;
-}
-function scenTabHTML() {
-  const s = S.site, sys = s.systems || [];
-  if (!sys.length) return `<div class="empty-note">Add a system first.</div>`;
-  let h = `<p class="small">One scenario for each thing that sets the system off. Each landing detector gets its own, even if they share the roof vent. Say what should open and what must stay shut.</p>`;
-  sys.forEach(x => {
-    const list = (s.scenarios || []).map((c, k) => ({ c, k })).filter(o => o.c.systemId === x.id && !o.c.retired);
-    h += `<p class="section-label" style="margin-top:8px">${esc(A.systemName(s, x.id))}</p>` + (list.map(({ c, k }) => scenHTML(c, k)).join('') || '<div class="small">No scenarios yet.</div>');
-    h += `<div class="btns"><button class="btn" data-act="addscen" data-sys="${esc(x.id)}"><i class="ti ti-plus"></i> Add a scenario</button>${list.length ? '' : `<button class="btn" data-act="autoscen" data-sys="${esc(x.id)}">One for each detector</button>`}</div>`;
-  });
-  return h;
+   <div class="btns">${a.everTested ? '' : `<button class="btn sm warn" data-act="delasset" data-n="${k}">Delete</button>`}<button class="btn sm" data-act="retireasset" data-n="${k}">It has gone (retire)</button><button class="btn sm" data-act="replaceasset" data-n="${k}">It was replaced</button></div>`;
 }
 function scenHTML(c, k) {
   const s = S.site, outs = A.activeAssets(s).filter(a => a.systemId === c.systemId && (A.ASSET_TYPES[a.type] || {}).moves);
   const inputs = A.activeAssets(s).filter(a => a.systemId === c.systemId && ['detector', 'manual', 'frs', 'interface'].includes(a.type));
-  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="scenarios.${k}.name" value="${esc(c.name || '')}" placeholder="E.g. Floor 3 detector"></div>
+  return `<p class="section-label">${esc(c.name || 'New scenario')}</p><p class="small">${esc(A.systemName(s, c.systemId))}</p><div class="fgrid"><div class="fld"><label>Name</label><input type="text" data-sbind="scenarios.${k}.name" value="${esc(c.name || '')}" placeholder="E.g. Floor 3 detector"></div>
    <div class="fld"><label>What sets it off?</label><select data-sbind="scenarios.${k}.inputType">${A.INPUT_TYPES.map(o => `<option ${c.inputType === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
-   <div class="fld"><label>Which device? (from the list)</label><select data-sbind="scenarios.${k}.inputAssetId" data-rr="1"><option value="">Not in the list</option>${inputs.map(a => `<option value="${esc(a.id)}" ${c.inputAssetId === a.id ? 'selected' : ''}>${esc(A.assetName(a))} · ${esc(a.location || '')}</option>`).join('')}</select></div>
+   <div class="fld"><label>Trigger device</label>${inputs.length ? `<select data-sbind="scenarios.${k}.inputAssetId" data-rr="1"><option value="">Not on the equipment list</option>${inputs.map(a => `<option value="${esc(a.id)}" ${c.inputAssetId === a.id ? 'selected' : ''}>${esc(A.assetName(a))} · ${esc(a.location || '')}</option>`).join('')}</select>` : `<div class="box warn small" style="margin-bottom:14px">No detectors or switches on this system yet. Add them under Equipment, or type the address below.</div>`}</div>
    <div class="fld"><label>Device address / ID</label><input type="text" data-sbind="scenarios.${k}.inputRef" value="${esc(c.inputRef || '')}"></div>
    <div class="fld"><label>Where is it?</label><input type="text" data-sbind="scenarios.${k}.inputLocation" value="${esc(c.inputLocation || '')}"></div>
    <div class="fld"><label>How it is set off for the test</label><select data-sbind="scenarios.${k}.method">${Object.entries(A.METHODS).filter(([mk]) => mk !== 'notTested').map(([mk, mv]) => `<option value="${mk}" ${(c.method || 'endToEnd') === mk ? 'selected' : ''}>${esc(mv)}</option>`).join('')}</select></div></div>
@@ -439,21 +466,20 @@ function scenHTML(c, k) {
    ${outs.length ? outs.map(a => `<div class="list-line"><div><b>${esc(A.assetName(a))}</b> <span class="small">${esc(a.location || '')}</span></div><div class="opt-row" style="margin:0">${[['open', 'Opens'], ['closed', 'Stays shut'], ['', 'Not part of it']].map(([ev, et]) => `<button class="opt ${((c.expected || {})[a.id] || '') === ev ? 'on' : ''}" data-act="expect" data-n="${k}" data-a="${esc(a.id)}" data-v="${ev}">${et}</button>`).join('')}</div></div>`).join('') : '<div class="small">No vents, doors or dampers in this system yet.</div>'}
    <div class="fgrid" style="margin-top:10px"><div class="fld"><label>Other things that should happen (optional)</label><input type="text" data-sbind="scenarios.${k}.indications" value="${esc(c.indications || '')}" placeholder="E.g. repeater panel shows fire, lift returns"></div>
    <div class="fld"><label>How it resets</label><input type="text" data-sbind="scenarios.${k}.reset" value="${esc(c.reset || '')}" placeholder="E.g. reset at the AOV panel"></div></div>
-   <div class="btns"><button class="btn sm" data-act="copyscen" data-n="${k}">Copy</button><button class="btn sm warn" data-act="delscen" data-n="${k}">Remove</button></div></div>`;
-}
-function powerTabHTML() {
-  const s = S.site;
-  let h = `<p class="small">One for each AOV panel or separate power supply. These figures feed the battery calculator.</p>`;
-  h += (s.supplies || []).map((p, k) => p.retired ? '' : supplyHTML(p, k)).join('') || '<div class="small">None yet.</div>';
-  return h + `<div class="btns"><button class="btn" data-act="addsupply"><i class="ti ti-plus"></i> Add a power supply</button></div>`;
+   <div class="btns"><button class="btn sm" data-act="copyscen" data-n="${k}">Copy</button><button class="btn sm warn" data-act="delscen" data-n="${k}">Remove</button></div>`;
 }
 function supplyHTML(p, k) {
   const s = S.site, b = p.batteries || {};
   const c = A.batteryCalc(p, S.rules), age = A.batteryAge(p, S.rules);
-  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="supplies.${k}.name" value="${esc(p.name || '')}" placeholder="E.g. Block B riser 2 panel"></div>
+  const feedable = A.activeAssets(s).filter(a => (p.systems || []).includes(a.systemId) && (A.ASSET_TYPES[a.type] || {}).moves);
+  const others = (s.supplies || []).filter(q => !q.retired && q.id !== p.id);
+  return `<p class="section-label">${esc(p.name || 'New power supply')}</p><div class="fgrid"><div class="fld"><label>Name</label><input type="text" data-sbind="supplies.${k}.name" value="${esc(p.name || '')}" placeholder="E.g. Block B riser 2 panel"></div>
    <div class="fld"><label>Make and model</label><input type="text" data-sbind="supplies.${k}.model" value="${esc(p.model || '')}"></div>
    <div class="fld"><label>Panel manual or reference used <span class="hint">and its revision</span></label><input type="text" data-sbind="supplies.${k}.manualRef" value="${esc(p.manualRef || '')}"></div></div>
-   <label class="l">Systems it powers</label><div class="opt-row">${(s.systems || []).map(x => `<button class="opt ${(p.systems || []).includes(x.id) ? 'on' : ''}" data-act="supsys" data-n="${k}" data-s="${esc(x.id)}">${esc(A.systemName(s, x.id))}</button>`).join('')}</div>
+   <label class="l">Systems it powers ${info(SYS_INFO)}</label><div class="opt-row">${(s.systems || []).map(x => `<button class="opt ${(p.systems || []).includes(x.id) ? 'on' : ''}" data-act="supsys" data-n="${k}" data-s="${esc(x.id)}">${esc(A.systemName(s, x.id))}</button>`).join('')}</div>
+   <label class="l">Which items it powers <span class="hint" style="display:inline">(optional: for a supply on one door, pick that door)</span></label>${feedable.length ? `<div class="opt-row">${feedable.map(a => `<button class="opt ${(p.items || []).includes(a.id) ? 'on' : ''}" data-act="supitem" data-n="${k}" data-a="${esc(a.id)}">${esc(A.assetName(a))}${a.location ? ' · ' + esc(a.location) : ''}</button>`).join('')}</div>` : '<div class="small" style="margin-bottom:10px">Choose the system first.</div>'}
+   <label class="tick"><input type="checkbox" data-sbind="supplies.${k}.ownMains" data-bool="1" data-rr="1" ${p.ownMains !== false ? 'checked' : ''}> Has its own mains supply (switched off on its own for the test)</label>
+   ${p.ownMains === false ? `<div class="fld"><label>Shares its mains with</label><select data-sbind="supplies.${k}.sharesWith"><option value="">Choose…</option>${others.map(q => `<option value="${esc(q.id)}" ${p.sharesWith === q.id ? 'selected' : ''}>${esc(q.name || 'Supply')}</option>`).join('')}</select></div>` : ''}
    <label class="l">Batteries</label><div class="fgrid three"><div class="fld"><label>How many</label><input type="text" inputmode="numeric" data-sbind="supplies.${k}.batteries.count" data-num="1" value="${esc(b.count ?? '')}"></div>
    <div class="fld"><label>Each: Ah</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.batteries.ahEach" data-num="1" value="${esc(b.ahEach ?? '')}"></div>
    <div class="fld"><label>Each: volts</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.batteries.voltsEach" data-num="1" value="${esc(b.voltsEach ?? '')}"></div>
@@ -468,7 +494,7 @@ function supplyHTML(p, k) {
    <div class="fld"><label>Standby hours needed <span class="hint">Blank = ${esc(S.rules.battery.standbyH)} h</span></label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.standbyH" data-num="1" value="${esc(p.standbyH ?? '')}"></div>
    <div class="fld"><label>Where the figures came from</label><input type="text" data-sbind="supplies.${k}.loadSource" value="${esc(p.loadSource || '')}" placeholder="Measured, manual page, design"></div></div>
    <div id="calc_${k}">${calcHTML(c, age)}</div>
-   <div class="btns"><button class="btn sm warn" data-act="delsupply" data-n="${k}">Remove</button></div></div>`;
+   <div class="btns"><button class="btn sm warn" data-act="delsupply" data-n="${k}">Remove</button><button class="btn sm" data-act="copysupply" data-n="${k}">Copy (for the next door)</button></div>`;
 }
 function calcHTML(c, age) {
   let h = `<div class="calc">`;
@@ -613,7 +639,7 @@ function startHTML() {
   let h = `<div class="fgrid"><div class="fld"><label>Date</label><input type="date" data-vbind="date" value="${esc(v.date)}" ${dis()}></div>
    <div class="fld"><label>Visit</label><input type="text" value="${esc((A.VISIT_TYPES[v.visitType] || {}).label)}" disabled></div></div>`;
   h += `<p class="small"><b>Engineers on this visit:</b> ${esc((v.engineers || []).map(e => e.name).join(', '))}. Anyone who opens it and saves an answer is added.</p>`;
-  if (sys.length > 1) h += `<label class="l">Systems covered</label>${sys.map(x => `<label class="tick"><input type="checkbox" data-act="scope" data-s="${esc(x.id)}" ${!(v.scope && v.scope.systems && v.scope.systems.length) || v.scope.systems.includes(x.id) ? 'checked' : ''} ${dis()}> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}`;
+  if (sys.length > 1) h += `<label class="l">Systems covered ${info(SYS_INFO)}</label>${sys.map(x => `<label class="tick"><input type="checkbox" data-act="scope" data-s="${esc(x.id)}" ${!(v.scope && v.scope.systems && v.scope.systems.length) || v.scope.systems.includes(x.id) ? 'checked' : ''} ${dis()}> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}`;
   h += `<p class="section-label" style="margin-top:12px">Fire alarm and ARC</p><div class="fgrid"><div class="fld"><label>Fire alarm job or certificate number</label><input type="text" data-vbind="coordination.faRef" value="${esc(c.faRef || '')}" ${dis()}></div>
    <div class="fld"><label>ARC reference (if there is one)</label><input type="text" data-vbind="coordination.arcRef" value="${esc(c.arcRef || '')}" ${dis()}></div>
    <div class="fld"><label>Did the ARC confirm they got the signal?</label><select data-vbind="coordination.arcReceipt" ${dis()}>${[['', 'Choose…'], ['yes', 'Yes, they confirmed it'], ['no', 'No'], ['notChecked', 'Not checked'], ['none', 'No ARC on this system']].map(([k, t]) => `<option value="${k}" ${(c.arcReceipt || '') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
@@ -667,14 +693,28 @@ function checkHTML(c) {
     case 'inlets': h += instr('inlets') + `<div class="q"><p class="ql">Do the number and position of inlets and vents match the design?</p>${yn(key, 'countMatches', r.countMatches)}${r.countMatches === 'no' ? txt(key, 'note', r.note, 'What is different?') : ''}</div>
       <div class="fgrid"><div class="fld"><label>Design free area (m²)</label><input type="text" inputmode="decimal" data-rbind="${key}.designArea" value="${esc(r.designArea ?? '')}" ${dis()}></div><div class="fld"><label>Measured free area (m²) <span class="hint">On a sample of each size</span></label><input type="text" inputmode="decimal" data-rbind="${key}.measuredArea" value="${esc(r.measuredArea ?? '')}" ${dis()}></div></div>`; break;
     case 'comfort': h += instr('comfort') + `<div class="q"><p class="ql">Did the fire signal take over?</p>${yn(key, 'answer', r.answer)}</div>`; break;
-    case 'power': {
-      const p = (s.supplies || []).find(x => x.id === c.supplyId) || {}, b = p.batteries || {}, nB = Math.max(1, Number(b.count) || 1);
-      h += `<div class="box"><b>${esc(p.name || '')}</b>${p.model ? ' · ' + esc(p.model) : ''}<div class="small">Method: ${esc(p.manualRef || 'no panel manual recorded')}. Maker's lowest volts per battery: ${p.minVolts != null ? esc(p.minVolts) + ' V' : '<b>not recorded</b> (result stays Unverified)'}.</div></div>` + instr('power');
-      h += Object.entries(A.POWER_Q).map(([k, t]) => `<div class="q"><p class="ql">${esc(t)}</p>${yn(key, k, r[k])}</div>`).join('');
-      if (!b.count) h += `<div class="box bad">No batteries recorded for this supply. A missing battery is a defect. Add them in the equipment list if they are there.</div>`;
-      h += `<label class="l">Battery readings (volts, per battery)</label><div class="fgrid three">${Array.from({ length: nB }, (_, i) => `<div class="fld"><label>Battery ${i + 1}</label><input type="text" inputmode="decimal" data-rbind="${key}.readings.${i}.v" value="${esc(((r.readings || [])[i] || {}).v ?? '')}" ${dis()}></div>`).join('')}</div>
-        <div class="fgrid"><div class="fld"><label>How you measured (state of the panel)</label><input type="text" data-rbind="${key}.method" value="${esc(r.method || '')}" placeholder="E.g. on load, mains off 15 min" ${dis()}></div><div class="fld"><label>Test instrument (optional)</label><input type="text" data-rbind="${key}.instrument" value="${esc(r.instrument || '')}" ${dis()}></div></div>`;
-      h += calcHTML(A.batteryCalc(p, S.rules), A.batteryAge(p, S.rules));
+    case 'power': {   // v1.1: one screen per system, every supply that feeds it
+      h += instr('power');
+      (c.supplyIds || []).forEach(pid => {
+        const p = (s.supplies || []).find(x => x.id === pid) || {}, b = p.batteries || {}, nB = Math.max(1, Number(b.count) || 1), q = (r.sup || {})[pid] || {};
+        const feeds = A.powerFeeds(s, p), base = `sup.${pid}`;
+        const miss = q.cant ? [] : A.powerQs(p).filter(k => !q[k]).length + ((q.readings || []).some(x => x && x.v != null && x.v !== '') ? 0 : 1);
+        const bad = Object.keys(A.POWER_Q).some(k => q[k] === 'no');
+        const tag = q.cant ? '<span class="tag">Not tested</span>' : bad ? '<span class="tag bad">Problem</span>' : miss ? `<span class="tag wait">${miss} to do</span>` : '<span class="tag ok">Done</span>';
+        h += `<details class="sup" ${miss || bad ? 'open' : ''}><summary><span>${esc(p.name || 'Supply')}${feeds.length ? `<div class="small" style="font-weight:400">${esc(feeds.map(a => A.assetName(a) + (a.location ? ' · ' + a.location : '')).join(', '))}</div>` : ''}</span>${tag}</summary><div class="in">`;
+        h += `<div class="small" style="margin-bottom:8px">${p.model ? esc(p.model) + '. ' : ''}Method: ${esc(p.manualRef || 'no panel manual recorded')}. Maker's lowest volts per battery: ${p.minVolts != null ? esc(p.minVolts) + ' V' : '<b>not recorded</b> (stays Unverified)'}.${p.ownMains === false ? ` <b>Shares its mains</b>${p.sharesWith ? ' with ' + esc(((s.supplies || []).find(x => x.id === p.sharesWith) || {}).name || '') : ''}, so the mains questions are asked there.` : ''}</div>`;
+        if (q.cant) h += `<div class="box">Not tested: <textarea data-rbind="${key}.${base}.cantWhy" placeholder="Why?" ${dis()}>${esc(q.cantWhy || '')}</textarea><button class="btn sm" data-act="ans" data-k="${esc(key)}" data-f="${base}.cant" data-v="" ${dis()}>Test it after all</button></div>`;
+        else {
+          h += A.powerQs(p).concat(p.ownMains === false ? [] : ['faultInput']).map(k => `<div class="q"><p class="ql">${esc(A.POWER_Q[k])}</p>${yn(key, base + '.' + k, q[k])}</div>`).join('');
+          if (!b.count) h += `<div class="box bad">No batteries recorded for this supply. A missing battery is a defect. Add them in the equipment list if they are there.</div>`;
+          h += `<label class="l">Battery readings (volts)</label><div class="fgrid three">${Array.from({ length: nB }, (_, i) => `<div class="fld"><label>Battery ${i + 1}</label><input type="text" inputmode="decimal" data-rbind="${key}.${base}.readings.${i}.v" value="${esc(((q.readings || [])[i] || {}).v ?? '')}" ${dis()}></div>`).join('')}</div>
+            <div class="fld"><label>How you measured (state of the panel)</label><input type="text" data-rbind="${key}.${base}.method" value="${esc(q.method || '')}" placeholder="E.g. on load, mains off 15 min" ${dis()}></div>`;
+          h += calcHTML(A.batteryCalc(p, S.rules), A.batteryAge(p, S.rules));
+          h += `<div class="btns"><button class="btn sm" data-act="ans" data-k="${esc(key)}" data-f="${base}.cant" data-v="1" ${dis()}>This one could not be tested</button></div>`;
+        }
+        h += `</div></details>`;
+      });
+      h += `<div class="fld"><label>Test instrument (optional)</label><input type="text" data-rbind="${key}.instrument" value="${esc(r.instrument || '')}" ${dis()}></div>`;
       break;
     }
     case 'currents': { const p = (s.supplies || []).find(x => x.id === c.supplyId) || {}; h += instr('currents') + `<div class="fgrid"><div class="fld"><label>Standby current (A)</label><input type="text" inputmode="decimal" data-rbind="${key}.standbyA" data-tosupply="${esc(p.id)}" value="${esc(r.standbyA ?? '')}" ${dis()}></div><div class="fld"><label>Fire-mode current (A)</label><input type="text" inputmode="decimal" data-rbind="${key}.fireA" data-tosupply="${esc(p.id)}" value="${esc(r.fireA ?? '')}" ${dis()}></div></div><p class="small">These are copied into the battery calculator for this supply.</p>`; break; }
@@ -906,6 +946,7 @@ function setVisitPath(path, val) { const parts = path.split('.'); const top = pa
 document.addEventListener('change', e => {
   const el = e.target, d = el.dataset || {};
   if (el.id === 'photoIn') { addPhoto(el.files[0]); el.value = ''; return; }
+  if (el.id === 'edFilter') { flushSite(); S.edFilter = el.value; S.edSel = null; return rerender(); }
   if (el.id === 'fBlock') { S.schedFilter.block = el.value; return rerender(); }
   if (el.id === 'fSys') { S.schedFilter.system = el.value; return rerender(); }
   if (el.id === 'fOut') { S.schedFilter.outstanding = el.checked; return rerender(); }
@@ -930,26 +971,42 @@ document.addEventListener('click', async e => {
     case 'createvisit': return createVisit();
     case 'resume': return openVisit(d.id);
     // set-up
-    case 'setup': S.back = null; S.setupTab = 'systems'; return go('setup');
-    case 'editequip': S.back = S.step; S.setupTab = (s.systems || []).length ? 'assets' : 'systems'; return go('setup');
-    case 'editpower': S.back = S.step; S.setupTab = 'power'; return go('setup');
+    case 'setup': S.back = null; S.setupTab = 'systems'; S.edSel = null; return go('setup');
+    case 'editequip': S.back = S.step; S.edSel = null; S.setupTab = (s.systems || []).length ? 'assets' : 'systems'; return go('setup');
+    case 'editpower': S.back = S.step; S.edSel = null; S.setupTab = 'power'; return go('setup');
     case 'backtovisit': flushSite(); S.step = S.back; S.back = null; return go('visit');
-    case 'stab': flushSite(); S.setupTab = d.t; return rerender();
+    case 'stab': flushSite(); S.setupTab = d.t; S.edSel = null; return rerender();
+    case 'edopen': flushSite(); S.edSel = +d.k; rerender(); if (window.innerWidth < 1000) scrollTop(); return;
+    case 'edlist': flushSite(); S.edSel = null; return rerender();
+    case 'edsave': flushSite(); banner(navigator.onLine ? 'Saved.' : 'Saved on this phone. It sends when there is signal.', 'ok'); return;
+    case 'edprev': case 'ednext': { flushSite(); const rows = edRows(), i = rows.findIndex(r => r.k === S.edSel), j = a === 'edprev' ? i - 1 : i + 1; if (rows[j]) S.edSel = rows[j].k; rerender(); if (window.innerWidth < 1000) scrollTop(); return; }
+    case 'info': { const t = el.nextElementSibling; if (t && t.classList.contains('itext')) t.hidden = !t.hidden; return; }
+    case 'supitem': { const p = s.supplies[+d.n]; p.items = (p.items || []).includes(d.a) ? p.items.filter(x => x !== d.a) : [...(p.items || []), d.a]; queueSiteSave('supply'); return rerender(); }
+    case 'copysupply': { const c = A.clone(s.supplies[+d.n]); c.id = A.newId('p'); c.name = (c.name || '') + ' (copy)'; c.items = []; s.supplies.splice(+d.n + 1, 0, c); S.edSel = +d.n + 1; queueSiteSave('supply'); return rerender(); }
     case 'addblock': s.blocks = [...(s.blocks || []), { id: A.newId('b'), name: 'Block ' + String.fromCharCode(65 + (s.blocks || []).length) }]; queueSiteSave('block'); return rerender();
     case 'delblock': { const b = s.blocks[+d.n]; if ((s.systems || []).some(x => x.blockId === b.id)) return alert('Move or remove its systems first.'); s.blocks.splice(+d.n, 1); queueSiteSave('block'); return rerender(); }
-    case 'addsys': s.systems = [...(s.systems || []), { id: A.newId('s'), name: 'Riser ' + ((s.systems || []).length + 1), blockId: (s.blocks || [])[0] ? s.blocks[0].id : '', kind: 'Smoke shaft / riser', comfortVent: false }]; queueSiteSave('system'); return rerender();
-    case 'delsys': { const x = s.systems[+d.n]; if (A.activeAssets(s).some(q => q.systemId === x.id)) return alert('Move or retire its equipment first.'); if (!confirm('Remove ' + x.name + '?')) return; s.systems.splice(+d.n, 1); queueSiteSave('system'); return rerender(); }
-    case 'addasset': s.assets = [...(s.assets || []), { id: A.newId('a'), type: 'shaftDoor', ref: '', location: '', floor: '', systemId: d.sys, status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, confirmed: false, addedBy: meEmail() }]; queueSiteSave('asset added'); return rerender();
-    case 'delasset': { const x = s.assets[+d.n]; if (!confirm('Delete ' + A.assetName(x) + '? Only do this if it was added by mistake. If it has gone, use "It has gone (retire)".')) return; s.assets.splice(+d.n, 1); (s.scenarios || []).forEach(c => { if (c.expected) delete c.expected[x.id]; if (c.inputAssetId === x.id) c.inputAssetId = ''; }); queueSiteSave('asset deleted'); return rerender(); }
+    case 'addsys': s.systems = [...(s.systems || []), { id: A.newId('s'), name: 'Riser ' + ((s.systems || []).length + 1), blockId: (s.blocks || []).length ? s.blocks[s.blocks.length - 1].id : '', kind: 'Smoke shaft / riser', comfortVent: false }]; S.edSel = s.systems.length - 1; queueSiteSave('system'); return rerender();
+    case 'delsys': { const x = s.systems[+d.n]; if (A.activeAssets(s).some(q => q.systemId === x.id)) return alert('Move or retire its equipment first.'); if (!confirm('Remove ' + x.name + '?')) return; s.systems.splice(+d.n, 1); S.edSel = null; queueSiteSave('system'); return rerender(); }
+    case 'addasset': s.assets = [...(s.assets || []), { id: A.newId('a'), type: 'shaftDoor', ref: '', location: '', floor: '', systemId: d.sys, status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, confirmed: false, addedBy: meEmail() }]; S.edSel = s.assets.length - 1; queueSiteSave('asset added'); return rerender();
+    case 'delasset': { const x = s.assets[+d.n]; if (!confirm('Delete ' + A.assetName(x) + '? Only do this if it was added by mistake. If it has gone, use "It has gone (retire)".')) return; s.assets.splice(+d.n, 1); (s.scenarios || []).forEach(c => { if (c.expected) delete c.expected[x.id]; if (c.inputAssetId === x.id) c.inputAssetId = ''; }); S.edSel = null; queueSiteSave('asset deleted'); return rerender(); }
     case 'retireasset': { const x = s.assets[+d.n]; const why = prompt('Why has it gone? (a few words)'); if (why == null) return; Object.assign(x, { status: 'retired', retiredOn: A.todayISO(), retiredWhy: why, retiredBy: meEmail() }); (s.scenarios || []).forEach(c => { if (c.expected) delete c.expected[x.id]; }); queueSiteSave('asset retired'); return rerender(); }
-    case 'replaceasset': { const x = s.assets[+d.n]; const why = prompt('What replaced it? (make / model)'); if (why == null) return; const nu = { ...A.clone(x), id: A.newId('a'), status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, replaces: x.id, model: why, everTested: false, confirmed: false }; Object.assign(x, { status: 'retired', retiredOn: A.todayISO(), retiredWhy: 'Replaced: ' + why, replacedBy: nu.id }); s.assets.push(nu); (s.scenarios || []).forEach(c => { if (c.expected && c.expected[x.id]) { c.expected[nu.id] = c.expected[x.id]; delete c.expected[x.id]; } if (c.inputAssetId === x.id) c.inputAssetId = nu.id; }); queueSiteSave('asset replaced'); return rerender(); }
-    case 'addscen': s.scenarios = [...(s.scenarios || []), { id: A.newId('c'), systemId: d.sys, name: '', inputType: A.INPUT_TYPES[0], inputRef: '', inputLocation: '', method: 'endToEnd', expected: {}, indications: '', reset: '' }]; queueSiteSave('scenario'); return rerender();
-    case 'autoscen': { const dets = A.activeAssets(s).filter(x => x.systemId === d.sys && x.type === 'detector'); if (!dets.length) return alert('Add the detectors to the equipment list first.'); const outs = A.activeAssets(s).filter(x => x.systemId === d.sys && (A.ASSET_TYPES[x.type] || {}).moves); dets.forEach(det => { const exp = {}; outs.forEach(o => { exp[o.id] = (o.type === 'roofVent' || o.type === 'velux' || o.type === 'stairVent' || (o.floor && o.floor === det.floor)) ? 'open' : 'closed'; }); s.scenarios.push({ id: A.newId('c'), systemId: d.sys, name: (det.location || det.ref || 'Detector') + ' detector', inputType: A.INPUT_TYPES[0], inputAssetId: det.id, inputRef: det.ref || '', inputLocation: det.location || '', method: 'endToEnd', expected: exp, indications: '', reset: '' }); }); queueSiteSave('scenarios'); banner('Scenarios added. Check what opens for each: it was guessed from the floor numbers.', 'wait'); return rerender(); }
-    case 'copyscen': { const c = A.clone(s.scenarios[+d.n]); c.id = A.newId('c'); c.name = (c.name || '') + ' (copy)'; s.scenarios.splice(+d.n + 1, 0, c); queueSiteSave('scenario'); return rerender(); }
-    case 'delscen': { const c = s.scenarios[+d.n]; if (!confirm('Remove this scenario?')) return; if (c.everTested) c.retired = true; else s.scenarios.splice(+d.n, 1); queueSiteSave('scenario removed'); return rerender(); }
+    case 'replaceasset': { const x = s.assets[+d.n]; const why = prompt('What replaced it? (make / model)'); if (why == null) return; const nu = { ...A.clone(x), id: A.newId('a'), status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, replaces: x.id, model: why, everTested: false, confirmed: false }; Object.assign(x, { status: 'retired', retiredOn: A.todayISO(), retiredWhy: 'Replaced: ' + why, replacedBy: nu.id }); s.assets.push(nu); S.edSel = s.assets.length - 1; (s.scenarios || []).forEach(c => { if (c.expected && c.expected[x.id]) { c.expected[nu.id] = c.expected[x.id]; delete c.expected[x.id]; } if (c.inputAssetId === x.id) c.inputAssetId = nu.id; }); queueSiteSave('asset replaced'); return rerender(); }
+    case 'addscen': s.scenarios = [...(s.scenarios || []), { id: A.newId('c'), systemId: d.sys, name: '', inputType: A.INPUT_TYPES[0], inputRef: '', inputLocation: '', method: 'endToEnd', expected: {}, indications: '', reset: '' }]; S.edSel = s.scenarios.length - 1; queueSiteSave('scenario'); return rerender();
+    case 'autoscen': {   // one scenario per detector that hasn't got one yet (this system, or every system)
+      const sysIds = S.edFilter ? [S.edFilter] : (s.systems || []).map(x => x.id); let n = 0;
+      sysIds.forEach(sid => {
+        const dets = A.activeAssets(s).filter(x => x.systemId === sid && x.type === 'detector' && !(s.scenarios || []).some(c => !c.retired && c.inputAssetId === x.id));
+        const outs = A.activeAssets(s).filter(x => x.systemId === sid && (A.ASSET_TYPES[x.type] || {}).moves);
+        dets.forEach(det => { const exp = {}; outs.forEach(o => { exp[o.id] = (o.type === 'roofVent' || o.type === 'velux' || o.type === 'stairVent' || (o.floor && o.floor === det.floor)) ? 'open' : 'closed'; }); s.scenarios = [...(s.scenarios || []), { id: A.newId('c'), systemId: sid, name: (det.location || det.ref || 'Detector') + ' detector', inputType: A.INPUT_TYPES[0], inputAssetId: det.id, inputRef: det.ref || '', inputLocation: det.location || '', method: 'endToEnd', expected: exp, indications: '', reset: '' }]; n++; });
+      });
+      if (!n) return alert('No detectors without a scenario. Add the detectors under Equipment first.');
+      queueSiteSave('scenarios'); banner(`${n} scenario(s) added. Check what opens for each: it was guessed from the floor numbers.`, 'wait'); return rerender();
+    }
+    case 'copyscen': { const c = A.clone(s.scenarios[+d.n]); c.id = A.newId('c'); c.name = (c.name || '') + ' (copy)'; s.scenarios.splice(+d.n + 1, 0, c); S.edSel = +d.n + 1; queueSiteSave('scenario'); return rerender(); }
+    case 'delscen': { const c = s.scenarios[+d.n]; if (!confirm('Remove this scenario?')) return; if (c.everTested) c.retired = true; else s.scenarios.splice(+d.n, 1); S.edSel = null; queueSiteSave('scenario removed'); return rerender(); }
     case 'expect': { const c = s.scenarios[+d.n]; c.expected = c.expected || {}; if (d.v) c.expected[d.a] = d.v; else delete c.expected[d.a]; queueSiteSave('scenario'); return rerender(); }
-    case 'addsupply': s.supplies = [...(s.supplies || []), { id: A.newId('p'), name: '', systems: (s.systems || []).map(x => x.id), batteries: { count: 2, arrangement: 'series' } }]; queueSiteSave('supply'); return rerender();
-    case 'delsupply': if (!confirm('Remove this power supply?')) return; s.supplies[+d.n].retired = true; queueSiteSave('supply'); return rerender();
+    case 'addsupply': s.supplies = [...(s.supplies || []), { id: A.newId('p'), name: '', systems: S.edFilter ? [S.edFilter] : (s.systems || []).map(x => x.id), items: [], ownMains: true, batteries: { count: 2, arrangement: 'series' } }]; S.edSel = s.supplies.length - 1; queueSiteSave('supply'); return rerender();
+    case 'delsupply': if (!confirm('Remove this power supply?')) return; s.supplies[+d.n].retired = true; S.edSel = null; queueSiteSave('supply'); return rerender();
     case 'supsys': { const p = s.supplies[+d.n]; p.systems = (p.systems || []).includes(d.s) ? p.systems.filter(x => x !== d.s) : [...(p.systems || []), d.s]; queueSiteSave('supply'); return rerender(); }
     case 'sendsetup': { flushSite(); const { gaps } = A.setupGaps(s); if (gaps.length) return; s.setupStatus = 'Ready for QS'; s.setupReturnNote = null; saveSite_('submit'); audit('setup-submitted', { siteRef: s.siteRef }); banner('Sent to QS.', 'ok'); return rerender(); }
     // visit
@@ -989,6 +1046,8 @@ const NEWS_ALL = [
 const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
 const HELP = [
   { tab: 'Sites', q: 'How do I start?', a: '<p>Pick the site (or add it). Then <b>Equipment and scenarios</b> to list what\'s there, and <b>Start a visit</b> to test.</p>' },
+  { tab: 'Equipment', q: 'What is a system?', a: '<p>A riser, a stairwell, or anything with its own cause-and-effect. It isn\'t the fire alarm panel: one fire alarm panel can cover several systems.</p>' },
+  { tab: 'Equipment', q: 'Each door has its own power supply', a: '<p>Add a power supply for each one and pick the door under <b>Which items it powers</b>. <b>Copy (for the next door)</b> saves typing. On a visit they all show on one power screen for that riser.</p>' },
   { tab: 'Equipment', q: 'What is a scenario?', a: '<p>One thing that sets the system off (a detector, a switch) and what should happen: which vents and doors open and which stay shut. Each landing detector gets its own.</p>' },
   { tab: 'Equipment', q: 'Something has been removed or replaced', a: '<p>Use <b>It has gone (retire)</b> or <b>It was replaced</b>. Don\'t delete it: old reports still need it.</p>' },
   { tab: 'Visit', q: 'How do I move through the visit?', a: '<p>One thing per screen. <b>Next</b> and <b>Back</b> save as you go. <b>Save</b> keeps your place: you can stop and carry on another day. <b>Schedule</b> shows what\'s left.</p>' },

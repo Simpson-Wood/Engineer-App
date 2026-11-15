@@ -341,7 +341,7 @@ import * as SWS from './sw-shared.js';
 import * as G from './gate-shared.js';
 const { esc, TYPES, typeLabel, leafList, ANSWER_STATES, NOT_DONE_STATES, TASK_OUTCOMES, PROTECTION, INTERVALS, METRICS } = G;
 
-const VERSION = "v1.2";
+const VERSION = "v1.3";
 document.getElementById('versionLabel').textContent = VERSION;
 console.log('Gates & doors inspection', VERSION, 'shared', G.GATE_SHARED_VERSION);
 
@@ -442,7 +442,7 @@ async function boot() {
   try {
     const [sitesS, rulesS, testersS, staffS] = await Promise.all([
       getDocs(collection(db, 'gateSites')), getDocs(collection(db, 'gateRules')),
-      getDocs(collection(db, 'gateTesters')), getDocs(query(collection(db, 'staff'), where('position', '==', 'Director')))
+      getDocs(collection(db, 'gateTesters')), getDocs(query(collection(db, 'staff'), where('approver', '==', true)))   // v1.3: unsafe notices go to Approvers (Rob, 15 Nov)
     ]);
     S.sites = sitesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => !s.deletedFlag).sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
     const approved = rulesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'Approved').sort((a, b) => (b.version || 0) - (a.version || 0));

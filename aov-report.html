@@ -101,7 +101,7 @@ import * as SWS from './sw-shared.js';
 import * as A from './aov-shared.js';
 const { esc } = A;
 
-const VERSION = "v1.0";
+const VERSION = "v1.1";
 document.getElementById('versionLabel').textContent = VERSION + ' · Management';
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -161,11 +161,12 @@ onAuthStateChanged(auth, async user => {
   $('signinScreen').style.display = 'none';
   if (booted) return; booted = true;
   const va = await SWS.swViewAsInit(user);
-  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; } catch (e) {}
+  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; S.approver = !!(a.staff && a.staff.approver); } catch (e) {}
   if (!isMgmt()) { $('notAuthEmail').textContent = user.email; $('notAuthorised').style.display = 'flex'; return; }
   $('appRoot').style.display = 'block';
   $('whoName').textContent = va ? va.name : (user.displayName || user.email);
-  S.isDirector = S.position === 'Director' || meEmail() === SWS.SW_OWNER;
+  // v1.1 (Rob, 15 Nov): approving is for people with the Approver tick (set by Rob in Management > Staff), not a position.
+  S.isDirector = S.approver || meEmail() === SWS.SW_OWNER;
   SWS.swExtrasStart({ page: 'aov-report', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => (TABS.find(t => t[0] === S.tab) || [])[1] });
   SWS.swuStart();
   load();
@@ -235,7 +236,7 @@ function sitePanelHTML(s) {
       <label class="l">Documents checked (and their revisions)</label><textarea id="sDocs">${esc(s.setupSources || '')}</textarea>
       <label class="l">Conflicts, missing information or limits (optional)</label><textarea id="sLimits">${esc(s.setupLimits || '')}</textarea>
       <label class="l">Note (needed to return it)</label><textarea id="sNote"></textarea>
-      <div class="btns"><button class="btn green" data-act="approvesetup" data-id="${esc(s.id)}" ${S.isDirector && !gaps.length ? '' : 'disabled'}>Approve set-up</button><button class="btn warn" data-act="returnsetup" data-id="${esc(s.id)}">Return to the engineer</button></div>${S.isDirector ? '' : '<p class="small">Only a Director (Rob or John) can approve a set-up.</p>'}</div>`;
+      <div class="btns"><button class="btn green" data-act="approvesetup" data-id="${esc(s.id)}" ${S.isDirector && !gaps.length ? '' : 'disabled'}>Approve set-up</button><button class="btn warn" data-act="returnsetup" data-id="${esc(s.id)}">Return to the engineer</button></div>${S.isDirector ? '' : '<p class="small">Only an Approver (the tick in Management &gt; Staff) can approve a set-up.</p>'}</div>`;
   } else if (s.setupStatus === 'Approved') h += `<div class="box good" style="margin-top:12px">Approved by ${esc(s.setupApprovedByName || s.setupApprovedBy || '')} on ${A.shortDate(String(s.setupApprovedAt || '').slice(0, 10))} (set-up version ${esc(s.setupVersion || 1)}).${s.setupSources ? '<br><span class="small">Checked against: ' + esc(s.setupSources) + '</span>' : ''}</div>`;
   h += `<p class="section-label" style="margin-top:12px">Visits</p>${visits.length ? visits.map(v => `<div class="list-line"><div><b>${A.longDate(v.date)}</b> · ${esc((A.VISIT_TYPES[v.visitType] || {}).label || '')} ${tag(v.status === 'Issued' ? 'ok' : v.status === 'Returned' ? 'bad' : 'wait', v.status)}${v.testData ? ' ' + tag('test', 'Practice') : ''}<div class="small">${esc((v.engineers || []).map(e => e.name).join(', '))}${v.overall ? ' · ' + esc(v.overall) : ''}</div></div>${v.status === 'Ready for QS' ? `<button class="btn sm dark" data-review="${esc(v._id)}">Review</button>` : ''}</div>`).join('') : '<div class="small">None yet.</div>'}`;
   return h + `</div>`;
@@ -381,7 +382,7 @@ async function revise(id) {
 // ═══ RULES ═══
 function rulesHTML() {
   const cur = approvedRules(), draft = S.rules.find(r => r.status === 'Draft');
-  let h = `<div class="card"><p class="section-label">Test rules</p><div class="box ${cur ? 'good' : 'warn'}">${cur ? `<b>Version ${cur.version} is in force</b> (approved ${A.shortDate(String(cur.approvedAt || '').slice(0, 10))} by ${esc(cur.approvedByName || '')}).` : '<b>No rules approved yet.</b> Every result is kept as Unverified until a Director approves a version.'}<br><span class="small">${esc(rulesObj(cur || draft).source)}</span></div>`;
+  let h = `<div class="card"><p class="section-label">Test rules</p><div class="box ${cur ? 'good' : 'warn'}">${cur ? `<b>Version ${cur.version} is in force</b> (approved ${A.shortDate(String(cur.approvedAt || '').slice(0, 10))} by ${esc(cur.approvedByName || '')}).` : '<b>No rules approved yet.</b> Every result is kept as Unverified until an Approver approves a version.'}<br><span class="small">${esc(rulesObj(cur || draft).source)}</span></div>`;
   if (!draft) h += `<div class="btns"><button class="btn dark" data-act="newrules">${S.rules.length ? 'Start a new draft from the current version' : 'Create the first draft (Docs/aov-test-rules.md)'}</button></div>`;
   h += `</div>`;
   if (draft) {
@@ -391,7 +392,7 @@ function rulesHTML() {
       <label class="l">Report wording</label><textarea id="ruleWording" style="min-height:100px">${esc(R.reportWording)}</textarea>
       <p class="section-label">Technical review: confirm each point</p>${R.reviewList.map((x, k) => `<label class="tick"><input type="checkbox" class="rvchk" data-k="${k}" ${draft.checked && draft.checked[k] ? 'checked' : ''}> ${esc(x)}</label>`).join('')}
       <details class="small"><summary style="cursor:pointer">What engineers are told at each check</summary>${Object.entries(R.instructions).map(([k, t]) => `<div style="margin:4px 0"><b>${esc(k)}</b>: ${esc(t)}</div>`).join('')}</details>
-      <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}">Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only a Director (Rob or John) can approve the rules.</p>'}</div>`;
+      <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}">Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only an Approver (the tick in Management &gt; Staff) can approve the rules.</p>'}</div>`;
   }
   h += `<div class="card"><p class="section-label">Versions</p>${S.rules.map(r => { const R = rulesObj(r); return `<div class="list-line"><div><b>Version ${r.version}</b> ${tag(r.status === 'Approved' ? 'ok' : r.status === 'Draft' ? 'wait' : '', r.status)}<div class="small">${R.timings.systemS} s / ${R.timings.openS} s · ${R.battery.standbyH} h × ${R.battery.factor} · ${R.battery.defaultLifeYears} years · every ${R.intervalMonths} months</div></div></div>`; }).join('') || '<div class="empty-note">None yet.</div>'}</div>`;
   return h;
@@ -489,7 +490,7 @@ async function pdfReport(r) {
     P.table(['Check', 'What was found', 'Result'], rows.map(x => [x.check.title + (x.check.sub ? ' - ' + x.check.sub : ''), detailText(x, site) + (x.origEv ? ` [First result ${RES_TXT[x.origEv.state]}${x.origEv.why ? ': ' + x.origEv.why : ''}; ${x.retests.length} retest(s)]` : ''), RES_TXT[x.ev.state] + (x.ev.why && x.ev.state !== 'fail' ? ': ' + x.ev.why : '')]), [150, 265, 100]);
   });
   // batteries
-  const sup = (site.supplies || []).filter(p => !p.retired && plan.some(c => c.supplyId === p.id));
+  const sup = (site.supplies || []).filter(p => !p.retired && plan.some(c => c.supplyId === p.id || (c.supplyIds || []).includes(p.id)));
   if (sup.length) { P.h('Batteries'); P.table(['Supply', 'Fitted', 'Needed', 'Runtime as fitted', 'Replace by'], sup.map(p => { const c = A.batteryCalc(p, rules), a = A.batteryAge(p, rules); return [p.name || '', c.bankAh != null ? `${A.fmt(c.bankAh, 1)} Ah${c.bankV ? ' / ' + A.fmt(c.bankV, 0) + ' V' : ''}` : '-', c.missing.length ? 'Not worked out: ' + c.missing.join(', ') : `${A.fmt(c.needAh, 1)} Ah (${c.ok ? 'OK' : 'too small'})`, c.missing.length ? '-' : `about ${A.fmt(c.runtimeH, 0)} h`, a.replaceBy ? A.shortDate(a.replaceBy) + (a.fromMaker ? '' : ' (our standard figure)') : 'Date fitted not known']; }), [120, 90, 130, 85, 90]);
     P.p(`Battery needed = (standby current x ${rules.battery.standbyH} h + fire-mode current x fire time) x ${rules.battery.factor}. Batteries in series add volts, not Ah.`, { size: 8 }); }
   const defs = Object.values(r.results || {}).filter(x => x.kind === 'defect' && !x.removed);
@@ -515,7 +516,7 @@ function detailText(x, site) {
     case 'pre': return (yn(r.answer)) + (r.note ? '. ' + r.note : '');
     case 'look': return Object.entries(r.items || {}).map(([k, v]) => `${A.LOOK_ITEMS[k]}: ${v === 'ok' ? 'OK' : 'NOT OK' + ((r.notes || {})[k] ? ' (' + r.notes[k] + ')' : '')}`).join('; ');
     case 'scenario': { const s = (site.scenarios || []).find(q => q.id === c.scenarioId) || {}; const outs = Object.entries(s.expected || {}).map(([id, e]) => { const a = (site.assets || []).find(q => q.id === id); const o = (r.outputs || {})[id] || {}; return a ? `${A.assetName(a)} should ${e === 'open' ? 'open' : 'stay shut'}: ${({ opened: 'opened fully', partly: 'opened part way', stayed: 'stayed shut' }[o.state] || '-')}${o.note ? ' (' + o.note + ')' : ''}` : ''; }).filter(Boolean); return [`Trigger ${s.inputType || ''} ${s.inputRef || ''} ${s.inputLocation || ''}`.trim(), A.METHODS[r.method] || '', ...outs, `Within ${(site.timings || {}).systemS ?? 90} s: ${yn(r.within90)}`, r.within60 ? `Openings within ${(site.timings || {}).openS ?? 60} s: ${yn(r.within60)}` : '', `Panel showed fire: ${yn(r.panelFire)}`, r.indications ? `Other outputs: ${yn(r.indications)}` : '', (r.unexpected || []).length ? 'Also opened: ' + r.unexpected.join(', ') : '', `Reset: ${yn(r.reset)}${r.resetNote ? ' (' + r.resetNote + ')' : ''}`].filter(Boolean).join('. '); }
-    case 'power': return Object.entries(A.POWER_Q).filter(([k]) => r[k]).map(([k, t]) => `${t}: ${yn(r[k])}`).join('; ') + `. Readings: ${(r.readings || []).map((q, i) => `B${i + 1} ${q && q.v != null && q.v !== '' ? q.v + ' V' : '-'}`).join(', ')}${r.method ? ' (' + r.method + ')' : ''}`;
+    case 'power': return (c.supplyIds || []).map(pid => { const p = (site.supplies || []).find(x => x.id === pid) || {}, q = (r.sup || {})[pid] || {}; if (q.cant) return `${p.name || 'Supply'}: not tested (${q.cantWhy || ''})`; const bad = Object.entries(A.POWER_Q).filter(([k]) => q[k] === 'no').map(([, t]) => t); return `${p.name || 'Supply'}: ${bad.length ? 'NOT OK: ' + bad.join('; ') : 'all checks OK'}. Readings: ${(q.readings || []).map((x, i) => `B${i + 1} ${x && x.v != null && x.v !== '' ? x.v + ' V' : '-'}`).join(', ')}${q.method ? ' (' + q.method + ')' : ''}`; }).join(' | ');
     case 'currents': return `Standby ${r.standbyA ?? '-'} A, fire mode ${r.fireA ?? '-'} A`;
     case 'calc': { const cc = r.calc; return cc && !(cc.missing || []).length ? `Needs ${A.fmt(cc.needAh, 1)} Ah, fitted ${A.fmt(cc.bankAh, 1)} Ah` : 'Calculation not complete'; }
     case 'inlets': return `Match the design: ${yn(r.countMatches)}${r.note ? ' (' + r.note + ')' : ''}. Free area: design ${r.designArea ?? '-'} m2, measured ${r.measuredArea ?? '-'} m2`;
@@ -566,11 +567,11 @@ document.addEventListener('click', async e => {
 const NEWS_ALL = ['<b>AOV reports</b> is new: approve each site\'s equipment and scenarios, review visits, return them or issue the report, and keep the test rules.'];
 const NEWS = { engineer: [], office: [], management: NEWS_ALL };
 const HELP = [
-  { tab: 'Sites', q: 'What does "approve the set-up" mean?', a: '<p>It\'s the list of equipment and what each trigger should open. Check it against the site\'s fire strategy and cause-and-effect. Until a Director approves it, scenario results stay Unverified.</p>' },
+  { tab: 'Sites', q: 'What does "approve the set-up" mean?', a: '<p>It\'s the list of equipment and what each trigger should open. Check it against the site\'s fire strategy and cause-and-effect. Until an Approver approves it, scenario results stay Unverified.</p>' },
   { tab: 'To review', q: 'How do I issue a report?', a: '<p>Open the visit, check the results, problems and notes for the client, then <b>Issue</b>. If anything failed or wasn\'t done, it can only go out as a <b>limited report</b> with the reason.</p>' },
   { tab: 'To review', q: 'How do I send it back?', a: '<p>Open <b>Return to the engineers</b>, say what needs doing, and tick the steps they should look at again.</p>' },
   { tab: 'Issued', q: 'I need to correct an issued report', a: '<p>Use <b>Correct it</b>. That makes a new issue that replaces the old one. The old one is kept.</p>' },
-  { tab: 'Rules', q: 'Why does everything say Unverified?', a: '<p>Until a Director approves a version of the test rules, nothing can count as a pass.</p>' },
+  { tab: 'Rules', q: 'Why does everything say Unverified?', a: '<p>Until an Approver approves a version of the test rules, nothing can count as a pass.</p>' },
   { q: 'Why can\'t I issue? It says someone needs a signature', a: '<p>Everyone who recorded answers, and you, need a saved signature. Add them in Management, Staff.</p>' }
 ];
 </script>

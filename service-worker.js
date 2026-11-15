@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v32';
+const CACHE_NAME = 'sw-engineer-apps-shell-v33';
 
 const APP_SHELL = [
   './',
@@ -58,6 +58,7 @@ const APP_SHELL = [
 // v26 (27 Oct 2026): adds the shared files sw-design.css and sw-shared.js.
 // v27 (28 Oct 2026): timesheet v5.0, Timesheets & leave v4.0, management v4.1, sw-shared.js v1.1.
 // v28 (28 Oct 2026): isolator test v19.0, isolator reports v18.0, management v4.2, home page v4.1.
+// v33 (15 Nov 2026): AOV v1.1 (equipment as a list + one item, power per riser), gate v1.3 and management v4.4 (Approver tick, positions in order).
 // v32 (15 Nov 2026): AOV testing v1.0 (aov-test.html, aov-report.html, aov-shared.js), home page v4.3.
 // v31 (13 Nov 2026): gate app v1.2 (one screen at a time, DHF diagrams saved for offline in gate-diagrams/, operate-the-controls checks). Every file in gate-diagrams/ must be uploaded.
 // v30 (10 Nov 2026): gate app v1.1, checklist built from the devices fitted with pass/fail answers in plain words; unfinished inspections can be deleted.

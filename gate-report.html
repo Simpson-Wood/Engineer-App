@@ -334,7 +334,7 @@ import * as SWS from './sw-shared.js';
 import * as G from './gate-shared.js';
 const { esc, typeLabel, METRICS } = G;
 
-const VERSION = "v1.2";
+const VERSION = "v1.3";
 document.getElementById('versionLabel').textContent = VERSION;
 console.log('Gates & doors reports', VERSION);
 const firebaseConfig = {
@@ -394,8 +394,9 @@ onAuthStateChanged(auth, async user => {
   if (booted) return; booted = true;
   const va = await SWS.swViewAsInit(user);
   $('whoName').textContent = va ? va.name : (user.displayName || user.email);
-  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; } catch (e) {}
-  S.isDirector = S.position === 'Director' || meEmail() === SWS.SW_OWNER;
+  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; S.approver = !!(a.staff && a.staff.approver); } catch (e) {}
+  // v1.3 (Rob, 15 Nov): approving is for people with the Approver tick (Management > Staff), not a position.
+  S.isDirector = S.approver || meEmail() === SWS.SW_OWNER;
   SWS.swExtrasStart({ page: 'gate-report', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => TABS.find(t => t[0] === S.tab)[1] });
   SWS.swuStart();
   buildTabs(); load();
@@ -555,10 +556,10 @@ function rulesHTML() {
   if (draft) {
     const R = draft.rules, L = R.limits;
     const num = (path, v, lab) => `<div class="fld"><label>${lab}</label><input type="text" inputmode="decimal" data-rule="${path}" value="${esc(v)}" ${isMgmt() ? '' : 'disabled'}></div>`;
-    h += `<div class="card"><p class="section-label">Draft version ${draft.version}</p><p class="small">Edit the numbers, then have the review list checked. Approval is for Directors.</p><div class="fgrid">${num('limits.fdCrush', L.fdCrush, 'Fd: crush, shear, draw-in (N)')}${num('limits.fdImpact', L.fdImpact, 'Fd: impact only (N)')}${num('limits.td', L.td, 'Td (s)')}${num('limits.fs', L.fs, 'Fs (N)')}${num('limits.fe', L.fe, 'Fe (N)')}${num('repeat.trigger', R.repeat.trigger, 'Repeat when over this share of a limit (0.9 = 90%)')}${num('repeat.total', R.repeat.total, 'Readings when repeating')}</div>
+    h += `<div class="card"><p class="section-label">Draft version ${draft.version}</p><p class="small">Edit the numbers, then have the review list checked. Approval is for Approvers (the tick in Management &gt; Staff).</p><div class="fgrid">${num('limits.fdCrush', L.fdCrush, 'Fd: crush, shear, draw-in (N)')}${num('limits.fdImpact', L.fdImpact, 'Fd: impact only (N)')}${num('limits.td', L.td, 'Td (s)')}${num('limits.fs', L.fs, 'Fs (N)')}${num('limits.fe', L.fe, 'Fe (N)')}${num('repeat.trigger', R.repeat.trigger, 'Repeat when over this share of a limit (0.9 = 90%)')}${num('repeat.total', R.repeat.total, 'Readings when repeating')}</div>
      <p class="section-label">Technical review: confirm each point</p>${R.reviewList.map((x, k) => `<label class="tick" style="margin-bottom:8px"><input type="checkbox" class="rvchk" ${draft.checked && draft.checked[k] ? 'checked' : ''} data-k="${k}"> ${esc(x)}</label>`).join('')}
      <details class="small"><summary style="cursor:pointer">Test methods, classification and the other tables in this version</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(JSON.stringify({ testMethods: R.testMethods, classification: R.classification, dependencies: R.dependencies }, null, 1))}</pre></details>
-     <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}" ${isMgmt() ? '' : 'disabled'}>Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only a Director can approve the rules.</p>'}</div>`;
+     <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}" ${isMgmt() ? '' : 'disabled'}>Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only an Approver (the tick in Management &gt; Staff) can approve the rules.</p>'}</div>`;
   }
   h += `<div class="card"><p class="section-label">Versions</p>${S.rules.map(r => `<div class="list-line"><div><b>Version ${r.version}</b> ${tag(r.status === 'Approved' ? 'ok' : r.status === 'Draft' ? 'wait' : '', r.status)}<div class="small">Fd ${r.rules.limits.fdCrush}/${r.rules.limits.fdImpact} N · Td ${r.rules.limits.td} s · Fs ${r.rules.limits.fs} N · Fe ${r.rules.limits.fe} N</div></div></div>`).join('') || '<div class="empty-note">None yet.</div>'}</div>`;
   return h;
@@ -775,7 +776,7 @@ const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
 const HELP = [
   { tab: 'Register', q: 'What do the due dates mean?', a: '<p>Due is a calendar month. An inspection in November on a six-month cycle is due in May, and is <b>overdue from 1 June</b>. The date comes from the approved inspection date.</p>' },
   { tab: 'To review', q: 'How do I approve an inspection?', a: '<p>Open it, check the readings, defects and photos, then <b>Approve</b> or <b>Return</b> with a note. A limited inspection asks whether it should reset the due date.</p>' },
-  { tab: 'Rules', q: 'Why can\'t engineers do real force tests?', a: '<p>Until a Director approves a version of the rules, force tests are saved as practice only.</p>' },
+  { tab: 'Rules', q: 'Why can\'t engineers do real force tests?', a: '<p>Until an Approver approves a version of the rules, force tests are saved as practice only.</p>' },
   { tab: 'Notices', q: 'A notice says NOT sent', a: '<p>Tap <b>Send it now</b>. A Microsoft window opens: finish it. It only says Sent when Microsoft accepts it.</p>' },
   { q: 'Where are the PDFs?', a: '<p>Open a gate on the Register. The risk assessment and report PDFs appear once QS has approved them. Notices have their own PDF.</p>' }
 ];
