@@ -207,7 +207,7 @@ import {
 // reporting come from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
-const VERSION = "v4.2";
+const VERSION = "v4.3";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -221,6 +221,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v4.3 (15 Nov 2026): AOV testing's QS count counts visits sent to QS only.
 // v4.1 (28 Oct 2026): a proper "ready for QS" count for isolator testing
 // once the old photos are out of the test records (it used to stop at 30).
 // v4.0 (27 Oct 2026): shared files (sw-design.css, sw-shared.js, with error
@@ -423,6 +424,12 @@ async function loadQsCounts(reportEntries){
   await Promise.all(reportEntries.map(async ({ tool }) => {
     try {
       // v4.2: gates and doors count what is waiting for QS (submitted or in review, not practice, not drafts).
+      // v4.3: AOV counts visits sent to QS (not drafts, not practice).
+      if (tool.id === 'aov') {
+        const as = await getDocs(query(collection(db, 'aovTests'), where('qsed', '==', false)));
+        let an = 0; as.forEach(d => { const r = d.data(); if (!r.deletedFlag && !r.testData && r.status === 'Ready for QS') an++; });
+        if (an) countsByTool.aov = an; return;
+      }
       if (tool.id === 'gate') {
         const gs = await getDocs(query(collection(db, 'gateTests'), where('qsed', '==', false)));
         let gn = 0; gs.forEach(d => { const r = d.data(); if (!r.deletedFlag && !r.testData && ['Submitted', 'In review'].includes(r.status)) gn++; });

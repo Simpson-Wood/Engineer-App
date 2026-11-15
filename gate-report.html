@@ -278,6 +278,8 @@
   .rd input.over{border-color:var(--red); background:var(--red-tint);} .rd input.unusual{border-color:var(--amber); background:var(--amber-bg);}
   .cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px;} .cmp td,.cmp th{border-top:1px solid var(--line); padding:4px 6px; text-align:right;} .cmp th:first-child,.cmp td:first-child{text-align:left;}
   .small{font-size:13px; color:var(--grey);}
+  .pt .how{margin:2px 0 8px; font-size:13px; color:var(--grey);} .pt .how summary{cursor:pointer; font-weight:600;}
+  .opt.on.bad{background:var(--red); border-color:var(--red);}
   .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
   .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
   .list-line:first-child{border-top:none;}
@@ -286,7 +288,19 @@
   textarea.t2{min-height:96px;}
   .locked{opacity:.6; pointer-events:none;}
   @media (max-width:520px){ .rd{grid-template-columns:22px repeat(4,minmax(0,1fr)); gap:4px;} .rd input{font-size:15px; min-height:44px;} }
-  .tab .cnt{font-weight:700;} .reg-count{display:flex; gap:22px; flex-wrap:wrap; margin:0 0 14px;}
+  .stepbar{position:sticky; top:0; z-index:5; background:var(--bg); padding:8px 0 6px; margin:0 0 10px;}
+  .stepinfo{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px;}
+  .prog{height:6px; background:var(--line); border-radius:4px; margin-top:6px; overflow:hidden;} .prog i{display:block; height:100%; background:var(--red);}
+  .stepnav{display:flex; gap:8px; margin:12px 0 24px;} .stepnav .btn{flex:1; justify-content:center;}
+  .dgrow{display:flex; gap:10px; overflow-x:auto; margin:0 0 10px; padding-bottom:4px; -webkit-overflow-scrolling:touch;} .dg{flex:0 0 78%; margin:0; text-align:left;} .dg img{width:100%; height:130px; object-fit:contain; background:#fff; border:1px solid var(--line); border-radius:8px; cursor:zoom-in;} .dg figcaption{font-size:13px; margin-top:4px;}
+  .zoom{position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.88); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px; cursor:zoom-out;} .zoom img{max-width:100%; max-height:78vh; background:#fff; border-radius:8px;} .zoom .zc{color:#fff; font-size:14px; margin-top:10px; text-align:center;}
+  .rd .rc{display:block; margin:0;} .rd .rc i{display:none; font-style:normal; font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase;}
+  @media (max-width:520px){
+    .rd{grid-template-columns:22px 1fr 1fr; gap:6px;} .rd .n{grid-row:span 2; align-self:center;} .rd .rc i{display:block;} .rd.hd{display:none;}
+    .rd input{font-size:18px; min-height:48px;}
+  }
+
+  .pt > .pl{display:none;}
 </style>
 </head>
 <body>
@@ -320,7 +334,7 @@ import * as SWS from './sw-shared.js';
 import * as G from './gate-shared.js';
 const { esc, typeLabel, METRICS } = G;
 
-const VERSION = "v1.0";
+const VERSION = "v1.2";
 document.getElementById('versionLabel').textContent = VERSION;
 console.log('Gates & doors reports', VERSION);
 const firebaseConfig = {
@@ -452,14 +466,14 @@ function instPanelHTML(i) {
   let h = `<div class="card" id="instPanel"><div class="btns" style="margin-top:0"><button class="btn sm" data-close="1">Close</button></div><h2 class="gt-title">${esc(i.name)}</h2><p class="gt-sub">${esc(i.siteName)} · ${esc(typeLabel(i.type))} · ${esc(i.location || '')}</p><div class="chips">${dueTag(i)}${tag('info', 'Every ' + i.intervalMonths + ' months')}</div>`;
   h += `<div class="btns"><a class="btn sm" href="gate-test.html?site=${encodeURIComponent(i.siteRef)}">Open in the engineer app</a>${i.setupStatus === 'Approved' ? `<button class="btn sm" data-pdf="risk" data-id="${esc(i.id)}"><i class="ti ti-file-download"></i> Risk assessment PDF</button>` : `<span class="small">The risk assessment PDF is available once QS approves the set-up.</span>`}</div>`;
   if (isMgmt()) h += `<details style="margin:8px 0"><summary class="small" style="cursor:pointer">Change the inspection interval</summary><div style="margin-top:8px"><select id="newInt">${G.INTERVALS.map(o => `<option value="${o.v}" ${o.v === i.intervalMonths ? 'selected' : ''}>${o.t}</option>`).join('')}</select><div id="intPrev" class="small"></div><button class="btn sm dark" data-act="applyint" data-id="${esc(i.id)}">Apply</button></div></details>`;
-  h += `<p class="section-label" style="margin-top:12px">History</p>` + (ts.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> ${t.kind === 'setup' ? 'Set-up' : 'Inspection'} ${tag(t.status === 'Approved' ? 'ok' : t.status === 'Returned' ? 'bad' : 'wait', t.status || '')}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag(t.overall === 'Pass' ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}<div class="small">${esc(t.engineer || '')}${t.approvedBy ? ' · approved by ' + esc(t.approvedByName || t.approvedBy) : ''}</div></div><div class="btns" style="margin:0"><button class="btn sm" data-view="${esc(t._id)}">View</button>${t.kind === 'periodic' && t.status === 'Approved' && !t.testData ? `<button class="btn sm" data-pdf="report" data-id="${esc(t._id)}"><i class="ti ti-file-download"></i> Report PDF</button>` : ''}</div></div>`).join('') || '<div class="empty-note">No records.</div>');
+  h += `<p class="section-label" style="margin-top:12px">History</p>` + (ts.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> ${t.kind === 'setup' ? 'Set-up' : 'Inspection'} ${tag(t.status === 'Approved' ? 'ok' : t.status === 'Returned' ? 'bad' : 'wait', t.status || '')}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag((t.overall || '').startsWith('Pass') ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}<div class="small">${esc(t.engineer || '')}${t.approvedBy ? ' · approved by ' + esc(t.approvedByName || t.approvedBy) : ''}</div></div><div class="btns" style="margin:0"><button class="btn sm" data-view="${esc(t._id)}">View</button>${t.kind === 'periodic' && t.status === 'Approved' && !t.testData ? `<button class="btn sm" data-pdf="report" data-id="${esc(t._id)}"><i class="ti ti-file-download"></i> Report PDF</button>` : ''}</div></div>`).join('') || '<div class="empty-note">No records.</div>');
   return h + '</div>';
 }
 
 // ═══ REVIEW (QS / Manager / Director) ═══
 function reviewHTML() {
   const list = S.tests.filter(t => ['Submitted', 'In review'].includes(t.status)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  let h = `<div class="card"><p class="section-label">Waiting for QS</p>` + (list.map(t => `<div class="list-line"><div><b>${esc(t.installationName || '')}</b> <span class="small">${esc(t.siteName || '')}</span><br>${t.kind === 'setup' ? 'Set-up' : 'Inspection'} · ${G.longDate(t.date)} · ${esc(t.engineer || '')} ${tag(t.status === 'In review' ? 'info' : 'wait', t.status)}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag(t.overall === 'Pass' ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}</div><button class="btn sm dark" data-review="${esc(t._id)}">Open</button></div>`).join('') || '<div class="empty-note">Nothing waiting.</div>') + '</div>';
+  let h = `<div class="card"><p class="section-label">Waiting for QS</p>` + (list.map(t => `<div class="list-line"><div><b>${esc(t.installationName || '')}</b> <span class="small">${esc(t.siteName || '')}</span><br>${t.kind === 'setup' ? 'Set-up' : 'Inspection'} · ${G.longDate(t.date)} · ${esc(t.engineer || '')} ${tag(t.status === 'In review' ? 'info' : 'wait', t.status)}${t.testData ? ' ' + tag('dark', 'Practice') : ''}${t.limited ? ' ' + tag('wait', 'Limited') : ''}${t.overall ? ' ' + tag((t.overall || '').startsWith('Pass') ? 'ok' : t.overall === 'Fail' ? 'bad' : 'wait', t.overall) : ''}</div><button class="btn sm dark" data-review="${esc(t._id)}">Open</button></div>`).join('') || '<div class="empty-note">Nothing waiting.</div>') + '</div>';
   if (S.review) { const t = S.tests.find(x => x._id === S.review.id); if (t) h += reviewPanelHTML(t); }
   return h;
 }
@@ -479,13 +493,14 @@ function testSummaryHTML(t) {
   }
   const rows = evalSnapshot(t);
   const th = `<tr><th>Test</th>${METRICS.map(m => `<th>${m.t}</th>`).join('')}<th>Result</th></tr>`;
-  let h = `<div class="box ${t.overall === 'Pass' ? 'good' : t.overall === 'Fail' ? 'bad' : 'warn'}"><h4>${esc(t.overall || '')}</h4>Tester: ${esc((t.tester && t.tester.name) || 'none')} ${t.tester ? '(' + esc(t.tester.serial || '') + ', calibrated until ' + G.shortDate(t.tester.calibrationDue) + ')' : ''} · rules v${esc(String(t.rulesVersion || 'draft'))}${t.rulesApproved ? '' : ' (unapproved)'}${t.setupStatusAtTest !== 'Approved' ? ' · set-up was not approved at the time' : ''}</div>`;
+  let h = `<div class="box ${(t.overall || '').startsWith('Pass') ? 'good' : t.overall === 'Fail' ? 'bad' : 'warn'}"><h4>${esc(t.overall || '')}</h4>Tester: ${esc((t.tester && t.tester.name) || 'none')} ${t.tester ? '(' + esc(t.tester.serial || '') + ', calibrated until ' + G.shortDate(t.tester.calibrationDue) + ')' : ''} · rules v${esc(String(t.rulesVersion || 'draft'))}${t.rulesApproved ? '' : ' (unapproved)'}${t.setupStatusAtTest !== 'Approved' ? ' · set-up was not approved at the time' : ''}</div>`;
   if (t.limited) h += `<div class="box warn"><h4>Limited inspection</h4>${esc(t.limited.reason || '')}${t.limited.agreedWith ? '<br>Agreed with: ' + esc(t.limited.agreedWith) : ''}<br><span class="small">${(t.limited.items || []).map(esc).join('; ')}</span></div>`;
   h += `<p class="section-label">Force tests</p><div style="overflow:auto"><table class="cmp">${th}${rows.map(r => `<tr><td>${esc(r.p.label)}${r.nd ? `<br><span class="small">Not done: ${esc(G.NOT_DONE_STATES[r.nd.st] || r.nd.st)} ${esc(r.nd.note || '')}</span>` : ''}</td>${METRICS.map(m => `<td>${r.rds.map(x => x[m.k] == null ? '–' : G.fmt(x[m.k], m.dp)).join(' / ')}${r.ev.avg && r.ev.required > 1 ? `<br><b>${G.fmt(r.ev.avg[m.k], m.dp)}</b>` : ''}</td>`).join('')}<td>${r.nd ? tag('', 'Not done') : tag(r.ev.state === 'pass' ? 'ok' : r.ev.state === 'fail' ? 'bad' : 'wait', r.ev.state)}${r.cl ? `<br><span class="small">${esc(r.cl)}</span>` : ''}${(t.history || {})[r.p.id] ? `<br><span class="small">${t.history[r.p.id].length} earlier attempt(s) kept</span>` : ''}</td></tr>`).join('')}</table></div>`;
-  const ck = (t.checkSnapshot || []).map(c => { const o = (t.checks || {})[c.id] || {}; return `<div class="small">• ${esc(c.label)}: <b>${esc(o.st || '–')}</b> ${esc(o.note || '')}</div>`; }).join('');
+  const ck = (t.checkSnapshot || []).map(c => { const o = (t.checks || {})[c.id] || {}; return `<div class="small">• ${esc(c.label)}: <b>${esc(o.st === 'Satisfactory' ? 'OK' : o.st === 'Defect' ? 'Not OK' : o.st === 'Unable to check' ? 'Couldn\'t check' : (o.st || '–'))}</b> ${esc(o.note || '')}${o.changed ? ' <b>(engineer says this no longer applies: update the plan)</b>' : ''}</div>`; }).join('');
   const dv = (t.deviceSnapshot || []).map(d => { const o = (t.devices || {})[d.id] || {}; return `<div class="small">• ${esc(d.name)}: <b>${esc(o.result || '–')}</b> ${esc(o.note || '')}</div>`; }).join('');
-  const tk = (t.taskSnapshot || []).map(d => { const o = (t.tasks || {})[d.id] || {}; return `<div class="small">• ${esc(d.text)}: <b>${esc(G.TASK_OUTCOMES[o.outcome] || '–')}</b> ${esc(o.why || '')}</div>`; }).join('');
-  h += `<p class="section-label">Checks and devices</p>${ck}${dv}<p class="section-label">Service checklist</p>${tk}`;
+  const tk = (t.taskSnapshot || []).map(d => { const o = (t.tasks || {})[d.id] || {}; return `<div class="small">• ${esc(d.text)}: <b>${esc((d.options && (d.options.find(x => x.k === o.outcome) || {}).t) || G.TASK_OUTCOMES[o.outcome] || '–')}</b> ${esc(o.why || '')}</div>`; }).join('');
+  const ctl = (t.controlSnapshot || []).map(c => { const o = (t.controls || {})[c.id] || {}; const opt = G.CONTROL_OPTS.find(x => x.k === o.outcome); return `<div class="small">• ${c.reset ? 'Reset: ' : ''}<b>${esc(c.name)}</b> (${esc(c.trigger)} → ${esc(c.expected)}): <b>${esc(opt ? opt.t : '–')}</b> ${esc(o.why || '')}</div>`; }).join('');
+  h += `<p class="section-label">Checks on the gate</p>${ck}${ctl ? `<p class="section-label">Controls operated</p>${ctl}` : ''}<p class="section-label">Service checks</p>${tk}`;
   if ((t.batteries || []).length) h += `<p class="section-label">Batteries replaced</p>${t.batteries.map(b => `<div class="small">• ${esc(b.deviceName)} on ${G.shortDate(b.replacedOn)}</div>`).join('')}`;
   if ((t.adjustments || []).length) h += `<p class="section-label">Adjustments</p>${t.adjustments.map(a => `<div class="small">• ${esc(a.what)} (${esc(a.category || 'unsure')}) — ${esc(a.why || '')}</div>`).join('')}`;
   if ((t.defects || []).length) h += `<p class="section-label">Defects</p>${t.defects.map(d => `<div class="box ${d.severity === 'Unsafe' || d.severity === 'Safety critical' ? 'bad' : 'warn'}"><b>${esc(d.severity)}</b> · ${esc(d.where || '')}<br>${esc(d.text)}<br><span class="small">Do: ${esc(d.rec || '')}</span>${((t.notices || {})[d.id] || {}).sent ? '<br>' + tag('ok', 'Notice sent') : ''}</div>`).join('')}`;
@@ -673,7 +688,8 @@ async function pdfRisk(i) {
   P.h('What we know about it');
   [...G.SETUP_TOPICS.flatMap(t => t.questions), ...(G.BRANCH_QUESTIONS[(G.TYPES[i.type] || {}).branch] || [])].forEach(q => { const a = (i.answers || {})[q.id]; if (a) P.table([q.label.slice(0, 90), ''], [[G.ANSWER_STATES[a.st] || '', Array.isArray(a.v) ? a.v.join(', ') : (a.v ?? a.why ?? '')]], [300, 215]); });
   P.h('Devices'); P.table(['Device', 'Kind', 'Where', 'Battery'], (i.devices || []).filter(d => !d.retired).map(d => [d.name, d.kind || '', d.location || '', d.battery && d.battery.intervalMonths ? `every ${d.battery.intervalMonths} months` : '']), [150, 120, 130, 115]);
-  P.h('Service checklist'); (i.tasks || []).forEach(t => P.p('- ' + t.text));
+  P.h('Service checks'); G.buildChecklist(i).forEach(c => P.p('- ' + c.text));
+  P.h('Controls to operate at each visit'); G.buildControls(i).forEach(c => P.p(`- ${c.reset ? 'Reset: ' : ''}${c.name}. ${c.trigger} -> ${c.expected}`));
   signBlock(P, 'Approved by', i.setupApprovedBy, (S.staff[i.setupApprovedBy] || {}).name || i.setupApprovedBy, i.setupApprovedAt);
   finishPdf(P, `Risk assessment ${i.siteRef} ${i.name}.pdf`.replace(/[\\/:*?"<>|]/g, '-'));
 }
@@ -688,9 +704,9 @@ async function pdfReport(t) {
   P.h('Force tests (every reading shown; average where three were taken)');
   P.table(['Test', 'Fd (N)', 'Td (s)', 'Fs (N)', 'Fe (N)', 'Result'], rows.map(r => [r.p.label, ...METRICS.map(m => r.rds.map(x => x[m.k] == null ? '-' : G.fmt(x[m.k], m.dp)).join(' / ') + (r.ev.avg && r.ev.required > 1 ? ` (avg ${G.fmt(r.ev.avg[m.k], m.dp)})` : '')), r.nd ? 'Not done: ' + (G.NOT_DONE_STATES[r.nd.st] || '') : ((r.ev.state === 'pass' ? 'Pass' : r.ev.state === 'fail' ? 'Over limit' : r.ev.state === 'review' ? 'Review' : 'Incomplete') + (r.cl ? ' - ' + r.cl.split(':')[0] : ''))]), [165, 62, 55, 62, 62, 109]);
   const L = rulesFor(t).limits; P.p(`Limits: Fd ${L.fdCrush} N (crush, shear, draw-in) / ${L.fdImpact} N (impact only), Td ${L.td} s, Fs ${L.fs} N, Fe ${L.fe} N.`, { size: 8.5 });
-  P.h('Condition checks'); (t.checkSnapshot || []).forEach(c => { const o = (t.checks || {})[c.id] || {}; P.p(`- ${c.label}: ${o.st || '-'}${o.note ? ' (' + o.note + ')' : ''}`, { size: 9 }); });
-  P.h('Devices'); (t.deviceSnapshot || []).forEach(d => { const o = (t.devices || {})[d.id] || {}; P.p(`- ${d.name}: ${o.result || '-'}${o.note ? ' (' + o.note + ')' : ''}`, { size: 9 }); });
-  P.h('Service checklist'); (t.taskSnapshot || []).forEach(d => { const o = (t.tasks || {})[d.id] || {}; P.p(`- ${d.text}: ${G.TASK_OUTCOMES[o.outcome] || '-'}${o.why ? ' (' + o.why + ')' : ''}`, { size: 9 }); });
+  P.h('Condition checks'); (t.checkSnapshot || []).forEach(c => { const o = (t.checks || {})[c.id] || {}; P.p(`- ${c.label}: ${o.st === 'Satisfactory' ? 'OK' : o.st === 'Defect' ? 'Not OK' : o.st === 'Unable to check' ? "Couldn't check" : (o.st || '-')}${o.note ? ' (' + o.note + ')' : ''}${o.changed ? ' (engineer says this no longer applies)' : ''}`, { size: 9 }); });
+  if ((t.controlSnapshot || []).length) { P.h('Controls operated'); t.controlSnapshot.forEach(c => { const o = (t.controls || {})[c.id] || {}; const opt = G.CONTROL_OPTS.find(x => x.k === o.outcome); P.p(`- ${c.reset ? 'Reset: ' : ''}${c.name}. ${c.trigger} -> ${c.expected}: ${opt ? opt.t : '-'}${o.why ? ' (' + o.why + ')' : ''}`, { size: 9 }); }); }
+  P.h('Service checks'); (t.taskSnapshot || []).forEach(d => { const o = (t.tasks || {})[d.id] || {}; P.p(`- ${d.text}: ${(d.options && (d.options.find(x => x.k === o.outcome) || {}).t) || G.TASK_OUTCOMES[o.outcome] || '-'}${o.why ? ' (' + o.why + ')' : ''}`, { size: 9 }); });
   if ((t.batteries || []).length) { P.h('Batteries replaced'); t.batteries.forEach(b => P.p(`- ${b.deviceName} on ${G.shortDate(b.replacedOn)}`, { size: 9 })); }
   if ((t.adjustments || []).length) { P.h('Adjustments'); t.adjustments.forEach(a => P.p(`- ${a.what} (${a.category || 'not sure'}); ${a.why || ''}`, { size: 9 })); }
   P.h('Defects'); if (!(t.defects || []).length) P.p('None recorded.'); (t.defects || []).forEach(d => P.p(`- [${d.severity}] ${d.where ? d.where + ': ' : ''}${d.text}. Recommended: ${d.rec || '-'}`, { size: 9 }));

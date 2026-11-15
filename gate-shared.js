@@ -12,7 +12,7 @@
 //  are the document's printed pages). It stays "awaiting technical review"
 //  until QS / management approve it in the reporting app.
 // ═══════════════════════════════════════════════════════════════════════════
-export const GATE_SHARED_VERSION = '1.0';
+export const GATE_SHARED_VERSION = '1.2';
 
 // ── What kinds of gate / door there are ────────────────────────────────────
 // family: horizontal (sliding, swing, folding), barrier, vertical (roller,
@@ -37,22 +37,44 @@ export const leafList = inst => {
 
 // ── Answer sets (spec §5): never one generic yes/no for everything ─────────
 export const ANSWER_STATES = {
-  confirmed: 'Confirmed',
-  na: 'Not applicable (say why)',
-  unable: 'Unable to establish (say why)',
-  unsure: 'Unsure: needs QS review'
+  confirmed: 'Yes, I know',
+  na: 'Doesn\'t apply (say why)',
+  unable: 'Couldn\'t find out (say why)',
+  unsure: 'Not sure: QS to check'
 };
 export const NOT_DONE_STATES = {
   na: 'Not applicable', notTested: 'Not tested', notAccessible: 'Not accessible', unsafe: 'Unsafe to test', unknown: 'Unknown'
 };
-export const TASK_OUTCOMES = { done: 'Completed', notRequired: 'Not required (say why)', unable: 'Unable to complete (say why)' };
+export const TASK_OUTCOMES = { done: 'Done', notRequired: 'Not needed (say why)', unable: 'Couldn\'t do it (say why)' };
 export const PROTECTION = {
-  design: 'Safe design: clearance or guarding',
-  holdtorun: 'Hold-to-run',
-  force: 'Force limitation',
-  noncontact: 'Non-contact presence detection',
-  none: 'None / not sure'
+  design: 'Safe gap or guarding (nothing to trap)',
+  holdtorun: 'Hold-to-run (moves only while the button is held)',
+  force: 'Force limited (stops or reverses on contact)',
+  noncontact: 'Sensors stop it before contact (photocells etc.)',
+  none: 'Don\'t know'
 };
+// ── The servicing checklist is built from what is FITTED (the devices listed
+// in the set-up), in plain words, and every item has a real answer, like the
+// paper form: works / doesn't work, damage / no damage.
+export const CHECK_OPTS = {
+  works:  [{ k: 'ok', t: 'Works' }, { k: 'fail', t: 'Doesn\'t work', needsWhy: true, bad: 'fail' }, { k: 'unable', t: 'Couldn\'t check', needsWhy: true }],
+  damage: [{ k: 'none', t: 'No damage' }, { k: 'found', t: 'Damage found', needsWhy: true, bad: 'note' }, { k: 'unable', t: 'Couldn\'t check', needsWhy: true }],
+  wear:   [{ k: 'none', t: 'No excess wear' }, { k: 'found', t: 'Excess wear found', needsWhy: true, bad: 'note' }, { k: 'unable', t: 'Couldn\'t check', needsWhy: true }],
+  done:   [{ k: 'done', t: 'Done' }, { k: 'notneeded', t: 'Not needed', needsWhy: true }, { k: 'unable', t: 'Couldn\'t do it', needsWhy: true }]
+};
+const DAMAGE_KINDS = ['Photocell / sensor', 'Safety edge', 'Safety edge transmitter', 'Beacon / light', 'Control panel', 'Other'];
+export function buildChecklist(inst) {
+  const out = [], powered = inst.operation !== 'Manual';
+  (inst.devices || []).filter(d => d && !d.retired && d.name).forEach(d => {
+    if (DAMAGE_KINDS.includes(d.kind)) out.push({ id: 'dev_' + d.id + '_damage', text: `Any damage to the ${d.name}?`, kind: 'damage', options: CHECK_OPTS.damage });
+  });
+  out.push({ id: 'fix_grease', text: 'Hinges, pivots, rollers and tracks greased (where fitted)', kind: 'done', options: CHECK_OPTS.done });
+  out.push({ id: 'fix_wear', text: 'Any excess wear in the moving parts?', kind: 'wear', options: CHECK_OPTS.wear });
+  out.push({ id: 'fix_mech', text: 'Any damage to the moving parts?', kind: 'damage', options: CHECK_OPTS.damage });
+  if (powered) out.push({ id: 'fix_elec', text: 'Any damage to the electrics (motor, wiring, control box)?', kind: 'damage', options: CHECK_OPTS.damage });
+  (inst.tasks || []).filter(t => t && t.text).forEach(t => out.push({ id: 'x_' + t.id, text: t.text, kind: 'done', options: CHECK_OPTS.done }));
+  return out;
+}
 export const STATUS_FLOW = ['Draft', 'Submitted', 'In review', 'Returned', 'Approved'];
 export const INTERVALS = [{ v: 3, t: '3 months' }, { v: 6, t: '6 months' }, { v: 12, t: '12 months' }];
 
@@ -285,6 +307,9 @@ export const DEFAULT_RULES = {
 };
 
 // ── Small helpers ──────────────────────────────────────────────────────────
+// Keys saved in Firestore have no dots or slashes (the pages store K(id)); read either form.
+export const K = id => String(id).replace(/[.\/]/g, '_');
+export const gv = (m, id) => (m && (m[id] !== undefined ? m[id] : m[K(id)]));
 export const newId = (p = '') => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 export const pad2 = n => String(n).padStart(2, '0');
 export const todayISO = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -378,7 +403,7 @@ export function classify(point, ev, rules) {
 export function highestOf(points, readingsByPoint, rules) {
   let best = null;
   points.forEach(p => {
-    const ev = evaluatePoint(p, readingsByPoint[p.id], rules);
+    const ev = evaluatePoint(p, gv(readingsByPoint, p.id), rules);
     if (!ev.avg || !ev.complete) return;
     if (!best || ev.avg.fd > best.fd) best = { point: p, fd: ev.avg.fd };
   });
@@ -387,11 +412,80 @@ export function highestOf(points, readingsByPoint, rules) {
 
 // ── Test plan (spec §8): built from what was set up, not a fixed grid ──────
 // Returns { points: [...], checks: [...], notes: [...] }.
+
+// ── Operate the controls (spec v1.1 section 10): one saved check per device,
+// with its own trigger and expected response. Defaults are only suggestions;
+// the set-up can change every one of them.
+export const CONTROL_OPTS = [
+  { k: 'ok', t: 'Worked as expected' },
+  { k: 'fail', t: 'Didn\'t work as expected', needsWhy: true, bad: 'fail' },
+  { k: 'cantest', t: 'Couldn\'t test', needsWhy: true }
+];
+export const CONTROL_DEFAULTS = {
+  'Photocell / sensor': ['Block the beam while the gate is closing', 'The gate stops and reverses'],
+  'Safety edge': ['Press the edge while the gate is closing', 'The gate stops and reverses'],
+  'Safety edge transmitter': ['Press the edge so the transmitter sends its signal', 'The gate stops and reverses'],
+  'Ground loop': ['Put a vehicle (or metal) over the loop', 'The gate sees it'],
+  'Fob / keypad / push button': ['Press the button or fob', 'The gate moves'],
+  'Intercom': ['Press the call button', 'The call connects and the release works'],
+  'Control panel': ['Look at the control panel', 'No fault is shown'],
+  'Isolator': ['Switch the isolator off', 'The gate has no power and cannot move'],
+  'Manual release': ['Use the manual release', 'The gate can be moved by hand and goes back to normal afterwards'],
+  'Beacon / light': ['Start the gate moving', 'The light works while the gate moves'],
+  'Other': ['Operate it', 'It does what it is meant to do']
+};
+export function buildControls(inst) {
+  const out = [];
+  (inst.devices || []).filter(d => d && !d.retired && d.name).forEach(d => {
+    const def = CONTROL_DEFAULTS[d.kind] || CONTROL_DEFAULTS.Other;
+    const base = { deviceId: d.id, name: d.name, kind: d.kind || '', location: d.location || '' };
+    out.push({ ...base, id: 'ctl_' + d.id, trigger: (d.trigger || '').trim() || def[0], expected: (d.expected || '').trim() || def[1], suggested: !(d.trigger || '').trim() || !(d.expected || '').trim(), reset: false });
+    if ((d.resetTrigger || '').trim() || (d.resetExpected || '').trim()) out.push({ ...base, id: 'ctl_' + d.id + '_reset', trigger: (d.resetTrigger || '').trim() || 'Reset it', expected: (d.resetExpected || '').trim() || 'The gate goes back to normal', suggested: false, reset: true });
+  });
+  return out;
+}
+
+// ── DHF diagrams (kept in the app only, never in customer reports) ─────────
+// Source: DHF TS 013-1:2025 v5. Page numbers are the printed page numbers.
+export const DIAGRAMS = {
+  'horizontal-heights': { file: 'gate-diagrams/horizontal-gate-test-heights-and-extensions.png', title: 'Test heights and tester extensions (horizontally moving gates)', page: 40 },
+  'sliding-gate': { file: 'gate-diagrams/sliding-gate-tester-position.png', title: 'Sliding gate: where the tester goes', page: 39 },
+  'opposing-leaves': { file: 'gate-diagrams/opposing-leaves-with-and-without-delay.png', title: 'Opposing leaves: tester position with and without leaf delay', page: 39 },
+  'folding-gate': { file: 'gate-diagrams/folding-gate-tester-position.png', title: 'Folding gate: where the tester goes', page: 39 },
+  'vertical-door': { file: 'gate-diagrams/vertical-door-test-positions.png', title: 'Vertically moving door: test positions', page: 39 },
+  'traffic-barrier': { file: 'gate-diagrams/traffic-barrier-tester-position.png', title: 'Traffic barrier: tester position', page: 42 }
+};
+export const EN12445 = {
+  gaps: [50, 300, 500],
+  heights: [{ k: 'base', t: 'Base', how: '50 mm up from the ground' }, { k: 'mid', t: 'Mid', how: 'half way up the gate' }, { k: 'top', t: 'Top', how: '300 mm below the top of the gate (no higher than 2.5 m)' }]
+};
+export const FORCE_METHODS = { en12445: 'EN 12445 full set (as on our paper reports): 9 points, one test each (three if over 90% of a limit)', dhf: 'DHF reduced set (maintenance): 500 mm at three heights, then 50 mm again' };
+export const DIAGRAM_FILES = Object.values(DIAGRAMS).map(d => d.file);
+export const DIAGRAM_SOURCE = 'DHF TS 013-1:2025 v5';
+function diagramsFor(inst, p) {
+  const type = TYPES[inst.type] || {}, ids = [];
+  if (type.family === 'vertical') ids.push('vertical-door');
+  else if (type.family === 'barrier') ids.push('traffic-barrier');
+  else if (type.family === 'horizontal') {
+    if (!p.gap && (p.kind === 'main' || p.kind === 'followup' || p.kind === 'fullspeed')) ids.push('horizontal-heights');
+    if (type.branch === 'slide') ids.push('sliding-gate');
+    if (type.branch === 'folding') ids.push('folding-gate');
+    if (leafList(inst).length > 1 && p.leaf === 'C') ids.push('opposing-leaves');
+  }
+  return ids;
+}
 export function buildTestPlan(inst, rules) {
+  const out = buildTestPlanBase(inst, rules);
+  out.points.forEach(p => { p.diagrams = diagramsFor(inst, p); });
+  return out;
+}
+function buildTestPlanBase(inst, rules) {
   const type = TYPES[inst.type] || {};
   const out = { points: [], checks: [], notes: [] };
   if (type.unsupported) { out.notes.push('Pedestrian doors have their own module, which is not built yet. No gate force tests are offered.'); return out; }
   const manual = inst.operation === 'Manual';
+  const en12445 = type.family === 'horizontal' && (inst.forceMethod || 'en12445') !== 'dhf';
+  out.method = type.family === 'horizontal' ? (en12445 ? 'en12445' : 'dhf') : null;
   const leaves = leafList(inst);
   const hz = (inst.hazards || []).filter(h => h && !h.removed);
   const slowdownKnownNo = inst.answers && inst.answers.slowdown && inst.answers.slowdown.v === 'No' && inst.answers.slowdown.st === 'confirmed';
@@ -399,26 +493,26 @@ export function buildTestPlan(inst, rules) {
     const label = h.label || 'Hazard';
     const prot = h.protection || 'none';
     if (h.cls === 'structural' || h.movement === 'static') {
-      out.checks.push({ id: `${h.id}.structure`, hazardId: h.id, label: `${label}: inspect for condition, fixings and wear`, kind: 'inspect' });
+      out.checks.push({ id: `${h.id}.structure`, hazardId: h.id, label: `${label}: look for wear, damage or loose fixings`, kind: 'inspect' });
       return;
     }
-    if (prot === 'design') out.checks.push({ id: `${h.id}.geometry`, hazardId: h.id, label: `${label}: measure and inspect the clearance or guarding`, kind: 'measure' });
-    if (prot === 'holdtorun') out.checks.push({ id: `${h.id}.htr`, hazardId: h.id, label: `${label}: check hold-to-run (releasing stops it, the whole movement is visible, only trained users, overtravel)`, kind: 'htr' });
-    if (prot === 'none') out.checks.push({ id: `${h.id}.unknown`, hazardId: h.id, label: `${label}: protection not established. Needs QS review`, kind: 'unknown' });
+    if (prot === 'design') out.checks.push({ id: `${h.id}.geometry`, hazardId: h.id, label: `${label}: check the gap or guarding is still right (measure it)`, kind: 'measure' });
+    if (prot === 'holdtorun') out.checks.push({ id: `${h.id}.htr`, hazardId: h.id, label: `${label}: hold-to-run works (it stops when you let go, and you can see all of it)`, kind: 'htr' });
+    if (prot === 'none') out.checks.push({ id: `${h.id}.unknown`, hazardId: h.id, label: `${label}: nobody knows how this is protected. QS to look at it`, kind: 'unknown' });
     if (prot === 'noncontact') {
-      out.checks.push({ id: `${h.id}.coverage`, hazardId: h.id, label: `${label}: check the detection covers the whole hazard, with the test piece`, kind: 'noncontact' });
-      if (!h.altRouteApproved) out.notes.push(`${label}: a detection device alone does not replace force tests. Force tests are kept until QS approves the alternative protection route for this hazard.`);
+      out.checks.push({ id: `${h.id}.coverage`, hazardId: h.id, label: `${label}: the sensor covers the whole danger area (use the test piece)`, kind: 'noncontact' });
+      if (!h.altRouteApproved) out.notes.push(`${label}: a sensor on its own doesn't replace force tests. They stay until QS agrees otherwise.`);
     }
     const needsForce = prot === 'force' || (prot === 'noncontact' && !h.altRouteApproved) || prot === 'none';
-    if (manual) { if (needsForce) out.notes.push(`${label}: manual operation, so no powered force test is generated. Mechanical checks apply instead.`); return; }
+    if (manual) { if (needsForce) out.notes.push(`${label}: moved by hand, so no force test. The mechanical checks apply instead.`); return; }
     if (!needsForce) return;
     const dirs = h.movement === 'both' ? ['closing', 'opening'] : [h.movement || 'closing'];
     if (!h.mainEdge) {
       dirs.forEach(dir => {
         if (h.verifyBy === 'inferred') {
-          out.checks.push({ id: `${h.id}.${dir}.verify`, hazardId: h.id, label: `${label} (${dir}): verified from the full speed main-edge result. Say why testing here isn't possible or safe`, kind: 'infer', direction: dir });
+          out.checks.push({ id: `${h.id}.${dir}.verify`, hazardId: h.id, label: `${label} (${dir}): checked from the leading-edge result. Say why it can't be tested here`, kind: 'infer', direction: dir });
         } else {
-          out.points.push({ id: `${h.id}.${dir}.direct`, hazardId: h.id, hazardClass: h.cls || 'crush', kind: 'hazard', direction: dir, leaf: 'ALL', label: `${label}: ${dir}, tested at the hazard`, how: 'Test at the hazard. If it is not possible or not safe, change this hazard to "verify from the main-edge result".' });
+          out.points.push({ id: `${h.id}.${dir}.direct`, hazardId: h.id, hazardClass: h.cls || 'crush', kind: 'hazard', direction: dir, leaf: 'ALL', label: `${label}: ${dir}`, how: 'Test at the danger point. If that isn\'t possible or safe, change this hazard to "check from the leading-edge result" in Set-up.' });
         }
       });
       return;
@@ -429,22 +523,27 @@ export function buildTestPlan(inst, rules) {
         : leaves;
       groups.forEach(lf => {
         const base = `${h.id}.${lf.id}.${dir}`;
-        const pre = `${lf.label ? lf.label + ' ' : ''}${dir}`;
+        const pre = `${lf.label ? lf.label + ' ' : ''}${dir[0].toUpperCase() + dir.slice(1)}`;
         const common = { hazardId: h.id, hazardClass: h.cls || 'crush', direction: dir, leaf: lf.id };
         if (type.family === 'barrier') {
-          out.points.push({ ...common, id: base + '.tip', kind: 'tip', label: `${pre}: 200mm in from the arm tip, tester face parallel to the arm`, how: rules.testMethods.barrier[0] });
+          out.points.push({ ...common, id: base + '.tip', kind: 'tip', label: `${pre}: 200mm in from the tip of the arm`, how: rules.testMethods.barrier[0] });
           return;
         }
         if (type.family === 'vertical') {
-          if (!slowdownKnownNo) out.points.push({ ...common, id: base + '.fullspeed', kind: 'fullspeed', label: `${pre}: full speed, centre, long extension`, how: rules.testMethods.vertical[0] });
-          [['centre', 'Centre of the opening'], ['left', '200mm in from the left guide'], ['right', '200mm in from the right guide']].forEach(([k, t]) =>
-            out.points.push({ ...common, id: `${base}.m300.${k}`, kind: 'main', group: base + '.m', ext: 300, label: `${pre}: ${t}, 300mm extension`, how: rules.testMethods.vertical[1] }));
-          out.points.push({ ...common, id: base + '.follow', kind: 'followup', group: base + '.m', label: `${pre}: highest point again, no extension (50mm)`, how: rules.testMethods.vertical[2] });
+          if (!slowdownKnownNo) out.points.push({ ...common, id: base + '.fullspeed', kind: 'fullspeed', label: `${pre}: full speed, centre`, how: rules.testMethods.vertical[0] });
+          [['centre', 'Centre'], ['left', 'Left side'], ['right', 'Right side']].forEach(([k, t]) =>
+            out.points.push({ ...common, id: `${base}.m300.${k}`, kind: 'main', group: base + '.m', ext: 300, label: `${pre} · ${t} · 300mm`, how: rules.testMethods.vertical[1] }));
+          out.points.push({ ...common, id: base + '.follow', kind: 'followup', group: base + '.m', label: `${pre} · highest reading again · 50mm`, how: rules.testMethods.vertical[2] });
           return;
         }
-        if (!slowdownKnownNo) out.points.push({ ...common, id: base + '.fullspeed', kind: 'fullspeed', label: `${pre}: full speed, waist height, long extension`, how: rules.testMethods.horizontal[0] });
-        [['top', 'Top (300mm from the top, or 2.5m)'], ['mid', 'Middle (mid height, or 1.5m)'], ['bot', 'Bottom (50mm up from the base)']].forEach(([k, t]) =>
-          out.points.push({ ...common, id: `${base}.m500.${k}`, kind: 'main', group: base + '.m', ext: 500, label: `${pre}: ${t}, 500mm extension`, how: rules.testMethods.horizontal[1] }));
+        if (en12445) {
+          // The full EN 12445 set, as on our paper reports: three heights x gaps of 50, 300 and 500 mm, each tested once (three, averaged, if a reading is over 90% of a limit).
+          EN12445.gaps.forEach(g => EN12445.heights.forEach(hh => out.points.push({ ...common, id: `${base}.g${g}.${hh.k}`, kind: 'main', gap: g, label: `${pre} · ${hh.t} · ${g}mm`, how: `Hold the tester ${g} mm from the fixed edge or stop (a ${g} mm gap), ${hh.how}. One test; if the reading is over 90% of a limit the app asks for three and averages them.` })));
+          return;
+        }
+        if (!slowdownKnownNo) out.points.push({ ...common, id: base + '.fullspeed', kind: 'fullspeed', label: `${pre} · full speed`, how: rules.testMethods.horizontal[0] });
+        [['top', 'Top'], ['mid', 'Middle'], ['bot', 'Bottom']].forEach(([k, t]) =>
+          out.points.push({ ...common, id: `${base}.m500.${k}`, kind: 'main', group: base + '.m', ext: 500, label: `${pre} · ${t} · 500mm`, how: rules.testMethods.horizontal[1] }));
         out.points.push({ ...common, id: base + '.follow', kind: 'followup', group: base + '.m', label: `${pre}: highest point again, no extension (50mm)`, how: rules.testMethods.horizontal[2] });
       });
     });
@@ -455,7 +554,7 @@ export function buildTestPlan(inst, rules) {
 export function followUpTarget(plan, point, readingsByPoint, rules) {
   if (point.kind !== 'followup') return null;
   const group = plan.points.filter(p => p.group === point.group && p.kind === 'main');
-  if (group.some(p => !evaluatePoint(p, readingsByPoint[p.id], rules).complete)) return { waiting: true };
+  if (group.some(p => !evaluatePoint(p, gv(readingsByPoint, p.id), rules).complete)) return { waiting: true };
   return { point: highestOf(group, readingsByPoint, rules) };
 }
 
@@ -504,36 +603,55 @@ export function comparePoint(curEv, prevEv, samePlan) {
 }
 
 // ── Checking a whole inspection before it goes to QS (spec §10, §12) ───────
-export function missingItems(test, inst, plan, tasks, rules) {
+export function missingItems(test, inst, plan, checklist, rules) {
   const gaps = [];
   const rb = test.readings || {};
   (plan.points || []).forEach(p => {
-    const ev = evaluatePoint(p, rb[p.id], rules);
-    const nd = (test.notDone || {})[p.id];
-    if (nd) return;
+    const ev = evaluatePoint(p, gv(rb, p.id), rules);
+    if (gv(test.notDone, p.id)) return;
     if (!ev.complete) gaps.push({ kind: 'test', id: p.id, text: `${p.label}: ${ev.count ? `${ev.count} of ${ev.required} readings` : 'no readings yet'}` });
   });
-  (tasks || []).forEach(t => { const o = (test.tasks || {})[t.id]; if (!o || !o.outcome) gaps.push({ kind: 'task', id: t.id, text: `Service task not answered: ${t.text}` }); else if ((o.outcome === 'notRequired' || o.outcome === 'unable') && !String(o.why || '').trim()) gaps.push({ kind: 'task', id: t.id, text: `Service task needs a reason: ${t.text}` }); });
-  (plan.checks || []).forEach(c => { const o = (test.checks || {})[c.id]; if (!o || !o.st) gaps.push({ kind: 'check', id: c.id, text: `Not answered: ${c.label}` }); });
-  (inst.devices || []).filter(d => !d.retired).forEach(d => { const o = (test.devices || {})[d.id]; if (!o || !o.result) gaps.push({ kind: 'device', id: d.id, text: `Device not checked: ${d.name}` }); });
+  (checklist || []).forEach(t => {
+    const o = (test.tasks || {})[t.id];
+    const opt = o && (t.options || []).find(x => x.k === o.outcome);
+    if (!opt) gaps.push({ kind: 'task', id: t.id, text: `Not answered: ${t.text}` });
+    else if (opt.needsWhy && !String(o.why || '').trim()) gaps.push({ kind: 'task', id: t.id, text: `Say why (${opt.t.toLowerCase()}): ${t.text}` });
+  });
+  (plan.checks || []).forEach(c => {
+    const o = gv(test.checks, c.id);
+    if (!o || !o.st) gaps.push({ kind: 'check', id: c.id, text: `Not answered: ${c.label}` });
+    else if (o.st === 'Unable to check') gaps.push({ kind: 'check', id: c.id, text: `Couldn't check${String(o.note || '').trim() ? '' : ' (say why)'}: ${c.label}` });
+    else if (o.st === 'Defect' && !String(o.note || '').trim()) gaps.push({ kind: 'check', id: c.id, text: `Say what is wrong: ${c.label}` });
+  });
+  buildControls(inst).forEach(c => {
+    const o = (test.controls || {})[c.id]; const opt = o && CONTROL_OPTS.find(x => x.k === o.outcome);
+    const nm = `${c.reset ? 'Reset: ' : ''}${c.name}`;
+    if (!opt) gaps.push({ kind: 'control', id: c.id, text: `Not tested: ${nm}` });
+    else if (opt.needsWhy && !String(o.why || '').trim()) gaps.push({ kind: 'control', id: c.id, text: `Say why (${opt.t.toLowerCase()}): ${nm}` });
+    else if (o.outcome === 'cantest') gaps.push({ kind: 'control', id: c.id, text: `Couldn't test: ${nm}` });
+  });
   return gaps;
 }
-export function overallLabel(test, plan, rules) {
+export function overallLabel(test, plan, rules, checklist, controls) {
   // Never an overall pass with anything missing, failed or awaiting review.
-  let fail = 0, review = 0, pass = 0, pending = 0;
+  let fail = 0, review = 0, pass = 0, pending = 0, notes = 0;
   (plan.points || []).forEach(p => {
-    if ((test.notDone || {})[p.id]) { pending++; return; }
-    const ev = evaluatePoint(p, (test.readings || {})[p.id], rules);
+    if (gv(test.notDone, p.id)) { pending++; return; }
+    const ev = evaluatePoint(p, gv(test.readings, p.id), rules);
     if (ev.state === 'fail') fail++; else if (ev.state === 'review') review++; else if (ev.state === 'pass') pass++; else pending++;
   });
-  const defects = (test.defects || []).filter(d => d.severity === 'Safety critical').length;
-  if (fail || defects) return { label: 'Fail', fail, review, pass, pending };
-  if (review || pending) return { label: 'Not complete', fail, review, pass, pending };
-  return { label: 'Pass', fail, review, pass, pending };
+  (checklist || []).forEach(t => { const o = (test.tasks || {})[t.id]; const opt = o && (t.options || []).find(x => x.k === o.outcome); if (!opt) pending++; else if (opt.bad === 'fail') fail++; else if (opt.bad === 'note') notes++; });
+  (plan.checks || []).forEach(c => { const o = gv(test.checks, c.id); if (!o || !o.st || o.st === 'Unable to check') pending++; });
+  Object.values(test.checks || {}).forEach(o => { if (o && o.st === 'Defect') notes++; });
+  (controls || []).forEach(c => { const o = (test.controls || {})[c.id]; const opt = o && CONTROL_OPTS.find(x => x.k === o.outcome); if (!opt || o.outcome === 'cantest') pending++; else if (opt.bad === 'fail') fail++; });
+  const defects = (test.defects || []).filter(d => d.severity === 'Safety critical' || d.severity === 'Unsafe').length;
+  if (fail || defects) return { label: 'Fail', fail, review, pass, pending, notes };
+  if (review || pending) return { label: 'Not complete', fail, review, pass, pending, notes };
+  return { label: notes ? 'Pass with notes' : 'Pass', fail, review, pass, pending, notes };
 }
 
 // ── Checklist drafts ───────────────────────────────────────────────────────
-export function starterTasks() { return STARTER_TASKS.map(t => ({ id: newId('t'), text: t })); }
+export function starterTasks() { return []; }   // v1.0.1: the checklist is built from the fitted devices (buildChecklist)
 export function seedHazards(type) {
   const t = TYPES[type]; if (!t || t.unsupported) return [];
   return (HAZARD_SEEDS[t.branch] || []).map(h => ({ id: newId('h'), label: h.label, location: '', movement: h.movement, cls: h.cls, mainEdge: !!h.mainEdge, protection: h.cls === 'structural' ? 'design' : 'none', evidence: '', verifyBy: 'direct' }));

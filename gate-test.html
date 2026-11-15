@@ -278,6 +278,8 @@
   .rd input.over{border-color:var(--red); background:var(--red-tint);} .rd input.unusual{border-color:var(--amber); background:var(--amber-bg);}
   .cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px;} .cmp td,.cmp th{border-top:1px solid var(--line); padding:4px 6px; text-align:right;} .cmp th:first-child,.cmp td:first-child{text-align:left;}
   .small{font-size:13px; color:var(--grey);}
+  .pt .how{margin:2px 0 8px; font-size:13px; color:var(--grey);} .pt .how summary{cursor:pointer; font-weight:600;}
+  .opt.on.bad{background:var(--red); border-color:var(--red);}
   .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
   .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
   .list-line:first-child{border-top:none;}
@@ -286,6 +288,19 @@
   textarea.t2{min-height:96px;}
   .locked{opacity:.6; pointer-events:none;}
   @media (max-width:520px){ .rd{grid-template-columns:22px repeat(4,minmax(0,1fr)); gap:4px;} .rd input{font-size:15px; min-height:44px;} }
+  .stepbar{position:sticky; top:0; z-index:5; background:var(--bg); padding:8px 0 6px; margin:0 0 10px;}
+  .stepinfo{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px;}
+  .prog{height:6px; background:var(--line); border-radius:4px; margin-top:6px; overflow:hidden;} .prog i{display:block; height:100%; background:var(--red);}
+  .stepnav{display:flex; gap:8px; margin:12px 0 24px;} .stepnav .btn{flex:1; justify-content:center;}
+  .dgrow{display:flex; gap:10px; overflow-x:auto; margin:0 0 10px; padding-bottom:4px; -webkit-overflow-scrolling:touch;} .dg{flex:0 0 78%; margin:0; text-align:left;} .dg img{width:100%; height:130px; object-fit:contain; background:#fff; border:1px solid var(--line); border-radius:8px; cursor:zoom-in;} .dg figcaption{font-size:13px; margin-top:4px;}
+  .zoom{position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.88); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px; cursor:zoom-out;} .zoom img{max-width:100%; max-height:78vh; background:#fff; border-radius:8px;} .zoom .zc{color:#fff; font-size:14px; margin-top:10px; text-align:center;}
+  .rd .rc{display:block; margin:0;} .rd .rc i{display:none; font-style:normal; font-size:12px; font-weight:700; color:var(--grey); text-transform:uppercase;}
+  @media (max-width:520px){
+    .rd{grid-template-columns:22px 1fr 1fr; gap:6px;} .rd .n{grid-row:span 2; align-self:center;} .rd .rc i{display:block;} .rd.hd{display:none;}
+    .rd input{font-size:18px; min-height:48px;}
+  }
+
+  .pt > .pl{display:none;}
 </style>
 </head>
 <body>
@@ -326,7 +341,7 @@ import * as SWS from './sw-shared.js';
 import * as G from './gate-shared.js';
 const { esc, TYPES, typeLabel, leafList, ANSWER_STATES, NOT_DONE_STATES, TASK_OUTCOMES, PROTECTION, INTERVALS, METRICS } = G;
 
-const VERSION = "v1.0";
+const VERSION = "v1.2";
 document.getElementById('versionLabel').textContent = VERSION;
 console.log('Gates & doors inspection', VERSION, 'shared', G.GATE_SHARED_VERSION);
 
@@ -540,7 +555,7 @@ function instHTML() {
    <button class="btn" data-act="editsetup"><i class="ti ti-edit"></i> ${i.setupStatus === 'Approved' ? 'View / change set-up' : 'Set-up and risk assessment'}</button></div>`;
   if (!hasPlan) h += `<p class="small">${(TYPES[i.type] || {}).unsupported ? 'Pedestrian doors have their own module later.' : 'Finish the set-up (hazards and how each is protected) before inspecting.'}</p>`;
   h += `</div>`;
-  if (mine.length) h += `<div class="card"><p class="section-label">Your unfinished inspections</p>${mine.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> <span class="tag ${t.status === 'Returned' ? 'bad' : 'wait'}">${t.status}</span>${t.testData ? ' <span class="tag dark">Practice</span>' : ''}${t.returnNote ? `<div class="small">QS: ${esc(t.returnNote)}</div>` : ''}</div><button class="btn sm" data-act="resumeinsp" data-id="${esc(t._id)}">Continue</button></div>`).join('')}</div>`;
+  if (mine.length) h += `<div class="card"><p class="section-label">Your unfinished inspections</p>${mine.map(t => `<div class="list-line"><div><b>${G.longDate(t.date)}</b> <span class="tag ${t.status === 'Returned' ? 'bad' : 'wait'}">${t.status}</span>${t.testData ? ' <span class="tag dark">Practice</span>' : ''}${t.returnNote ? `<div class="small">QS: ${esc(t.returnNote)}</div>` : ''}</div><div class="btns" style="margin:0"><button class="btn sm" data-act="resumeinsp" data-id="${esc(t._id)}">Continue</button>${t.status === 'Draft' ? `<button class="btn sm warn" data-act="dropinsp" data-id="${esc(t._id)}">Delete</button>` : ''}</div></div>`).join('')}</div>`;
   h += `<div class="card"><p class="section-label">Access</p><textarea id="accessCodes" placeholder="Gate codes, key safes, who to contact (not shown to anyone outside Simpson &amp; Wood)">${esc(S.access == null ? '' : S.access)}</textarea><button class="btn sm" data-act="saveaccess">Save access notes</button></div>`;
   const devs = (i.devices || []).filter(d => !d.retired);
   h += `<div class="card"><p class="section-label">Devices and batteries</p>${devs.length ? devs.map(d => { const b = G.batteryNextDue(d, []); return `<div class="list-line"><div><b>${esc(d.name)}</b> <span class="small">${esc(d.kind || '')}${d.location ? ' · ' + esc(d.location) : ''}</span></div><div>${d.battery && d.battery.intervalMonths ? (b.state === 'unknown' ? '<span class="tag wait">Last battery change unknown</span>' : `<span class="tag ${b.state === 'overdue' ? 'over' : b.state === 'due' ? 'bad' : 'ok'}">Battery ${b.state === 'overdue' ? 'overdue' : 'due ' + G.monthLabel(b.due)}</span>`) : ''}</div></div>`; }).join('') : '<div class="empty-note">No devices recorded yet.</div>'}</div>`;
@@ -551,7 +566,7 @@ function instHTML() {
 // ═══ SET-UP WIZARD ═══
 const WSTEPS = ['Start', 'Basics', 'About it', 'Its type', 'Hazards', 'Devices & checks', 'Review'];
 function newInstObj(route) {
-  return { id: G.newId('g'), siteRef: S.site.siteRef, siteName: S.site.siteName, name: '', location: '', type: '', operation: 'Powered', route, answers: {}, hazards: [], devices: [], tasks: G.starterTasks(), intervalMonths: 6, intervalWhy: '', setupStatus: 'Draft', createdBy: meEmail(), testData: !S.rulesApproved ? true : false, leaves: null, notes: '' };
+  return { id: G.newId('g'), siteRef: S.site.siteRef, siteName: S.site.siteName, name: '', location: '', type: '', operation: 'Powered', route, answers: {}, hazards: [], devices: [], tasks: [], intervalMonths: 6, intervalWhy: '', setupStatus: 'Draft', createdBy: meEmail(), testData: !S.rulesApproved ? true : false, leaves: null, notes: '' };
 }
 function startWizard(inst, step) { S.inst = inst; S.wiz = { step: step || 0, isNew: !S.insts.some(i => i.id === inst.id) }; go('wiz'); }
 function saveInst() {
@@ -609,12 +624,16 @@ function wizHTML() {
     const qs = G.BRANCH_QUESTIONS[t.branch];
     h += qs ? `<p class="section-label">${esc(t.label)}</p>` + qs.map(q => qHTML('', q)).join('') : `<div class="empty-note">${t.unsupported ? 'Pedestrian doors have their own module later.' : 'Choose a type on the Basics step first.'}</div>`;
   } else if (s === 4) {
-    h += `<p class="section-label">Hazards and how each is protected</p><p class="gt-sub">Confirm, rename, delete or add. "Main edge" means the leading edge that gets the full force tests.</p>`;
-    if (!(i.hazards || []).length && t.branch) h += `<div class="box info">Start from the usual list for this type? <button class="btn sm" data-act="seedhz">Add the usual hazards</button></div>`;
-    h += (i.hazards || []).map((z, k) => hazardHTML(z, k)).join('') + `<div class="btns"><button class="btn" data-act="addhz"><i class="ti ti-plus"></i> Add a hazard</button></div>`;
+    if ((G.TYPES[i.type] || {}).family === 'horizontal') h += `<div class="fld full"><label>Force test set</label><select data-bind="inst.forceMethod">${Object.entries(G.FORCE_METHODS).map(([k, v]) => `<option value="${k}" ${(i.forceMethod || 'en12445') === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select><div class="small">The EN 12445 set is what our paper reports have always used. The DHF set is shorter and meant for maintenance visits. QS decides which one a gate uses.</div></div>`;
+    h += `<p class="section-label">Dangers and how each is protected</p><p class="gt-sub">Confirm, rename, delete or add. "Main edge" means the leading edge that gets the full force tests.</p>`;
+    if (!(i.hazards || []).length && t.branch) h += `<div class="box info">Start from the usual list for this type? <button class="btn sm" data-act="seedhz">Add the usual dangers</button></div>`;
+    h += (i.hazards || []).map((z, k) => hazardHTML(z, k)).join('') + `<div class="btns"><button class="btn" data-act="addhz"><i class="ti ti-plus"></i> Add a danger</button></div>`;
   } else if (s === 5) {
     h += `<p class="section-label">Devices (sensors, edges, fobs, panels)</p>` + (i.devices || []).map((d, k) => deviceHTML(d, k)).join('') + `<div class="btns"><button class="btn" data-act="adddev"><i class="ti ti-plus"></i> Add a device</button></div>`;
-    h += `<p class="section-label" style="margin-top:18px">Service checklist</p>` + (i.tasks || []).map((tk, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-bind="inst.tasks.${k}.text" value="${esc(tk.text)}" ${i.setupStatus === 'Approved' ? 'disabled' : ''}>${i.setupStatus === 'Approved' ? '' : `<button class="btn sm warn" data-act="deltask" data-n="${k}">Remove</button>`}</div>`).join('') + (i.setupStatus === 'Approved' ? `<div class="btns"><button class="btn sm" data-act="proposetask">Propose a change to the checklist</button></div><p class="small">This list was approved. A change goes to QS first.</p>` : `<div class="btns"><button class="btn sm" data-act="addtask"><i class="ti ti-plus"></i> Add a check</button></div>`);
+    h += `<p class="section-label" style="margin-top:18px">What gets checked at each visit</p><p class="small">Each device you list gets its own "operate the controls" check (what you do, what should happen), and some get a damage check. Greasing, wear and damage to the moving parts and electrics are always asked. Anything you leave blank above uses a suggested wording.</p>`
+      + G.buildControls(i).map(c => `<div class="small">• ${c.reset ? 'Reset: ' : 'Operate: '}${esc(c.name)} — ${esc(c.trigger)} → ${esc(c.expected)}${c.suggested ? ' <i>(suggested)</i>' : ''}</div>`).join('')
+      + G.buildChecklist(i).map(c => `<div class="small">• ${esc(c.text)}</div>`).join('')
+      + `<p class="section-label" style="margin-top:14px">Extra checks of your own (optional)</p>` + (i.tasks || []).map((tk, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-bind="inst.tasks.${k}.text" value="${esc(tk.text)}" ${i.setupStatus === 'Approved' ? 'disabled' : ''}>${i.setupStatus === 'Approved' ? '' : `<button class="btn sm warn" data-act="deltask" data-n="${k}">Remove</button>`}</div>`).join('') + (i.setupStatus === 'Approved' ? `<div class="btns"><button class="btn sm" data-act="proposetask">Suggest an extra check to QS</button></div>` : `<div class="btns"><button class="btn sm" data-act="addtask"><i class="ti ti-plus"></i> Add a check</button></div>`);
   } else {
     h += reviewSetupHTML();
   }
@@ -623,21 +642,25 @@ function wizHTML() {
 }
 function hazardHTML(z, k) {
   const main = z.mainEdge;
-  return `<div class="hz"><div class="fgrid"><div class="fld full"><label>Hazard</label><input type="text" data-bind="inst.hazards.${k}.label" value="${esc(z.label)}"></div>
+  return `<div class="hz"><div class="fgrid"><div class="fld full"><label>Danger</label><input type="text" data-bind="inst.hazards.${k}.label" value="${esc(z.label)}"></div>
    <div class="fld"><label>Where</label><input type="text" data-bind="inst.hazards.${k}.location" value="${esc(z.location || '')}"></div>
    <div class="fld"><label>Movement</label><select data-bind="inst.hazards.${k}.movement"><option value="closing" ${z.movement === 'closing' ? 'selected' : ''}>Closing</option><option value="opening" ${z.movement === 'opening' ? 'selected' : ''}>Opening</option><option value="both" ${z.movement === 'both' ? 'selected' : ''}>Both ways</option><option value="static" ${z.movement === 'static' ? 'selected' : ''}>Does not move (structure)</option></select></div>
-   <div class="fld"><label>Kind</label><select data-bind="inst.hazards.${k}.cls"><option value="crush" ${z.cls === 'crush' ? 'selected' : ''}>Crush, shear or draw-in</option><option value="impact" ${z.cls === 'impact' ? 'selected' : ''}>Impact only</option><option value="structural" ${z.cls === 'structural' ? 'selected' : ''}>Structure / fall-back</option></select></div>
+   <div class="fld"><label>What kind of danger?</label><select data-bind="inst.hazards.${k}.cls"><option value="crush" ${z.cls === 'crush' ? 'selected' : ''}>Trap, crush or pull-in</option><option value="impact" ${z.cls === 'impact' ? 'selected' : ''}>Knock only</option><option value="structural" ${z.cls === 'structural' ? 'selected' : ''}>Structure / could fall</option></select></div>
    <div class="fld"><label>How is it protected?</label><select data-bind="inst.hazards.${k}.protection" data-rr="1">${Object.entries(PROTECTION).map(([pk, pt]) => `<option value="${pk}" ${z.protection === pk ? 'selected' : ''}>${esc(pt)}</option>`).join('')}</select></div>
    <div class="fld full"><label>What shows that? <span class="hint">Describe the guarding, edge or device</span></label><input type="text" data-bind="inst.hazards.${k}.evidence" value="${esc(z.evidence || '')}"></div></div>
-   <label class="tick"><input type="checkbox" ${main ? 'checked' : ''} data-bind="inst.hazards.${k}.mainEdge" data-bool="1" data-rr="1"> Main edge (gets the full force tests)</label>
-   ${!main && z.cls !== 'structural' ? `<label>How is it checked?</label><select data-bind="inst.hazards.${k}.verifyBy"><option value="direct" ${z.verifyBy !== 'inferred' ? 'selected' : ''}>Test at the hazard</option><option value="inferred" ${z.verifyBy === 'inferred' ? 'selected' : ''}>Verify from the main-edge result (say why testing there isn't possible or safe)</option></select>` : ''}
+   <label class="tick"><input type="checkbox" ${main ? 'checked' : ''} data-bind="inst.hazards.${k}.mainEdge" data-bool="1" data-rr="1"> Leading edge (gets the full force tests)</label>
+   ${!main && z.cls !== 'structural' ? `<label>How is it checked?</label><select data-bind="inst.hazards.${k}.verifyBy"><option value="direct" ${z.verifyBy !== 'inferred' ? 'selected' : ''}>Test it there</option><option value="inferred" ${z.verifyBy === 'inferred' ? 'selected' : ''}>Work it out from the leading-edge test (only if it can't be tested there)</option></select>` : ''}
    ${z.protection === 'noncontact' ? `<p class="small">A presence detector alone does not replace force tests. Force tests stay until QS approves that route for this hazard.</p>` : ''}
-   <div class="btns"><button class="btn sm warn" data-act="delhz" data-n="${k}">Delete this hazard</button></div></div>`;
+   <div class="btns"><button class="btn sm warn" data-act="delhz" data-n="${k}">Delete this danger</button></div></div>`;
 }
 function deviceHTML(d, k) {
   return `<div class="hz"><div class="fgrid"><div class="fld"><label>Name</label><input type="text" data-bind="inst.devices.${k}.name" value="${esc(d.name)}"></div>
   <div class="fld"><label>Kind</label><select data-bind="inst.devices.${k}.kind">${G.DEVICE_KINDS.map(o => `<option ${d.kind === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>
   <div class="fld"><label>Where</label><input type="text" data-bind="inst.devices.${k}.location" value="${esc(d.location || '')}"></div>
+  <div class="fld full"><label>How do you test it? (what you do)</label><input type="text" data-bind="inst.devices.${k}.trigger" value="${esc(d.trigger || '')}" placeholder="${esc((G.CONTROL_DEFAULTS[d.kind] || G.CONTROL_DEFAULTS.Other)[0])}"></div>
+  <div class="fld full"><label>What should happen?</label><input type="text" data-bind="inst.devices.${k}.expected" value="${esc(d.expected || '')}" placeholder="${esc((G.CONTROL_DEFAULTS[d.kind] || G.CONTROL_DEFAULTS.Other)[1])}"></div>
+  <div class="fld"><label>Does it need resetting afterwards? What do you do?</label><input type="text" data-bind="inst.devices.${k}.resetTrigger" value="${esc(d.resetTrigger || '')}" placeholder="Leave blank if not"></div>
+  <div class="fld"><label>What should happen after the reset?</label><input type="text" data-bind="inst.devices.${k}.resetExpected" value="${esc(d.resetExpected || '')}"></div>
   <div class="fld"><label>Battery change every (months, blank if none)</label><input type="text" inputmode="numeric" data-bind="inst.devices.${k}.battery.intervalMonths" data-num="1" value="${esc((d.battery && d.battery.intervalMonths) || '')}"></div>
   <div class="fld"><label>Battery last replaced</label><input type="date" data-bind="inst.devices.${k}.battery.lastReplaced" value="${esc((d.battery && d.battery.lastReplaced) || '')}"></div></div>
   <div class="btns"><button class="btn sm warn" data-act="deldev" data-n="${k}">Remove</button></div></div>`;
@@ -649,7 +672,7 @@ function setupGaps() {
   const qs = [...G.SETUP_TOPICS.flatMap(x => x.questions), ...(G.BRANCH_QUESTIONS[t.branch] || [])];
   qs.forEach(q => { if (!answered(q)) gaps.push('Not answered: ' + q.label); else if ((i.answers[q.id] || {}).st === 'unsure') flags.push(q.label); });
   if (!t.unsupported && !(i.hazards || []).length) gaps.push('Add the hazards.');
-  (i.hazards || []).forEach(z => { if (z.protection === 'none' && z.cls !== 'structural') flags.push('Protection not established: ' + z.label); });
+  (i.hazards || []).forEach(z => { if (z.protection === 'none' && z.cls !== 'structural') flags.push('Not known how it is protected: ' + z.label); });
   return { gaps, flags };
 }
 function reviewSetupHTML() {
@@ -679,17 +702,17 @@ function newTest() {
   return { _id: doc(collection(db, 'gateTests')).id, kind: 'periodic', installationId: i.id, installationName: i.name, installationType: i.type, siteRef: i.siteRef, siteName: i.siteName,
     date: G.todayISO(), engineer: meName(), engineerEmail: meEmail(), rulesVersion: S.rulesVersion || null, rulesApproved: S.rulesApproved,
     testData: !S.rulesApproved || !!i.testData, tester: null, status: 'Draft', qsed: false, readings: {}, history: {}, notDone: {}, retestNeeded: {},
-    checks: {}, tasks: {}, devices: {}, adjustments: [], defects: [], batteries: [], notes: '', limited: null, signOff: null, _created: false };
+    checks: {}, tasks: {}, controls: {}, devices: {}, adjustments: [], defects: [], batteries: [], notes: '', limited: null, signOff: null, _created: false };
 }
 async function startInspection(resumeId) {
   const i = S.inst;
   if (resumeId) { const t = (S.tests || []).find(x => x._id === resumeId); if (!t) return; S.test = { ...G.clone(t), _id: t._id, _created: true }; }
   else S.test = newTest();
-  ['readings', 'history', 'notDone', 'retestNeeded', 'checks', 'tasks', 'devices'].forEach(k => S.test[k] = S.test[k] || {});
+  ['readings', 'history', 'notDone', 'retestNeeded', 'checks', 'tasks', 'controls', 'devices'].forEach(k => S.test[k] = S.test[k] || {});
   ['adjustments', 'defects', 'batteries'].forEach(k => S.test[k] = S.test[k] || []);
   S.photos = []; S.open = new Set(['checks', 'force']); S.noticeBusy = null;
   const rules = S.rules; S.plan = G.buildTestPlan(i, rules);
-  if (!i.tasks || !i.tasks.length) i.tasks = G.starterTasks();
+  S.checklist = G.buildChecklist(i); S.controls = G.buildControls(i); S.istep = null; S.retStep = null;
   go('insp');
   try {
     const snap = await getDocs(query(collection(db, 'gatePhotos'), where('testId', '==', S.test._id)));
@@ -714,7 +737,7 @@ const prevReadings = pk => (S.prev && S.prev.readings && S.prev.readings[pk]) ||
 
 function rowHTML(pk, idx, r, off) {
   r = r || {};
-  return `<div class="rd" data-row="${pk}:${idx}"><span class="n">${idx + 1}</span>${METRICS.map(m => `<input class="rdi" type="text" inputmode="decimal" autocomplete="off" aria-label="${m.t} reading ${idx + 1}" data-pk="${pk}" data-i="${idx}" data-m="${m.k}" value="${r[m.k] == null ? '' : r[m.k]}" ${off ? 'disabled' : ''}>`).join('')}</div>`;
+  return `<div class="rd" data-row="${pk}:${idx}"><span class="n">${idx + 1}</span>${METRICS.map(m => `<label class="rc"><i>${m.t}</i><input class="rdi" type="text" inputmode="decimal" autocomplete="off" aria-label="${m.t} reading ${idx + 1}" data-pk="${pk}" data-i="${idx}" data-m="${m.k}" value="${r[m.k] == null ? '' : r[m.k]}" ${off ? 'disabled' : ''}></label>`).join('')}</div>`;
 }
 function sumHTML(p) {
   const pk = K(p.id), rds = S.test.readings[pk] || [], ev = G.evaluatePoint(p, rds, S.rules);
@@ -743,95 +766,146 @@ function pointHTML(p) {
     tgt = f && f.waiting ? `<div class="box info">Do this after the three tests above are complete. It repeats the point with the highest reading.</div>` : (f && f.point ? `<div class="box info">Repeat at: <b>${esc(f.point.label)}</b> (highest reading)</div>` : '');
   }
   const needed = Math.max(rds.length ? ev.required : 1, rds.length || 1);
-  let h = `<div class="pt ${nd ? '' : ev.state}" id="pt_${pk}"><div class="pl">${esc(p.label)}</div><div class="how">${esc(p.how || '')}</div>${tgt}`;
+  let h = `<div class="pt ${nd ? '' : ev.state}" id="pt_${pk}"><div class="pl">${esc(p.label)}</div>${p.how ? `<details class="how"><summary>How?</summary>${esc(p.how)}</details>` : ''}${tgt}`;
   if (t.retestNeeded[pk]) h += `<div class="box warn">Settings changed since this was measured. <button class="btn sm" data-act="startretest" data-pk="${pk}">Start the retest</button> <span class="small">The earlier readings are kept.</span></div>`;
   if (nd) {
+    if (prevDone('point', p.id)) h += PREV_MSG;
     h += `<div class="box">Not done: <b>${esc(NOT_DONE_STATES[nd.st] || nd.st)}</b>${nd.note ? ' — ' + esc(nd.note) : ''} <button class="btn sm" data-act="undonot" data-pk="${pk}">Test it after all</button></div>`;
   } else {
-    h += `<div class="rd hd"><span></span>${METRICS.map(m => `<span>${m.t}</span>`).join('')}</div><div id="rows_${pk}">${Array.from({ length: needed }, (_, k) => rowHTML(pk, k, rds[k], off)).join('')}</div><div id="rerr_${pk}" class="error-msg" style="display:none;margin:0"></div><div class="small">Blank is not zero. Enter 0 if the tester shows 0.</div><div id="sum_${pk}" style="margin-top:6px">${sumHTML(p)}</div>
-    <details style="margin-top:6px"><summary class="small" style="cursor:pointer">Can't do this test?</summary><div class="opt-row" style="margin-top:6px">${Object.entries(NOT_DONE_STATES).map(([k, v]) => `<button class="opt" data-act="notdone" data-pk="${pk}" data-val="${k}">${v}</button>`).join('')}</div></details>`;
+    h += `<div class="rd hd"><span></span>${METRICS.map(m => `<span>${m.t}</span>`).join('')}</div><div id="rows_${pk}">${Array.from({ length: needed }, (_, k) => rowHTML(pk, k, rds[k], off)).join('')}</div><div id="rerr_${pk}" class="error-msg" style="display:none;margin:0"></div><div class="small">Leave blank if you didn't measure it. Type 0 if the tester shows 0.</div><div id="sum_${pk}" style="margin-top:6px">${sumHTML(p)}</div>
+    <details style="margin-top:6px"><summary class="small" style="cursor:pointer">Couldn't do this test?</summary><div class="opt-row" style="margin-top:6px">${Object.entries(NOT_DONE_STATES).map(([k, v]) => `<button class="opt" data-act="notdone" data-pk="${pk}" data-val="${k}">${v}</button>`).join('')}</div></details>`;
   }
   return h + `</div>`;
 }
-function sec(id, title, status, body) {
-  return `<details class="sec" data-sec="${id}" ${S.open.has(id) ? 'open' : ''}><summary><span class="grow">${title}</span>${status || ''}</summary><div class="in">${body}</div></details>`;
+
+// ── One screen at a time (spec v1.1 section 10) ──────────────────────────
+const CK = [['Satisfactory', 'OK'], ['Defect', 'Not OK'], ['Unable to check', 'Couldn\'t check']];
+const prevDone = (kind, id) => {
+  const p = S.prev; if (!p) return false;
+  if (kind === 'check') { const o = gvK(p.checks, id); return !!(o && (o.st === 'Satisfactory' || o.st === 'Defect')); }
+  if (kind === 'control') { const o = (p.controls || {})[id]; return !!(o && (o.outcome === 'ok' || o.outcome === 'fail')); }
+  if (kind === 'point') return !!((gvK(p.readings, id) || []).length);
+  return false;
+};
+const gvK = (m, id) => G.gv(m, id);
+const PREV_MSG = '<div class="box info">This check was completed at a previous inspection. Review the saved location and guidance. What prevented completion today?</div>';
+function checkQHTML(c) {
+  const pk = K(c.id), o = S.test.checks[pk] || {};
+  return `<div class="q"><p class="ql">${esc(c.label)}</p><div class="opt-row">${CK.map(x => `<button class="opt ${o.st === x[0] ? 'on' : ''} ${x[0] === 'Defect' && o.st === 'Defect' ? 'bad' : ''}" data-act="check" data-pk="${pk}" data-val="${x[0]}">${x[1]}</button>`).join('')}</div>`
+    + (o.st === 'Defect' ? `<textarea data-bind="test.checks.${pk}.note" placeholder="What is wrong?">${esc(o.note || '')}</textarea>` : '')
+    + (o.st === 'Unable to check' ? (prevDone('check', c.id) ? PREV_MSG : '') + `<textarea data-bind="test.checks.${pk}.note" placeholder="Why couldn't you check it?">${esc(o.note || '')}</textarea><label class="tick"><input type="checkbox" ${o.changed ? 'checked' : ''} data-bind="test.checks.${pk}.changed" data-bool="1"> It no longer applies because the gate has changed. QS will update the plan. It stays outstanding until then.</label>` : '')
+    + `</div>`;
 }
-function inspHTML() {
-  const i = S.inst, t = S.test; if (!t) return '';
-  const plan = S.plan, rules = S.rules;
-  let h = crumb(link('inst', esc(i.name)), 'Inspection');
+function controlQHTML(c) {
+  const o = S.test.controls[c.id] || {}, opt = G.CONTROL_OPTS.find(x => x.k === o.outcome);
+  return `<div class="box"><b>What you do:</b> ${esc(c.trigger)}<br><b>What should happen:</b> ${esc(c.expected)}${c.suggested ? '<div class="small">Suggested wording. QS or you can change it in Set-up.</div>' : ''}</div>`
+    + `<div class="q"><div class="opt-row">${G.CONTROL_OPTS.map(x => `<button class="opt ${o.outcome === x.k ? 'on' : ''} ${x.bad === 'fail' && o.outcome === x.k ? 'bad' : ''}" data-act="control" data-id="${esc(c.id)}" data-val="${x.k}">${esc(x.t)}</button>`).join('')}</div>`
+    + (opt && opt.needsWhy ? (o.outcome === 'cantest' && prevDone('control', c.id) ? PREV_MSG : '') + `<textarea data-bind="test.controls.${c.id}.why" placeholder="${o.outcome === 'fail' ? 'What happened?' : 'Why couldn\'t you test it?'}">${esc(o.why || '')}</textarea>` : '') + `</div>`;
+}
+function diagHTML(ids) {
+  const parts = (ids || []).map(id => { const d = G.DIAGRAMS[id]; if (!d) return ''; return `<figure class="dg"><img src="${d.file}" alt="${esc(d.title)}" loading="lazy" data-act="zoom" data-id="${esc(id)}" onerror="this.outerHTML='<div class=&quot;small&quot;>This diagram is not saved on this phone yet. Open the app once with signal.</div>'"><figcaption><b>${esc(d.title)}</b><br><span class="small">${G.DIAGRAM_SOURCE}, page ${d.page}. Tap to enlarge.</span></figcaption></figure>`; }).join('');
+  return parts ? `<div class="dgrow">${parts}</div>` : '';
+}
+function startHTML() {
+  const i = S.inst, t = S.test, plan = S.plan;
+  let h = '';
   h += `<div class="card"><h2 class="gt-title">${esc(i.name)}</h2><p class="gt-sub">${esc(typeLabel(i.type))} · ${esc(i.location || '')}</p>
    <div class="fgrid"><div class="fld"><label>Date</label><input type="date" data-bind="test.date" value="${esc(t.date)}"></div>
-   <div class="fld"><label>Force tester ${t.testData ? '' : '<span class="req">*</span>'}</label><select data-bind="test.testerId" data-rr="1"><option value="">${S.testers.length ? 'Choose the tester…' : 'No testers registered'}</option>${S.testers.map(x => `<option value="${esc(x.id)}" ${t.tester && t.tester.id === x.id ? 'selected' : ''}>${esc(x.name)} (${esc(x.serial || '')}) — calibrated until ${G.shortDate(x.calibrationDue)}</option>`).join('')}</select></div></div>`;
+   <div class="fld"><label>Force tester ${t.testData ? '' : '<span class="req">*</span>'}</label><select data-bind="test.testerId" data-rr="1"><option value="">${S.testers.length ? 'Choose the tester…' : 'No testers added yet'}</option>${S.testers.map(x => `<option value="${esc(x.id)}" ${t.tester && t.tester.id === x.id ? 'selected' : ''}>${esc(x.name)} (${esc(x.serial || '')}) — calibrated until ${G.shortDate(x.calibrationDue)}</option>`).join('')}</select></div></div>`;
   if (t.tester && !calOK(t.tester)) h += `<div class="box bad">This tester's calibration ran out on ${G.shortDate(t.tester.calibrationDue)}. Force tests are locked. Choose a tester in date, or ask a manager.</div>`;
-  if (!S.rulesApproved) h += `<div class="box warn"><h4>Practice run</h4>The test rules haven't been approved by management yet. Everything you do here is saved as <b>practice</b> and is never used as a real result.</div>`;
+  if (!S.rulesApproved) h += `<div class="box warn"><h4>Practice only</h4>The test limits haven't been approved by management yet, so this is saved as <b>practice</b> and doesn't count as a real inspection.</div>`;
   else h += `<label class="tick" style="margin-bottom:6px"><input type="checkbox" ${t.testData ? 'checked' : ''} data-bind="test.testData" data-bool="1" data-rr="1"> This is a practice run (not a real inspection)</label>`;
-  if (i.setupStatus !== 'Approved') h += `<div class="box info">This gate's set-up has not been approved by QS yet. You can inspect it; QS will see that.</div>`;
+  if (i.setupStatus !== 'Approved') h += `<div class="box info">QS hasn't signed off this gate's set-up yet. <b>You don't need to do anything</b>: carry on with the inspection. QS signs the set-up off separately in Gate reports.</div>`;
   (plan.notes || []).forEach(n => h += `<div class="box warn">${esc(n)}</div>`);
   h += `</div>`;
 
-  // 1 checks + devices
-  const devs = (i.devices || []).filter(d => !d.retired);
-  const CK = ['Satisfactory', 'Defect', 'Not applicable', 'Unable to check'];
-  const chkBody = (plan.checks || []).map(c => { const o = t.checks[K(c.id)] || {}; return `<div class="q"><p class="ql">${esc(c.label)}</p><div class="opt-row">${CK.map(x => `<button class="opt ${o.st === x ? 'on' : ''}" data-act="check" data-pk="${K(c.id)}" data-val="${x}">${x}</button>`).join('')}</div>${o.st && o.st !== 'Satisfactory' ? `<textarea data-bind="test.checks.${K(c.id)}.note" placeholder="${o.st === 'Defect' ? 'What is wrong?' : 'Why?'}">${esc(o.note || '')}</textarea>` : ''}</div>`; }).join('')
-    + devs.map(d => { const o = t.devices[d.id] || {}; return `<div class="q"><p class="ql">${esc(d.name)} <span class="small">${esc(d.kind || '')}</span></p><div class="opt-row">${['Working', 'Faulty', 'Not accessible', 'Replaced'].map(x => `<button class="opt ${o.result === x ? 'on' : ''}" data-act="device" data-id="${esc(d.id)}" data-val="${x}">${x}</button>`).join('')}</div>${o.result && o.result !== 'Working' ? `<textarea data-bind="test.devices.${d.id}.note" placeholder="What did you find or do?">${esc(o.note || '')}</textarea>` : ''}</div>`; }).join('');
-  const gapsNow = G.missingItems(t, i, plan, i.tasks, rules);
-  const cnt = k => gapsNow.filter(g => g.kind === k).length;
-  h += sec('checks', 'Condition checks and devices', cnt('check') + cnt('device') ? `<span class="tag wait">${cnt('check') + cnt('device')} left</span>` : '<span class="tag ok">Done</span>', chkBody || '<div class="empty-note">Nothing to check here.</div>');
 
-  // 2 force tests
-  const lock = !canTest();
-  const pts = plan.points.map(pointHTML).join('');
-  h += sec('force', 'Force tests', cnt('test') ? `<span class="tag wait">${cnt('test')} left</span>` : (plan.points.length ? '<span class="tag ok">Done</span>' : ''),
-    (lock ? `<div class="box bad">Choose a force tester that is in calibration, above, before entering readings.</div>` : '') + `<div class="small" style="margin-bottom:8px">Limits come from rules version ${S.rulesApproved ? esc(String(S.rulesVersion)) : '(unapproved draft)'}: ${esc(rules.source)}. Test each position once; if any reading is over 90% of its limit, repeat to three.</div>` + (pts || '<div class="empty-note">No force tests for this gate as set up.</div>'));
-
-  // 3 tasks + batteries
-  const tkBody = (i.tasks || []).map(tk => { const o = t.tasks[tk.id] || {}; return `<div class="q"><p class="ql">${esc(tk.text)}</p><div class="opt-row">${Object.entries(TASK_OUTCOMES).map(([k, v]) => `<button class="opt ${o.outcome === k ? 'on' : ''}" data-act="task" data-id="${esc(tk.id)}" data-val="${k}">${v}</button>`).join('')}</div>${o.outcome && o.outcome !== 'done' ? `<textarea data-bind="test.tasks.${tk.id}.why" placeholder="Why?">${esc(o.why || '')}</textarea>` : ''}</div>`; }).join('');
-  const batDevs = devs.filter(d => d.battery && d.battery.intervalMonths);
+  // briefing (previous force readings stay hidden)
+  let b = '';
+  if (S.prev) {
+    b += `<p class="small"><b>Last inspection:</b> ${G.longDate(S.prev.date)}${S.prev.overall ? ' · ' + esc(S.prev.overall) : ''}</p>`;
+    const open = (S.prev.defects || []).filter(d => d && d.text);
+    if (open.length) b += `<p class="small"><b>Recorded last time:</b></p>` + open.map(d => `<div class="small">• ${esc(d.severity || '')}: ${esc(d.text)}${d.where ? ' (' + esc(d.where) + ')' : ''}</div>`).join('');
+  } else b += `<p class="small">No earlier approved inspection in the app for this gate.</p>`;
+  const due = (i.devices || []).filter(d => !d.retired && d.battery && d.battery.intervalMonths).map(d => ({ d, b: G.batteryNextDue(d, []) })).filter(x => x.b.state === 'due' || x.b.state === 'overdue');
+  if (due.length) b += `<p class="small"><b>Batteries due:</b> ${due.map(x => esc(x.d.name)).join(', ')}</p>`;
+  if (S.access) b += `<p class="small"><b>Access notes:</b> ${esc(S.access)}</p>`;
+  if (plan.method) b += `<p class="small"><b>Force test set:</b> ${esc(G.FORCE_METHODS[plan.method])}</p>`;
+  return h + `<div class="box info"><h4>Before you start</h4>${b}<p class="small">Earlier force readings are hidden until you finish each test point.</p></div>`;
+}
+function inspScreens() {
+  const i = S.inst, t = S.test, plan = S.plan, rules = S.rules, out = [];
+  const checklist = S.checklist = G.buildChecklist(i), controls = S.controls = G.buildControls(i);
+  out.push({ key: 'start', title: 'Start', html: startHTML(), ids: [] });
+  const seenC = new Set(), seenP = new Set();
+  const hz = (i.hazards || []).filter(h => h && !h.removed);
+  hz.forEach(h => {
+    const cks = (plan.checks || []).filter(c => c.hazardId === h.id);
+    if (cks.length) { out.push({ key: 'hz:' + h.id, title: h.label || 'Checks', sub: 'Checks for this part of the gate', ids: cks.map(c => c.id), html: cks.map(checkQHTML).join('') }); cks.forEach(c => seenC.add(c.id)); }
+    (plan.points || []).filter(p => p.hazardId === h.id).forEach(p => { out.push(pointScreen(p)); seenP.add(p.id); });
+  });
+  const lc = (plan.checks || []).filter(c => !seenC.has(c.id));
+  if (lc.length) out.push({ key: 'hz:other', title: 'Other checks', ids: lc.map(c => c.id), html: lc.map(checkQHTML).join('') });
+  (plan.points || []).filter(p => !seenP.has(p.id)).forEach(p => out.push(pointScreen(p)));
+  controls.forEach(c => out.push({ key: c.id, title: (c.reset ? 'Reset: ' : 'Operate: ') + c.name, sub: [c.kind, c.location].filter(Boolean).join(' · '), ids: [c.id], html: controlQHTML(c) }));
+  const tkBody = checklist.map(tk => { const o = t.tasks[tk.id] || {}; const opt = tk.options.find(x => x.k === o.outcome); return `<div class="q"><p class="ql">${esc(tk.text)}</p><div class="opt-row">${tk.options.map(x => `<button class="opt ${o.outcome === x.k ? 'on' : ''} ${x.bad === 'fail' && o.outcome === x.k ? 'bad' : ''}" data-act="task" data-id="${esc(tk.id)}" data-val="${x.k}">${esc(x.t)}</button>`).join('')}</div>${opt && opt.needsWhy ? `<textarea data-bind="test.tasks.${tk.id}.why" placeholder="${opt.bad ? 'What did you find?' : 'Why?'}">${esc(o.why || '')}</textarea>` : ''}</div>`; }).join('');
+  const batDevs = (i.devices || []).filter(d => !d.retired && d.battery && d.battery.intervalMonths);
   const batBody = batDevs.map(d => { const b = G.batteryNextDue(d, S.test.batteries.map(x => ({ deviceId: x.deviceId, replacedOn: x.replacedOn }))); const did = t.batteries.find(x => x.deviceId === d.id); return `<div class="list-line"><div><b>${esc(d.name)}</b><div class="small">${b.state === 'unknown' ? 'Last change unknown' : `Last changed ${G.shortDate(b.last)} · due ${G.monthLabel(b.due)}`}</div></div><div>${did ? '<span class="tag ok">Replaced today</span>' : `<span class="tag ${b.state === 'overdue' ? 'over' : b.state === 'due' ? 'bad' : 'info'}">${b.state === 'overdue' ? 'Overdue' : b.state === 'due' ? 'Due now' : b.state === 'unknown' ? 'Unknown' : 'OK'}</span> <button class="btn sm" data-act="battery" data-id="${esc(d.id)}">Replaced today</button>`}</div></div>`; }).join('');
-  h += sec('tasks', 'Service checklist and batteries', cnt('task') ? `<span class="tag wait">${cnt('task')} left</span>` : '<span class="tag ok">Done</span>', tkBody + (batBody ? `<p class="section-label" style="margin-top:14px">Batteries</p><p class="small">Only a battery you really replace resets that device's date.</p>${batBody}` : ''));
 
-  // 4 adjustments
-  const adjBody = (t.adjustments.length ? t.adjustments.map(a => `<div class="list-line"><div><b>${esc((G.ADJUST_CATEGORIES.find(c => c.k === a.category) || {}).t || 'Unsure')}</b> ${a.leaf && a.leaf !== 'ALL' ? '· ' + esc(a.leafLabel || a.leaf) : ''} ${a.direction && a.direction !== 'both' ? '· ' + esc(a.direction) : ''}<div class="small">${esc(a.what || '')}</div><div class="small">${esc(a.why || '')} ${a.ids ? a.ids.length + ' test(s) to repeat.' : ''}</div></div></div>`).join('') : '<div class="empty-note">No adjustments made.</div>')
+  out.push({ key: 'service', title: 'Servicing and batteries', ids: checklist.map(x => x.id), html: tkBody + `<p class="small">Only things fitted to this gate are listed, from the devices in its set-up.</p>` + (batBody ? `<p class="section-label" style="margin-top:14px">Batteries</p><p class="small">Only a battery you really replace resets that device's date.</p>${batBody}` : '') });
+  const adjBody = (t.adjustments.length ? t.adjustments.map(a => `<div class="list-line"><div><b>${esc((G.ADJUST_CATEGORIES.find(c => c.k === a.category) || {}).t || 'Unsure')}</b> ${a.leaf && a.leaf !== 'ALL' ? '· ' + esc(a.leafLabel || a.leaf) : ''} ${a.direction && a.direction !== 'both' ? '· ' + esc(a.direction) : ''}<div class="small">${esc(a.what || '')}</div><div class="small">${esc(a.why || '')} ${a.ids ? a.ids.length + ' test(s) to repeat.' : ''}</div></div></div>`).join('') : '<div class="empty-note">No settings changed.</div>')
     + `<details><summary class="btn sm" style="display:inline-flex">+ I changed a setting</summary><div style="margin-top:10px"><div class="fgrid"><div class="fld"><label>What changed?</label><select id="adjCat"><option value="">Not sure</option>${G.ADJUST_CATEGORIES.map(c => `<option value="${c.k}">${c.t}</option>`).join('')}</select></div>
      <div class="fld"><label>Which leaf?</label><select id="adjLeaf"><option value="ALL">All / not leaf-specific</option>${leafList(i).map(l => `<option value="${l.id}">${esc(l.label)}</option>`).join('')}</select></div>
      <div class="fld"><label>Which direction?</label><select id="adjDir"><option value="both">Both</option><option value="closing">Closing</option><option value="opening">Opening</option></select></div></div>
      <label>What did you change, and by how much?</label><textarea id="adjWhat"></textarea><button class="btn dark sm" data-act="addadj">Save the adjustment</button></div></details>`;
-  h += sec('adj', 'Adjustments and retests', t.adjustments.length ? `<span class="tag info">${t.adjustments.length}</span>` : '', adjBody);
 
-  // 5 defects
+  out.push({ key: 'adj', title: 'Settings you changed', ids: [], html: adjBody });
   const SEV = ['Advisory', 'Requires improvement', 'Safety critical', 'Unsafe'];
-  const defBody = (t.defects.length ? t.defects.map((d, k) => `<div class="hz"><div class="fgrid"><div class="fld"><label>How serious?</label><select data-bind="test.defects.${k}.severity" data-rr="1">${SEV.map(s => `<option ${d.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="fld"><label>Where?</label><input type="text" data-bind="test.defects.${k}.where" value="${esc(d.where || '')}"></div><div class="fld full"><label>What is wrong?</label><textarea data-bind="test.defects.${k}.text">${esc(d.text || '')}</textarea></div><div class="fld full"><label>What should be done?</label><textarea data-bind="test.defects.${k}.rec">${esc(d.rec || '')}</textarea></div></div>
-     ${d.severity === 'Unsafe' ? noticeBoxHTML(d) : ''}<div class="btns"><button class="btn sm warn" data-act="deldef" data-n="${k}">Remove</button></div></div>`).join('') : '<div class="empty-note">No defects recorded.</div>')
-    + `<div class="btns"><button class="btn" data-act="adddef"><i class="ti ti-plus"></i> Record a defect</button></div><p class="small">"Unsafe" means it must be taken out of use now. The unsafe notice goes to the office straight away; it does not wait for QS.</p>`;
-  h += sec('def', 'Defects', t.defects.length ? `<span class="tag ${t.defects.some(d => d.severity === 'Unsafe') ? 'over' : 'bad'}">${t.defects.length}</span>` : '', defBody);
+  const defBody = (t.defects.length ? t.defects.map((d, k) => `<div class="hz"><div class="fgrid"><div class="fld"><label>How bad is it?</label><select data-bind="test.defects.${k}.severity" data-rr="1">${SEV.map(s => `<option ${d.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="fld"><label>Where?</label><input type="text" data-bind="test.defects.${k}.where" value="${esc(d.where || '')}"></div><div class="fld full"><label>What is wrong?</label><textarea data-bind="test.defects.${k}.text">${esc(d.text || '')}</textarea></div><div class="fld full"><label>What needs doing?</label><textarea data-bind="test.defects.${k}.rec">${esc(d.rec || '')}</textarea></div></div>
+     ${d.severity === 'Unsafe' ? noticeBoxHTML(d) : ''}<div class="btns"><button class="btn sm warn" data-act="deldef" data-n="${k}">Remove</button></div></div>`).join('') : '<div class="empty-note">No problems recorded.</div>')
+    + `<div class="btns"><button class="btn" data-act="adddef"><i class="ti ti-plus"></i> Record a problem</button></div><p class="small">"Unsafe" means the gate must be taken out of use now. The notice goes to the office straight away and does not wait for QS.</p>`;
 
-  // 6 photos + notes
-  h += sec('photos', 'Photos and notes', S.photos.length ? `<span class="tag info">${S.photos.length}</span>` : '', `<div class="ph-grid">${S.photos.map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('')}</div><div class="btns"><label class="btn"><i class="ti ti-camera"></i> Add a photo<input type="file" accept="image/*" capture="environment" id="photoIn" hidden></label></div><label>Caption for the next photo</label><input type="text" id="photoCap"><label>Notes for QS</label><textarea class="t2" data-bind="test.notes">${esc(t.notes || '')}</textarea>`);
-
-  // 7 review
-  h += sec('review', 'Review and send', '', reviewInspHTML());
+  out.push({ key: 'def', title: 'Problems found', ids: [], html: defBody + (S.retStep != null && S.screens && S.screens[S.retStep] ? `<div class="btns"><button class="btn" data-act="retstep">Back to ${esc(S.screens[S.retStep].title)}</button></div>` : '') });
+  out.push({ key: 'photos', title: 'Photos and notes', ids: [], html: `<div class="ph-grid">${S.photos.map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('')}</div><div class="btns"><label class="btn"><i class="ti ti-camera"></i> Add a photo<input type="file" accept="image/*" capture="environment" id="photoIn" hidden></label></div><label>Caption for the next photo</label><input type="text" id="photoCap"><label>Notes for QS</label><textarea class="t2" data-bind="test.notes">${esc(t.notes || '')}</textarea>` });
+  out.push({ key: 'review', title: 'Finish and send', ids: [], html: reviewInspHTML() });
+  return out;
+}
+function pointScreen(p) {
+  const hzl = ((S.inst.hazards || []).find(h => h.id === p.hazardId) || {}).label;
+  return { key: 'pt:' + p.id, title: p.label, sub: hzl ? 'Danger: ' + hzl : '', ids: [p.id], html: (!canTest() ? `<div class="box bad">Choose a force tester (in calibration) on the Start screen before you enter readings.</div>` : '') + diagHTML(p.diagrams) + pointHTML(p) };
+}
+function inspHTML() {
+  const t = S.test, i = S.inst; if (!t) return '';
+  const screens = S.screens = inspScreens();
+  if (S.istep == null || S.istep >= screens.length) { const k = screens.findIndex(x => x.key === t.stepKey); S.istep = k >= 0 ? k : 0; }
+  const n = S.istep, sc = screens[n];
+  let h = crumb(link('inst', esc(i.name)), 'Inspection');
+  h += `<div class="stepbar"><div class="stepinfo"><span><b>Step ${n + 1} of ${screens.length}</b> <span class="small">${esc(i.name)}</span></span><button class="btn sm warn" data-act="quickdef"><i class="ti ti-alert-triangle"></i> Record a problem</button></div><div class="prog"><i style="width:${Math.round((n + 1) / screens.length * 100)}%"></i></div></div>`;
+  h += `<div class="card"><h2 class="gt-title">${esc(sc.title)}</h2>${sc.sub ? `<p class="gt-sub">${esc(sc.sub)}</p>` : ''}${sc.html}</div>`;
+  h += `<div class="stepnav"><button class="btn" data-act="prevstep" ${n === 0 ? 'disabled' : ''}>Back</button><button class="btn" data-act="saveleave">Save and leave</button>${n < screens.length - 1 ? `<button class="btn dark" data-act="nextstep">Next</button>` : ''}</div>`;
   return h;
 }
 function noticeBoxHTML(d) {
   const n = (S.test.notices || {})[d.id];
   const busy = S.noticeBusy === d.id;
   if (n && n.sent) return `<div class="box good">Unsafe notice <b>sent</b> ${n.sentAt ? G.shortDate(String(n.sentAt).slice(0, 10)) : ''} to ${esc((n.to || []).join(', '))}.</div>`;
-  return `<div class="box bad"><h4>Unsafe: raise the notice now</h4>${n && n.err ? `<p><b>It did not send:</b> ${esc(n.err)}</p>` : ''}<p class="small">Switch the gate off and tell the customer first. The notice goes to the office, John and Rob. A Microsoft window may open: finish it.</p><button class="btn red" data-act="sendnotice" data-id="${esc(d.id)}" ${busy ? 'disabled' : ''}>${busy ? 'Sending…' : (n && n.err ? 'Try sending again' : 'Send the unsafe notice')}</button></div>`;
+  return `<div class="box bad"><h4>Unsafe: send the notice now</h4>${n && n.err ? `<p><b>It did not send:</b> ${esc(n.err)}</p>` : ''}<p class="small">Switch the gate off and tell the customer first. The notice goes to the office, John and Rob. A Microsoft window may open: finish it there.</p><button class="btn red" data-act="sendnotice" data-id="${esc(d.id)}" ${busy ? 'disabled' : ''}>${busy ? 'Sending…' : (n && n.err ? 'Try sending again' : 'Send the unsafe notice')}</button></div>`;
 }
 function reviewInspHTML() {
   const t = S.test, i = S.inst;
-  const gaps = G.missingItems(t, i, S.plan, i.tasks, S.rules), ov = G.overallLabel(t, S.plan, S.rules);
-  let h = `<div class="box ${ov.label === 'Pass' ? 'good' : ov.label === 'Fail' ? 'bad' : 'warn'}"><h4>${ov.label}</h4>${ov.pass} passed · ${ov.fail} over the limit · ${ov.review} to review · ${ov.pending} not finished</div>`;
+  const gaps = G.missingItems(t, i, S.plan, S.checklist, S.rules), ov = G.overallLabel(t, S.plan, S.rules, S.checklist, S.controls);
+  const stepOf = g => { const k = (S.screens || []).findIndex(x => (x.ids || []).includes(g.id)); return k; };
+  let h = `<div class="box ${ov.label.startsWith('Pass') ? 'good' : ov.label === 'Fail' ? 'bad' : 'warn'}"><h4>${ov.label}</h4>Force tests passed: ${ov.pass} · over the limit: ${ov.fail} · to look at: ${ov.review} · not finished: ${ov.pending}${ov.notes ? ' · notes: ' + ov.notes : ''}</div>`;
   const unsent = t.defects.filter(d => d.severity === 'Unsafe' && !((t.notices || {})[d.id] || {}).sent);
-  if (unsent.length) h += `<div class="box bad">An unsafe defect has no sent notice yet. Send it above before you finish.</div>`;
+  if (unsent.length) h += `<div class="box bad">An unsafe problem has no notice sent yet. Send it above before you finish.</div>`;
   if (gaps.length) {
-    h += `<div class="box warn"><h4>Not finished</h4>${gaps.slice(0, 25).map(g => '• ' + esc(g.text)).join('<br>')}${gaps.length > 25 ? `<br>…and ${gaps.length - 25} more` : ''}</div>
-     <p class="small">If you can't finish, send it as a <b>limited inspection</b>: say why and who agreed. QS decides what happens to the due date.</p>
-     <label>Why wasn't it finished? <span class="req">*</span></label><textarea data-bind="test.limited.reason">${esc((t.limited || {}).reason || '')}</textarea><label>Who agreed? (customer or manager)</label><input type="text" data-bind="test.limited.agreedWith" value="${esc((t.limited || {}).agreedWith || '')}">`;
-  } else h += `<div class="box good">Everything is answered.</div>`;
+    h += `<div class="box warn"><h4>Not finished yet</h4>${gaps.slice(0, 25).map(g => { const k = stepOf(g); return '• ' + (k >= 0 ? `<a data-act="gostep" data-n="${k}" style="text-decoration:underline;cursor:pointer">${esc(g.text)}</a>` : esc(g.text)); }).join('<br>')}${gaps.length > 25 ? `<br>…and ${gaps.length - 25} more` : ''}</div>
+     <p class="small">If you can't finish, send it as a <b>part-done inspection</b>: say why and who agreed. QS decides whether it counts for the due date.</p>
+     <label>Why couldn't you finish? <span class="req">*</span></label><textarea data-bind="test.limited.reason">${esc((t.limited || {}).reason || '')}</textarea><label>Who agreed? (customer or manager)</label><input type="text" data-bind="test.limited.agreedWith" value="${esc((t.limited || {}).agreedWith || '')}">`;
+  } else h += `<div class="box good">Everything is filled in.</div>`;
   h += `<label class="tick"><input type="checkbox" id="signChk"> I carried out this inspection and the readings are as shown, as ${esc(meName())}</label>
-   <div class="btns"><button class="btn red" data-act="submitinsp">${gaps.length ? 'Send as a limited inspection' : 'Send to QS'}</button><button class="btn" data-act="saveleave">Save and leave</button></div>`;
+   <div class="btns"><button class="btn red" data-act="submitinsp">${gaps.length ? 'Send as part-done' : 'Send to QS'}</button></div>
+   <div class="btns"><button class="btn sm warn" data-act="dropinsp"><i class="ti ti-trash"></i> Delete this inspection</button></div>`;
   return h;
 }
 
@@ -930,17 +1004,18 @@ async function sendNotice(defId) {
 function submitInsp() {
   const t = S.test, i = S.inst;
   if (!$('signChk') || !$('signChk').checked) return alert('Tick the box to say you carried out the inspection.');
-  const gaps = G.missingItems(t, i, S.plan, i.tasks, S.rules);
-  if (gaps.length && !(t.limited && String(t.limited.reason || '').trim())) return alert('Say why it was not finished, so it can be sent as a limited inspection.');
-  if (t.defects.some(d => d.severity === 'Unsafe' && !((t.notices || {})[d.id] || {}).sent)) return alert('Send the unsafe notice first (Defects).');
-  const bad = t.defects.find(d => !String(d.text || '').trim()); if (bad) return alert('A defect has no description.');
+  const gaps = G.missingItems(t, i, S.plan, S.checklist, S.rules);
+  if (gaps.length && !(t.limited && String(t.limited.reason || '').trim())) return alert('Say why it was not finished, so it can be sent as a part-done inspection.');
+  if (t.defects.some(d => d.severity === 'Unsafe' && !((t.notices || {})[d.id] || {}).sent)) return alert('Send the unsafe notice first (Problems found).');
+  const bad = t.defects.find(d => !String(d.text || '').trim()); if (bad) return alert('A problem has no description.');
   t.limited = gaps.length ? { ...t.limited, items: gaps.map(g => g.text).slice(0, 60) } : null;
-  t.planSnapshot = S.plan.points.map(p => ({ id: K(p.id), label: p.label, kind: p.kind, hazardClass: p.hazardClass, direction: p.direction, leaf: p.leaf, group: p.group || null }));
+  t.planSnapshot = S.plan.points.map(p => ({ id: K(p.id), label: p.label, kind: p.kind, hazardClass: p.hazardClass, direction: p.direction, leaf: p.leaf, group: p.group || null, gap: p.gap || null }));
   t.checkSnapshot = S.plan.checks.map(c => ({ id: K(c.id), label: c.label, kind: c.kind }));
-  t.taskSnapshot = (i.tasks || []).map(x => ({ id: x.id, text: x.text }));
-  t.deviceSnapshot = (i.devices || []).filter(d => !d.retired).map(d => ({ id: d.id, name: d.name, kind: d.kind || '' }));
+  t.taskSnapshot = S.checklist.map(x => ({ id: x.id, text: x.text, options: x.options.map(o => ({ k: o.k, t: o.t })) }));
+  t.deviceSnapshot = [];
+  t.controlSnapshot = (S.controls || []).map(c => ({ id: c.id, name: c.name, kind: c.kind, location: c.location, trigger: c.trigger, expected: c.expected, reset: !!c.reset }));
   t.hazardSnapshot = (i.hazards || []).map(h => ({ id: h.id, label: h.label, protection: h.protection, cls: h.cls }));
-  t.overall = G.overallLabel(t, S.plan, S.rules).label;
+  t.overall = G.overallLabel(t, S.plan, S.rules, S.checklist, S.controls).label;
   t.intervalMonths = i.intervalMonths; t.setupStatusAtTest = i.setupStatus || 'Draft';
   t.signOff = { name: meName(), at: new Date().toISOString() };
   t.status = 'Submitted'; t.qsed = false;
@@ -1017,6 +1092,15 @@ document.addEventListener('click', async e => {
     case 'editsetup': return startWizard(i, 1);
     case 'startinsp': return startInspection();
     case 'resumeinsp': return startInspection(el.dataset.id);
+    case 'dropinsp': {
+      const id = el.dataset.id || (S.test && S.test._id); const tt = (S.tests || []).find(x => x._id === id) || S.test;
+      if (!tt || tt.status === 'Submitted' || tt.status === 'Approved' || tt.status === 'In review') return alert('That inspection has been sent, so it cannot be removed here. Ask QS.');
+      if (!confirm('Delete this unfinished inspection? Anything you entered in it is lost.')) return;
+      if (S.test && S.test._id === id) { clearTimeout(S.test._timer); S.test._dirty = false; }
+      if (tt._created !== false && (tt._created || (S.tests || []).some(x => x._id === id))) write(setDoc(doc(db, 'gateTests', id), { deletedFlag: true, deletedBy: meEmail(), deletedAt: serverTimestamp() }, { merge: true }), 'Inspection deleted');
+      S.tests = (S.tests || []).filter(x => x._id !== id); S.test = null; S.photos = [];
+      return go('inst');
+    }
     case 'saveaccess': write(setDoc(doc(db, 'gateAccess', i.id), { codes: $('accessCodes').value, installationId: i.id, siteRef: i.siteRef, updatedBy: meEmail(), updatedAt: serverTimestamp() }), 'Access notes'); S.access = $('accessCodes').value; banner('Access notes saved.', 'ok'); return;
     // wizard
     case 'set': setPath(el.dataset.path, el.dataset.val); queueInstSave(); return rerender();
@@ -1037,6 +1121,25 @@ document.addEventListener('click', async e => {
     // inspection
     case 'check': { const o = t.checks[el.dataset.pk] = t.checks[el.dataset.pk] || {}; o.st = el.dataset.val; saveTest(); return rerender(); }
     case 'device': { const o = t.devices[el.dataset.id] = t.devices[el.dataset.id] || {}; o.result = el.dataset.val; saveTest(); return rerender(); }
+    case 'control': { const o = t.controls[el.dataset.id] = t.controls[el.dataset.id] || {}; o.outcome = el.dataset.val; saveTest(); return rerender(); }
+    case 'nextstep': case 'prevstep': case 'gostep': case 'retstep': {
+      const n = S.istep, max = (S.screens || []).length - 1;
+      let to = n; if (a === 'nextstep') to = Math.min(max, n + 1); else if (a === 'prevstep') to = Math.max(0, n - 1); else if (a === 'gostep') to = +el.dataset.n; else { to = S.retStep != null ? S.retStep : n; S.retStep = null; }
+      S.istep = to; t.stepKey = (S.screens[to] || {}).key || null; saveTest(); rerender(); return scrollTop();
+    }
+    case 'quickdef': {
+      const defN = (S.screens || []).findIndex(x => x.key === 'def'); if (defN < 0) return;
+      if (S.istep !== defN) S.retStep = S.istep;
+      t.defects.push({ id: G.newId('f'), severity: 'Advisory', where: '', text: '', rec: '' });
+      S.istep = defN; t.stepKey = 'def'; saveTest(); rerender(); return scrollTop();
+    }
+    case 'zoom': {
+      const d = G.DIAGRAMS[el.dataset.id]; if (!d) return;
+      const z = document.createElement('div'); z.className = 'zoom'; z.dataset.act = 'unzoom';
+      z.innerHTML = `<img src="${d.file}" alt=""><div class="zc"><b>${esc(d.title)}</b><br>${esc(G.DIAGRAM_SOURCE)}, page ${d.page}. Tap anywhere to close.</div>`;
+      document.body.appendChild(z); return;
+    }
+    case 'unzoom': { el.remove(); return; }
     case 'task': { const o = t.tasks[el.dataset.id] = t.tasks[el.dataset.id] || {}; o.outcome = el.dataset.val; saveTest(); return rerender(); }
     case 'notdone': { const note = prompt('Why? (a few words)') || ''; t.notDone[el.dataset.pk] = { st: el.dataset.val, note }; saveTest(); return rerender(); }
     case 'undonot': delete t.notDone[el.dataset.pk]; saveTest(); return rerender();
@@ -1056,7 +1159,7 @@ document.addEventListener('click', async e => {
       adj.ids.forEach(pk => { if ((t.readings[pk] || []).length) t.retestNeeded[pk] = true; });
       t.adjustments.push(adj); S.open.add('adj'); S.open.add('force'); saveTest(); return rerender();
     }
-    case 'adddef': t.defects.push({ id: G.newId('f'), severity: 'Advisory', where: '', text: '', rec: '' }); S.open.add('def'); saveTest(); return rerender();
+    case 'adddef': t.defects.push({ id: G.newId('f'), severity: 'Advisory', where: '', text: '', rec: '' }); saveTest(); return rerender();
     case 'deldef': if (confirm('Remove this defect?')) { t.defects.splice(+el.dataset.n, 1); saveTest(); rerender(); } return;
     case 'sendnotice': return sendNotice(el.dataset.id);
     case 'submitinsp': return submitInsp();

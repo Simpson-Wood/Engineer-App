@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AOV Testing — Simpson &amp; Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  body{padding-bottom:40px;}
+  .wrap{max-width:1320px; margin:0 auto; padding:0;}
+  header .brand{flex:1 1 auto;} header .brand > div{min-width:0;}
+  #signinScreen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img{height:44px; margin-bottom:28px;}
+  #signinScreen h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p{color:var(--grey); font-size:14px; max-width:320px; margin:0 0 26px;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+  .ms-btn{display:flex;}
+  #appRoot{display:none;}
+  main{padding:16px;}
+  .card{min-width:0; padding:16px;}
+  .section-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:20px; color:var(--ink); margin:0 0 12px;}
+  .fld > label, .card label.l{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:0 0 6px;}
+  label .req{color:var(--red);}
+  label .hint{display:block; font-family:'Barlow',sans-serif; font-weight:400; text-transform:none; letter-spacing:0; color:var(--grey); font-size:12.5px; margin-top:2px;}
+  input[type=text], input[type=date], input[type=time], select, textarea{
+    width:100%; min-height:44px; padding:10px 12px; font-family:'Barlow',sans-serif; font-size:16px;
+    border:1.5px solid var(--field); border-radius:8px; background:#fff; color:var(--ink); margin-bottom:14px;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+  input:disabled, select:disabled, textarea:disabled{background:var(--soft); color:var(--grey);}
+  textarea{resize:vertical; min-height:64px; line-height:1.4;}
+  select{appearance:none; -webkit-appearance:none; padding-right:34px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%235c5c5c' d='M5 7l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; background-size:18px;}
+  .fgrid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:16px;}
+  .fgrid > .full{grid-column:1 / -1;}
+  .fld{min-width:0;}
+  @media (min-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1100px){ .fgrid.three{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .tick{display:flex; gap:10px; align-items:flex-start; font-size:15px; font-weight:600; margin:0 0 12px; cursor:pointer;}
+  .tick input{width:20px; height:20px; flex:0 0 auto; margin-top:1px;}
+  .banner{display:none; font-weight:600;}
+  .banner.ok{background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+  .banner.wait{background:var(--amber-bg); color:#4d3300; border-color:var(--amber-line);}
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:6px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; background:#eeece7; color:var(--grey);}
+  .tag.ok{background:var(--green-bg); color:var(--green);} .tag.bad{background:var(--red-tint); color:var(--red-dark);}
+  .tag.wait{background:var(--amber-bg); color:var(--amber);} .tag.info{background:var(--blue-bg); color:var(--blue);} .tag.dark{background:var(--ink); color:#fff;}
+  .tag.over{background:var(--red); color:#fff;} .tag.test{background:var(--test-bg); color:var(--test-ink);}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:9px 16px; font-size:15px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; color:var(--ink);}
+  .btn.red{background:var(--red); border-color:var(--red); color:#fff;} .btn.dark{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .btn.sm{min-height:38px; padding:6px 12px; font-size:14px;}
+  .btn.warn{border-color:var(--red); color:var(--red);} .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btns{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .crumb{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 12px; font-size:14px;}
+  .crumb a{color:var(--grey); cursor:pointer; font-weight:600; text-decoration:underline;}
+  .box{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 12px; background:#fff;}
+  .box.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;}
+  .box.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .box.good{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
+  .box.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .box h4{margin:0 0 6px; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:17px;}
+  .q{border-top:1px solid var(--line); padding:12px 0;} .q:first-child{border-top:none; padding-top:0;}
+  .q .ql{font-weight:600; font-size:15.5px; margin:0 0 8px;} .q .qn{font-size:12.5px; color:var(--grey); margin:-4px 0 8px;}
+  .opt-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .opt{min-height:44px; padding:8px 14px; border:1.5px solid var(--field); border-radius:8px; background:#fff; font-weight:700; font-size:15px; cursor:pointer; color:var(--grey);}
+  .opt.on{background:var(--ink); border-color:var(--ink); color:#fff;} .opt.on.bad{background:var(--red); border-color:var(--red);} .opt.on.good{background:var(--green); border-color:var(--green);}
+  .small{font-size:13px; color:var(--grey);}
+  .gt-title{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:22px; margin:0 0 4px;}
+  .gt-sub{color:var(--grey); font-size:14px; margin:0 0 12px;}
+  .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .list-line:first-child{border-top:none;}
+  .empty-note, .loading-note{text-align:center; color:var(--grey); font-size:14.5px; padding:18px 0;}
+  .grid{display:grid; grid-template-columns:minmax(0,1fr); gap:10px;}
+  @media (min-width:760px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1150px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .item{border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff;}
+  .item .nm{font-weight:700; font-size:16px;} .item .ty{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em; font-weight:600;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .stabs{display:flex; gap:4px; flex-wrap:wrap; margin:0 0 12px;}
+  .stabs .tab{font-size:15px; padding:8px 12px; border:1px solid var(--line);}
+  .stepbar{position:sticky; top:0; z-index:5; background:var(--bg); padding:8px 0 6px; margin:0 0 10px;}
+  .stepinfo{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px; flex-wrap:wrap;}
+  .prog{height:6px; background:var(--line); border-radius:4px; margin-top:6px; overflow:hidden;} .prog i{display:block; height:100%; background:var(--red);}
+  .stepnav{display:flex; gap:8px; margin:12px 0 24px;} .stepnav .btn{flex:1; justify-content:center;}
+  .out{border:1px solid var(--line); border-left:5px solid var(--field); border-radius:10px; padding:10px 12px; margin:0 0 10px;}
+  .out.good{border-left-color:var(--green);} .out.bad{border-left-color:var(--red);}
+  .out .on{font-weight:700;} .expect{font-size:13px; color:var(--grey); margin:2px 0 8px;}
+  table.sch{width:100%; border-collapse:collapse; font-size:14px;} table.sch th, table.sch td{border-top:1px solid var(--line); padding:7px 6px; text-align:left; vertical-align:top;}
+  table.sch th{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em;}
+  table.sch tr.grp td{background:var(--soft); font-weight:700;}
+  .sch-wrap{overflow-x:auto;}
+  .ph-grid{display:flex; flex-wrap:wrap; gap:10px;} .ph-grid figure{margin:0; width:150px;} .ph-grid img{width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .ph-grid figcaption{font-size:12px; color:var(--grey);}
+  .hz{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 10px;}
+  .calc{background:var(--soft); border-radius:10px; padding:12px; margin:0 0 12px;}
+  .calc .big{font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700;}
+  @media (max-width:640px){ main{padding:12px;} .card{padding:14px;} header h1{font-size:16px;} header .who .name{display:none;} }
+  @media (max-width:700px){ table.sch .hide-s{display:none;} }
+</style>
+</head>
+<body>
+
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>AOV Testing</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html" title="Home">
+      <img src="sw-logo-white.png" alt="Simpson & Wood">
+      <div><h1>AOV Testing</h1><p id="versionLabel">v1.0</p></div>
+    </a>
+    <div class="right"><div class="who"><div class="name" id="whoName">—</div><button id="signOutBtn">Sign out</button></div></div>
+  </header>
+  <main><div class="wrap">
+    <div id="banner" class="banner"></div>
+    <div id="view"><div class="loading-note">Loading…</div></div>
+  </div></main>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
+  getDocs, doc, getDoc, query, where, serverTimestamp, onSnapshot,
+  setDoc as fsSetDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import * as SWS from './sw-shared.js';
+import * as A from './aov-shared.js';
+const { esc } = A;
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION;
+console.log('AOV testing', VERSION, 'shared', A.AOV_SHARED_VERSION);
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+
+SWS.swSetup({ db, auth, page: 'aov-test', version: VERSION });
+const viewingAs = () => SWS.swViewingAs();
+const isVaError = e => e && String(e.message || '').includes(SWS.SW_VA_MSG);
+const setDoc = SWS.swGuard(fsSetDoc);
+
+// ── State ─────────────────────────────────────────────────────────────────
+const S = {
+  user: null, level: 'engineer', sites: [], site: null, visits: [], visit: null, results: {}, base: {}, dirty: {}, timers: {},
+  rules: A.clone(A.DEFAULT_RULES), rulesApproved: false, rulesVersion: null, view: 'home', setupTab: 'systems', step: 0,
+  photos: [], unsubR: null, unsubS: null, schedFilter: { block: '', system: '', outstanding: false }, back: null
+};
+const $ = id => document.getElementById(id);
+const meEmail = () => { const va = viewingAs(); return va ? va.email : String((S.user && S.user.email) || '').toLowerCase(); };
+const meRaw = () => (S.user && S.user.email) || '';     // exactly as Microsoft gives it (rules compare this way)
+const meName = () => { const va = viewingAs(); return va ? va.name : ((S.user && (S.user.displayName || S.user.email)) || ''); };
+const banner = (txt, cls = 'wait') => { const b = $('banner'); if (!txt) { b.style.display = 'none'; return; } b.className = 'banner ' + cls; b.textContent = txt; b.style.display = 'block'; };
+const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k[0] === '_' ? undefined : (v === undefined ? null : v))));
+const open = v => v && ['Draft', 'Returned'].includes(v.status);
+
+// Every write goes through this: not awaited (works with no signal), failures reported.
+function write(p, what) {
+  Promise.resolve(p).catch(e => {
+    if (isVaError(e)) { banner(SWS.SW_VA_MSG, 'wait'); return; }
+    const code = (e && (e.code || e.message)) || 'unknown';
+    console.error(what, e); SWS.swReport('save', what + ' didn\'t save: ' + code);
+    banner(code === 'permission-denied' ? what + ' was not saved: someone else saved it first, or it has been sent to QS. Their version is shown.' : what + ' did not save (' + code + '). Tell Rob if it keeps happening.', 'wait');
+  });
+}
+const audit = (action, extra = {}) => { if (viewingAs()) return; write(setDoc(doc(collection(db, 'aovAudit')), { at: serverTimestamp(), atISO: new Date().toISOString(), by: meEmail(), action, ...extra }), 'Audit record'); };
+
+// ── Sign-in (standards §1.1) ───────────────────────────────────────────────
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+$('msSignInBtn').addEventListener('click', () => {
+  const errBox = $('signinErr'); errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      signInWithRedirect(auth, msProvider).catch(err2 => { const m = describeAuthError(err2); if (m) errBox.textContent = m; });
+      return;
+    }
+    const m = describeAuthError(err); if (m) errBox.textContent = m;
+  });
+});
+$('signOutBtn').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => { $('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.'); });
+
+let booted = false;
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (!user) { $('signinScreen').style.display = 'flex'; $('appRoot').style.display = 'none'; return; }
+  $('signinScreen').style.display = 'none'; $('appRoot').style.display = 'block';
+  if (booted) return; booted = true;
+  const va = await SWS.swViewAsInit(user);
+  $('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  try { S.level = (await SWS.swAccess(va ? va.email : user.email)).level; } catch (e) {}
+  SWS.swExtrasStart({ page: 'aov-test', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => ({ home: 'Sites', site: 'Sites', setup: 'Equipment', visit: 'Visit', sched: 'Visit' }[S.view] || '') });
+  SWS.swuStart();
+  boot();
+});
+window.swUpdateBlocker = () => {
+  if (Object.keys(S.timers).length) return 'Your last answer is still saving. Wait a moment, then tap Update.';
+  if (S.view === 'visit') return 'Tap Save first, then tap Update. You come back to the same step.';
+  if (SWS.swuMine().some(x => !x.failed)) return 'Wait until your work has sent (the yellow bar goes), then tap Update.';
+  return '';
+};
+
+// ── Loading ───────────────────────────────────────────────────────────────
+async function boot() {
+  try {
+    const [sitesS, rulesS] = await Promise.all([getDocs(collection(db, 'aovSites')), getDocs(collection(db, 'aovRules'))]);
+    S.sites = sitesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => !s.deletedFlag).sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
+    const ok = rulesS.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'Approved').sort((a, b) => (b.version || 0) - (a.version || 0));
+    if (ok.length) { S.rules = { ...A.clone(A.DEFAULT_RULES), ...ok[0].rules }; S.rulesApproved = true; S.rulesVersion = ok[0].version; }
+  } catch (e) {
+    console.error(e); if (navigator.onLine) SWS.swReport('load', 'AOV lists didn\'t load: ' + (e.code || e.message));
+    banner('The site list could not load (' + (e.code || e.message) + '). Anything already saved on this phone still shows.', 'wait');
+  }
+  const want = new URLSearchParams(location.search).get('site');
+  if (want) { const s = S.sites.find(x => x.siteRef === want || x.id === want); if (s) return openSite(s.id); }
+  go('home');
+}
+async function openSite(id) {
+  const s = S.sites.find(x => x.id === id); if (!s) return go('home');
+  S.site = s; S.visit = null; watchSite();
+  await loadVisits(); go('site');
+}
+function watchSite() {
+  if (S.unsubS) S.unsubS();
+  const ref = S.site.id;
+  S.unsubS = onSnapshot(doc(db, 'aovSites', ref), snap => {
+    if (!snap.exists() || !S.site || S.site.id !== ref) return;
+    if (S.siteTimer) return;             // our own edit is waiting to save
+    const d = { id: snap.id, ...snap.data() };
+    if ((d.rev || 0) >= (S.site.rev || 0)) { Object.assign(S.site, d); const i = S.sites.findIndex(x => x.id === ref); if (i >= 0) S.sites[i] = S.site; if (['site', 'setup'].includes(S.view)) rerender(); }
+  }, () => {});
+}
+async function loadVisits() {
+  try {
+    const snap = await getDocs(query(collection(db, 'aovTests'), where('siteRef', '==', S.site.siteRef)));
+    S.visits = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(v => !v.deletedFlag).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  } catch (e) { S.visits = []; if (navigator.onLine) SWS.swReport('load', 'AOV visits didn\'t load: ' + (e.code || e.message)); }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+const VIEWS = { home: homeHTML, site: siteHTML, setup: setupHTML, visit: visitHTML, sched: schedHTML };
+function go(view) { S.view = view; banner(''); $('view').innerHTML = VIEWS[view](); scrollTop(); }
+function rerender() { const y = window.scrollY; $('view').innerHTML = VIEWS[S.view](); window.scrollTo(0, y); }
+const crumb = (...parts) => `<div class="crumb">${parts.join(' <span class="small">›</span> ')}</div>`;
+const link = (act, txt) => `<a data-act="${act}">${txt}</a>`;
+const setupTag = s => ({ Approved: '<span class="tag ok">Set-up approved</span>', 'Ready for QS': '<span class="tag wait">Set-up with QS</span>', Changed: '<span class="tag wait">Set-up changed: QS to approve</span>' }[s.setupStatus] || '<span class="tag wait">Set-up not approved</span>');
+const dueTag = s => { if (!s.dueMonth) return ''; const st = A.dueState(s.dueMonth); return `<span class="tag ${st === 'overdue' ? 'over' : st === 'due' ? 'bad' : 'info'}">${st === 'overdue' ? 'Overdue' : 'Due ' + A.monthLabel(s.dueMonth)}</span>`; };
+const statusTag = v => `<span class="tag ${v.status === 'Issued' ? 'ok' : v.status === 'Returned' ? 'bad' : 'wait'}">${esc(v.status)}</span>${v.testData ? ' <span class="tag test">Practice</span>' : ''}`;
+
+// ═══ HOME ═══
+function homeHTML() {
+  let h = `<div class="card"><p class="section-label">Sites</p><div class="btns" style="margin-top:0"><button class="btn" data-act="refresh"><i class="ti ti-refresh"></i> Refresh</button><button class="btn" data-act="newsite"><i class="ti ti-plus"></i> Add a new site</button></div><div id="newSiteBox"></div>`;
+  if (!S.sites.length) h += `<div class="empty-note">No AOV sites yet. Add the first one.</div>`;
+  else h += `<div class="grid">${S.sites.map(s => `<div class="item" data-act="opensite" data-id="${esc(s.id)}" style="cursor:pointer"><div class="ty">${esc(s.siteRef)}</div><div class="nm">${esc(s.siteName)}</div><div class="small">${esc([s.addressLine, s.postcode].filter(Boolean).join(', '))}</div><div class="chips">${setupTag(s)}${dueTag(s)}</div></div>`).join('')}</div>`;
+  h += `</div>`;
+  if (!S.rulesApproved) h += `<div class="box warn"><h4>Test rules not approved yet</h4>Until a Director approves the AOV test rules, every result is kept as <b>Unverified</b>. Your answers are still saved and go to QS.</div>`;
+  return h;
+}
+function newSiteForm() {
+  return `<div class="fgrid" style="margin-top:12px"><div class="fld"><label>Site name <span class="req">*</span></label><input type="text" id="nsName"></div>
+  <div class="fld"><label>Site reference <span class="hint">It can't be changed later.</span></label><input type="text" id="nsRef" value="${esc(A.nextRef(S.sites))}"></div>
+  <div class="fld"><label>Address</label><input type="text" id="nsAddr"></div>
+  <div class="fld"><label>Postcode</label><input type="text" id="nsPost" style="text-transform:uppercase"></div>
+  <div class="fld"><label>Site contact (optional)</label><input type="text" id="nsContact"></div></div>
+  <button class="btn dark" data-act="savesite">Add site</button>`;
+}
+function saveSite() {
+  const name = $('nsName').value.trim(), ref = ($('nsRef').value.trim() || A.nextRef(S.sites)).toUpperCase().replace(/\s+/g, '-');
+  if (!name) return alert('Give the site a name.');
+  if (S.sites.some(s => s.siteRef === ref)) return alert('That site reference is already used.');
+  const rec = { siteRef: ref, siteName: name, addressLine: $('nsAddr').value.trim(), postcode: $('nsPost').value.trim().toUpperCase(), contact: $('nsContact').value.trim(),
+    intervalMonths: S.rules.intervalMonths || 12, timings: { ...S.rules.timings }, setupStatus: 'Draft', blocks: [], systems: [], assets: [], scenarios: [], supplies: [], rev: 1, createdBy: meEmail(), createdAt: serverTimestamp() };
+  write(setDoc(doc(db, 'aovSites', ref), rec), 'New site'); audit('site-created', { siteRef: ref });
+  const local = { id: ref, ...rec, createdAt: null }; S.sites.push(local); S.sites.sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
+  openSite(ref);
+}
+
+// ═══ ONE SITE ═══
+function siteHTML() {
+  const s = S.site; if (!s) return '';
+  const mine = S.visits.filter(v => open(v));
+  let h = crumb(link('home', 'Sites'), `<b>${esc(s.siteName)}</b>`);
+  h += `<div class="card"><div class="small">${esc(s.siteRef)}</div><h2 class="gt-title">${esc(s.siteName)}</h2><p class="gt-sub">${esc([s.addressLine, s.postcode].filter(Boolean).join(', '))}</p><div class="chips">${setupTag(s)}${dueTag(s)}<span class="tag info">Every ${esc(s.intervalMonths || 12)} months</span></div>`;
+  if (s.setupStatus === 'Draft' && s.setupReturnNote) h += `<div class="box bad" style="margin-top:10px">QS: ${esc(s.setupReturnNote)}</div>`;
+  h += `<div class="btns"><button class="btn red" data-act="newvisit"><i class="ti ti-clipboard-check"></i> Start a visit</button><button class="btn" data-act="setup"><i class="ti ti-window"></i> Equipment and scenarios</button></div></div>`;
+  h += `<div id="newVisitBox"></div>`;
+  if (mine.length) h += `<div class="card"><p class="section-label">Visits in progress</p>${mine.map(v => `<div class="list-line"><div><b>${A.longDate(v.date)}</b> · ${esc((A.VISIT_TYPES[v.visitType] || {}).label || '')} ${statusTag(v)}<div class="small">${esc((v.engineers || []).map(e => e.name).join(', '))}</div>${v.status === 'Returned' && (v.returnNotes || []).length ? `<div class="small" style="color:var(--red-dark)">QS: ${esc(v.returnNotes[v.returnNotes.length - 1].note)}</div>` : ''}</div><div class="btns" style="margin:0"><button class="btn sm dark" data-act="resume" data-id="${esc(v._id)}">Continue</button></div></div>`).join('')}</div>`;
+  const done = S.visits.filter(v => !open(v));
+  h += `<div class="card"><p class="section-label">Past visits</p>${done.length ? done.map(v => `<div class="list-line"><div><b>${A.longDate(v.date)}</b> · ${esc((A.VISIT_TYPES[v.visitType] || {}).label || '')} ${statusTag(v)}${v.overall ? ` <span class="small">${esc(v.overall)}</span>` : ''}</div></div>`).join('') : '<div class="empty-note">No visits sent yet.</div>'}</div>`;
+  const n = A.activeAssets(s).length;
+  h += `<div class="card"><p class="section-label">Equipment</p><p class="small">${(s.blocks || []).length} block(s) · ${(s.systems || []).length} system(s) · ${n} item(s) · ${(s.scenarios || []).filter(x => !x.retired).length} scenario(s) · ${(s.supplies || []).filter(x => !x.retired).length} power supply(s)</p></div>`;
+  return h;
+}
+function newVisitForm() {
+  const sys = S.site.systems || [];
+  return `<div class="card"><p class="section-label">New visit</p><div class="fgrid"><div class="fld"><label>What kind of visit?</label><select id="nvType">${Object.entries(A.VISIT_TYPES).map(([k, v]) => `<option value="${k}" ${k === (S.site.setupStatus === 'Approved' ? 'service' : 'takeover') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>
+   <div class="fld"><label>Date</label><input type="date" id="nvDate" value="${A.todayISO()}"></div></div>
+   ${sys.length > 1 ? `<label class="l">Which systems? <span class="hint">Leave all ticked for a full visit.</span></label>${sys.map(x => `<label class="tick"><input type="checkbox" class="nvSys" value="${esc(x.id)}" checked> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}` : ''}
+   <label class="tick"><input type="checkbox" id="nvPractice"> This is a practice run (not a real visit)</label>
+   <div class="btns"><button class="btn red" data-act="createvisit">Start</button></div></div>`;
+}
+function createVisit() {
+  const type = $('nvType').value, date = $('nvDate').value || A.todayISO();
+  const sysEls = [...document.querySelectorAll('.nvSys')], chosen = sysEls.filter(x => x.checked).map(x => x.value);
+  if (sysEls.length && !chosen.length) return alert('Tick at least one system.');
+  const id = doc(collection(db, 'aovTests')).id;
+  const v = { visitType: type, siteRef: S.site.siteRef, siteName: S.site.siteName, date, status: 'Draft', qsed: false, engineerEmail: meRaw(), engineer: meName(),
+    engineers: [{ email: meEmail(), name: meName() }], scope: { systems: chosen.length === sysEls.length ? [] : chosen }, change: A.PARTIAL_TYPES.includes(type) ? { assets: [], scenarios: [], supplies: [] } : null,
+    coordination: {}, extraNotes: [], testData: !!$('nvPractice').checked, rulesVersion: S.rulesVersion, rulesApproved: S.rulesApproved, steps: {}, createdAt: serverTimestamp() };
+  write(setDoc(doc(db, 'aovTests', id), v), 'New visit'); SWS.swuAdd({ c: 'aovTests', id, label: S.site.siteName, app: 'AOV testing', site: S.site.siteName, noun: 'visit' });
+  audit('visit-started', { siteRef: S.site.siteRef, visitId: id, visitType: type });
+  const local = { _id: id, ...v, createdAt: null }; S.visits.unshift(local);
+  openVisit(id);
+}
+
+// ═══ EQUIPMENT AND SCENARIOS (the site's set-up) ═══
+// Saved into the site record. Each save adds 1 to rev, and the rules refuse a
+// save made from an older copy, so two people can't overwrite each other.
+function saveSite_(why) {
+  const s = S.site; if (!s) return;
+  if (s.setupStatus === 'Approved') s.setupStatus = 'Changed';
+  if (s.setupStatus === 'Ready for QS' && why !== 'submit') s.setupStatus = 'Draft';
+  s.rev = (s.rev || 0) + 1;
+  const rec = clean({ blocks: s.blocks, systems: s.systems, assets: s.assets, scenarios: s.scenarios, supplies: s.supplies, timings: s.timings, intervalMonths: s.intervalMonths, setupStatus: s.setupStatus, rev: s.rev, contact: s.contact || '', notes: s.notes || '' });
+  rec.updatedAt = serverTimestamp(); rec.updatedBy = meEmail();
+  write(setDoc(doc(db, 'aovSites', s.id), rec, { merge: true }), 'Equipment list');
+  if (S.visits.some(open)) audit('setup-changed-during-visit', { siteRef: s.siteRef, what: why || '' });
+}
+function queueSiteSave(why) { clearTimeout(S.siteTimer); S.siteTimer = setTimeout(() => { S.siteTimer = null; saveSite_(why); }, 900); }
+function flushSite() { if (S.siteTimer) { clearTimeout(S.siteTimer); S.siteTimer = null; saveSite_('edit'); } }
+const locked = () => S.site.setupStatus === 'Ready for QS';
+const STABS = [['systems', 'Blocks and systems', 'ti-building'], ['assets', 'Equipment', 'ti-window'], ['scenarios', 'Scenarios', 'ti-bolt'], ['power', 'Power', 'ti-battery-2'], ['send', 'Check and send', 'ti-send']];
+function setupHTML() {
+  const s = S.site;
+  let h = crumb(link('home', 'Sites'), link('site', esc(s.siteName)), 'Equipment and scenarios');
+  if (S.back) h += `<div class="btns"><button class="btn dark" data-act="backtovisit"><i class="ti ti-arrow-left"></i> Back to the visit</button></div>`;
+  h += `<div class="stabs">${STABS.map(t => `<button class="tab ${S.setupTab === t[0] ? 'active' : ''}" data-act="stab" data-t="${t[0]}"><i class="ti ${t[2]}"></i> ${t[1]}</button>`).join('')}</div>`;
+  if (locked()) h += `<div class="box info">This set-up is with QS. Changing anything takes it back to draft.</div>`;
+  if (s.setupStatus === 'Approved') h += `<div class="box info">Approved by QS. If you change anything it goes back to QS to approve again. Equipment that has gone is <b>retired</b>, not deleted, so old reports stay the same.</div>`;
+  h += `<div class="card">` + ({ systems: sysTabHTML, assets: assetsTabHTML, scenarios: scenTabHTML, power: powerTabHTML, send: sendTabHTML }[S.setupTab])() + `</div>`;
+  return h;
+}
+function sysTabHTML() {
+  const s = S.site;
+  let h = `<p class="section-label">Blocks</p>`;
+  h += (s.blocks || []).map((b, k) => `<div class="list-line"><input type="text" style="margin:0;flex:1" data-sbind="blocks.${k}.name" value="${esc(b.name)}" placeholder="Block name"><button class="btn sm warn" data-act="delblock" data-n="${k}">Remove</button></div>`).join('') || '<div class="small">No blocks yet. A single building can be one block.</div>';
+  h += `<div class="btns"><button class="btn sm" data-act="addblock"><i class="ti ti-plus"></i> Add a block</button></div>`;
+  h += `<p class="section-label" style="margin-top:16px">Systems</p><p class="small">A riser, a stairwell, or anything with its own panel or cause-and-effect.</p>`;
+  h += (s.systems || []).map((x, k) => `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="systems.${k}.name" value="${esc(x.name)}" placeholder="E.g. Riser 2"></div>
+    <div class="fld"><label>Block</label><select data-sbind="systems.${k}.blockId"><option value="">—</option>${(s.blocks || []).map(b => `<option value="${esc(b.id)}" ${x.blockId === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Kind</label><select data-sbind="systems.${k}.kind">${['Smoke shaft / riser', 'Stairwell', 'Corridor windows', 'Other'].map(o => `<option ${x.kind === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div></div>
+    <label class="tick"><input type="checkbox" data-sbind="systems.${k}.comfortVent" data-bool="1" ${x.comfortVent ? 'checked' : ''}> It also opens for everyday (comfort) ventilation</label>
+    <div class="btns"><button class="btn sm warn" data-act="delsys" data-n="${k}">Remove</button></div></div>`).join('');
+  h += `<div class="btns"><button class="btn" data-act="addsys"><i class="ti ti-plus"></i> Add a system</button></div>`;
+  h += `<p class="section-label" style="margin-top:16px">Times</p><div class="fgrid"><div class="fld"><label>System fully working within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.systemS" data-num="1" value="${esc((s.timings || {}).systemS ?? 90)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div>
+    <div class="fld"><label>Doors, dampers and inlets open within (seconds)</label><input type="text" inputmode="numeric" data-sbind="timings.openS" data-num="1" value="${esc((s.timings || {}).openS ?? 60)}" ${s.setupStatus === 'Approved' ? 'disabled' : ''}></div></div>
+    <p class="small">The standard times are 90 and 60 seconds. Only change them if the fire strategy says something different.</p>`;
+  return h;
+}
+function assetsTabHTML() {
+  const s = S.site, sys = s.systems || [];
+  if (!sys.length) return `<div class="empty-note">Add a system first (Blocks and systems).</div>`;
+  let h = '';
+  sys.forEach(x => {
+    const list = (s.assets || []).map((a, k) => ({ a, k })).filter(o => o.a.systemId === x.id);
+    h += `<p class="section-label" style="margin-top:6px">${esc(A.systemName(s, x.id))}</p>`;
+    h += list.map(({ a, k }) => assetHTML(a, k)).join('') || '<div class="small">Nothing yet.</div>';
+    h += `<div class="btns"><button class="btn" data-act="addasset" data-sys="${esc(x.id)}"><i class="ti ti-plus"></i> Add equipment</button></div>`;
+  });
+  const lost = (s.assets || []).map((a, k) => ({ a, k })).filter(o => !sys.some(x => x.id === o.a.systemId));
+  if (lost.length) h += `<p class="section-label">Not in a system</p>` + lost.map(({ a, k }) => assetHTML(a, k)).join('');
+  return h;
+}
+function assetHTML(a, k) {
+  const s = S.site, t = A.ASSET_TYPES[a.type] || {};
+  if (a.status === 'retired') return `<div class="list-line"><div><b>${esc(A.assetName(a))}</b> <span class="tag">Retired ${A.shortDate(a.retiredOn)}</span> <span class="small">${esc(a.location || '')}</span></div></div>`;
+  const note = A.clientNoteForAsset(a);
+  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>What is it?</label><select data-sbind="assets.${k}.type" data-rr="1">${Object.entries(A.ASSET_TYPES).map(([tk, tv]) => `<option value="${tk}" ${a.type === tk ? 'selected' : ''}>${esc(tv.label)}</option>`).join('')}</select></div>
+   <div class="fld"><label>ID / label</label><input type="text" data-sbind="assets.${k}.ref" value="${esc(a.ref || '')}" placeholder="As on the equipment or drawing"></div>
+   <div class="fld"><label>Where is it? <span class="req">*</span></label><input type="text" data-sbind="assets.${k}.location" value="${esc(a.location || '')}" placeholder="E.g. Floor 3 lobby"></div>
+   <div class="fld"><label>Floor</label><input type="text" data-sbind="assets.${k}.floor" value="${esc(a.floor || '')}"></div>
+   <div class="fld"><label>System</label><select data-sbind="assets.${k}.systemId" data-rr="1">${(s.systems || []).map(x => `<option value="${esc(x.id)}" ${a.systemId === x.id ? 'selected' : ''}>${esc(A.systemName(s, x.id))}</option>`).join('')}</select></div>
+   <div class="fld"><label>Panel / zone / channel (optional)</label><input type="text" data-sbind="assets.${k}.panelZone" value="${esc(a.panelZone || '')}"></div>
+   ${a.type === 'shaftDoor' || a.type === 'damper' ? `<div class="fld"><label>How is it held shut?</label><select data-sbind="assets.${k}.holdMethod" data-rr="1"><option value="">Choose…</option>${A.HOLD_METHODS.map(o => `<option ${a.holdMethod === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+   <div class="fld"><label>How does it open?</label><select data-sbind="assets.${k}.openMethod" data-rr="1"><option value="">Choose…</option>${A.OPEN_METHODS.map(o => `<option ${a.openMethod === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>` : ''}
+   <div class="fld full"><label>Access notes (optional)</label><input type="text" data-sbind="assets.${k}.access" value="${esc(a.access || '')}" placeholder="Ladder needed, key, roof hatch…"></div></div>
+   ${note ? `<div class="box info">This goes on the report as a note for the client: ${esc(note)}</div>` : ''}
+   <div class="btns">${a.everTested ? '' : `<button class="btn sm warn" data-act="delasset" data-n="${k}">Delete</button>`}<button class="btn sm" data-act="retireasset" data-n="${k}">It has gone (retire)</button><button class="btn sm" data-act="replaceasset" data-n="${k}">It was replaced</button></div></div>`;
+}
+function scenTabHTML() {
+  const s = S.site, sys = s.systems || [];
+  if (!sys.length) return `<div class="empty-note">Add a system first.</div>`;
+  let h = `<p class="small">One scenario for each thing that sets the system off. Each landing detector gets its own, even if they share the roof vent. Say what should open and what must stay shut.</p>`;
+  sys.forEach(x => {
+    const list = (s.scenarios || []).map((c, k) => ({ c, k })).filter(o => o.c.systemId === x.id && !o.c.retired);
+    h += `<p class="section-label" style="margin-top:8px">${esc(A.systemName(s, x.id))}</p>` + (list.map(({ c, k }) => scenHTML(c, k)).join('') || '<div class="small">No scenarios yet.</div>');
+    h += `<div class="btns"><button class="btn" data-act="addscen" data-sys="${esc(x.id)}"><i class="ti ti-plus"></i> Add a scenario</button>${list.length ? '' : `<button class="btn" data-act="autoscen" data-sys="${esc(x.id)}">One for each detector</button>`}</div>`;
+  });
+  return h;
+}
+function scenHTML(c, k) {
+  const s = S.site, outs = A.activeAssets(s).filter(a => a.systemId === c.systemId && (A.ASSET_TYPES[a.type] || {}).moves);
+  const inputs = A.activeAssets(s).filter(a => a.systemId === c.systemId && ['detector', 'manual', 'frs', 'interface'].includes(a.type));
+  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="scenarios.${k}.name" value="${esc(c.name || '')}" placeholder="E.g. Floor 3 detector"></div>
+   <div class="fld"><label>What sets it off?</label><select data-sbind="scenarios.${k}.inputType">${A.INPUT_TYPES.map(o => `<option ${c.inputType === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+   <div class="fld"><label>Which device? (from the list)</label><select data-sbind="scenarios.${k}.inputAssetId" data-rr="1"><option value="">Not in the list</option>${inputs.map(a => `<option value="${esc(a.id)}" ${c.inputAssetId === a.id ? 'selected' : ''}>${esc(A.assetName(a))} · ${esc(a.location || '')}</option>`).join('')}</select></div>
+   <div class="fld"><label>Device address / ID</label><input type="text" data-sbind="scenarios.${k}.inputRef" value="${esc(c.inputRef || '')}"></div>
+   <div class="fld"><label>Where is it?</label><input type="text" data-sbind="scenarios.${k}.inputLocation" value="${esc(c.inputLocation || '')}"></div>
+   <div class="fld"><label>How it is set off for the test</label><select data-sbind="scenarios.${k}.method">${Object.entries(A.METHODS).filter(([mk]) => mk !== 'notTested').map(([mk, mv]) => `<option value="${mk}" ${(c.method || 'endToEnd') === mk ? 'selected' : ''}>${esc(mv)}</option>`).join('')}</select></div></div>
+   <label class="l">What should each item do?</label>
+   ${outs.length ? outs.map(a => `<div class="list-line"><div><b>${esc(A.assetName(a))}</b> <span class="small">${esc(a.location || '')}</span></div><div class="opt-row" style="margin:0">${[['open', 'Opens'], ['closed', 'Stays shut'], ['', 'Not part of it']].map(([ev, et]) => `<button class="opt ${((c.expected || {})[a.id] || '') === ev ? 'on' : ''}" data-act="expect" data-n="${k}" data-a="${esc(a.id)}" data-v="${ev}">${et}</button>`).join('')}</div></div>`).join('') : '<div class="small">No vents, doors or dampers in this system yet.</div>'}
+   <div class="fgrid" style="margin-top:10px"><div class="fld"><label>Other things that should happen (optional)</label><input type="text" data-sbind="scenarios.${k}.indications" value="${esc(c.indications || '')}" placeholder="E.g. repeater panel shows fire, lift returns"></div>
+   <div class="fld"><label>How it resets</label><input type="text" data-sbind="scenarios.${k}.reset" value="${esc(c.reset || '')}" placeholder="E.g. reset at the AOV panel"></div></div>
+   <div class="btns"><button class="btn sm" data-act="copyscen" data-n="${k}">Copy</button><button class="btn sm warn" data-act="delscen" data-n="${k}">Remove</button></div></div>`;
+}
+function powerTabHTML() {
+  const s = S.site;
+  let h = `<p class="small">One for each AOV panel or separate power supply. These figures feed the battery calculator.</p>`;
+  h += (s.supplies || []).map((p, k) => p.retired ? '' : supplyHTML(p, k)).join('') || '<div class="small">None yet.</div>';
+  return h + `<div class="btns"><button class="btn" data-act="addsupply"><i class="ti ti-plus"></i> Add a power supply</button></div>`;
+}
+function supplyHTML(p, k) {
+  const s = S.site, b = p.batteries || {};
+  const c = A.batteryCalc(p, S.rules), age = A.batteryAge(p, S.rules);
+  return `<div class="hz"><div class="fgrid three"><div class="fld"><label>Name</label><input type="text" data-sbind="supplies.${k}.name" value="${esc(p.name || '')}" placeholder="E.g. Block B riser 2 panel"></div>
+   <div class="fld"><label>Make and model</label><input type="text" data-sbind="supplies.${k}.model" value="${esc(p.model || '')}"></div>
+   <div class="fld"><label>Panel manual or reference used <span class="hint">and its revision</span></label><input type="text" data-sbind="supplies.${k}.manualRef" value="${esc(p.manualRef || '')}"></div></div>
+   <label class="l">Systems it powers</label><div class="opt-row">${(s.systems || []).map(x => `<button class="opt ${(p.systems || []).includes(x.id) ? 'on' : ''}" data-act="supsys" data-n="${k}" data-s="${esc(x.id)}">${esc(A.systemName(s, x.id))}</button>`).join('')}</div>
+   <label class="l">Batteries</label><div class="fgrid three"><div class="fld"><label>How many</label><input type="text" inputmode="numeric" data-sbind="supplies.${k}.batteries.count" data-num="1" value="${esc(b.count ?? '')}"></div>
+   <div class="fld"><label>Each: Ah</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.batteries.ahEach" data-num="1" value="${esc(b.ahEach ?? '')}"></div>
+   <div class="fld"><label>Each: volts</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.batteries.voltsEach" data-num="1" value="${esc(b.voltsEach ?? '')}"></div>
+   <div class="fld"><label>Wired</label><select data-sbind="supplies.${k}.batteries.arrangement" data-rr="1">${[['series', 'In series (one string)'], ['parallel', 'In parallel'], ['seriesParallel', 'Series strings in parallel'], ['single', 'Just one battery']].map(([v, t]) => `<option value="${v}" ${(b.arrangement || 'series') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+   ${b.arrangement === 'seriesParallel' ? `<div class="fld"><label>How many strings</label><input type="text" inputmode="numeric" data-sbind="supplies.${k}.batteries.strings" data-num="1" value="${esc(b.strings ?? '')}"></div>` : ''}
+   <div class="fld"><label>Date fitted (from the label)</label><input type="date" data-sbind="supplies.${k}.batteries.fittedDate" value="${esc(b.fittedDate || '')}"></div>
+   <div class="fld"><label>Maker's life in years <span class="hint">From the label. Blank = flag at ${esc(S.rules.battery.defaultLifeYears)} years</span></label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.batteries.makerLifeYears" data-num="1" value="${esc(b.makerLifeYears ?? '')}"></div>
+   <div class="fld"><label>Maker's lowest volts per battery <span class="hint">For the battery test, from the panel manual</span></label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.minVolts" data-num="1" value="${esc(p.minVolts ?? '')}"></div></div>
+   <label class="l">Loads</label><div class="fgrid three"><div class="fld"><label>Standby current (A)</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.standbyA" data-num="1" value="${esc(p.standbyA ?? '')}"></div>
+   <div class="fld"><label>Fire-mode current (A) <span class="hint">All outputs driving</span></label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.fireA" data-num="1" value="${esc(p.fireA ?? '')}"></div>
+   <div class="fld"><label>How long the fire operation runs (minutes)</label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.fireMinutes" data-num="1" value="${esc(p.fireMinutes ?? '')}"></div>
+   <div class="fld"><label>Standby hours needed <span class="hint">Blank = ${esc(S.rules.battery.standbyH)} h</span></label><input type="text" inputmode="decimal" data-sbind="supplies.${k}.standbyH" data-num="1" value="${esc(p.standbyH ?? '')}"></div>
+   <div class="fld"><label>Where the figures came from</label><input type="text" data-sbind="supplies.${k}.loadSource" value="${esc(p.loadSource || '')}" placeholder="Measured, manual page, design"></div></div>
+   <div id="calc_${k}">${calcHTML(c, age)}</div>
+   <div class="btns"><button class="btn sm warn" data-act="delsupply" data-n="${k}">Remove</button></div></div>`;
+}
+function calcHTML(c, age) {
+  let h = `<div class="calc">`;
+  if (c.missing.length) h += `<b>Battery calculation:</b> still needs ${esc(c.missing.join(', '))}.`;
+  else h += `<div class="fgrid"><div><div class="small">Battery needed</div><div class="big">${A.fmt(c.needAh, 1)} Ah</div><div class="small">(${c.sA} A × ${c.standbyH} h + ${c.fA} A × ${c.fMin} min) × ${c.factor}</div></div>
+     <div><div class="small">Fitted</div><div class="big" style="color:${c.ok ? 'var(--green)' : 'var(--red)'}">${A.fmt(c.bankAh, 1)} Ah${c.bankV ? ' at ' + A.fmt(c.bankV, 0) + ' V' : ''}</div><div class="small">${c.ok ? 'Big enough.' : 'Too small.'} As fitted it would last about <b>${A.fmt(c.runtimeH, 0)} hours</b> on standby and still do one fire operation.</div></div></div>`;
+  if (age.state === 'unknown') h += `<div class="small" style="margin-top:6px">Date fitted not recorded.</div>`;
+  else h += `<div class="small" style="margin-top:6px">Replace by <b>${A.shortDate(age.replaceBy)}</b> (${age.life} years${age.fromMaker ? ', maker\'s figure' : ', our standard figure'}).${age.state === 'over' ? ' <b style="color:var(--red)">Past this date.</b>' : age.state === 'soon' ? ' Due soon.' : ''}</div>`;
+  return h + `<div class="small">Guide: ${esc(S.rules.battery.standbyH)} h standby then a full fire operation; ×${esc(S.rules.battery.factor)} for end of life; recharge ${esc(S.rules.battery.recharge)}.</div></div>`;
+}
+function sendTabHTML() {
+  const s = S.site, { gaps, flags } = A.setupGaps(s);
+  let h = `<p class="section-label">Check and send to QS</p><div class="box">${(s.systems || []).length} system(s) · ${A.activeAssets(s).length} item(s) · ${(s.scenarios || []).filter(x => !x.retired).length} scenario(s) · every ${esc(s.intervalMonths || 12)} months</div>`;
+  if (gaps.length) h += `<div class="box bad"><h4>Still to do</h4>${gaps.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  if (flags.length) h += `<div class="box warn"><h4>QS will look at these</h4>${flags.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  if (s.setupStatus === 'Ready for QS') h += `<div class="box info">Sent to QS. Waiting for approval.</div>`;
+  else if (s.setupStatus === 'Approved') h += `<div class="box good">Approved.</div>`;
+  else h += `<div class="btns"><button class="btn red" data-act="sendsetup" ${gaps.length ? 'disabled' : ''}>Send to QS</button></div><p class="small">You can still test before QS approves. Results stay Unverified until then.</p>`;
+  return h;
+}
+function setupPath(path) { const parts = path.split('.'); let o = S.site; for (let k = 0; k < parts.length - 1; k++) { if (o[parts[k]] == null || typeof o[parts[k]] !== 'object') o[parts[k]] = {}; o = o[parts[k]]; } return [o, parts[parts.length - 1]]; }
+
+// ═══ A VISIT ═══
+async function openVisit(id) {
+  const v = S.visits.find(x => x._id === id); if (!v) return;
+  S.visit = v; S.results = {}; S.base = {}; S.dirty = {}; S.step = null; S.photos = [];
+  if (S.unsubR) S.unsubR();
+  S.unsubR = onSnapshot(query(collection(db, 'aovResults'), where('visitId', '==', id)), snap => {
+    let changedByOther = null;
+    snap.docChanges().forEach(ch => {
+      const d = ch.doc.data(), key = d.rtKey || d.key;
+      if (ch.type === 'removed') { delete S.results[key]; return; }
+      const mine = S.results[key];
+      if (S.timers[key]) {              // we are editing it: only give way if someone else saved a newer one
+        if ((d.rev || 0) > (S.base[key] || 0) && d.by !== meEmail()) { clearTimeout(S.timers[key]); delete S.timers[key]; changedByOther = d; }
+        else return;
+      }
+      if (!mine || (d.rev || 0) >= (mine.rev || 0)) { S.results[key] = { ...d, _id: ch.doc.id }; S.base[key] = d.rev || 0; }
+    });
+    if (changedByOther) banner(`${changedByOther.byName || changedByOther.by} saved "${changedByOther.title || 'this check'}" at ${A.timeLabel(changedByOther.atISO)}. Their answers are shown. Add yours again if they differ.`, 'wait');
+    if (S.view === 'visit' || S.view === 'sched') rerender();
+  }, e => { if (navigator.onLine) SWS.swReport('load', 'AOV results didn\'t load: ' + (e.code || e.message)); });
+  go('visit');
+  try { const p = await getDocs(query(collection(db, 'aovPhotos'), where('visitId', '==', id))); S.photos = p.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.n - b.n); if (S.view === 'visit') rerender(); } catch (e) {}
+}
+const vctx = () => ({ site: S.site, rulesApproved: S.rulesApproved && !S.visit.testData, setupApproved: S.site.setupStatus === 'Approved', visit: S.visit, rules: S.rules });
+const plan = () => A.buildPlan(S.site, S.visit);
+const resOf = key => A.resultsFor(key, S.results).latest;
+// Each engineer comes back to their own last step.
+const myKey = () => meEmail().replace(/[.@]/g, '_');
+function saveStep(key) { const st = { ...(S.visit.steps || {}), [myKey()]: key }; saveVisit({ steps: st }); }
+function saveVisit(fields) {
+  Object.assign(S.visit, fields);
+  const v = S.visit; if (!(v.engineers || []).some(e => e.email === meEmail())) { v.engineers = [...(v.engineers || []), { email: meEmail(), name: meName() }]; fields.engineers = v.engineers; }
+  write(setDoc(doc(db, 'aovTests', v._id), { ...clean(fields), updatedAt: serverTimestamp(), updatedBy: meEmail() }, { merge: true }), 'Visit');
+}
+// One result = one Firestore doc. rev goes up by 1 each save; the rules refuse
+// a save based on an older copy, so another engineer's answers are never lost.
+function saveResult(key, check, immediate) {
+  const r = S.results[key]; if (!r || !open(S.visit)) return;
+  if (r.locked) return;
+  clearTimeout(S.timers[key]);
+  const doIt = () => {
+    delete S.timers[key];
+    const base = S.base[key] || 0, rev = base + 1;
+    r.rev = rev; r.by = meEmail(); r.byName = meName(); r.atISO = new Date().toISOString(); if (check) r.kind = check.kind;
+    const rec = clean({ ...r, visitId: S.visit._id, siteRef: S.visit.siteRef, key: r.retestOf || key, rtKey: r.retestOf ? key : null, kind: check ? check.kind : r.kind, title: check ? check.title : (r.title || ''), testData: !!S.visit.testData });
+    rec.at = serverTimestamp(); delete rec._id;
+    const id = `${S.visit._id}__${key}`;
+    S.base[key] = rev;
+    write(setDoc(doc(db, 'aovResults', id), rec), 'Answer');
+    SWS.swuAdd({ c: 'aovResults', id, label: (check && check.title) || 'Answer', app: 'AOV testing', site: S.visit.siteName, noun: 'answer' });
+  };
+  if (immediate) doIt(); else S.timers[key] = setTimeout(doIt, 600);
+}
+function flushAll() { Object.keys(S.timers).forEach(k => { clearTimeout(S.timers[k]); delete S.timers[k]; const c = plan().find(x => x.key === k || (S.results[k] && S.results[k].retestOf === x.key)); saveResult(k, c, true); }); }
+// Working copy of a result for this key (a retest if the original failed and is locked)
+function liveKey(check) {
+  const g = A.resultsFor(check.key, S.results);
+  if (g.retests.length) { const last = g.retests[g.retests.length - 1]; return last._k || `${check.key}__rt${last.n}`; }
+  return check.key;
+}
+function ensure(key) { if (!S.results[key]) S.results[key] = {}; return S.results[key]; }
+
+// Screens: one check (or one part of a scenario) at a time.
+function screens() {
+  const p = plan(), out = [];
+  out.push({ key: 'start', title: 'Start', html: startHTML });
+  const ch = p.find(c => c.kind === 'change'); if (ch) out.push({ key: ch.key, title: ch.title, check: ch, html: () => changeHTML(ch) });
+  out.push({ key: 'equipment', title: 'Equipment on site', html: equipHTML });
+  const pre = p.filter(c => c.kind === 'pre'); out.push({ key: 'pre', title: 'Before testing', checks: pre, html: () => preHTML(pre) });
+  p.filter(c => ['docs', 'bldg'].includes(c.kind)).forEach(c => out.push({ key: c.key, title: c.title, check: c, html: () => checkHTML(c) }));
+  p.filter(c => c.kind === 'look' || c.kind === 'inlets').forEach(c => out.push({ key: c.key, title: c.title, sub: c.sub, check: c, html: () => checkHTML(c) }));
+  p.filter(c => c.kind === 'scenario').forEach(c => {
+    const s = (S.site.scenarios || []).find(x => x.id === c.scenarioId) || {};
+    const outs = Object.keys(s.expected || {}).filter(id => A.activeAssets(S.site).some(a => a.id === id));
+    const groups = []; for (let i = 0; i < outs.length; i += 6) groups.push(outs.slice(i, i + 6));
+    out.push({ key: c.key + '#t', title: c.title, sub: 'Set it off', check: c, html: () => scenTrigHTML(c, s) });
+    groups.forEach((g, gi) => out.push({ key: c.key + '#o' + gi, title: c.title, sub: groups.length > 1 ? `What each item did (${gi + 1} of ${groups.length})` : 'What each item did', check: c, html: () => scenOutHTML(c, s, g) }));
+    out.push({ key: c.key + '#r', title: c.title, sub: 'Timing and reset', check: c, html: () => scenAfterHTML(c, s) });
+  });
+  p.filter(c => c.kind === 'comfort').forEach(c => out.push({ key: c.key, title: c.title, sub: c.sub, check: c, html: () => checkHTML(c) }));
+  p.filter(c => ['power', 'currents', 'calc', 'links'].includes(c.kind)).forEach(c => out.push({ key: c.key, title: c.title, check: c, html: () => checkHTML(c) }));
+  p.filter(c => c.kind === 'restore').forEach(c => out.push({ key: c.key, title: c.title, sub: c.sub, check: c, html: () => checkHTML(c) }));
+  out.push({ key: 'defects', title: 'Problems found', html: defectsHTML });
+  out.push({ key: 'review', title: 'Check and send', html: reviewHTML });
+  return out;
+}
+function visitHTML() {
+  const v = S.visit; if (!v) return '';
+  const sc = S.screens = screens();
+  if (S.step == null || S.step >= sc.length) { const k = sc.findIndex(x => x.key === ((v.steps || {})[myKey()] || null)); S.step = k >= 0 ? k : 0; }
+  const n = S.step, cur = sc[n];
+  let h = crumb(link('site', esc(S.site.siteName)), esc((A.VISIT_TYPES[v.visitType] || {}).label || 'Visit'));
+  if (!open(v)) h += `<div class="box info">This visit has been sent to QS (${esc(v.status)}). It can't be changed unless QS returns it.</div>`;
+  if (v.status === 'Returned') { const rn = (v.returnNotes || [])[(v.returnNotes || []).length - 1]; if (rn) h += `<div class="box bad"><h4>Returned by QS</h4>${esc(rn.note)}${(rn.keys || []).length ? `<div class="small">Steps to look at: ${rn.keys.map(k => { const i = sc.findIndex(x => x.key === k || x.key.startsWith(k + '#')); return i >= 0 ? `<a data-act="gostep" data-n="${i}" style="text-decoration:underline;cursor:pointer">${esc(sc[i].title)}</a>` : ''; }).join(', ')}</div>` : ''}</div>`; }
+  h += `<div class="stepbar"><div class="stepinfo"><span><b>Step ${n + 1} of ${sc.length}</b></span><span class="btns" style="margin:0"><button class="btn sm" data-act="sched"><i class="ti ti-list-details"></i> Schedule</button>${open(v) ? `<button class="btn sm warn" data-act="quickdef"><i class="ti ti-alert-triangle"></i> Record a problem</button><button class="btn sm warn" data-act="cantrestore">Can't restore</button>` : ''}</span></div><div class="prog"><i style="width:${Math.round((n + 1) / sc.length * 100)}%"></i></div></div>`;
+  h += `<div class="card ${open(v) ? '' : 'ro'}"><h2 class="gt-title">${esc(cur.title)}</h2>${cur.sub ? `<p class="gt-sub">${esc(cur.sub)}</p>` : ''}${cur.html()}</div>`;
+  h += `<div class="stepnav"><button class="btn" data-act="prevstep" ${n === 0 ? 'disabled' : ''}><i class="ti ti-arrow-left"></i> Back</button><button class="btn" data-act="savestep">Save</button>${n < sc.length - 1 ? `<button class="btn dark" data-act="nextstep">Next</button>` : ''}</div>`;
+  return h;
+}
+const dis = () => open(S.visit) ? '' : 'disabled';
+const yn = (key, field, val, labels = ['Yes', 'No']) => `<div class="opt-row">${[['yes', labels[0], 'good'], ['no', labels[1], 'bad']].map(([v, t, c]) => `<button class="opt ${val === v ? 'on ' + c : ''}" data-act="ans" data-k="${esc(key)}" data-f="${field}" data-v="${v}" ${dis()}>${t}</button>`).join('')}</div>`;
+const txt = (key, field, val, ph = '') => `<textarea data-rbind="${esc(key)}.${field}" placeholder="${esc(ph)}" ${dis()}>${esc(val || '')}</textarea>`;
+function evTag(c, key) { const ev = A.evaluate(c, S.results[key], vctx()); return { pass: '<span class="tag ok">Pass</span>', fail: '<span class="tag bad">Fail</span>', nottested: '<span class="tag">Not tested</span>', unverified: '<span class="tag wait">Unverified</span>', incomplete: '<span class="tag wait">Not finished</span>', pending: '' }[ev.state]; }
+function whoLine(r) { return r && r.byName ? `<div class="small" style="margin-top:6px">Last saved by ${esc(r.byName)} at ${A.timeLabel(r.atISO)}${r.atISO && r.atISO.slice(0, 10) !== A.todayISO() ? ' on ' + A.shortDate(r.atISO) : ''}.</div>` : ''; }
+function instr(k) { const t = (S.rules.instructions || {})[k] || A.DEFAULT_RULES.instructions[k]; return t ? `<div class="box info">${esc(t)}</div>` : ''; }
+function cantHTML(key, r) {
+  r = r || {};
+  if (r.cant) return `<div class="box"><b>Could not be done.</b> ${txt(key, 'cantWhy', r.cantWhy, 'Why? (access, no key, weather…)')}<button class="btn sm" data-act="ans" data-k="${esc(key)}" data-f="cant" data-v="" ${dis()}>I can do it after all</button></div>`;
+  return `<details style="margin-top:8px"><summary class="small" style="cursor:pointer">Couldn't do this one?</summary><div class="btns"><button class="btn sm" data-act="ans" data-k="${esc(key)}" data-f="cant" data-v="1" ${dis()}>It could not be done</button></div></details>`;
+}
+// A failed answer is locked when you move on. To change it, record a retest.
+function lockedHTML(c, key) {
+  const r = S.results[key];
+  if (!r || !r.locked) return '';
+  return `<div class="box bad"><h4>Failed${r.retestOf ? ' (retest)' : ''}</h4>${esc(A.evaluate(c, r, vctx()).why)}<div class="small">A failed result stays on the record. When it has been put right, record a retest.</div>${open(S.visit) ? `<div class="btns"><button class="btn sm dark" data-act="retest" data-k="${esc(c.key)}">Record a retest</button></div>` : ''}</div>`;
+}
+
+function startHTML() {
+  const v = S.visit, c = v.coordination || {}, sys = S.site.systems || [];
+  let h = `<div class="fgrid"><div class="fld"><label>Date</label><input type="date" data-vbind="date" value="${esc(v.date)}" ${dis()}></div>
+   <div class="fld"><label>Visit</label><input type="text" value="${esc((A.VISIT_TYPES[v.visitType] || {}).label)}" disabled></div></div>`;
+  h += `<p class="small"><b>Engineers on this visit:</b> ${esc((v.engineers || []).map(e => e.name).join(', '))}. Anyone who opens it and saves an answer is added.</p>`;
+  if (sys.length > 1) h += `<label class="l">Systems covered</label>${sys.map(x => `<label class="tick"><input type="checkbox" data-act="scope" data-s="${esc(x.id)}" ${!(v.scope && v.scope.systems && v.scope.systems.length) || v.scope.systems.includes(x.id) ? 'checked' : ''} ${dis()}> ${esc(A.systemName(S.site, x.id))}</label>`).join('')}`;
+  h += `<p class="section-label" style="margin-top:12px">Fire alarm and ARC</p><div class="fgrid"><div class="fld"><label>Fire alarm job or certificate number</label><input type="text" data-vbind="coordination.faRef" value="${esc(c.faRef || '')}" ${dis()}></div>
+   <div class="fld"><label>ARC reference (if there is one)</label><input type="text" data-vbind="coordination.arcRef" value="${esc(c.arcRef || '')}" ${dis()}></div>
+   <div class="fld"><label>Did the ARC confirm they got the signal?</label><select data-vbind="coordination.arcReceipt" ${dis()}>${[['', 'Choose…'], ['yes', 'Yes, they confirmed it'], ['no', 'No'], ['notChecked', 'Not checked'], ['none', 'No ARC on this system']].map(([k, t]) => `<option value="${k}" ${(c.arcReceipt || '') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+   <div class="fld"><label>Systems or monitoring affected while testing (optional)</label><input type="text" data-vbind="coordination.affected" value="${esc(c.affected || '')}" ${dis()} placeholder="E.g. fire alarm put on test, ARC on test"></div></div>
+   <p class="small">A panel light on its own doesn't show the ARC got the signal.</p>`;
+  if (!S.rulesApproved) h += `<div class="box warn">The test rules aren't approved yet, so results are kept as Unverified.</div>`;
+  if (S.site.setupStatus !== 'Approved') h += `<div class="box info">The site's equipment and scenarios aren't approved by QS yet. You can still test: scenario results are kept as Unverified until they are.</div>`;
+  if (v.testData) h += `<div class="box">Practice run: nothing here counts.</div>`;
+  return h;
+}
+function equipHTML() {
+  const s = S.site, n = A.activeAssets(s).length, { gaps } = A.setupGaps(s);
+  let h = `<p class="small">${n} item(s) and ${(s.scenarios || []).filter(x => !x.retired).length} scenario(s) on this site.</p>`;
+  if (!n) h += `<div class="box warn">No equipment recorded yet. ${S.visit.visitType === 'takeover' || S.visit.visitType === 'commissioning' ? 'Walk round and add it now.' : 'Add it before testing.'}</div>`;
+  else h += `<div class="sch-wrap">${schedTable(true)}</div>`;
+  if (gaps.length) h += `<div class="box warn"><h4>The equipment list isn't finished</h4>${gaps.slice(0, 8).map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  h += `<div class="btns"><button class="btn dark" data-act="editequip" ${dis()}><i class="ti ti-pencil"></i> Add or change equipment and scenarios</button></div>`;
+  if (S.visit.visitType === 'takeover') h += `<p class="small">On a first visit, you tell us what should happen for each trigger (the scenarios). QS checks it against the site's documents. Until then results are Unverified.</p>`;
+  return h;
+}
+function preHTML(checks) {
+  return checks.map(c => { const r = S.results[c.key] || {}; const ins = (S.rules.instructions || {})[c.key] || A.DEFAULT_RULES.instructions[c.key];
+    return `<div class="q"><p class="ql">${esc(ins || c.title)} ${evTag(c, c.key)}</p>${yn(c.key, 'answer', r.answer)}${r.answer === 'no' && A.PRE_FAIL.includes(c.key) ? txt(c.key, 'note', r.note, c.key === 'pre_told' ? 'Tell them before you carry on. Who still needs telling?' : 'What did you find?') : ''}${c.key === 'pre_told' && r.answer === 'no' ? '<div class="box warn">Tell them first, then change this to Yes.</div>' : ''}${whoLine(S.results[c.key])}</div>`; }).join('');
+}
+function changeHTML(c) {
+  const ch = S.visit.change || {}, s = S.site, r = S.results[c.key] || {};
+  const ids = (arr, act, list, nameOf) => `<div class="opt-row">${list.map(x => `<button class="opt ${(ch[arr] || []).includes(x.id) ? 'on' : ''}" data-act="${act}" data-arr="${arr}" data-id="${esc(x.id)}" ${dis()}>${esc(nameOf(x))}</button>`).join('')}</div>`;
+  return instr('change') + `<label class="l">What was changed? <span class="req">*</span></label>${txt(c.key, 'what', r.what, 'E.g. actuator on floor 3 shaft door replaced')}
+    <div class="fgrid"><div class="fld"><label>Old equipment</label><input type="text" data-rbind="${c.key}.oldEq" value="${esc(r.oldEq || '')}" ${dis()}></div><div class="fld"><label>New equipment</label><input type="text" data-rbind="${c.key}.newEq" value="${esc(r.newEq || '')}" ${dis()}></div></div>
+    <label class="l">Equipment affected</label>${ids('assets', 'chgpick', A.activeAssets(s), a => A.assetName(a) + ' · ' + (a.location || ''))}
+    <label class="l">Scenarios affected</label>${ids('scenarios', 'chgpick', (s.scenarios || []).filter(x => !x.retired), x => x.name || 'Scenario')}
+    <label class="l">Power supplies affected</label>${ids('supplies', 'chgpick', (s.supplies || []).filter(x => !x.retired), x => x.name || 'Supply')}
+    <label class="tick"><input type="checkbox" data-act="chglogic" ${ch.logic ? 'checked' : ''} ${dis()}> The panel, control logic or the whole fire alarm panel was changed (QS decides the wider tests)</label>
+    <p class="small">Every scenario that uses the affected equipment is added to this visit automatically.</p>` + whoLine(S.results[c.key]);
+}
+function checkHTML(c) {
+  const key = liveKey(c), r = S.results[key] || {}, s = S.site;
+  let h = lockedHTML(c, c.key);
+  if (key !== c.key && S.results[c.key] && S.results[c.key].locked) h += `<p class="section-label">Retest ${S.results[key].n}</p>`;
+  if (r.locked) return h + whoLine(r);
+  switch (c.kind) {
+    case 'docs': h += instr('docs') + A.DOCS.map(([k, t]) => `<div class="q"><p class="ql">${esc(t)}</p><div class="opt-row">${[['yes', 'Seen'], ['no', 'Not available']].map(([v, tt]) => `<button class="opt ${(r.items || {})[k] === v ? 'on' : ''}" data-act="item" data-k="${key}" data-i="${k}" data-v="${v}" ${dis()}>${tt}</button>`).join('')}</div></div>`).join('') + `<p class="small">Missing documents go on the report as a note for the client.</p>`; break;
+    case 'bldg': h += instr('bldg') + `<div class="q"><p class="ql">Any building changes that could affect it?</p>${yn(key, 'answer', r.answer, ['Yes', 'No changes seen'])}${r.answer === 'yes' ? txt(key, 'note', r.note, 'What has changed?') : ''}</div>`; break;
+    case 'look': {
+      const a = A.activeAssets(s).find(x => x.id === c.assetId) || {};
+      h += `<div class="box"><b>${esc(A.assetName(a))}</b> · ${esc(a.location || '')}${a.floor ? ' · floor ' + esc(a.floor) : ''}${a.access ? `<div class="small">Access: ${esc(a.access)}</div>` : ''}</div>` + instr('look');
+      h += ((A.ASSET_TYPES[a.type] || {}).look || ['condition']).map(k => { const v = (r.items || {})[k]; return `<div class="q"><p class="ql">${esc(A.LOOK_ITEMS[k])}</p><div class="opt-row">${[['ok', 'OK', 'good'], ['bad', 'Not OK', 'bad']].map(([vv, tt, cc]) => `<button class="opt ${v === vv ? 'on ' + cc : ''}" data-act="item" data-k="${key}" data-i="${k}" data-v="${vv}" ${dis()}>${tt}</button>`).join('')}</div>${v === 'bad' ? `<textarea data-rbind="${key}.notes.${k}" placeholder="What is wrong?" ${dis()}>${esc((r.notes || {})[k] || '')}</textarea>` : ''}</div>`; }).join('');
+      const note = A.clientNoteForAsset(a); if (note) h += `<div class="box info small">Note for the client (added automatically): ${esc(note)}</div>`;
+      break;
+    }
+    case 'inlets': h += instr('inlets') + `<div class="q"><p class="ql">Do the number and position of inlets and vents match the design?</p>${yn(key, 'countMatches', r.countMatches)}${r.countMatches === 'no' ? txt(key, 'note', r.note, 'What is different?') : ''}</div>
+      <div class="fgrid"><div class="fld"><label>Design free area (m²)</label><input type="text" inputmode="decimal" data-rbind="${key}.designArea" value="${esc(r.designArea ?? '')}" ${dis()}></div><div class="fld"><label>Measured free area (m²) <span class="hint">On a sample of each size</span></label><input type="text" inputmode="decimal" data-rbind="${key}.measuredArea" value="${esc(r.measuredArea ?? '')}" ${dis()}></div></div>`; break;
+    case 'comfort': h += instr('comfort') + `<div class="q"><p class="ql">Did the fire signal take over?</p>${yn(key, 'answer', r.answer)}</div>`; break;
+    case 'power': {
+      const p = (s.supplies || []).find(x => x.id === c.supplyId) || {}, b = p.batteries || {}, nB = Math.max(1, Number(b.count) || 1);
+      h += `<div class="box"><b>${esc(p.name || '')}</b>${p.model ? ' · ' + esc(p.model) : ''}<div class="small">Method: ${esc(p.manualRef || 'no panel manual recorded')}. Maker's lowest volts per battery: ${p.minVolts != null ? esc(p.minVolts) + ' V' : '<b>not recorded</b> (result stays Unverified)'}.</div></div>` + instr('power');
+      h += Object.entries(A.POWER_Q).map(([k, t]) => `<div class="q"><p class="ql">${esc(t)}</p>${yn(key, k, r[k])}</div>`).join('');
+      if (!b.count) h += `<div class="box bad">No batteries recorded for this supply. A missing battery is a defect. Add them in the equipment list if they are there.</div>`;
+      h += `<label class="l">Battery readings (volts, per battery)</label><div class="fgrid three">${Array.from({ length: nB }, (_, i) => `<div class="fld"><label>Battery ${i + 1}</label><input type="text" inputmode="decimal" data-rbind="${key}.readings.${i}.v" value="${esc(((r.readings || [])[i] || {}).v ?? '')}" ${dis()}></div>`).join('')}</div>
+        <div class="fgrid"><div class="fld"><label>How you measured (state of the panel)</label><input type="text" data-rbind="${key}.method" value="${esc(r.method || '')}" placeholder="E.g. on load, mains off 15 min" ${dis()}></div><div class="fld"><label>Test instrument (optional)</label><input type="text" data-rbind="${key}.instrument" value="${esc(r.instrument || '')}" ${dis()}></div></div>`;
+      h += calcHTML(A.batteryCalc(p, S.rules), A.batteryAge(p, S.rules));
+      break;
+    }
+    case 'currents': { const p = (s.supplies || []).find(x => x.id === c.supplyId) || {}; h += instr('currents') + `<div class="fgrid"><div class="fld"><label>Standby current (A)</label><input type="text" inputmode="decimal" data-rbind="${key}.standbyA" data-tosupply="${esc(p.id)}" value="${esc(r.standbyA ?? '')}" ${dis()}></div><div class="fld"><label>Fire-mode current (A)</label><input type="text" inputmode="decimal" data-rbind="${key}.fireA" data-tosupply="${esc(p.id)}" value="${esc(r.fireA ?? '')}" ${dis()}></div></div><p class="small">These are copied into the battery calculator for this supply.</p>`; break; }
+    case 'calc': { const p = (s.supplies || []).find(x => x.id === c.supplyId) || {}; const cc = A.batteryCalc(p, S.rules); h += calcHTML(cc, A.batteryAge(p, S.rules)) + `<div class="btns"><button class="btn" data-act="editpower" ${dis()}><i class="ti ti-pencil"></i> Change the figures</button></div>` + (cc.missing.length ? `<div class="box warn">This stays unresolved until the missing figures are added.</div>` : ''); break; }
+    case 'links': h += instr('links') + `<div class="q"><p class="ql">Did the linked circuits work?</p>${yn(key, 'answer', r.answer)}${txt(key, 'note', r.note, 'Which circuits did you test?')}</div>`; break;
+    case 'restore': {
+      h += instr('restore') + `<div class="q"><p class="ql">Is everything back to normal?</p>${yn(key, 'restored', r.restored)}</div>`;
+      if (r.restored === 'no') h += `<div class="box bad"><h4>Ring the office now</h4>Tell them what isn't working and how it is being left.</div>
+        <label class="l">What isn't restored? <span class="req">*</span></label>${txt(key, 'what', r.what)}
+        <label class="l">How is it being left? <span class="req">*</span></label>${txt(key, 'state', r.state, 'E.g. panel in fault, vent shut, ARC told')}
+        <div class="fgrid"><div class="fld"><label>Time you rang the office <span class="req">*</span></label><input type="time" data-rbind="${key}.rangOffice" value="${esc(r.rangOffice || '')}" ${dis()}></div><div class="fld"><label>Who you spoke to</label><input type="text" data-rbind="${key}.spokeTo" value="${esc(r.spokeTo || '')}" ${dis()}></div></div>
+        <label class="tick"><input type="checkbox" data-act="ans" data-k="${key}" data-f="agreed" data-v="${r.agreed ? '' : '1'}" ${r.agreed ? 'checked' : ''} ${dis()}> It was agreed to leave it unrestored</label>
+        ${r.agreed ? `<label class="l">Who agreed? <span class="req">*</span></label><input type="text" data-rbind="${key}.agreedWith" value="${esc(r.agreedWith || '')}" ${dis()}>` : ''}
+        <label class="l">Anything else agreed with the site (optional)</label>${txt(key, 'siteAction', r.siteAction)}`;
+      break;
+    }
+  }
+  if (!['calc'].includes(c.kind)) h += cantHTML(key, r);
+  return h + whoLine(S.results[key]);
+}
+function scenTrigHTML(c, s) {
+  const key = liveKey(c), r = S.results[key] || {};
+  let h = lockedHTML(c, c.key); if (r.locked) return h;
+  const inp = A.activeAssets(S.site).find(a => a.id === s.inputAssetId);
+  h += `<div class="box"><b>Trigger:</b> ${esc(s.inputType || '')} ${esc(s.inputRef || (inp ? inp.ref : '') || '')}${s.inputLocation || inp ? ' · ' + esc(s.inputLocation || inp.location) : ''}<br><b>Planned method:</b> ${esc(A.METHODS[s.method || 'endToEnd'])}</div>`;
+  h += `<div class="box"><b>What should happen</b>${Object.entries(s.expected || {}).map(([id, e]) => { const a = A.activeAssets(S.site).find(x => x.id === id); return a ? `<div class="small">• ${esc(A.assetName(a))} (${esc(a.location || '')}): <b>${esc(A.EXPECT[e])}</b></div>` : ''; }).join('')}${s.indications ? `<div class="small">• ${esc(s.indications)}</div>` : ''}</div>`;
+  h += instr('scenario') + `<div class="q"><p class="ql">How did you set it off?</p><div class="opt-row" style="flex-direction:column">${Object.entries(A.METHODS).map(([k, t]) => `<button class="opt ${r.method === k ? 'on' : ''}" style="text-align:left" data-act="ans" data-k="${key}" data-f="method" data-v="${k}" ${dis()}>${esc(t)}</button>`).join('')}</div>${r.method === 'notTested' ? txt(key, 'note', r.note, 'Why was the interface not tested?') : ''}${r.method === 'local' ? '<div class="small">A test at the panel only can\'t give a full pass for this scenario.</div>' : ''}</div>
+   <div class="fld"><label>Device you actually used (if different)</label><input type="text" data-rbind="${key}.inputUsed" value="${esc(r.inputUsed || '')}" ${dis()}></div>`;
+  return h + cantHTML(key, r) + whoLine(S.results[key]);
+}
+function scenOutHTML(c, s, ids) {
+  const key = liveKey(c), r = S.results[key] || {};
+  let h = lockedHTML(c, c.key); if (r.locked) return h;
+  if (r.method === 'notTested' || r.cant) return h + `<div class="box">Not tested (see the first step of this scenario).</div>`;
+  const movedThisVisit = aid => Object.entries(S.results).some(([k, x]) => x && x.visitId !== undefined && k !== key && x.kind === 'scenario' && ((x.outputs || {})[aid] || {}).moving && Object.keys(x.outputs[aid].moving).length);
+  h += ids.map(aid => {
+    const a = A.activeAssets(S.site).find(x => x.id === aid); if (!a) return '';
+    const exp = s.expected[aid], o = (r.outputs || {})[aid] || {};
+    const good = (exp === 'open' && o.state === 'opened') || (exp === 'closed' && o.state === 'stayed');
+    let x = `<div class="out ${o.state ? (good ? 'good' : 'bad') : ''}"><div class="on">${esc(A.assetName(a))}</div><div class="expect">${esc(a.location || '')} · should: <b>${esc(A.EXPECT[exp])}</b></div>`;
+    const opts = exp === 'open' ? [['opened', 'Opened fully'], ['partly', 'Only part way'], ['stayed', 'Did not open']] : [['stayed', 'Stayed shut'], ['opened', 'Opened']];
+    x += `<div class="opt-row">${opts.map(([v, t]) => `<button class="opt ${o.state === v ? 'on ' + ((exp === 'open' && v === 'opened') || (exp === 'closed' && v === 'stayed') ? 'good' : 'bad') : ''}" data-act="outstate" data-k="${key}" data-a="${esc(aid)}" data-v="${v}" ${dis()}>${t}</button>`).join('')}</div>`;
+    if (exp === 'open' && o.state && o.state !== 'stayed') {
+      if (movedThisVisit(aid) && !(o.moving && Object.keys(o.moving).length)) x += `<div class="small">Moving checks already done for this item on this visit.</div>`;
+      else x += `<div class="small" style="margin:4px 0">While it's open:</div>` + A.movingChecksFor(a).map(mk => { const v = (o.moving || {})[mk]; return `<div class="list-line"><span>${esc(A.MOVING_ITEMS[mk])}</span><span class="opt-row" style="margin:0">${[['ok', 'OK', 'good'], ['bad', 'Not OK', 'bad']].map(([vv, tt, cc]) => `<button class="opt ${v === vv ? 'on ' + cc : ''}" data-act="moving" data-k="${key}" data-a="${esc(aid)}" data-i="${mk}" data-v="${vv}" ${dis()}>${tt}</button>`).join('')}</span></div>`; }).join('');
+    }
+    if (o.state && !good || Object.values(o.moving || {}).includes('bad')) x += `<textarea data-rbind="${key}.outputs.${aid}.note" placeholder="What happened?" ${dis()}>${esc(o.note || '')}</textarea>`;
+    return x + `</div>`;
+  }).join('');
+  return h + whoLine(S.results[key]);
+}
+function scenAfterHTML(c, s) {
+  const key = liveKey(c), r = S.results[key] || {}, t = S.site.timings || {};
+  let h = lockedHTML(c, c.key); if (r.locked) return h;
+  if (r.method === 'notTested' || r.cant) return h + `<div class="box">Not tested (see the first step of this scenario).</div>`;
+  const opens = Object.values(s.expected || {}).includes('open');
+  h += `<div class="q"><p class="ql">Was the system fully working within ${esc(t.systemS ?? 90)} seconds?</p>${yn(key, 'within90', r.within90)}</div>`;
+  if (opens) h += `<div class="q"><p class="ql">Were the doors, dampers and inlets fully open within ${esc(t.openS ?? 60)} seconds?</p>${yn(key, 'within60', r.within60)}</div>`;
+  h += `<div class="q"><p class="ql">Did the panel show fire?</p>${yn(key, 'panelFire', r.panelFire)}</div>`;
+  if ((s.indications || '').trim()) h += `<div class="q"><p class="ql">${esc(s.indications)}: did it happen?</p>${yn(key, 'indications', r.indications)}</div>`;
+  h += `<div class="q"><p class="ql">Anything else open that shouldn't have? <span class="small">(not on the list)</span></p><input type="text" data-act-input="unexpected" data-k="${key}" value="${esc((r.unexpected || []).join(', '))}" placeholder="Leave blank if nothing. E.g. floor 2 shaft door" ${dis()}></div>`;
+  h += `<div class="q"><p class="ql">After the reset${s.reset ? ' (' + esc(s.reset) + ')' : ''}, did everything go back and the doors shut and reset?</p>${yn(key, 'reset', r.reset)}${r.reset === 'no' ? txt(key, 'resetNote', r.resetNote, 'What didn\'t reset?') : ''}</div>`;
+  const ev = A.evaluate(c, r, vctx());
+  h += `<div class="box ${ev.state === 'pass' ? 'good' : ev.state === 'fail' ? 'bad' : 'warn'}"><b>${esc(A.RESULT[ev.state])}</b>${ev.why ? ': ' + esc(ev.why) : ''}</div>`;
+  return h + whoLine(S.results[key]);
+}
+function defectsHTML() {
+  const defs = Object.entries(S.results).filter(([k, r]) => r && r.kind === 'defect' && !r.removed);
+  let h = defs.length ? defs.map(([k, d]) => `<div class="hz"><div class="fgrid"><div class="fld"><label>How bad?</label><select data-rbind="${k}.severity" ${dis()}>${['Advisory', 'Needs fixing', 'Urgent'].map(x => `<option ${d.severity === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+     <div class="fld"><label>Where / which item</label><input type="text" data-rbind="${k}.where" value="${esc(d.where || '')}" ${dis()}></div>
+     <div class="fld full"><label>What is wrong? <span class="req">*</span></label><textarea data-rbind="${k}.text" ${dis()}>${esc(d.text || '')}</textarea></div>
+     <div class="fld full"><label>What needs doing?</label><textarea data-rbind="${k}.rec" ${dis()}>${esc(d.rec || '')}</textarea></div></div>${d.auto ? '<div class="small">Added because a check failed. Change the wording if you need to.</div>' : ''}
+     ${d.auto ? '' : `<div class="btns"><button class="btn sm warn" data-act="deldef" data-k="${esc(k)}" ${dis()}>Remove</button></div>`}</div>`).join('') : '<div class="empty-note">No problems recorded.</div>';
+  h += `<div class="btns"><button class="btn" data-act="adddef" ${dis()}><i class="ti ti-plus"></i> Record a problem</button></div>`;
+  h += `<p class="section-label" style="margin-top:12px">Photos</p><p class="small">Only for a problem or a change.</p><div class="ph-grid">${S.photos.map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('')}</div>
+    <div class="btns"><label class="btn ${open(S.visit) ? '' : 'locked'}"><i class="ti ti-camera"></i> Add a photo<input type="file" accept="image/*" capture="environment" id="photoIn" hidden ${dis()}></label></div><label class="l">Caption for the next photo</label><input type="text" id="photoCap" ${dis()}>`;
+  return h;
+}
+function reviewHTML() {
+  const v = S.visit, p = plan(), ctx = vctx(), all = A.evaluateAll(p, S.results, ctx), sc = S.screens || screens();
+  const stepOf = key => sc.findIndex(x => x.key === key || x.key === key + '#t' || (x.checks || []).some(c => c.key === key));
+  const notes = A.clientNotes(S.site, p, all.rows, v.extraNotes);
+  let h = `<div class="box ${all.overall.cls}"><h4>${esc(all.overall.label)}</h4>${esc(all.overall.text)}<div class="small">Pass ${all.tally.pass} · Fail ${all.tally.fail} · Not tested ${all.tally.nottested} · Unverified ${all.tally.unverified} · Not done ${all.tally.pending}</div></div>`;
+  const todo = all.rows.filter(x => ['pending', 'incomplete'].includes(x.ev.state));
+  if (todo.length) h += `<div class="box warn"><h4>Not finished yet</h4>${todo.slice(0, 30).map(x => { const k = stepOf(x.check.key); return '• ' + (k >= 0 ? `<a data-act="gostep" data-n="${k}" style="text-decoration:underline;cursor:pointer">${esc(x.check.title)}${x.check.sub ? ' (' + esc(x.check.sub) + ')' : ''}</a>` : esc(x.check.title)) + (x.ev.why ? ' — ' + esc(x.ev.why) : ''); }).join('<br>')}${todo.length > 30 ? `<br>…and ${todo.length - 30} more` : ''}</div>`;
+  const unres = all.rows.filter(x => x.check.kind === 'restore' && x.latest && x.latest.restored === 'no');
+  if (unres.length) h += `<div class="box bad"><h4>Not put back to normal</h4>${unres.map(x => '• ' + esc(x.check.sub) + ': ' + esc(x.latest.what || '') + (x.latest.rangOffice ? ` (office rung at ${esc(x.latest.rangOffice)})` : ' — <b>ring the office</b>')).join('<br>')}</div>`;
+  h += `<p class="section-label" style="margin-top:12px">Notes for the client</p>${notes.length ? notes.map(n => `<div class="small">• ${esc(n.text)}</div>`).join('') : '<div class="small">None.</div>'}`;
+  h += `<label class="l" style="margin-top:10px">Add a note for the client (optional)</label><textarea id="extraNote" ${dis()}></textarea><div class="btns"><button class="btn sm" data-act="addnote" ${dis()}>Add note</button></div>`;
+  if (todo.length) h += `<p class="small">If you can't finish, say why. QS decides whether it goes out as a limited report.</p><label class="l">Why couldn't you finish? <span class="req">*</span></label><textarea data-vbind="limited.reason" ${dis()}>${esc((v.limited || {}).reason || '')}</textarea><label class="l">Who agreed? (site or manager)</label><input type="text" data-vbind="limited.agreedWith" value="${esc((v.limited || {}).agreedWith || '')}" ${dis()}>`;
+  if (open(v)) h += `<label class="tick"><input type="checkbox" id="signChk"> I carried out these checks and the answers are as shown, as ${esc(meName())}</label><div class="btns"><button class="btn red" data-act="submit">${todo.length ? 'Send to QS as not finished' : 'Send to QS'}</button></div>`;
+  return h;
+}
+
+// ═══ SCHEDULE (overview and navigation) ═══
+function schedTable(compact) {
+  const s = S.site, f = S.schedFilter, vis = S.visit;
+  const rows = vis ? A.evaluateAll(plan(), S.results, vctx()).rows : [];
+  const cov = vis ? A.coverage(s, plan(), rows) : {};
+  let h = `<table class="sch"><tr><th>Item</th><th class="hide-s">Where</th>${vis ? '<th>Checks</th><th class="hide-s">Failed</th><th class="hide-s">Not tested</th><th></th>' : '<th>Type</th>'}</tr>`;
+  const blocks = [...(s.blocks || []), { id: '__none', name: '' }];
+  blocks.forEach(b => {
+    if (f.block && f.block !== b.id) return;
+    (s.systems || []).filter(x => b.id === '__none' ? !(s.blocks || []).some(bb => bb.id === x.blockId) : x.blockId === b.id).forEach(x => {
+      if (f.system && f.system !== x.id) return;
+      const list = A.activeAssets(s).filter(a => a.systemId === x.id);
+      const shown = list.filter(a => !f.outstanding || !cov[a.id] || cov[a.id].pending > 0);
+      if (!shown.length && f.outstanding) return;
+      h += `<tr class="grp"><td colspan="${vis ? 6 : 3}">${esc(A.systemName(s, x.id))}</td></tr>`;
+      shown.forEach(a => {
+        const c = cov[a.id];
+        h += `<tr><td><b>${esc(A.assetName(a))}</b>${c && c.unmapped ? ' <span class="tag wait">No scenario</span>' : ''}</td><td class="hide-s">${esc(a.location || '')}</td>`;
+        if (vis) h += `<td>${c ? `${c.done}/${c.total}` : '—'}</td><td class="hide-s">${c && c.failed ? `<span class="tag bad">${c.failed}</span>` : ''}</td><td class="hide-s">${c && c.blocked ? c.blocked : ''}</td><td>${c && c.pending && !compact ? `<button class="btn sm" data-act="gonext" data-a="${esc(a.id)}">Next check</button>` : ''}</td>`;
+        else h += `<td>${esc(A.typeLabel(a.type))}</td>`;
+        h += `</tr>`;
+      });
+    });
+  });
+  return h + `</table>`;
+}
+function schedHTML() {
+  const s = S.site, f = S.schedFilter;
+  let h = crumb(link('site', esc(s.siteName)), link('backvisit', 'Visit'), 'Schedule');
+  h += `<div class="card"><div class="fgrid three"><div class="fld"><label>Block</label><select id="fBlock"><option value="">All</option>${(s.blocks || []).map(b => `<option value="${esc(b.id)}" ${f.block === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <div class="fld"><label>System</label><select id="fSys"><option value="">All</option>${(s.systems || []).map(x => `<option value="${esc(x.id)}" ${f.system === x.id ? 'selected' : ''}>${esc(A.systemName(s, x.id))}</option>`).join('')}</select></div>
+    <div class="fld"><label>&nbsp;</label><label class="tick"><input type="checkbox" id="fOut" ${f.outstanding ? 'checked' : ''}> Only items with checks to do</label></div></div>
+    <p class="small">Checks done is not the same as passed: failed and not tested are shown separately.</p><div class="sch-wrap">${schedTable(false)}</div>
+    <div class="btns"><button class="btn dark" data-act="backvisit"><i class="ti ti-arrow-left"></i> Back to the visit</button></div></div>`;
+  return h;
+}
+
+// ═══ Submit ═══
+function submitVisit() {
+  const v = S.visit, p = plan(), ctx = vctx(), all = A.evaluateAll(p, S.results, ctx);
+  if (!$('signChk') || !$('signChk').checked) return alert('Tick the box to say you carried out these checks.');
+  const todo = all.rows.filter(x => ['pending', 'incomplete'].includes(x.ev.state));
+  if (todo.length && !String((v.limited || {}).reason || '').trim()) return alert('Say why it is not finished, so QS can decide.');
+  const unres = all.rows.filter(x => x.check.kind === 'restore' && x.latest && x.latest.restored === 'no' && !x.latest.rangOffice);
+  if (unres.length) return alert('Something is not restored. Ring the office and record the time first.');
+  const badDef = Object.values(S.results).find(r => r && r.kind === 'defect' && !r.removed && !String(r.text || '').trim()); if (badDef) return alert('A problem has no description (Problems found).');
+  saveCalcs(); flushAll(); lockFails();
+  const fields = { status: 'Ready for QS', qsed: false, submittedAt: new Date().toISOString(), submittedBy: meEmail(), submittedByName: meName(), overall: all.overall.label, tally: all.tally,
+    limited: todo.length ? { ...(v.limited || {}), items: todo.map(x => x.check.title + (x.check.sub ? ' (' + x.check.sub + ')' : '')).slice(0, 80) } : null,
+    signOffs: [...(v.signOffs || []).filter(x => x.email !== meEmail()), { email: meEmail(), name: meName(), at: new Date().toISOString() }],
+    setupApprovedAtTest: S.site.setupStatus === 'Approved', rulesVersion: S.rulesVersion, rulesApproved: S.rulesApproved, rulesSnapshot: S.rules,
+    siteSnapshot: clean({ blocks: S.site.blocks, systems: S.site.systems, assets: S.site.assets, scenarios: S.site.scenarios, supplies: S.site.supplies, timings: S.site.timings, intervalMonths: S.site.intervalMonths, setupStatus: S.site.setupStatus, setupVersion: S.site.setupVersion || 0, siteName: S.site.siteName, addressLine: S.site.addressLine || '', postcode: S.site.postcode || '', contact: S.site.contact || '' }) };
+  saveVisit(fields);
+  if (S.site.setupStatus === 'Draft' || S.site.setupStatus === 'Changed') { if (!A.setupGaps(S.site).gaps.length) { S.site.setupStatus = 'Ready for QS'; saveSite_('submit'); } }
+  SWS.swuAdd({ c: 'aovTests', id: v._id, label: S.site.siteName, app: 'AOV testing', site: S.site.siteName, noun: 'visit' });
+  audit('visit-submitted', { siteRef: v.siteRef, visitId: v._id });
+  banner('Sent to QS. It is saved on this phone and goes up as soon as there is signal.', 'ok');
+  go('site');
+}
+// A failed answer is locked when you leave its screen, so it can't be turned into a pass later.
+function lockFails(onlyKey) {
+  const ctx = vctx();
+  plan().forEach(c => {
+    const g = A.resultsFor(c.key, S.results), r = g.latest; if (!r || r.locked) return;
+    const k = g.retests.length ? `${c.key}__rt${r.n}` : c.key;
+    if (onlyKey && !onlyKey.includes(c.key)) return;
+    if (A.evaluate(c, r, ctx).state !== 'fail') return;
+    r.locked = true; S.base[k] = S.base[k] || 0;
+    clearTimeout(S.timers[k]); delete S.timers[k];
+    // write directly: saveResult refuses locked results
+    const rev = (S.base[k] || 0) + 1; r.rev = rev; S.base[k] = rev; r.by = meEmail(); r.byName = meName(); r.atISO = new Date().toISOString();
+    write(setDoc(doc(db, 'aovResults', `${S.visit._id}__${k}`), clean({ ...r, visitId: S.visit._id, siteRef: S.visit.siteRef, key: c.key, rtKey: r.retestOf ? k : null, kind: c.kind, title: c.title, testData: !!S.visit.testData, at: serverTimestamp() })), 'Answer');
+    addAutoDefect(c, k, A.evaluate(c, Object.assign({}, r, { locked: false }), ctx).why);
+    markTested(c);
+  });
+}
+// The battery calculation is worked out from the supply's figures; keep a copy on the visit.
+function saveCalcs(only) {
+  plan().filter(c => c.kind === 'calc' && (!only || only === c.key)).forEach(c => {
+    const p = (S.site.supplies || []).find(x => x.id === c.supplyId); const cc = A.batteryCalc(p, S.rules), r = ensure(c.key);
+    if (r.locked) return;
+    const snap = { ...cc, supply: p ? clean(p) : null };
+    if (JSON.stringify(r.calc || null) === JSON.stringify(snap)) return;
+    r.calc = snap; saveResult(c.key, c, true);
+  });
+}
+function addAutoDefect(c, k, why) {
+  const dk = 'def_' + k; if (S.results[dk]) return;
+  S.results[dk] = { kind: 'defect', auto: true, forKey: c.key, severity: c.kind === 'restore' ? 'Urgent' : 'Needs fixing', where: [c.title, c.sub].filter(Boolean).join(' · '), text: why, rec: '' };
+  saveResult(dk, null, true);
+}
+function markTested(c) {   // equipment that has a result can be retired, not deleted
+  const ids = c.assetId ? [c.assetId] : c.scenarioId ? Object.keys(((S.site.scenarios || []).find(x => x.id === c.scenarioId) || {}).expected || {}) : [];
+  let ch = false; ids.forEach(id => { const a = (S.site.assets || []).find(x => x.id === id); if (a && !a.everTested && !S.visit.testData) { a.everTested = true; ch = true; } });
+  if (ch && S.site.setupStatus !== 'Approved' && S.site.setupStatus !== 'Ready for QS') queueSiteSave('tested');
+}
+
+// ═══ Photos ═══
+function compressImage(file, maxSide = 1280, targetKB = 200) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const sc = Math.min(1, maxSide / Math.max(img.width, img.height)), w = Math.round(img.width * sc), h = Math.round(img.height * sc); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); let q = 0.8, out = c.toDataURL('image/jpeg', q); while (out.length * 0.75 > targetKB * 1024 && q > 0.35) { q -= 0.1; out = c.toDataURL('image/jpeg', q); } URL.revokeObjectURL(url); resolve(out); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That photo could not be read.')); };
+    img.src = url;
+  });
+}
+async function addPhoto(file) {
+  if (!file) return;
+  try {
+    const data = await compressImage(file); if (data.length * 0.75 > 600 * 1024) return alert('That photo is too big even after shrinking it. Try another.');
+    const n = S.photos.reduce((m, p) => Math.max(m, p.n || 0), 0) + 1, id = `${S.visit._id}_${n}`, cap = ($('photoCap') || {}).value || '';
+    const rec = { visitId: S.visit._id, siteRef: S.visit.siteRef, n, caption: cap, photoBase64: data, engineerEmail: meRaw(), testData: !!S.visit.testData, createdAt: serverTimestamp() };
+    write(setDoc(doc(db, 'aovPhotos', id), rec), 'Photo'); SWS.swuAdd({ c: 'aovPhotos', id, label: 'Photo', app: 'AOV testing', site: S.visit.siteName, noun: 'photo' });
+    S.photos.push({ id, ...rec, createdAt: null }); rerender();
+  } catch (e) { alert(e.message || 'Photo failed.'); }
+}
+
+// ═══ Events ═══
+function setRes(key, path, val) {
+  const r = ensure(key); const parts = path.split('.'); let o = r;
+  for (let k = 0; k < parts.length - 1; k++) { if (o[parts[k]] == null || typeof o[parts[k]] !== 'object') o[parts[k]] = /^\d+$/.test(parts[k + 1]) ? [] : {}; o = o[parts[k]]; }
+  o[parts[parts.length - 1]] = val;
+}
+const checkFor = key => { const base = key.split('__rt')[0]; return plan().find(c => c.key === base) || null; };
+document.addEventListener('input', e => {
+  const el = e.target, d = el.dataset || {};
+  if (d.rbind) { const i = d.rbind.indexOf('.'), key = d.rbind.slice(0, i); setRes(key, d.rbind.slice(i + 1), el.value); if (d.tosupply) { const p = (S.site.supplies || []).find(x => x.id === d.tosupply); if (p) { p[d.rbind.split('.').pop()] = A.num(el.value); p.loadSource = 'Measured on ' + A.shortDate(S.visit.date); queueSiteSave('currents'); } } saveResult(key, checkFor(key)); return; }
+  if (d.sbind) { if (el.tagName === 'SELECT' || el.type === 'checkbox') return; const [o, k] = setupPath(d.sbind); o[k] = d.num ? A.num(el.value) : el.value; queueSiteSave('edit');
+    const m = d.sbind.match(/^supplies\.(\d+)\./); if (m && $('calc_' + m[1])) { const p = S.site.supplies[+m[1]]; $('calc_' + m[1]).innerHTML = calcHTML(A.batteryCalc(p, S.rules), A.batteryAge(p, S.rules)); }
+    return; }
+  if (d.vbind && el.tagName !== 'SELECT') { setVisitPath(d.vbind, el.value); return; }
+  if (d.actInput === 'unexpected') { const r = ensure(d.k); r.unexpected = el.value.split(',').map(x => x.trim()).filter(Boolean); saveResult(d.k, checkFor(d.k)); }
+});
+function setVisitPath(path, val) { const parts = path.split('.'); const top = parts[0]; const o = S.visit; if (parts.length === 1) o[top] = val; else { o[top] = { ...(o[top] || {}), [parts[1]]: val }; } clearTimeout(S.vTimer); S.vTimer = setTimeout(() => saveVisit({ [top]: o[top] }), 600); }
+document.addEventListener('change', e => {
+  const el = e.target, d = el.dataset || {};
+  if (el.id === 'photoIn') { addPhoto(el.files[0]); el.value = ''; return; }
+  if (el.id === 'fBlock') { S.schedFilter.block = el.value; return rerender(); }
+  if (el.id === 'fSys') { S.schedFilter.system = el.value; return rerender(); }
+  if (el.id === 'fOut') { S.schedFilter.outstanding = el.checked; return rerender(); }
+  if (d.sbind && (el.tagName === 'SELECT' || el.type === 'checkbox')) { const [o, k] = setupPath(d.sbind); o[k] = el.type === 'checkbox' ? el.checked : (d.num ? A.num(el.value) : el.value); queueSiteSave('edit'); if (d.rr) rerender(); return; }
+  if (d.sbind && d.rr) { rerender(); return; }
+  if (d.rbind && el.tagName === 'SELECT') { const i = d.rbind.indexOf('.'), key = d.rbind.slice(0, i); setRes(key, d.rbind.slice(i + 1), el.value); saveResult(key, checkFor(key)); return; }
+  if (d.vbind && el.tagName === 'SELECT') { setVisitPath(d.vbind, el.value); }
+});
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  if (el.disabled) return;
+  const a = el.dataset.act, d = el.dataset, s = S.site;
+  switch (a) {
+    case 'home': S.site = null; S.visit = null; if (S.unsubR) S.unsubR(); if (S.unsubS) S.unsubS(); return go('home');
+    case 'refresh': return boot();
+    case 'newsite': $('newSiteBox').innerHTML = newSiteForm(); return;
+    case 'savesite': return saveSite();
+    case 'opensite': return openSite(d.id);
+    case 'site': flushAll(); flushSite(); if (S.unsubR) { S.unsubR(); S.unsubR = null; } S.visit = null; S.back = null; await loadVisits(); return go('site');
+    case 'newvisit': $('newVisitBox').innerHTML = newVisitForm(); $('newVisitBox').scrollIntoView({ behavior: 'smooth' }); return;
+    case 'createvisit': return createVisit();
+    case 'resume': return openVisit(d.id);
+    // set-up
+    case 'setup': S.back = null; S.setupTab = 'systems'; return go('setup');
+    case 'editequip': S.back = S.step; S.setupTab = (s.systems || []).length ? 'assets' : 'systems'; return go('setup');
+    case 'editpower': S.back = S.step; S.setupTab = 'power'; return go('setup');
+    case 'backtovisit': flushSite(); S.step = S.back; S.back = null; return go('visit');
+    case 'stab': flushSite(); S.setupTab = d.t; return rerender();
+    case 'addblock': s.blocks = [...(s.blocks || []), { id: A.newId('b'), name: 'Block ' + String.fromCharCode(65 + (s.blocks || []).length) }]; queueSiteSave('block'); return rerender();
+    case 'delblock': { const b = s.blocks[+d.n]; if ((s.systems || []).some(x => x.blockId === b.id)) return alert('Move or remove its systems first.'); s.blocks.splice(+d.n, 1); queueSiteSave('block'); return rerender(); }
+    case 'addsys': s.systems = [...(s.systems || []), { id: A.newId('s'), name: 'Riser ' + ((s.systems || []).length + 1), blockId: (s.blocks || [])[0] ? s.blocks[0].id : '', kind: 'Smoke shaft / riser', comfortVent: false }]; queueSiteSave('system'); return rerender();
+    case 'delsys': { const x = s.systems[+d.n]; if (A.activeAssets(s).some(q => q.systemId === x.id)) return alert('Move or retire its equipment first.'); if (!confirm('Remove ' + x.name + '?')) return; s.systems.splice(+d.n, 1); queueSiteSave('system'); return rerender(); }
+    case 'addasset': s.assets = [...(s.assets || []), { id: A.newId('a'), type: 'shaftDoor', ref: '', location: '', floor: '', systemId: d.sys, status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, confirmed: false, addedBy: meEmail() }]; queueSiteSave('asset added'); return rerender();
+    case 'delasset': { const x = s.assets[+d.n]; if (!confirm('Delete ' + A.assetName(x) + '? Only do this if it was added by mistake. If it has gone, use "It has gone (retire)".')) return; s.assets.splice(+d.n, 1); (s.scenarios || []).forEach(c => { if (c.expected) delete c.expected[x.id]; if (c.inputAssetId === x.id) c.inputAssetId = ''; }); queueSiteSave('asset deleted'); return rerender(); }
+    case 'retireasset': { const x = s.assets[+d.n]; const why = prompt('Why has it gone? (a few words)'); if (why == null) return; Object.assign(x, { status: 'retired', retiredOn: A.todayISO(), retiredWhy: why, retiredBy: meEmail() }); (s.scenarios || []).forEach(c => { if (c.expected) delete c.expected[x.id]; }); queueSiteSave('asset retired'); return rerender(); }
+    case 'replaceasset': { const x = s.assets[+d.n]; const why = prompt('What replaced it? (make / model)'); if (why == null) return; const nu = { ...A.clone(x), id: A.newId('a'), status: 'active', firstSeen: A.todayISO(), firstSeenVisit: S.visit ? S.visit._id : null, replaces: x.id, model: why, everTested: false, confirmed: false }; Object.assign(x, { status: 'retired', retiredOn: A.todayISO(), retiredWhy: 'Replaced: ' + why, replacedBy: nu.id }); s.assets.push(nu); (s.scenarios || []).forEach(c => { if (c.expected && c.expected[x.id]) { c.expected[nu.id] = c.expected[x.id]; delete c.expected[x.id]; } if (c.inputAssetId === x.id) c.inputAssetId = nu.id; }); queueSiteSave('asset replaced'); return rerender(); }
+    case 'addscen': s.scenarios = [...(s.scenarios || []), { id: A.newId('c'), systemId: d.sys, name: '', inputType: A.INPUT_TYPES[0], inputRef: '', inputLocation: '', method: 'endToEnd', expected: {}, indications: '', reset: '' }]; queueSiteSave('scenario'); return rerender();
+    case 'autoscen': { const dets = A.activeAssets(s).filter(x => x.systemId === d.sys && x.type === 'detector'); if (!dets.length) return alert('Add the detectors to the equipment list first.'); const outs = A.activeAssets(s).filter(x => x.systemId === d.sys && (A.ASSET_TYPES[x.type] || {}).moves); dets.forEach(det => { const exp = {}; outs.forEach(o => { exp[o.id] = (o.type === 'roofVent' || o.type === 'velux' || o.type === 'stairVent' || (o.floor && o.floor === det.floor)) ? 'open' : 'closed'; }); s.scenarios.push({ id: A.newId('c'), systemId: d.sys, name: (det.location || det.ref || 'Detector') + ' detector', inputType: A.INPUT_TYPES[0], inputAssetId: det.id, inputRef: det.ref || '', inputLocation: det.location || '', method: 'endToEnd', expected: exp, indications: '', reset: '' }); }); queueSiteSave('scenarios'); banner('Scenarios added. Check what opens for each: it was guessed from the floor numbers.', 'wait'); return rerender(); }
+    case 'copyscen': { const c = A.clone(s.scenarios[+d.n]); c.id = A.newId('c'); c.name = (c.name || '') + ' (copy)'; s.scenarios.splice(+d.n + 1, 0, c); queueSiteSave('scenario'); return rerender(); }
+    case 'delscen': { const c = s.scenarios[+d.n]; if (!confirm('Remove this scenario?')) return; if (c.everTested) c.retired = true; else s.scenarios.splice(+d.n, 1); queueSiteSave('scenario removed'); return rerender(); }
+    case 'expect': { const c = s.scenarios[+d.n]; c.expected = c.expected || {}; if (d.v) c.expected[d.a] = d.v; else delete c.expected[d.a]; queueSiteSave('scenario'); return rerender(); }
+    case 'addsupply': s.supplies = [...(s.supplies || []), { id: A.newId('p'), name: '', systems: (s.systems || []).map(x => x.id), batteries: { count: 2, arrangement: 'series' } }]; queueSiteSave('supply'); return rerender();
+    case 'delsupply': if (!confirm('Remove this power supply?')) return; s.supplies[+d.n].retired = true; queueSiteSave('supply'); return rerender();
+    case 'supsys': { const p = s.supplies[+d.n]; p.systems = (p.systems || []).includes(d.s) ? p.systems.filter(x => x !== d.s) : [...(p.systems || []), d.s]; queueSiteSave('supply'); return rerender(); }
+    case 'sendsetup': { flushSite(); const { gaps } = A.setupGaps(s); if (gaps.length) return; s.setupStatus = 'Ready for QS'; s.setupReturnNote = null; saveSite_('submit'); audit('setup-submitted', { siteRef: s.siteRef }); banner('Sent to QS.', 'ok'); return rerender(); }
+    // visit
+    case 'scope': { const v = S.visit; const all = (s.systems || []).map(x => x.id); let cur = (v.scope && v.scope.systems && v.scope.systems.length) ? [...v.scope.systems] : [...all]; cur = cur.includes(d.s) ? cur.filter(x => x !== d.s) : [...cur, d.s]; if (!cur.length) return alert('At least one system.'); saveVisit({ scope: { systems: cur.length === all.length ? [] : cur } }); return rerender(); }
+    case 'chgpick': { const ch = S.visit.change = S.visit.change || {}; const arr = ch[d.arr] = ch[d.arr] || []; ch[d.arr] = arr.includes(d.id) ? arr.filter(x => x !== d.id) : [...arr, d.id]; saveVisit({ change: ch }); return rerender(); }
+    case 'chglogic': { const ch = S.visit.change = S.visit.change || {}; ch.logic = !ch.logic; saveVisit({ change: ch }); return rerender(); }
+    case 'ans': { setRes(d.k, d.f, d.v === '' ? null : (d.f === 'cant' || d.f === 'agreed' ? !!d.v : d.v)); saveResult(d.k, checkFor(d.k)); return rerender(); }
+    case 'item': { const r = ensure(d.k); r.items = { ...(r.items || {}), [d.i]: d.v }; saveResult(d.k, checkFor(d.k)); return rerender(); }
+    case 'outstate': { const r = ensure(d.k); r.outputs = r.outputs || {}; r.outputs[d.a] = { ...(r.outputs[d.a] || {}), state: d.v }; saveResult(d.k, checkFor(d.k)); return rerender(); }
+    case 'moving': { const r = ensure(d.k); r.outputs = r.outputs || {}; const o = r.outputs[d.a] = r.outputs[d.a] || {}; o.moving = { ...(o.moving || {}), [d.i]: d.v }; saveResult(d.k, checkFor(d.k)); return rerender(); }
+    case 'retest': { const g = A.resultsFor(d.k, S.results); const n = g.retests.length + 2, k = `${d.k}__rt${n}`; S.results[k] = { retestOf: d.k, n, _k: k }; S.base[k] = 0; saveResult(k, checkFor(d.k), true); return rerender(); }
+    case 'adddef': case 'quickdef': { const k = 'def_' + A.newId('m'); S.results[k] = { kind: 'defect', severity: 'Needs fixing', where: a === 'quickdef' && S.screens ? S.screens[S.step].title : '', text: '', rec: '' }; saveResult(k, null, true); if (a === 'quickdef') { S.retStep = S.step; S.step = S.screens.findIndex(x => x.key === 'defects'); } return rerender(); }
+    case 'deldef': { if (!confirm('Remove this problem?')) return; const r = S.results[d.k]; r.removed = true; saveResult(d.k, null, true); return rerender(); }
+    case 'cantrestore': { const p = plan().filter(c => c.kind === 'restore'); let c = p[0]; if (p.length > 1) { const names = p.map((x, i) => `${i + 1}. ${x.sub}`).join('\n'); const pick = prompt('Which system?\n' + names, '1'); if (!pick) return; c = p[(+pick || 1) - 1] || p[0]; } const k = liveKey(c); setRes(k, 'restored', 'no'); saveResult(k, c, true); S.step = S.screens.findIndex(x => x.key === c.key); return rerender(); }
+    case 'addnote': { const t = ($('extraNote').value || '').trim(); if (!t) return; saveVisit({ extraNotes: [...(S.visit.extraNotes || []), t] }); return rerender(); }
+    case 'submit': return submitVisit();
+    case 'sched': S.schedBack = S.step; return go('sched');
+    case 'backvisit': if (S.schedBack != null) S.step = S.schedBack; return go('visit');
+    case 'gonext': { const sc = S.screens || screens(); const i = sc.findIndex(x => x.check && ((x.check.assetId === d.a) || (x.check.kind === 'scenario' && ((s.scenarios || []).find(q => q.id === x.check.scenarioId) || { expected: {} }).expected[d.a])) && ['pending', 'incomplete'].includes(A.evaluate(x.check, A.resultsFor(x.check.key, S.results).latest, vctx()).state)); if (i >= 0) S.step = i; return go('visit'); }
+    case 'nextstep': case 'prevstep': case 'gostep': case 'savestep': {
+      const cur = S.screens[S.step]; if (cur && cur.check && cur.check.kind === 'calc') saveCalcs(cur.check.key); flushAll(); if (cur && (cur.check || cur.checks)) lockFails(cur.checks ? cur.checks.map(c => c.key) : [cur.check.key].filter(k => !cur.key.includes('#') || cur.key.endsWith('#r')));
+      if (a === 'savestep') { banner(navigator.onLine ? 'Saved.' : 'Saved on this phone. It sends when there is signal.', 'ok'); saveStep(cur.key); return; }
+      const max = S.screens.length - 1;
+      S.step = a === 'nextstep' ? Math.min(max, S.step + 1) : a === 'prevstep' ? Math.max(0, S.step - 1) : +d.n;
+      if (open(S.visit)) saveStep(S.screens[S.step].key);
+      rerender(); return scrollTop();
+    }
+  }
+});
+window.addEventListener('beforeunload', () => { flushAll(); flushSite(); });
+
+// ═══ WHAT'S NEW + HELP ═══
+const NEWS_ALL = [
+  '<b>AOV testing</b> is new. Add a site, list its vents, doors, panels and detectors, say what each trigger should open, then test one screen at a time.',
+  'Several engineers can work on the same visit, over more than one day. Everyone\'s answers are kept.'
+];
+const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
+const HELP = [
+  { tab: 'Sites', q: 'How do I start?', a: '<p>Pick the site (or add it). Then <b>Equipment and scenarios</b> to list what\'s there, and <b>Start a visit</b> to test.</p>' },
+  { tab: 'Equipment', q: 'What is a scenario?', a: '<p>One thing that sets the system off (a detector, a switch) and what should happen: which vents and doors open and which stay shut. Each landing detector gets its own.</p>' },
+  { tab: 'Equipment', q: 'Something has been removed or replaced', a: '<p>Use <b>It has gone (retire)</b> or <b>It was replaced</b>. Don\'t delete it: old reports still need it.</p>' },
+  { tab: 'Visit', q: 'How do I move through the visit?', a: '<p>One thing per screen. <b>Next</b> and <b>Back</b> save as you go. <b>Save</b> keeps your place: you can stop and carry on another day. <b>Schedule</b> shows what\'s left.</p>' },
+  { tab: 'Visit', q: 'I pressed the wrong answer and it failed', a: '<p>You can change it until you leave the screen. After that a failed result stays on the record. Once it\'s put right, use <b>Record a retest</b>.</p>' },
+  { tab: 'Visit', q: 'I can\'t put it back to normal', a: '<p>Tap <b>Can\'t restore</b>. Ring the office, then record what\'s wrong, how it\'s left, the time you rang and who agreed.</p>' },
+  { tab: 'Visit', q: 'Why does it say Unverified?', a: '<p>Your answer is saved, but there\'s nothing approved to check it against yet (the site\'s scenarios or the test rules). QS decides.</p>' },
+  { tab: 'Visit', q: 'Someone else changed my answer', a: '<p>If two people save the same check, the first one stays and the other is told. Look at what they saved and add yours again if it\'s different.</p>' },
+  { q: 'What\'s the yellow bar at the top?', a: '<p>Answers that haven\'t reached the office yet. Keep the app open with signal and it clears on its own.</p>' }
+];
+</script>
+</body>
+</html>

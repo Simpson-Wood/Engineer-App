@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AOV Reports — Simpson &amp; Wood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="stylesheet" href="sw-design.css">
+<style>
+  body{padding-bottom:40px;}
+  .wrap{max-width:1500px; margin:0 auto; padding:0;}
+  header .brand{flex:1 1 auto;} header .brand > div{min-width:0;}
+  #signinScreen, #notAuthorised{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+  #signinScreen img, #notAuthorised img{height:44px; margin-bottom:28px;}
+  #signinScreen h2, #notAuthorised h2{font-weight:700; text-transform:uppercase; font-size:20px; margin:0 0 8px;}
+  #signinScreen p, #notAuthorised p{color:var(--grey); font-size:14px; max-width:340px; margin:0 0 20px;}
+  #signinScreen .err{color:var(--red); font-size:13px; margin-top:16px; max-width:320px;}
+  #notAuthorised{display:none;} #appRoot{display:none;}
+  .ms-btn{display:flex;}
+  main{padding:16px;}
+  .tabs .wrap{display:flex; gap:4px; width:100%;}
+  .card{min-width:0; padding:16px;}
+  .section-label{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:20px; margin:0 0 12px;}
+  .fld > label, label.l{display:block; font-family:'Barlow Condensed',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--grey); margin:0 0 6px;}
+  input[type=text], input[type=date], select, textarea{width:100%; min-height:44px; padding:10px 12px; font-family:'Barlow',sans-serif; font-size:16px; border:1.5px solid var(--field); border-radius:8px; background:#fff; color:var(--ink); margin-bottom:14px;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+  select{appearance:none; -webkit-appearance:none; padding-right:34px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%235c5c5c' d='M5 7l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; background-size:18px;}
+  textarea{resize:vertical; min-height:64px; line-height:1.4;}
+  .fgrid{display:grid; grid-template-columns:minmax(0,1fr); column-gap:16px;} .fgrid > .full{grid-column:1 / -1;}
+  @media (min-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (min-width:1100px){ .fgrid.three{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  .tick{display:flex; gap:10px; align-items:flex-start; font-size:15px; font-weight:600; margin:0 0 10px; cursor:pointer;} .tick input{width:20px; height:20px; flex:0 0 auto; margin-top:1px;}
+  .banner{display:none; font-weight:600;}
+  .banner.ok{background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+  .banner.wait{background:var(--amber-bg); color:#4d3300; border-color:var(--amber-line);}
+  .tag{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:6px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; background:#eeece7; color:var(--grey);}
+  .tag.ok{background:var(--green-bg); color:var(--green);} .tag.bad{background:var(--red-tint); color:var(--red-dark);} .tag.wait{background:var(--amber-bg); color:var(--amber);}
+  .tag.info{background:var(--blue-bg); color:var(--blue);} .tag.over{background:var(--red); color:#fff;} .tag.test{background:var(--test-bg); color:var(--test-ink);}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:9px 16px; font-size:15px; font-weight:700; background:#fff; border:1.5px solid var(--field); border-radius:8px; cursor:pointer; color:var(--ink);}
+  .btn.red{background:var(--red); border-color:var(--red); color:#fff;} .btn.dark{background:var(--ink); border-color:var(--ink); color:#fff;} .btn.green{background:var(--green); border-color:var(--green); color:#fff;}
+  .btn.sm{min-height:38px; padding:6px 12px; font-size:14px;} .btn.warn{border-color:var(--red); color:var(--red);} .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btns{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .box{border:1px solid var(--line); border-radius:10px; padding:12px; margin:0 0 12px; background:#fff;}
+  .box.warn{background:var(--amber-bg); border-color:var(--amber-line); color:#4d3300;} .box.bad{background:var(--red-tint); border-color:var(--bad-line); color:var(--bad-ink);}
+  .box.good{background:var(--green-bg); border-color:var(--green-line); color:var(--green);} .box.info{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
+  .box h4{margin:0 0 6px; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:17px;}
+  .small{font-size:13px; color:var(--grey);}
+  .gt-title{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; font-size:22px; margin:0 0 4px;} .gt-sub{color:var(--grey); font-size:14px; margin:0 0 12px;}
+  .list-line{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--line); flex-wrap:wrap;} .list-line:first-child{border-top:none;}
+  .empty-note, .loading-note{text-align:center; color:var(--grey); font-size:14.5px; padding:18px 0;}
+  .layout{display:grid; grid-template-columns:minmax(0,1fr); gap:14px; align-items:start;}
+  @media (min-width:1000px){ .layout.split{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);} }
+  table.t{width:100%; border-collapse:collapse; font-size:14px;} table.t th, table.t td{border-top:1px solid var(--line); padding:7px 6px; text-align:left; vertical-align:top;}
+  table.t th{font-size:12px; color:var(--grey); text-transform:uppercase; letter-spacing:.03em;} table.t tr.grp td{background:var(--soft); font-weight:700;}
+  table.t tr.click{cursor:pointer;} table.t tr.click:hover td{background:var(--red-tint);}
+  .tw{overflow-x:auto;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px;}
+  .ph-grid{display:flex; flex-wrap:wrap; gap:10px;} .ph-grid figure{margin:0; width:150px;} .ph-grid img{width:150px; height:112px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+  .ph-grid figcaption{font-size:12px; color:var(--grey);}
+  @media (max-width:640px){ main{padding:12px;} .card{padding:14px;} header h1{font-size:16px;} header .who .name{display:none;} }
+</style>
+</head>
+<body>
+<div id="signinScreen">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>AOV Reports</h2>
+  <p>Sign in with your Simpson &amp; Wood Microsoft account.</p>
+  <button class="ms-btn" id="msSignInBtn"><i class="ti ti-brand-windows"></i> Sign in with Microsoft</button>
+  <div class="err" id="signinErr"></div>
+</div>
+<div id="notAuthorised">
+  <img src="sw-logo.png" alt="Simpson & Wood">
+  <h2>AOV Reports</h2>
+  <p>You're signed in as <b id="notAuthEmail"></b>. This page is for QS and management.</p>
+  <div class="btns"><a class="btn" href="index.html">Back to home</a><button class="btn" id="signOutBtn2">Sign out</button></div>
+</div>
+<div id="appRoot">
+  <header>
+    <a class="brand" href="index.html" title="Home"><img src="sw-logo-white.png" alt="Simpson & Wood"><div><h1>AOV Reports</h1><p id="versionLabel">v1.0</p></div></a>
+    <div class="right"><div class="who"><div class="name" id="whoName">—</div><button id="signOutBtn">Sign out</button></div></div>
+  </header>
+  <nav class="tabs"><div class="wrap" id="tabsBar"></div></nav>
+  <main><div class="wrap"><div id="banner" class="banner"></div><div id="view"></div></div></main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, OAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
+  getDocs, doc, getDoc, query, where, serverTimestamp, setDoc as fsSetDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import * as SWS from './sw-shared.js';
+import * as A from './aov-shared.js';
+const { esc } = A;
+
+const VERSION = "v1.0";
+document.getElementById('versionLabel').textContent = VERSION + ' · Management';
+const firebaseConfig = {
+  apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
+  authDomain: "simpson-wood-engineer-app.firebaseapp.com",
+  projectId: "simpson-wood-engineer-app",
+  storageBucket: "simpson-wood-engineer-app.firebasestorage.app",
+  messagingSenderId: "201961281346",
+  appId: "1:201961281346:web:3c7386b73b41ce9df35adb"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const msProvider = new OAuthProvider('microsoft.com');
+msProvider.setCustomParameters({ tenant: 'abd23e0c-2d96-49ad-a280-99ff317f7d60' });
+SWS.swSetup({ db, auth, page: 'aov-report', version: VERSION });
+const viewingAs = () => SWS.swViewingAs();
+const isVaError = e => e && String(e.message || '').includes(SWS.SW_VA_MSG);
+const setDoc = SWS.swGuard(fsSetDoc);
+
+const S = { user: null, level: 'engineer', position: '', isDirector: false, sites: [], visits: [], rules: [], reports: [], audit: [], staff: {}, sigs: {}, tab: 'sites', q: '', filter: 'all', sel: null, review: null, results: {}, photos: null, busy: false };
+const $ = id => document.getElementById(id);
+const meEmail = () => { const va = viewingAs(); return va ? va.email : String((S.user && S.user.email) || '').toLowerCase(); };
+const meName = () => { const va = viewingAs(); return va ? va.name : ((S.user && (S.user.displayName || S.user.email)) || ''); };
+const isMgmt = () => S.level === 'management';
+const banner = (txt, cls = 'wait') => { const b = $('banner'); if (!txt) { b.style.display = 'none'; return; } b.className = 'banner ' + cls; b.textContent = txt; b.style.display = 'block'; };
+const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k[0] === '_' ? undefined : (v === undefined ? null : v))));
+function write(p, what) {
+  return Promise.resolve(p).then(() => true).catch(e => {
+    if (isVaError(e)) { banner(SWS.SW_VA_MSG, 'wait'); return false; }
+    console.error(what, e); SWS.swReport('save', what + ' didn\'t save: ' + (e && (e.code || e.message) || 'unknown'));
+    banner(what + ' did not save (' + (e && (e.code || e.message) || 'error') + ').', 'wait'); return false;
+  });
+}
+const audit = (action, extra = {}) => { if (viewingAs()) return; write(setDoc(doc(collection(db, 'aovAudit')), { at: serverTimestamp(), atISO: new Date().toISOString(), by: meEmail(), action, ...extra }), 'Audit record'); };
+
+function describeAuthError(err) {
+  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) return null;
+  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
+}
+$('msSignInBtn').addEventListener('click', () => {
+  const errBox = $('signinErr'); errBox.textContent = '';
+  signInWithPopup(auth, msProvider).catch(err => {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') { signInWithRedirect(auth, msProvider).catch(e2 => { const m = describeAuthError(e2); if (m) errBox.textContent = m; }); return; }
+    const m = describeAuthError(err); if (m) errBox.textContent = m;
+  });
+});
+$('signOutBtn').addEventListener('click', () => signOut(auth));
+$('signOutBtn2').addEventListener('click', () => signOut(auth));
+getRedirectResult(auth).catch(err => { $('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.'); });
+
+let booted = false;
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  if (!user) { $('signinScreen').style.display = 'flex'; $('appRoot').style.display = 'none'; $('notAuthorised').style.display = 'none'; return; }
+  $('signinScreen').style.display = 'none';
+  if (booted) return; booted = true;
+  const va = await SWS.swViewAsInit(user);
+  try { const a = await SWS.swAccess(va ? va.email : user.email); S.level = a.level; S.position = a.position; } catch (e) {}
+  if (!isMgmt()) { $('notAuthEmail').textContent = user.email; $('notAuthorised').style.display = 'flex'; return; }
+  $('appRoot').style.display = 'block';
+  $('whoName').textContent = va ? va.name : (user.displayName || user.email);
+  S.isDirector = S.position === 'Director' || meEmail() === SWS.SW_OWNER;
+  SWS.swExtrasStart({ page: 'aov-report', version: VERSION, level: S.level, news: NEWS, help: HELP, tab: () => (TABS.find(t => t[0] === S.tab) || [])[1] });
+  SWS.swuStart();
+  load();
+});
+window.swUpdateBlocker = () => S.busy ? 'Wait until it has finished saving, then tap Update.' : '';
+
+const TABS = [['sites', 'Sites', 'ti-building'], ['review', 'To review', 'ti-checklist'], ['issued', 'Issued', 'ti-file-certificate'], ['rules', 'Rules', 'ti-ruler-2'], ['audit', 'Audit', 'ti-history']];
+function buildTabs() {
+  const n = S.visits.filter(v => v.status === 'Ready for QS' && !v.testData).length, ns = S.sites.filter(s => s.setupStatus === 'Ready for QS').length;
+  $('tabsBar').innerHTML = TABS.map(t => `<button type="button" class="tab ${S.tab === t[0] ? 'active' : ''}" data-tab="${t[0]}"><i class="ti ${t[2]}"></i> ${t[1]}${t[0] === 'review' && n ? ` <span class="count">${n}</span>` : ''}${t[0] === 'sites' && ns ? ` <span class="count">${ns}</span>` : ''}</button>`).join('');
+}
+async function load() {
+  $('view').innerHTML = '<div class="loading-note">Loading…</div>';
+  const g = async (c, quiet) => { try { return (await getDocs(collection(db, c))).docs.map(d => ({ id: d.id, ...d.data() })); } catch (e) { if (navigator.onLine && !quiet) SWS.swReport('load', `AOV reports: ${c} didn't load: ${e.code || e.message}`); return []; } };
+  const [sites, visits, rules, reports, staff, sigs, aud] = await Promise.all([g('aovSites'), g('aovTests'), g('aovRules'), g('aovReports'), g('staff'), g('staffSignatures', true), g('aovAudit', true)]);
+  S.sites = sites.filter(x => !x.deletedFlag).sort((a, b) => String(a.siteName).localeCompare(String(b.siteName)));
+  S.visits = visits.filter(x => !x.deletedFlag).map(v => ({ ...v, _id: v.id })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  S.rules = rules.sort((a, b) => (b.version || 0) - (a.version || 0)); S.reports = reports;
+  S.staff = {}; staff.forEach(s => S.staff[String(s.email || s.id).toLowerCase()] = s);
+  S.sigs = {}; sigs.forEach(s => S.sigs[s.id.toLowerCase()] = s);
+  S.audit = aud.sort((a, b) => String(b.atISO || '').localeCompare(String(a.atISO || ''))).slice(0, 300);
+  const want = new URLSearchParams(location.search).get('site'); if (want) { const s = S.sites.find(x => x.siteRef === want || x.id === want); if (s) S.sel = s.id; }
+  render();
+}
+const approvedRules = () => S.rules.find(r => r.status === 'Approved');
+const rulesObj = r => ({ ...A.clone(A.DEFAULT_RULES), ...((r && r.rules) || {}) });
+function render() { buildTabs(); $('view').innerHTML = ({ sites: sitesHTML, review: reviewHTML, issued: issuedHTML, rules: rulesHTML, audit: auditHTML }[S.tab])(); }
+const tag = (c, t) => `<span class="tag ${c}">${esc(t)}</span>`;
+const setupTag = s => s.setupStatus === 'Approved' ? tag('ok', 'Set-up approved') : s.setupStatus === 'Ready for QS' ? tag('wait', 'Set-up to approve') : s.setupStatus === 'Changed' ? tag('wait', 'Changed since approval') : tag('', 'Set-up draft');
+const dueTag = s => { if (!s.dueMonth) return tag('', 'No report issued yet'); const st = A.dueState(s.dueMonth); return tag(st === 'overdue' ? 'over' : st === 'due' ? 'bad' : 'info', st === 'overdue' ? 'Overdue since ' + A.monthLabel(A.addMonths(s.dueMonth, 1)) : 'Due ' + A.monthLabel(s.dueMonth)); };
+const nameOf = e => (S.staff[String(e || '').toLowerCase()] || {}).name || e || '';
+
+// ═══ SITES ═══
+const FILTERS = [['all', 'All'], ['setup', 'Set-up to approve'], ['due', 'Due this month'], ['overdue', 'Overdue'], ['open', 'Visit in progress']];
+function matchSite(s) {
+  if (S.q && !(`${s.siteName} ${s.siteRef} ${s.postcode || ''}`.toLowerCase().includes(S.q.toLowerCase()))) return false;
+  switch (S.filter) { case 'setup': return ['Ready for QS', 'Changed'].includes(s.setupStatus); case 'due': return A.dueState(s.dueMonth) === 'due'; case 'overdue': return A.dueState(s.dueMonth) === 'overdue'; case 'open': return S.visits.some(v => v.siteRef === s.siteRef && ['Draft', 'Returned'].includes(v.status)); }
+  return true;
+}
+function sitesHTML() {
+  const list = S.sites.filter(matchSite);
+  let h = `<div class="layout ${S.sel ? 'split' : ''}"><div class="card"><p class="section-label">Sites</p><input type="text" id="siteQ" placeholder="Search name, reference or postcode" value="${esc(S.q)}">
+   <div class="chips">${FILTERS.map(f => `<button class="chip ${S.filter === f[0] ? 'on' : ''}" data-filter="${f[0]}">${f[1]}</button>`).join('')}</div>`;
+  h += list.length ? `<div class="tw"><table class="t"><tr><th>Site</th><th>Set-up</th><th>Due</th></tr>${list.map(s => `<tr class="click" data-open="${esc(s.id)}"><td><b>${esc(s.siteName)}</b><div class="small">${esc(s.siteRef)}</div></td><td>${setupTag(s)}</td><td>${dueTag(s)}</td></tr>`).join('')}</table></div>` : '<div class="empty-note">No sites match.</div>';
+  h += `</div>`;
+  if (S.sel) h += sitePanelHTML(S.sites.find(s => s.id === S.sel));
+  return h + `</div>`;
+}
+function sitePanelHTML(s) {
+  if (!s) return '';
+  const { gaps, flags } = A.setupGaps(s), visits = S.visits.filter(v => v.siteRef === s.siteRef);
+  let h = `<div class="card" id="sitePanel"><div class="btns" style="margin-top:0"><button class="btn sm" data-close="1">Close</button><a class="btn sm" href="aov-test.html?site=${encodeURIComponent(s.siteRef)}">Open in the engineer app</a></div>
+   <div class="small">${esc(s.siteRef)}</div><h2 class="gt-title">${esc(s.siteName)}</h2><p class="gt-sub">${esc([s.addressLine, s.postcode].filter(Boolean).join(', '))}${s.contact ? ' · ' + esc(s.contact) : ''}</p><div class="chips">${setupTag(s)}${dueTag(s)}</div>`;
+  h += `<div class="fgrid three"><div class="fld"><label>Full service every</label><select id="sInt">${[6, 12].map(n => `<option value="${n}" ${Number(s.intervalMonths || 12) === n ? 'selected' : ''}>${n} months</option>`).join('')}</select></div>
+   <div class="fld"><label>System working within (s)</label><input type="text" id="sT90" inputmode="numeric" value="${esc((s.timings || {}).systemS ?? 90)}"></div>
+   <div class="fld"><label>Doors / dampers open within (s)</label><input type="text" id="sT60" inputmode="numeric" value="${esc((s.timings || {}).openS ?? 60)}"></div></div>
+   <div class="btns"><button class="btn sm" data-act="savesite" data-id="${esc(s.id)}">Save interval and times</button></div>`;
+  // set-up approval (the baseline): a Director approves
+  h += `<p class="section-label" style="margin-top:8px">Equipment and scenarios</p>`;
+  if (gaps.length) h += `<div class="box bad"><h4>Not finished</h4>${gaps.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  if (flags.length) h += `<div class="box warn"><h4>To look at</h4>${flags.map(g => '• ' + esc(g)).join('<br>')}</div>`;
+  h += `<div class="tw">${equipTable(s)}</div>`;
+  h += `<p class="section-label" style="margin-top:12px">Scenarios</p>${(s.scenarios || []).filter(c => !c.retired).map(c => `<div class="list-line"><div><b>${esc(c.name || 'Scenario')}</b> <span class="small">${esc(A.systemName(s, c.systemId))}</span><div class="small">${esc(c.inputType || '')} ${esc(c.inputRef || '')} ${esc(c.inputLocation || '')} · ${esc(A.METHODS[c.method || 'endToEnd'])}</div><div class="small">Opens: ${esc(Object.entries(c.expected || {}).filter(([, v]) => v === 'open').map(([id]) => assetLabel(s, id)).join(', ') || '—')} · Stays shut: ${esc(Object.entries(c.expected || {}).filter(([, v]) => v === 'closed').map(([id]) => assetLabel(s, id)).join(', ') || '—')}</div></div></div>`).join('') || '<div class="small">None.</div>'}`;
+  h += `<p class="section-label" style="margin-top:12px">Power supplies</p>${(s.supplies || []).filter(p => !p.retired).map(p => { const c = A.batteryCalc(p, rulesObj(approvedRules())), age = A.batteryAge(p, rulesObj(approvedRules())); return `<div class="list-line"><div><b>${esc(p.name || 'Supply')}</b> <span class="small">${esc(p.model || '')}</span><div class="small">${c.missing.length ? 'Battery calculation needs: ' + esc(c.missing.join(', ')) : `Needs ${A.fmt(c.needAh, 1)} Ah, fitted ${A.fmt(c.bankAh, 1)} Ah (${c.ok ? 'OK' : 'too small'}), about ${A.fmt(c.runtimeH, 0)} h standby as fitted`}${age.replaceBy ? ` · replace by ${A.shortDate(age.replaceBy)}` : ''}</div></div>${c.missing.length ? tag('wait', 'Unresolved') : c.ok ? tag('ok', 'Big enough') : tag('bad', 'Too small')}</div>`; }).join('') || '<div class="small">None.</div>'}`;
+  if (['Ready for QS', 'Changed', 'Draft'].includes(s.setupStatus)) {
+    h += `<div class="box" style="margin-top:12px"><h4>Approve the set-up</h4><p class="small">Check the scenarios against the fire strategy, the cause-and-effect, the fire risk assessment and the commissioning records. Watching the system work is not enough on its own.</p>
+      <label class="l">Documents checked (and their revisions)</label><textarea id="sDocs">${esc(s.setupSources || '')}</textarea>
+      <label class="l">Conflicts, missing information or limits (optional)</label><textarea id="sLimits">${esc(s.setupLimits || '')}</textarea>
+      <label class="l">Note (needed to return it)</label><textarea id="sNote"></textarea>
+      <div class="btns"><button class="btn green" data-act="approvesetup" data-id="${esc(s.id)}" ${S.isDirector && !gaps.length ? '' : 'disabled'}>Approve set-up</button><button class="btn warn" data-act="returnsetup" data-id="${esc(s.id)}">Return to the engineer</button></div>${S.isDirector ? '' : '<p class="small">Only a Director (Rob or John) can approve a set-up.</p>'}</div>`;
+  } else if (s.setupStatus === 'Approved') h += `<div class="box good" style="margin-top:12px">Approved by ${esc(s.setupApprovedByName || s.setupApprovedBy || '')} on ${A.shortDate(String(s.setupApprovedAt || '').slice(0, 10))} (set-up version ${esc(s.setupVersion || 1)}).${s.setupSources ? '<br><span class="small">Checked against: ' + esc(s.setupSources) + '</span>' : ''}</div>`;
+  h += `<p class="section-label" style="margin-top:12px">Visits</p>${visits.length ? visits.map(v => `<div class="list-line"><div><b>${A.longDate(v.date)}</b> · ${esc((A.VISIT_TYPES[v.visitType] || {}).label || '')} ${tag(v.status === 'Issued' ? 'ok' : v.status === 'Returned' ? 'bad' : 'wait', v.status)}${v.testData ? ' ' + tag('test', 'Practice') : ''}<div class="small">${esc((v.engineers || []).map(e => e.name).join(', '))}${v.overall ? ' · ' + esc(v.overall) : ''}</div></div>${v.status === 'Ready for QS' ? `<button class="btn sm dark" data-review="${esc(v._id)}">Review</button>` : ''}</div>`).join('') : '<div class="small">None yet.</div>'}`;
+  return h + `</div>`;
+}
+const assetLabel = (s, id) => { const a = (s.assets || []).find(x => x.id === id); return a ? A.assetName(a) + (a.location ? ' (' + a.location + ')' : '') : '?'; };
+function equipTable(s, cov) {
+  let h = `<table class="t"><tr><th>Item</th><th>Where</th><th>Type</th>${cov ? '<th>Checks</th><th>Failed</th><th>Not tested</th>' : '<th>Notes</th>'}</tr>`;
+  const blocks = [...(s.blocks || []), { id: '__none', name: '' }];
+  blocks.forEach(b => (s.systems || []).filter(x => b.id === '__none' ? !(s.blocks || []).some(bb => bb.id === x.blockId) : x.blockId === b.id).forEach(x => {
+    const list = A.activeAssets(s).filter(a => a.systemId === x.id); if (!list.length) return;
+    h += `<tr class="grp"><td colspan="6">${esc(A.systemName(s, x.id))}</td></tr>`;
+    list.forEach(a => { const c = cov && cov[a.id]; h += `<tr><td><b>${esc(A.assetName(a))}</b></td><td>${esc(a.location || '')}</td><td>${esc(A.typeLabel(a.type))}${a.holdMethod ? '<div class="small">Held by: ' + esc(a.holdMethod) + '</div>' : ''}</td>${cov ? `<td>${c ? c.done + '/' + c.total : '—'}</td><td>${c && c.failed ? tag('bad', c.failed) : ''}</td><td>${c && c.blocked ? c.blocked : ''}</td>` : `<td>${A.clientNoteForAsset(a) ? tag('info', 'Note for client') : ''}${a.confirmed ? '' : ' ' + tag('wait', 'New')}</td>`}</tr>`; });
+  }));
+  return h + `</table>`;
+}
+async function saveSiteFields(s, f) { Object.assign(s, f); s.rev = (s.rev || 0) + 1; return write(setDoc(doc(db, 'aovSites', s.id), clean({ ...f, rev: s.rev }), { merge: true }), 'Site'); }
+
+// ═══ REVIEW ═══
+function reviewHTML() {
+  const waiting = S.visits.filter(v => v.status === 'Ready for QS'), real = waiting.filter(v => !v.testData), prac = waiting.filter(v => v.testData);
+  let h = `<div class="layout ${S.review ? 'split' : ''}"><div class="card"><p class="section-label">Waiting for QS</p>`;
+  h += real.length ? real.map(v => visitLine(v)).join('') : '<div class="empty-note">Nothing waiting.</div>';
+  if (prac.length) h += `<p class="section-label" style="margin-top:14px">Practice runs</p>` + prac.map(v => visitLine(v)).join('');
+  const ret = S.visits.filter(v => v.status === 'Returned');
+  if (ret.length) h += `<p class="section-label" style="margin-top:14px">Returned to engineers</p>` + ret.map(v => visitLine(v, true)).join('');
+  h += `</div>`;
+  if (S.review) h += `<div id="revPanel">${reviewPanelHTML()}</div>`;
+  return h + `</div>`;
+}
+const visitLine = (v, noBtn) => `<div class="list-line"><div><b>${esc(v.siteName)}</b> · ${A.shortDate(v.date)} · ${esc((A.VISIT_TYPES[v.visitType] || {}).label || '')}${v.testData ? ' ' + tag('test', 'Practice') : ''}<div class="small">${esc((v.engineers || []).map(e => e.name).join(', '))} · ${esc(v.overall || '')}${v.limited ? ' · not finished' : ''}</div></div>${noBtn ? '' : `<button class="btn sm dark" data-review="${esc(v._id)}">Open</button>`}</div>`;
+async function openReview(id) {
+  S.review = { id }; S.results = null; S.photos = null; S.tab = 'review'; render();
+  try {
+    const snap = await getDocs(query(collection(db, 'aovResults'), where('visitId', '==', id)));
+    const r = {}; snap.docs.forEach(d => { const x = d.data(); r[x.rtKey || x.key] = { ...x, _id: d.id }; });
+    S.results = r;
+  } catch (e) { S.results = {}; banner('The answers did not load (' + (e.code || e.message) + ').', 'wait'); }
+  render(); const p = $('revPanel'); if (p) p.scrollIntoView({ behavior: 'smooth' });
+}
+// Everything is judged from what was on site when it was sent (the snapshot).
+function visitCtx(v) {
+  const site = { ...(S.sites.find(s => s.siteRef === v.siteRef) || {}), ...(v.siteSnapshot || {}) };
+  const rules = { ...A.clone(A.DEFAULT_RULES), ...(v.rulesSnapshot || {}) };
+  return { site, rules, rulesApproved: !!v.rulesApproved && !v.testData, setupApproved: !!v.setupApprovedAtTest, visit: v };
+}
+function evalVisit(v, results) { const ctx = visitCtx(v), plan = A.buildPlan(ctx.site, v); return { ctx, plan, all: A.evaluateAll(plan, results || {}, ctx) }; }
+const STATE_TAG = { pass: ['ok', 'Pass'], fail: ['bad', 'Fail'], nottested: ['', 'Not tested'], unverified: ['wait', 'Unverified'], incomplete: ['wait', 'Not finished'], pending: ['wait', 'Not done'] };
+function reviewPanelHTML() {
+  const v = S.visits.find(x => x._id === S.review.id); if (!v) return '';
+  if (!S.results) return `<div class="card"><div class="loading-note">Loading the answers…</div></div>`;
+  const { ctx, plan, all } = evalVisit(v, S.results), site = ctx.site;
+  const notes = A.clientNotes(site, plan, all.rows, v.extraNotes);
+  const defects = Object.values(S.results).filter(r => r.kind === 'defect' && !r.removed).map(d => ({ ...d, fixed: fixedNote(d, all.rows) }));
+  const liveSite = S.sites.find(s => s.siteRef === v.siteRef) || {};
+  let h = `<div class="card"><div class="btns" style="margin-top:0"><button class="btn sm" data-closereview="1">Close</button></div><div class="small">${esc(v.siteRef)}</div><h2 class="gt-title">${esc(v.siteName)}</h2>
+   <p class="gt-sub">${esc((A.VISIT_TYPES[v.visitType] || {}).label)} · ${A.longDate(v.date)} · ${esc((v.engineers || []).map(e => e.name).join(', '))}</p>`;
+  h += `<div class="box ${all.overall.cls}"><h4>${esc(all.overall.label)}</h4>${esc(all.overall.text)}<div class="small">Pass ${all.tally.pass} · Fail ${all.tally.fail} · Not tested ${all.tally.nottested} · Unverified ${all.tally.unverified} · Not done ${all.tally.pending}</div></div>`;
+  if (!v.rulesApproved) h += `<div class="box warn">These were recorded before any test rules were approved, so nothing can show as a Pass.</div>`;
+  if (!v.setupApprovedAtTest) {
+    h += `<div class="box warn"><h4>Set-up was not approved when tested</h4>Scenario results are Unverified.`;
+    if (liveSite.setupStatus === 'Approved' && !v.baselineDecision) h += `<div class="small" style="margin-top:6px">The set-up has been approved since. If the answers recorded cover what the approved scenarios need, you can judge them against it.</div><div class="btns"><button class="btn sm dark" data-act="baseline" data-id="${esc(v._id)}">Judge against the approved set-up</button></div>`;
+    if (v.baselineDecision) h += `<div class="small">${esc(nameOf(v.baselineDecision.by))} decided on ${A.shortDate(v.baselineDecision.at)} to judge these against set-up version ${esc(v.baselineDecision.setupVersion)}.</div>`;
+    h += `</div>`;
+  }
+  if (v.limited) h += `<div class="box warn"><h4>Not finished</h4>${esc(v.limited.reason || '')}${v.limited.agreedWith ? `<div class="small">Agreed with: ${esc(v.limited.agreedWith)}</div>` : ''}</div>`;
+  if ((v.change || {}).logic) h += `<div class="box bad"><h4>Panel or control logic changed</h4>QS decides the wider tests needed (interfaces, cause-and-effect, recommissioning).</div>`;
+  const c = v.coordination || {};
+  h += `<p class="small"><b>Fire alarm ref:</b> ${esc(c.faRef || '—')} · <b>ARC ref:</b> ${esc(c.arcRef || '—')} · <b>ARC confirmed:</b> ${esc({ yes: 'Yes', no: 'No', notChecked: 'Not checked', none: 'No ARC' }[c.arcReceipt] || '—')}${c.affected ? ' · <b>Affected:</b> ' + esc(c.affected) : ''}</p>`;
+  h += `<div class="tw"><table class="t"><tr><th>Check</th><th>Result</th><th>By</th></tr>${all.rows.map(x => { const t = STATE_TAG[x.ev.state]; return `<tr><td><b>${esc(x.check.title)}</b>${x.check.sub ? `<div class="small">${esc(x.check.sub)}</div>` : ''}${x.ev.why ? `<div class="small">${esc(x.ev.why)}</div>` : ''}${x.origEv ? `<div class="small">First result: ${esc(A.RESULT[x.origEv.state])}${x.origEv.why ? ' — ' + esc(x.origEv.why) : ''} (${x.retests.length} retest${x.retests.length > 1 ? 's' : ''})</div>` : ''}${x.latest && x.latest.cant ? `<div class="small">Couldn't do: ${esc(x.latest.cantWhy || '')}</div>` : ''}</td><td>${tag(t[0], t[1])}</td><td class="small">${esc((x.latest && x.latest.byName) || '')}${x.latest && x.latest.atISO ? '<br>' + A.shortDate(x.latest.atISO) + ' ' + A.timeLabel(x.latest.atISO) : ''}</td></tr>`; }).join('')}</table></div>`;
+  h += `<p class="section-label" style="margin-top:12px">Problems</p>${defects.length ? defects.map(d => `<div class="small">• [${esc(d.severity)}] ${esc(d.where ? d.where + ': ' : '')}${esc(d.text)}${d.rec ? ' — ' + esc(d.rec) : ''}${d.fixed ? ' <span class="tag ok">' + esc(d.fixed) + '</span>' : ''}</div>`).join('') : '<div class="small">None.</div>'}`;
+  h += `<div class="btns"><button class="btn sm" data-act="photos" data-id="${esc(v._id)}"><i class="ti ti-photo"></i> Show photos</button></div><div id="revPhotos">${S.photos ? photosHTML() : ''}</div>`;
+  h += `<p class="section-label" style="margin-top:12px">Notes for the client</p><p class="small">Built from what was recorded. Change the wording if needed: this is what goes on the report.</p><textarea id="qsNotes" style="min-height:140px">${esc(v.qsNotes != null ? v.qsNotes : notes.map(n => '• ' + n.text).join('\n'))}</textarea>`;
+  // return
+  const reopenable = all.rows.filter(x => x.ev.state !== 'pass');
+  h += `<details class="box"><summary style="cursor:pointer;font-weight:700">Return to the engineers</summary><label class="l" style="margin-top:10px">What needs doing? <span style="color:var(--red)">*</span></label><textarea id="retNote"></textarea>
+     ${reopenable.length ? `<label class="l">Steps to look at again</label>${reopenable.slice(0, 40).map(x => `<label class="tick"><input type="checkbox" class="reopen" value="${esc(x.check.key)}"> ${esc(x.check.title)}${x.check.sub ? ' (' + esc(x.check.sub) + ')' : ''}</label>`).join('')}` : ''}
+     <div class="btns"><button class="btn warn" data-act="return" data-id="${esc(v._id)}">Return</button></div></details>`;
+  // issue
+  if (v.testData) h += `<div class="box">Practice run: it can't be issued. <button class="btn sm warn" data-act="discard" data-id="${esc(v._id)}">Discard it</button></div>`;
+  else {
+    const full = all.overall.label === 'Pass' && !v.limited;
+    const people = signPeople(v, S.results), missing = people.filter(p => !S.sigs[p.email]).concat(S.sigs[meEmail()] ? [] : [{ email: meEmail(), name: meName() + ' (you)' }]);
+    h += `<div class="box"><h4>Issue the report</h4>`;
+    if (!full) h += `<p>This visit is <b>${esc(all.overall.label)}</b>. It can only go out as a <b>limited report</b>, with the reason and what is still to do shown at the top.</p><label class="l">Why it is limited <span style="color:var(--red)">*</span></label><textarea id="limReason">${esc((v.limited || {}).reason || '')}</textarea><label class="l">What is still to do <span style="color:var(--red)">*</span></label><textarea id="limActions"></textarea>`;
+    if (['service', 'takeover', 'commissioning'].includes(v.visitType)) h += `<label class="tick"><input type="checkbox" id="resetDue" ${full ? 'checked' : ''}> Set the next due date from this visit (${A.monthLabel(A.dueMonthFrom(v.date, site.intervalMonths || 12))})</label>`;
+    if (missing.length) h += `<div class="box bad">These people need a saved signature first (Management → Staff): ${esc(missing.map(p => p.name).join(', '))}.</div>`;
+    h += `<div class="btns"><button class="btn green" data-act="issue" data-id="${esc(v._id)}" ${missing.length || S.busy ? 'disabled' : ''}>${full ? 'Issue the report' : 'Issue as a limited report'}</button></div></div>`;
+  }
+  return h + `</div>`;
+}
+// A problem raised by a failed check that was put right and passed on a retest
+const fixedNote = (d, rows) => { if (!d.forKey) return ''; const x = rows.find(r => r.check.key === d.forKey); return x && x.retests.length && x.ev.state === 'pass' ? 'Put right: retest passed' : ''; };
+function photosHTML() { return S.photos.length ? `<div class="ph-grid">${S.photos.map(p => `<figure><img src="${p.photoBase64}" alt=""><figcaption>${esc(p.caption || '')}</figcaption></figure>`).join('')}</div>` : '<div class="small">No photos.</div>'; }
+// Everyone who saved an answer, plus whoever sent it, signs.
+function signPeople(v, results) {
+  const m = new Map();
+  Object.values(results || {}).forEach(r => { if (r && r.by && !r.removed) { const e = String(r.by).toLowerCase(); const x = m.get(e) || { email: e, name: r.byName || nameOf(e), n: 0 }; x.n++; m.set(e, x); } });
+  (v.signOffs || []).forEach(s => { const e = String(s.email).toLowerCase(); if (!m.has(e)) m.set(e, { email: e, name: s.name, n: 0 }); });
+  return [...m.values()].sort((a, b) => b.n - a.n);
+}
+async function saveVisitFields(v, f) { Object.assign(v, f); return write(setDoc(doc(db, 'aovTests', v._id), clean(f), { merge: true }), 'Visit'); }
+async function issue(id) {
+  const v = S.visits.find(x => x._id === id); if (!v || v.testData || S.busy) return;
+  const { ctx, plan, all } = evalVisit(v, S.results), full = all.overall.label === 'Pass' && !v.limited;
+  let lim = null;
+  if (!full) { const reason = ($('limReason').value || '').trim(), acts = ($('limActions').value || '').trim(); if (!reason || !acts) return alert('Say why it is limited and what is still to do.'); lim = { reason, actions: acts }; }
+  if (!confirm(`Issue the ${full ? '' : 'limited '}report for ${v.siteName}? Once issued it can't be changed: a correction is a new issue that replaces it.`)) return;
+  S.busy = true;
+  const qsNotes = $('qsNotes').value, now = new Date().toISOString(), prev = S.reports.filter(r => r.visitId === id).sort((a, b) => (b.issueNo || 0) - (a.issueNo || 0))[0];
+  const issueNo = prev ? prev.issueNo + 1 : 1, ref = A.reportRef(v, issueNo), rid = `${id}_i${issueNo}`;
+  const people = signPeople(v, S.results);
+  const rep = clean({ visitId: id, siteRef: v.siteRef, siteName: v.siteName, issueNo, ref, replaces: prev ? prev.id : null, issuedAt: now, issuedBy: meEmail(), issuedByName: meName(), limited: lim, overall: all.overall, tally: all.tally,
+    visit: { ...v, qsNotes, _id: undefined }, results: S.results, site: ctx.site, rules: ctx.rules, plan, clientNotes: qsNotes, signPeople: people, testData: false });
+  const ok = await write(setDoc(doc(db, 'aovReports', rid), rep), 'Issued report');
+  if (!ok) { S.busy = false; return render(); }
+  S.reports.push({ id: rid, ...rep });
+  await saveVisitFields(v, { status: 'Issued', qsed: true, issuedAt: now, issuedBy: meEmail(), issuedByName: meName(), reportId: rid, reportRef: ref, qsNotes, issuedLimited: lim });
+  const s = S.sites.find(x => x.siteRef === v.siteRef);
+  if (s && $('resetDue') && $('resetDue').checked) await saveSiteFields(s, { lastIssuedDate: v.date, lastIssuedVisit: id, dueMonth: A.dueMonthFrom(v.date, s.intervalMonths || 12) });
+  audit('report-issued', { siteRef: v.siteRef, visitId: id, reportId: rid, limited: !!lim });
+  S.busy = false; S.review = null; banner('Issued. The PDF is downloading.', 'ok'); render();
+  pdfReport(S.reports.find(r => r.id === rid));
+}
+
+// ═══ ISSUED ═══
+function issuedHTML() {
+  const list = S.reports.slice().sort((a, b) => String(b.issuedAt).localeCompare(String(a.issuedAt)));
+  const latestFor = vid => list.filter(r => r.visitId === vid).sort((a, b) => b.issueNo - a.issueNo)[0];
+  return `<div class="card"><p class="section-label">Issued reports</p>${list.length ? `<div class="tw"><table class="t"><tr><th>Report</th><th>Site</th><th>Visit</th><th>Result</th><th></th></tr>${list.map(r => `<tr><td><b>${esc(r.ref)}</b><div class="small">Issued ${A.shortDate(String(r.issuedAt).slice(0, 10))} by ${esc(r.issuedByName || '')}${r.replaces ? ' · replaces issue ' + (r.issueNo - 1) : ''}</div>${latestFor(r.visitId).id !== r.id ? tag('', 'Replaced') : ''}</td><td>${esc(r.siteName)}</td><td>${esc((A.VISIT_TYPES[r.visit.visitType] || {}).label)}<div class="small">${A.shortDate(r.visit.date)}</div></td><td>${tag(r.overall.cls === 'good' ? 'ok' : r.overall.cls === 'bad' ? 'bad' : 'wait', r.limited ? 'Limited' : r.overall.label)}</td><td><div class="btns" style="margin:0"><button class="btn sm" data-pdf="${esc(r.id)}"><i class="ti ti-file-download"></i> PDF</button>${latestFor(r.visitId).id === r.id ? `<button class="btn sm" data-act="revise" data-id="${esc(r.id)}">Correct it</button>` : ''}</div></td></tr>`).join('')}</table></div>` : '<div class="empty-note">Nothing issued yet.</div>'}</div>`;
+}
+async function revise(id) {
+  const r = S.reports.find(x => x.id === id); if (!r) return;
+  const why = prompt('What is being corrected? This shows on the new issue.'); if (!why || !why.trim()) return;
+  const notes = prompt('Notes for the client (change if needed):', r.clientNotes || ''); if (notes == null) return;
+  const issueNo = r.issueNo + 1, rid = `${r.visitId}_i${issueNo}`, now = new Date().toISOString();
+  const rep = clean({ ...r, id: undefined, issueNo, ref: A.reportRef(r.visit, issueNo), replaces: r.id, correction: why.trim(), clientNotes: notes, issuedAt: now, issuedBy: meEmail(), issuedByName: meName() });
+  if (!(await write(setDoc(doc(db, 'aovReports', rid), rep), 'Corrected report'))) return;
+  S.reports.push({ id: rid, ...rep });
+  const v = S.visits.find(x => x._id === r.visitId); if (v) await saveVisitFields(v, { reportId: rid, reportRef: rep.ref });
+  audit('report-corrected', { visitId: r.visitId, reportId: rid, replaces: r.id }); render(); pdfReport(S.reports.find(x => x.id === rid));
+}
+
+// ═══ RULES ═══
+function rulesHTML() {
+  const cur = approvedRules(), draft = S.rules.find(r => r.status === 'Draft');
+  let h = `<div class="card"><p class="section-label">Test rules</p><div class="box ${cur ? 'good' : 'warn'}">${cur ? `<b>Version ${cur.version} is in force</b> (approved ${A.shortDate(String(cur.approvedAt || '').slice(0, 10))} by ${esc(cur.approvedByName || '')}).` : '<b>No rules approved yet.</b> Every result is kept as Unverified until a Director approves a version.'}<br><span class="small">${esc(rulesObj(cur || draft).source)}</span></div>`;
+  if (!draft) h += `<div class="btns"><button class="btn dark" data-act="newrules">${S.rules.length ? 'Start a new draft from the current version' : 'Create the first draft (Docs/aov-test-rules.md)'}</button></div>`;
+  h += `</div>`;
+  if (draft) {
+    const R = rulesObj(draft);
+    const n = (path, v, lab) => `<div class="fld"><label>${lab}</label><input type="text" inputmode="decimal" data-rule="${path}" value="${esc(v)}"></div>`;
+    h += `<div class="card"><p class="section-label">Draft version ${draft.version}</p><div class="fgrid three">${n('timings.systemS', R.timings.systemS, 'System working within (s)')}${n('timings.openS', R.timings.openS, 'Doors, dampers, inlets open within (s)')}${n('intervalMonths', R.intervalMonths, 'Default service interval (months)')}${n('battery.standbyH', R.battery.standbyH, 'Battery standby (hours)')}${n('battery.factor', R.battery.factor, 'End-of-life allowance (x)')}${n('battery.defaultLifeYears', R.battery.defaultLifeYears, 'Battery life if not on the label (years)')}</div>
+      <label class="l">Report wording</label><textarea id="ruleWording" style="min-height:100px">${esc(R.reportWording)}</textarea>
+      <p class="section-label">Technical review: confirm each point</p>${R.reviewList.map((x, k) => `<label class="tick"><input type="checkbox" class="rvchk" data-k="${k}" ${draft.checked && draft.checked[k] ? 'checked' : ''}> ${esc(x)}</label>`).join('')}
+      <details class="small"><summary style="cursor:pointer">What engineers are told at each check</summary>${Object.entries(R.instructions).map(([k, t]) => `<div style="margin:4px 0"><b>${esc(k)}</b>: ${esc(t)}</div>`).join('')}</details>
+      <div class="btns"><button class="btn" data-act="savedraft" data-id="${esc(draft.id)}">Save draft</button><button class="btn green" data-act="approverules" data-id="${esc(draft.id)}" ${S.isDirector ? '' : 'disabled'}>Approve this version</button></div>${S.isDirector ? '' : '<p class="small">Only a Director (Rob or John) can approve the rules.</p>'}</div>`;
+  }
+  h += `<div class="card"><p class="section-label">Versions</p>${S.rules.map(r => { const R = rulesObj(r); return `<div class="list-line"><div><b>Version ${r.version}</b> ${tag(r.status === 'Approved' ? 'ok' : r.status === 'Draft' ? 'wait' : '', r.status)}<div class="small">${R.timings.systemS} s / ${R.timings.openS} s · ${R.battery.standbyH} h × ${R.battery.factor} · ${R.battery.defaultLifeYears} years · every ${R.intervalMonths} months</div></div></div>`; }).join('') || '<div class="empty-note">None yet.</div>'}</div>`;
+  return h;
+}
+function readDraft(d) {
+  d.rules = rulesObj(d);
+  document.querySelectorAll('[data-rule]').forEach(el => { const p = el.dataset.rule.split('.'); const v = A.num(el.value); if (v == null) return; if (p.length === 1) d.rules[p[0]] = v; else d.rules[p[0]] = { ...d.rules[p[0]], [p[1]]: v }; });
+  if ($('ruleWording')) d.rules.reportWording = $('ruleWording').value;
+  d.checked = {}; document.querySelectorAll('.rvchk').forEach(c => d.checked[c.dataset.k] = c.checked);
+}
+async function newRules() {
+  const base = rulesObj(approvedRules()), v = S.rules.reduce((m, r) => Math.max(m, r.version || 0), 0) + 1, id = 'v' + v;
+  const rec = { version: v, status: 'Draft', rules: base, createdBy: meEmail(), createdAt: new Date().toISOString(), checked: {} };
+  if (await write(setDoc(doc(db, 'aovRules', id), clean(rec)), 'Rules draft')) { S.rules.unshift({ id, ...rec }); audit('rules-draft', { version: v }); render(); }
+}
+async function approveRules(id) {
+  const d = S.rules.find(r => r.id === id); readDraft(d);
+  if (!d.rules.reviewList.every((_, k) => d.checked[k])) return alert('Tick every point on the review list first.');
+  if (!confirm(`Approve version ${d.version}? Engineers' results count against it straight away.`)) return;
+  for (const o of S.rules.filter(r => r.status === 'Approved')) { o.status = 'Superseded'; await write(setDoc(doc(db, 'aovRules', o.id), { status: 'Superseded' }, { merge: true }), 'Rules'); }
+  Object.assign(d, { status: 'Approved', approvedAt: new Date().toISOString(), approvedBy: meEmail(), approvedByName: meName() });
+  await write(setDoc(doc(db, 'aovRules', id), clean(d), { merge: true }), 'Rules approval');
+  audit('rules-approved', { version: d.version }); banner(`Version ${d.version} approved.`, 'ok'); render();
+}
+function auditHTML() {
+  return `<div class="card"><p class="section-label">Audit</p>${S.audit.length ? `<div class="tw"><table class="t"><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr>${S.audit.map(a => `<tr><td class="small">${A.shortDate(a.atISO)} ${A.timeLabel(a.atISO)}</td><td>${esc(nameOf(a.by))}</td><td>${esc(a.action)}</td><td class="small">${esc(Object.entries(a).filter(([k]) => !['id', 'at', 'atISO', 'by', 'action'].includes(k)).map(([k, v]) => k + ': ' + v).join(' · '))}</td></tr>`).join('')}</table></div>` : '<div class="empty-note">Nothing yet.</div>'}</div>`;
+}
+
+// ═══ PDF (jsPDF, one per visit; standards §7) ═══
+const lat = s => String(s ?? '').replace(/²/g, '2').replace(/[^\x20-\x7E\xA0-\xFF–—‘’“”]/g, c => ({ '›': '>', '•': '-', '×': 'x' }[c] || '?'));
+async function logoData() { try { const r = await fetch('sw-logo.png'); const b = await r.blob(); const url = URL.createObjectURL(b); const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0); return { d: c.toDataURL('image/png'), w: img.width, h: img.height }; } catch (e) { return null; } }
+async function newPdf(title, ref) {
+  if (!window.jspdf) { alert('The PDF tool did not load. Check your signal and try again.'); return null; }
+  const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+  const P = { pdf, y: 40, ref, title };
+  const logo = await logoData();
+  if (logo) { const h = 34, w = logo.w * h / logo.h; try { pdf.addImage(logo.d, 'PNG', 40, 30, w, h); } catch (e) {} P.y = 76; }
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(17); pdf.text(lat(title), 40, P.y); P.y += 8;
+  pdf.setDrawColor(208, 34, 42); pdf.setLineWidth(1.5); pdf.line(40, P.y, 555, P.y); P.y += 16;
+  P.ens = h => { if (P.y + h > 790) { pdf.addPage(); P.y = 50; } };
+  P.h = t => { P.ens(40); P.y += 6; pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12); pdf.setTextColor(208, 34, 42); pdf.text(lat(t).toUpperCase(), 40, P.y); pdf.setTextColor(26, 26, 26); P.y += 14; };
+  P.p = (t, o = {}) => { pdf.setFont('helvetica', o.bold ? 'bold' : 'normal'); pdf.setFontSize(o.size || 10); const ls = pdf.splitTextToSize(lat(t), o.w || 515); ls.forEach(l => { P.ens(13); pdf.text(l, o.x || 40, P.y); P.y += (o.size || 10) * 1.25; }); };
+  P.kv = (k, v) => { P.ens(14); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.text(lat(k), 40, P.y); pdf.setFont('helvetica', 'normal'); const ls = pdf.splitTextToSize(lat(v || '-'), 380); ls.forEach((l, i) => { if (i) P.ens(13); pdf.text(l, 165, P.y); if (i < ls.length - 1) P.y += 12.5; }); P.y += 14; };
+  P.box = (title, lines, rgb) => { pdf.setFontSize(10); const wrapped = lines.flatMap(l => pdf.splitTextToSize(lat(l), 495)); const hgt = 24 + wrapped.length * 12.5; P.ens(hgt + 6); pdf.setFillColor(...rgb); pdf.rect(40, P.y - 10, 515, hgt, 'F'); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text(lat(title), 50, P.y + 6); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); wrapped.forEach((l, i) => pdf.text(l, 50, P.y + 22 + i * 12.5)); P.y += hgt + 4; };
+  P.table = (heads, rows, ws, grpRows) => {
+    const draw = (cells, bold, grp) => {
+      pdf.setFont('helvetica', bold || grp ? 'bold' : 'normal'); pdf.setFontSize(8.5);
+      const wrapped = grp ? [pdf.splitTextToSize(lat(cells[0]), 505)] : cells.map((c, i) => pdf.splitTextToSize(lat(c), ws[i] - 6)), lines = Math.max(...wrapped.map(a => a.length)), hgt = lines * 10.5 + 6;
+      P.ens(hgt + 2);
+      if (bold || grp) { pdf.setFillColor(242, 241, 238); pdf.rect(40, P.y - 9, 515, hgt, 'F'); }
+      let x = 40; wrapped.forEach((a, i) => { const isRes = !bold && !grp && heads[i] === 'Result'; if (isRes) { const t = String(cells[i]); pdf.setTextColor(...(t.startsWith('Fail') ? [165, 27, 34] : t.startsWith('Pass') ? [30, 107, 52] : [122, 79, 0])); pdf.setFont('helvetica', 'bold'); } a.forEach((l, k) => pdf.text(l, x + 3, P.y + k * 10.5)); if (isRes) { pdf.setTextColor(26, 26, 26); pdf.setFont('helvetica', 'normal'); } x += ws[i] || 0; });
+      P.y += hgt; pdf.setDrawColor(220, 220, 220); pdf.setLineWidth(.5); pdf.line(40, P.y - 9, 555, P.y - 9);
+    };
+    draw(heads, true); rows.forEach(r => r.__grp ? draw([r.__grp], false, true) : draw(r, false)); P.y += 4;
+  };
+  return P;
+}
+function finishPdf(P, name, test) {
+  const pdf = P.pdf, n = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { pdf.setPage(i); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(120, 120, 120); pdf.text(lat(`Simpson & Wood  |  ${P.ref}`), 40, 820); pdf.text(`Page ${i} of ${n}`, 555, 820, { align: 'right' }); if (test) { pdf.setTextColor(61, 42, 99); pdf.setFontSize(10); pdf.text('TEST DATA — NOT A CERTIFICATE', 297, 20, { align: 'center' }); } pdf.setTextColor(26, 26, 26); }
+  pdf.save(name);
+}
+const RES_TXT = { pass: 'Pass', fail: 'Fail', nottested: 'Not tested', unverified: 'Unverified', incomplete: 'Not finished', pending: 'Not done' };
+async function pdfReport(r) {
+  if (!r) return;
+  const v = r.visit, site = r.site, rules = r.rules || A.DEFAULT_RULES, ctx = { site, rules, rulesApproved: !!v.rulesApproved, setupApproved: !!v.setupApprovedAtTest, visit: v };
+  const plan = r.plan || A.buildPlan(site, v), all = A.evaluateAll(plan, r.results || {}, ctx);
+  const P = await newPdf((A.VISIT_TYPES[v.visitType] || {}).title || 'AOV Report', r.ref); if (!P) return;
+  P.kv('Site', `${r.siteName} (${r.siteRef})`); P.kv('Address', [site.addressLine, site.postcode].filter(Boolean).join(', ')); P.kv('Visit', `${(A.VISIT_TYPES[v.visitType] || {}).label}, ${A.longDate(v.date)}`);
+  P.kv('Engineers', (r.signPeople || []).map(p => p.name).join(', ')); P.kv('Report', `${r.ref}, issue ${r.issueNo}${r.replaces ? ' (replaces the earlier issue)' : ''}`);
+  if (r.correction) P.kv('Correction', r.correction);
+  P.kv('Systems', A.scopeSystems(site, v).map(id => A.systemName(site, id)).join('; '));
+  P.kv('Fire alarm reference', (v.coordination || {}).faRef || '-'); P.kv('ARC', `${(v.coordination || {}).arcRef || '-'}${(v.coordination || {}).arcReceipt ? ' (receipt: ' + ({ yes: 'confirmed', no: 'not received', notChecked: 'not checked', none: 'no ARC' }[v.coordination.arcReceipt]) + ')' : ''}`);
+  const res = r.limited ? 'LIMITED REPORT: ' + all.overall.label.toUpperCase() : all.overall.label === 'Pass' ? 'PASS' : all.overall.label.toUpperCase();
+  const col = all.overall.cls === 'good' && !r.limited ? [233, 245, 236] : all.overall.cls === 'bad' ? [251, 233, 234] : [255, 244, 221];
+  P.y += 4; P.box(res, [all.overall.text, `Pass ${all.tally.pass}  ·  Fail ${all.tally.fail}  ·  Not tested ${all.tally.nottested}  ·  Unverified ${all.tally.unverified}  ·  Not done ${all.tally.pending}`, ...(r.limited ? ['Why it is limited: ' + r.limited.reason, 'Still to do: ' + r.limited.actions] : [])], col);
+  const unres = all.rows.filter(x => x.check.kind === 'restore' && x.latest && x.latest.restored === 'no');
+  if (unres.length) P.box('NOT RESTORED', unres.map(x => `${x.check.sub}: ${x.latest.what || ''}. Left: ${x.latest.state || ''}. Office rung at ${x.latest.rangOffice || '-'}${x.latest.spokeTo ? ' (' + x.latest.spokeTo + ')' : ''}.${x.latest.agreed ? ' Agreed to leave unrestored with ' + (x.latest.agreedWith || '') + '.' : ''}`), [251, 233, 234]);
+  if (!v.rulesApproved || !v.setupApprovedAtTest) P.p(!v.rulesApproved ? 'These checks were recorded before the test rules were approved, so no check could show as a pass.' : (v.baselineDecision ? `The site's operating sequence was approved after this visit. QS judged these results against it (set-up version ${v.baselineDecision.setupVersion}).` : 'The site\'s operating sequence was not approved when tested, so scenario results are shown as Unverified.'), { size: 9 });
+  if (String(r.clientNotes || '').trim()) { P.h('Notes for the client'); String(r.clientNotes).split('\n').filter(x => x.trim()).forEach(l => P.p(l.trim(), { size: 9.5 })); }
+  // schedule by block
+  P.h('Equipment');
+  const cov = A.coverage(site, plan, all.rows), rowsT = [];
+  [...(site.blocks || []), { id: '__none', name: '' }].forEach(b => (site.systems || []).filter(x => b.id === '__none' ? !(site.blocks || []).some(bb => bb.id === x.blockId) : x.blockId === b.id).forEach(x => {
+    const list = A.activeAssets(site).filter(a => a.systemId === x.id && cov[a.id] && cov[a.id].total); if (!list.length) return;
+    rowsT.push({ __grp: A.systemName(site, x.id) });
+    list.forEach(a => { const c = cov[a.id]; rowsT.push([A.assetName(a), a.location || '', `${c.done}/${c.total}`, c.failed ? 'Fail' : c.pending ? 'Not done' : c.blocked ? 'Not tested' : 'Checked']); });
+  }));
+  P.table(['Item', 'Where', 'Checks', 'Result'], rowsT, [190, 185, 60, 80]);
+  P.p('"Checked" means every check for that item was done; see the check results below for passes.', { size: 8 });
+  const groups = [...new Set(plan.map(c => c.group))];
+  groups.forEach(g => {
+    const rows = all.rows.filter(x => x.check.group === g); if (!rows.length) return;
+    P.h(g);
+    P.table(['Check', 'What was found', 'Result'], rows.map(x => [x.check.title + (x.check.sub ? ' - ' + x.check.sub : ''), detailText(x, site) + (x.origEv ? ` [First result ${RES_TXT[x.origEv.state]}${x.origEv.why ? ': ' + x.origEv.why : ''}; ${x.retests.length} retest(s)]` : ''), RES_TXT[x.ev.state] + (x.ev.why && x.ev.state !== 'fail' ? ': ' + x.ev.why : '')]), [150, 265, 100]);
+  });
+  // batteries
+  const sup = (site.supplies || []).filter(p => !p.retired && plan.some(c => c.supplyId === p.id));
+  if (sup.length) { P.h('Batteries'); P.table(['Supply', 'Fitted', 'Needed', 'Runtime as fitted', 'Replace by'], sup.map(p => { const c = A.batteryCalc(p, rules), a = A.batteryAge(p, rules); return [p.name || '', c.bankAh != null ? `${A.fmt(c.bankAh, 1)} Ah${c.bankV ? ' / ' + A.fmt(c.bankV, 0) + ' V' : ''}` : '-', c.missing.length ? 'Not worked out: ' + c.missing.join(', ') : `${A.fmt(c.needAh, 1)} Ah (${c.ok ? 'OK' : 'too small'})`, c.missing.length ? '-' : `about ${A.fmt(c.runtimeH, 0)} h`, a.replaceBy ? A.shortDate(a.replaceBy) + (a.fromMaker ? '' : ' (our standard figure)') : 'Date fitted not known']; }), [120, 90, 130, 85, 90]);
+    P.p(`Battery needed = (standby current x ${rules.battery.standbyH} h + fire-mode current x fire time) x ${rules.battery.factor}. Batteries in series add volts, not Ah.`, { size: 8 }); }
+  const defs = Object.values(r.results || {}).filter(x => x.kind === 'defect' && !x.removed);
+  P.h('Problems found'); if (!defs.length) P.p('None recorded.'); else P.table(['Severity', 'Where', 'What is wrong', 'What needs doing'], defs.map(d => [d.severity || '', d.where || '', d.text || '', (fixedNote(d, all.rows) ? fixedNote(d, all.rows) + '. ' : '') + (d.rec || '')]), [70, 120, 185, 140]);
+  P.h('Statement'); P.p(rules.reportWording || A.DEFAULT_RULES.reportWording, { size: 9.5 });
+  // sign-off: everyone who recorded answers, then QS
+  P.ens(60); P.h('Sign-off');
+  for (const p of (r.signPeople || [])) sign(P, p.email, `${p.name}${(S.staff[p.email] || {}).position ? ', ' + S.staff[p.email].position : ''}${p.n ? ' (' + p.n + ' answers)' : ''}`, 'Tested by');
+  sign(P, r.issuedBy, `${r.issuedByName}${(S.staff[String(r.issuedBy).toLowerCase()] || {}).position ? ', ' + S.staff[String(r.issuedBy).toLowerCase()].position : ''}, on ${A.longDate(String(r.issuedAt).slice(0, 10))}`, 'Report issued by');
+  finishPdf(P, `${r.ref} ${r.siteName}.pdf`.replace(/[\\/:*?"<>|]/g, '-'), r.testData);
+}
+function sign(P, email, line, label) {
+  P.ens(70); P.p(label, { bold: true, size: 9 });
+  const sg = S.sigs[String(email || '').toLowerCase()];
+  if (sg && sg.image) { try { P.pdf.addImage(sg.image, /^data:image\/png/i.test(sg.image) ? 'PNG' : 'JPEG', 40, P.y - 4, 110, 36); P.y += 38; } catch (e) {} }
+  P.p(line, { size: 9.5 });
+}
+function detailText(x, site) {
+  const r = x.latest, c = x.check; if (!r) return '-';
+  if (r.cant) return 'Could not be done: ' + (r.cantWhy || '');
+  const yn = v => v === 'yes' ? 'yes' : v === 'no' ? 'NO' : '-';
+  switch (c.kind) {
+    case 'pre': return (yn(r.answer)) + (r.note ? '. ' + r.note : '');
+    case 'look': return Object.entries(r.items || {}).map(([k, v]) => `${A.LOOK_ITEMS[k]}: ${v === 'ok' ? 'OK' : 'NOT OK' + ((r.notes || {})[k] ? ' (' + r.notes[k] + ')' : '')}`).join('; ');
+    case 'scenario': { const s = (site.scenarios || []).find(q => q.id === c.scenarioId) || {}; const outs = Object.entries(s.expected || {}).map(([id, e]) => { const a = (site.assets || []).find(q => q.id === id); const o = (r.outputs || {})[id] || {}; return a ? `${A.assetName(a)} should ${e === 'open' ? 'open' : 'stay shut'}: ${({ opened: 'opened fully', partly: 'opened part way', stayed: 'stayed shut' }[o.state] || '-')}${o.note ? ' (' + o.note + ')' : ''}` : ''; }).filter(Boolean); return [`Trigger ${s.inputType || ''} ${s.inputRef || ''} ${s.inputLocation || ''}`.trim(), A.METHODS[r.method] || '', ...outs, `Within ${(site.timings || {}).systemS ?? 90} s: ${yn(r.within90)}`, r.within60 ? `Openings within ${(site.timings || {}).openS ?? 60} s: ${yn(r.within60)}` : '', `Panel showed fire: ${yn(r.panelFire)}`, r.indications ? `Other outputs: ${yn(r.indications)}` : '', (r.unexpected || []).length ? 'Also opened: ' + r.unexpected.join(', ') : '', `Reset: ${yn(r.reset)}${r.resetNote ? ' (' + r.resetNote + ')' : ''}`].filter(Boolean).join('. '); }
+    case 'power': return Object.entries(A.POWER_Q).filter(([k]) => r[k]).map(([k, t]) => `${t}: ${yn(r[k])}`).join('; ') + `. Readings: ${(r.readings || []).map((q, i) => `B${i + 1} ${q && q.v != null && q.v !== '' ? q.v + ' V' : '-'}`).join(', ')}${r.method ? ' (' + r.method + ')' : ''}`;
+    case 'currents': return `Standby ${r.standbyA ?? '-'} A, fire mode ${r.fireA ?? '-'} A`;
+    case 'calc': { const cc = r.calc; return cc && !(cc.missing || []).length ? `Needs ${A.fmt(cc.needAh, 1)} Ah, fitted ${A.fmt(cc.bankAh, 1)} Ah` : 'Calculation not complete'; }
+    case 'inlets': return `Match the design: ${yn(r.countMatches)}${r.note ? ' (' + r.note + ')' : ''}. Free area: design ${r.designArea ?? '-'} m2, measured ${r.measuredArea ?? '-'} m2`;
+    case 'docs': return A.DOCS.map(([k, t]) => `${t}: ${(r.items || {})[k] === 'yes' ? 'seen' : (r.items || {})[k] === 'no' ? 'NOT AVAILABLE' : '-'}`).join('; ');
+    case 'bldg': return r.answer === 'yes' ? 'Changes: ' + (r.note || '') : 'No changes seen';
+    case 'comfort': case 'links': return yn(r.answer) + (r.note ? '. ' + r.note : '');
+    case 'restore': return r.restored === 'yes' ? 'Back to normal' : `NOT RESTORED: ${r.what || ''}. Left: ${r.state || ''}`;
+    case 'change': return `${r.what || ''}${r.oldEq ? '. Old: ' + r.oldEq : ''}${r.newEq ? '. New: ' + r.newEq : ''}`;
+  }
+  return '';
+}
+
+// ═══ Events ═══
+document.addEventListener('input', e => { if (e.target.id === 'siteQ') { S.q = e.target.value; render(); const r = $('siteQ'); r.focus(); r.setSelectionRange(r.value.length, r.value.length); } });
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab],[data-filter],[data-open],[data-close],[data-review],[data-closereview],[data-pdf],[data-act]'); if (!t || t.disabled) return;
+  const d = t.dataset;
+  if (d.tab) { S.tab = d.tab; S.review = null; return render(); }
+  if (d.filter) { S.filter = d.filter; return render(); }
+  if (d.open) { S.sel = d.open; render(); const p = $('sitePanel'); if (p) p.scrollIntoView({ behavior: 'smooth' }); return; }
+  if (d.close) { S.sel = null; return render(); }
+  if (d.review) return openReview(d.review);
+  if (d.closereview) { S.review = null; return render(); }
+  if (d.pdf) return pdfReport(S.reports.find(r => r.id === d.pdf));
+  switch (d.act) {
+    case 'savesite': { const s = S.sites.find(x => x.id === d.id); const f = { intervalMonths: Number($('sInt').value), timings: { systemS: A.num($('sT90').value) ?? 90, openS: A.num($('sT60').value) ?? 60 } }; if (s.lastIssuedDate) f.dueMonth = A.dueMonthFrom(s.lastIssuedDate, f.intervalMonths); if (await saveSiteFields(s, f)) { audit('site-settings', { siteRef: s.siteRef, intervalMonths: f.intervalMonths }); banner('Saved.', 'ok'); render(); } return; }
+    case 'approvesetup': {
+      const s = S.sites.find(x => x.id === d.id); if (!S.isDirector) return;
+      const src = ($('sDocs').value || '').trim(); if (!src) return alert('List the documents you checked the scenarios against.');
+      if (!confirm(`Approve the equipment and scenarios for ${s.siteName}? Results are judged against them from now on.`)) return;
+      const assets = (s.assets || []).map(a => ({ ...a, confirmed: a.status !== 'retired' ? true : a.confirmed }));
+      const f = { setupStatus: 'Approved', setupApprovedAt: new Date().toISOString(), setupApprovedBy: meEmail(), setupApprovedByName: meName(), setupVersion: (s.setupVersion || 0) + 1, setupSources: src, setupLimits: ($('sLimits').value || '').trim(), setupReturnNote: null, assets };
+      if (await saveSiteFields(s, f)) { audit('setup-approved', { siteRef: s.siteRef, setupVersion: f.setupVersion }); banner('Set-up approved.', 'ok'); render(); } return;
+    }
+    case 'returnsetup': { const s = S.sites.find(x => x.id === d.id); const note = ($('sNote').value || '').trim(); if (!note) return alert('Write a note so the engineer knows what to change.'); if (await saveSiteFields(s, { setupStatus: 'Draft', setupReturnNote: note })) { audit('setup-returned', { siteRef: s.siteRef }); render(); } return; }
+    case 'baseline': { const v = S.visits.find(x => x._id === d.id), s = S.sites.find(x => x.siteRef === v.siteRef); if (!confirm('Judge these results against the set-up approved since? Only do this if the answers recorded cover what the approved scenarios need.')) return; const bd = { by: meEmail(), at: new Date().toISOString(), setupVersion: s.setupVersion || 1 }; await saveVisitFields(v, { baselineDecision: bd, setupApprovedAtTest: true, siteSnapshot: { ...v.siteSnapshot, scenarios: s.scenarios, setupStatus: 'Approved' } }); audit('baseline-decision', { visitId: v._id, setupVersion: bd.setupVersion }); return render(); }
+    case 'return': { const v = S.visits.find(x => x._id === d.id); const note = ($('retNote').value || '').trim(); if (!note) return alert('Say what needs doing.'); const keys = [...document.querySelectorAll('.reopen:checked')].map(x => x.value); const rn = [...(v.returnNotes || []), { note, keys, by: meEmail(), byName: meName(), at: new Date().toISOString() }]; if (await saveVisitFields(v, { status: 'Returned', returnNotes: rn, qsNotes: $('qsNotes').value })) { audit('visit-returned', { visitId: v._id }); S.review = null; banner('Returned to the engineers.', 'ok'); render(); } return; }
+    case 'discard': { const v = S.visits.find(x => x._id === d.id); if (!confirm('Discard this practice run?')) return; await saveVisitFields(v, { deletedFlag: true, deletedBy: meEmail(), deletedAt: new Date().toISOString() }); S.visits = S.visits.filter(x => x._id !== v._id); S.review = null; return render(); }
+    case 'photos': { const box = $('revPhotos'); box.textContent = 'Loading…'; try { const s = await getDocs(query(collection(db, 'aovPhotos'), where('visitId', '==', d.id))); S.photos = s.docs.map(x => x.data()).sort((a, b) => a.n - b.n); box.innerHTML = photosHTML(); } catch (er) { box.textContent = 'Photos did not load.'; } return; }
+    case 'issue': return issue(d.id);
+    case 'revise': return revise(d.id);
+    case 'newrules': return newRules();
+    case 'savedraft': { const r = S.rules.find(x => x.id === d.id); readDraft(r); if (await write(setDoc(doc(db, 'aovRules', r.id), clean({ rules: r.rules, checked: r.checked }), { merge: true }), 'Rules draft')) banner('Draft saved.', 'ok'); return; }
+    case 'approverules': return approveRules(d.id);
+  }
+});
+
+const NEWS_ALL = ['<b>AOV reports</b> is new: approve each site\'s equipment and scenarios, review visits, return them or issue the report, and keep the test rules.'];
+const NEWS = { engineer: [], office: [], management: NEWS_ALL };
+const HELP = [
+  { tab: 'Sites', q: 'What does "approve the set-up" mean?', a: '<p>It\'s the list of equipment and what each trigger should open. Check it against the site\'s fire strategy and cause-and-effect. Until a Director approves it, scenario results stay Unverified.</p>' },
+  { tab: 'To review', q: 'How do I issue a report?', a: '<p>Open the visit, check the results, problems and notes for the client, then <b>Issue</b>. If anything failed or wasn\'t done, it can only go out as a <b>limited report</b> with the reason.</p>' },
+  { tab: 'To review', q: 'How do I send it back?', a: '<p>Open <b>Return to the engineers</b>, say what needs doing, and tick the steps they should look at again.</p>' },
+  { tab: 'Issued', q: 'I need to correct an issued report', a: '<p>Use <b>Correct it</b>. That makes a new issue that replaces the old one. The old one is kept.</p>' },
+  { tab: 'Rules', q: 'Why does everything say Unverified?', a: '<p>Until a Director approves a version of the test rules, nothing can count as a pass.</p>' },
+  { q: 'Why can\'t I issue? It says someone needs a signature', a: '<p>Everyone who recorded answers, and you, need a saved signature. Add them in Management, Staff.</p>' }
+];
+</script>
+</body>
+</html>

@@ -15,7 +15,7 @@
 // Versioning section. This is a single shared cache version covering every
 // app in the family, separate from each individual app's own version
 // number shown in its header.
-const CACHE_NAME = 'sw-engineer-apps-shell-v29';
+const CACHE_NAME = 'sw-engineer-apps-shell-v32';
 
 const APP_SHELL = [
   './',
@@ -24,9 +24,18 @@ const APP_SHELL = [
   'fire-toolkit.html',
   'isolator-interlock-test.html',
   'isolator-interlock-report.html',
+  'aov-test.html',
+  'aov-report.html',
+  'aov-shared.js',
   'gate-test.html',
   'gate-report.html',
   'gate-shared.js',
+  'gate-diagrams/horizontal-gate-test-heights-and-extensions.png',
+  'gate-diagrams/sliding-gate-tester-position.png',
+  'gate-diagrams/opposing-leaves-with-and-without-delay.png',
+  'gate-diagrams/folding-gate-tester-position.png',
+  'gate-diagrams/vertical-door-test-positions.png',
+  'gate-diagrams/traffic-barrier-tester-position.png',
   'timesheet.html',
   'timesheet-report.html',
   'leave.html',
@@ -49,6 +58,9 @@ const APP_SHELL = [
 // v26 (27 Oct 2026): adds the shared files sw-design.css and sw-shared.js.
 // v27 (28 Oct 2026): timesheet v5.0, Timesheets & leave v4.0, management v4.1, sw-shared.js v1.1.
 // v28 (28 Oct 2026): isolator test v19.0, isolator reports v18.0, management v4.2, home page v4.1.
+// v32 (15 Nov 2026): AOV testing v1.0 (aov-test.html, aov-report.html, aov-shared.js), home page v4.3.
+// v31 (13 Nov 2026): gate app v1.2 (one screen at a time, DHF diagrams saved for offline in gate-diagrams/, operate-the-controls checks). Every file in gate-diagrams/ must be uploaded.
+// v30 (10 Nov 2026): gate app v1.1, checklist built from the devices fitted with pass/fail answers in plain words; unfinished inspections can be deleted.
 // v29 (9 Nov 2026): gate and door app v1.0 (gate-test.html, gate-report.html, gate-shared.js), management v4.3, home page v4.2.
 self.addEventListener('install', (event) => {
   event.waitUntil(
