@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="stylesheet" href="sw-design.css">
@@ -74,6 +75,9 @@
 
   /* ---- responses ---- */
   .page-h{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .page-h .acts{display:flex; flex-wrap:wrap; gap:8px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  #respMsg{margin-bottom:14px;}
   .stats{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px;}
   .stat{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
   .stat .n{font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; line-height:1;}
@@ -125,7 +129,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Christmas party</h1>
-        <p id="versionLabel">v1.0</p>
+        <p id="versionLabel">v1.1</p>
       </div>
     </a>
     <div class="right">
@@ -209,8 +213,13 @@
     <section id="view-responses" hidden>
       <div class="page-h">
         <h2>Responses</h2>
-        <button class="btn" id="csvBtn"><i class="ti ti-file-download"></i>Download list</button>
+        <div class="acts">
+          <button class="btn" id="remindBtn" disabled><i class="ti ti-mail"></i>Email a reminder</button>
+          <button class="btn" id="rajBtn"><i class="ti ti-tools-kitchen-2"></i>Sheet for the Raj</button>
+          <button class="btn" id="csvBtn"><i class="ti ti-file-download"></i>Download list</button>
+        </div>
       </div>
+      <div id="respMsg" hidden></div>
       <div id="respLoading" class="card loading">Loading…</div>
       <div id="respBody" hidden>
         <div class="stats">
@@ -262,7 +271,11 @@ import * as SWS from './sw-shared.js';
 // v1.0 (13 Nov 2026): the staff Christmas party invite and replies. Each
 // person has one reply (christmasRsvp/{email lowercased}) they can change at
 // any time. QS, Manager, Director and Office see everyone's on Responses.
-const VERSION = 'v1.0';
+// v1.1 (19 Nov 2026): on Responses, "Email a reminder" opens an Outlook email
+// to everyone who hasn't replied (in BCC), and "Sheet for the Raj" makes a
+// one-page PDF of the food needs to send to the restaurant. No rule changes:
+// both only read the replies and the staff list.
+const VERSION = 'v1.1';
 const COLL = 'christmasRsvp';
 const DEADLINE = new Date('2026-11-21T00:00:00Z');   // end of Fri 20 Nov 2026, London (GMT)
 const DIETS = [['veg', 'Vegetarian'], ['vegan', 'Vegan'], ['gf', 'Gluten-free'], ['nut', 'Nut allergy'], ['dairy', 'Dairy-free']];
@@ -460,6 +473,8 @@ function renderResponses() {
   $('stPlus').textContent = plus.length;
   $('stNo').textContent = no.length;
   $('stWait').textContent = waiting.length;
+  $('remindBtn').disabled = !waiting.length;
+  $('remindBtn').title = waiting.length ? 'Email everyone who hasn\'t replied' : 'Everyone has replied';
   $('tabCount').textContent = heads;
   $('tabCount').hidden = !heads;
 
@@ -540,8 +555,182 @@ $('csvBtn').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
 
+// ===== Responses messages =====
+function respMsg(kind, html) {
+  const m = $('respMsg');
+  if (!html) { m.hidden = true; return; }
+  m.className = 'banner ' + kind;
+  m.innerHTML = html;
+  m.hidden = false;
+}
+
+// ===== Reminder email (v1.1) =====
+// Opens a ready-written email in the person's own email app (Outlook), with
+// everyone who hasn't replied in BCC. Nothing is sent until they press Send.
+const REMIND_SUBJECT = 'Christmas party – please let us know if you\'re coming';
+const REMIND_BODY = 'Hi,\n\nJust a reminder to reply to the Christmas party invite: Friday 18 December, 7:30pm at The Raj, Bootham.\n\n'
+  + 'It only takes a minute: https://app.simpsonandwood.co.uk/christmas.html\n\nThanks';
+$('remindBtn').addEventListener('click', async () => {
+  const replied = new Set(rsvps.map(r => r.email));
+  const to = staff.filter(s => !replied.has(s.email)).map(s => s.email);
+  if (!to.length) { respMsg('info', '<i class="ti ti-circle-check"></i><span>Everyone has replied.</span>'); return; }
+  const tail = 'subject=' + encodeURIComponent(REMIND_SUBJECT) + '&body=' + encodeURIComponent(REMIND_BODY);
+  const full = 'mailto:?bcc=' + encodeURIComponent(to.join(';')) + '&' + tail;
+  const who = to.length === 1 ? '1 person' : to.length + ' people';
+  // Some email apps can't take a very long link. Then the addresses are copied
+  // instead, to paste into BCC.
+  if (full.length <= 1900) {
+    location.href = full;
+    respMsg('info', `<i class="ti ti-mail"></i><span>An email to ${who} should have opened in Outlook, with them in BCC. Check it and press Send.</span>`);
+    return;
+  }
+  let copied = false;
+  try { await navigator.clipboard.writeText(to.join('; ')); copied = true; } catch (e) {}
+  location.href = 'mailto:?' + tail;
+  respMsg('warn', copied
+    ? `<i class="ti ti-clipboard"></i><span>The list is too long to add by itself. The ${to.length} addresses are copied: click in <b>BCC</b> in the email that opened and paste them, then press Send.</span>`
+    : `<i class="ti ti-alert-triangle"></i><span>The list is too long to add by itself, and couldn't be copied. Copy these into <b>BCC</b>:<br>${esc(to.join('; '))}</span>`);
+});
+
+// ===== Sheet for the Raj (v1.1) =====
+// One-page PDF: when it was made, how many are coming, a total for each food
+// need, then only the people who have a food need or a note, by name.
+let LOGO = null;
+async function loadLogo() {
+  if (LOGO) return LOGO;
+  try {
+    const img = new Image();
+    img.src = 'sw-logo.png';
+    await img.decode();
+    const W = 560, H = Math.round(W * img.naturalHeight / img.naturalWidth);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+    LOGO = { data: cv.toDataURL('image/jpeg', 0.9), ratio: H / W };
+  } catch (e) { LOGO = null; }
+  return LOGO;
+}
+function rajPeople() {
+  const coming = rsvps.filter(r => r.answer === 'yes' || r.answer === 'plus1')
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const people = [];
+  coming.forEach(r => {
+    people.push({ name: r.name, diet: r.diet });
+    if (r.answer === 'plus1') people.push({ name: r.name + '\'s +1', diet: r.plusDiet });
+  });
+  return people;
+}
+async function buildRajPDF() {
+  if (!window.jspdf) throw new Error('The PDF tool didn\'t load. Check your signal and reload the page.');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+  const PW = 210, PH = 297, M = 16, BOTTOM = PH - 18;
+  const INK = [26, 26, 26], GREY = [92, 92, 92], LINE = [226, 226, 226], RED = [208, 34, 42];
+  const people = rajPeople();
+  const withNeeds = people.filter(p => dietText(p.diet));
+  const now = new Date();
+  const when = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/London' }).replace(',', '')
+    + ', ' + now.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Europe/London' }).replace(' ', '').toLowerCase();
+
+  // Header
+  let y = M;
+  const logo = await loadLogo();
+  if (logo) { pdf.addImage(logo.data, 'JPEG', M, y, 50, 50 * logo.ratio); }
+  pdf.setTextColor(...INK); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
+  pdf.text('Christmas party: food needs', PW - M, y + 5, { align: 'right' });
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10.5); pdf.setTextColor(...GREY);
+  pdf.text('The Raj, 21-22 Bootham, York', PW - M, y + 11, { align: 'right' });
+  pdf.text('Friday 18 December 2026, 7:30pm', PW - M, y + 16, { align: 'right' });
+  y += Math.max(logo ? 50 * logo.ratio : 0, 18) + 8;
+
+  pdf.setDrawColor(...LINE); pdf.line(M, y, PW - M, y); y += 7;
+  pdf.setFontSize(10.5); pdf.setTextColor(...GREY);
+  pdf.text('Correct at ' + when, M, y); y += 10;
+
+  // Total coming
+  pdf.setTextColor(...RED); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(30);
+  pdf.text(String(people.length), M, y + 4);
+  const nW = pdf.getTextWidth(String(people.length));
+  pdf.setTextColor(...INK); pdf.setFontSize(14);
+  pdf.text(people.length === 1 ? 'guest' : 'guests', M + nW + 3, y + 4);
+  y += 14;
+
+  // Totals for each food need
+  pdf.setFontSize(12); pdf.setTextColor(...INK);
+  pdf.text('Food needs', M, y); y += 6;
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
+  const counts = DIETS.map(([k, l]) => [l, people.filter(p => p.diet && p.diet[k]).length]);
+  const otherN = people.filter(p => p.diet && p.diet.other).length;
+  if (otherN) counts.push(['Other notes (see below)', otherN]);
+  const colW = (PW - 2 * M) / 2;
+  counts.forEach(([l, n], i) => {
+    const cx = M + (i % 2) * colW, cy = y + Math.floor(i / 2) * 7;
+    pdf.setTextColor(...GREY); pdf.text(l, cx, cy);
+    pdf.setTextColor(...INK); pdf.setFont('helvetica', 'bold'); pdf.text(String(n), cx + colW - 12, cy, { align: 'right' });
+    pdf.setFont('helvetica', 'normal');
+  });
+  y += Math.ceil(counts.length / 2) * 7 + 2;
+  pdf.setTextColor(...GREY); pdf.setFontSize(10);
+  pdf.text('No food needs: ' + (people.length - withNeeds.length), M, y);
+  y += 10;
+
+  // Who has which food need
+  pdf.setDrawColor(...LINE); pdf.line(M, y - 4, PW - M, y - 4);
+  pdf.setTextColor(...INK); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12);
+  pdf.text('By name', M, y + 2); y += 9;
+  const NAMEW = 62, NEEDX = M + NAMEW + 4, NEEDW = PW - M - NEEDX;
+  pdf.setFontSize(11);
+  if (!withNeeds.length) {
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...GREY);
+    pdf.text('Nobody has a food need.', M, y);
+  }
+  withNeeds.forEach(p => {
+    pdf.setFont('helvetica', 'normal');
+    const nameLines = pdf.splitTextToSize(String(p.name), NAMEW);
+    const needLines = pdf.splitTextToSize(dietText(p.diet), NEEDW);
+    const h = Math.max(nameLines.length, needLines.length) * 5 + 3;
+    if (y + h > BOTTOM) {   // measure first, then draw (standards §7)
+      pdf.addPage(); y = M + 4;
+    }
+    pdf.setTextColor(...INK); pdf.setFont('helvetica', 'bold'); pdf.text(nameLines, M, y);
+    pdf.setFont('helvetica', 'normal'); pdf.text(needLines, NEEDX, y);
+    pdf.setDrawColor(...LINE); pdf.line(M, y + h - 4, PW - M, y + h - 4);
+    y += h;
+  });
+
+  // Footer on every page
+  const pages = pdf.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    pdf.setPage(i);
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(...GREY);
+    pdf.text('Simpson & Wood Ltd · Christmas party food needs · correct at ' + when, M, PH - 10);
+    pdf.text('Page ' + i + ' of ' + pages, PW - M, PH - 10, { align: 'right' });
+  }
+  return pdf;
+}
+$('rajBtn').addEventListener('click', async () => {
+  const b = $('rajBtn'); b.disabled = true;
+  try {
+    const pdf = await buildRajPDF();
+    pdf.save('Christmas party food needs - The Raj.pdf');
+    const replied = new Set(rsvps.map(r => r.email));
+    const left = staff.filter(s => !replied.has(s.email)).length;
+    respMsg(left ? 'warn' : 'info', left
+      ? `<i class="ti ti-alert-triangle"></i><span>Sheet downloaded. ${left === 1 ? '1 person still hasn\'t' : left + ' people still haven\'t'} replied, so it may change.</span>`
+      : '<i class="ti ti-circle-check"></i><span>Sheet downloaded. Everyone has replied.</span>');
+  } catch (e) {
+    console.error('Raj sheet failed', e);
+    report('load', 'Raj sheet didn\'t make', e);
+    respMsg('bad', '<i class="ti ti-alert-triangle"></i><span>The sheet couldn\'t be made (' + esc(e.message || e) + ').</span>');
+  } finally { b.disabled = false; }
+});
+
 // ===== Help (shared drawer) =====
-const NEWS = {};   // a new page: no What's New popup
+// What's New: new features for the people who see Responses only.
+const NEWS_MGMT = [
+  '<b>Email a reminder</b> on Responses opens an email in Outlook to everyone who hasn\'t replied (in BCC). Check it and press Send.',
+  '<b>Sheet for the Raj</b> makes a one-page PDF of everyone\'s food needs to send to the restaurant.'
+];
+const NEWS = { management: NEWS_MGMT, office: NEWS_MGMT };
 const HELP = [
   { tab: 'My reply', q: 'How do I reply?', a: '<p>Pick one of the three answers, tick anything you can\'t eat, then press <b>Send reply</b>.</p>' },
   { tab: 'My reply', q: 'Can I change my answer?', a: '<p>Yes. Come back to this page any time, change it and press <b>Update reply</b>.</p>' },
@@ -550,6 +739,8 @@ const HELP = [
   { tab: 'My reply', q: 'I\'ve missed the reply date', a: '<p>You can still reply. Just do it as soon as you can.</p>' },
   { tab: 'Responses', levels: ['management', 'office'], q: 'How do I see who\'s coming?', a: '<p>Open the <b>Responses</b> tab. The numbers at the top update by themselves as people reply.</p>' },
   { tab: 'Responses', levels: ['management', 'office'], q: 'How do I get the list for the restaurant?', a: '<p>Press <b>Download list</b>. It opens in Excel with everyone coming and what they can\'t eat.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'How do I chase people who haven\'t replied?', a: '<p>Press <b>Email a reminder</b>. An email opens in Outlook with everyone who hasn\'t replied in <b>BCC</b>, so they can\'t see each other. Check it and press <b>Send</b>.</p><p>If the list is very long, the addresses are copied instead: click in BCC and paste.</p>' },
+  { tab: 'Responses', levels: ['management', 'office'], q: 'How do I send the food needs to the Raj?', a: '<p>Press <b>Sheet for the Raj</b>. A PDF downloads with the number coming, a total for each food need and who has which. Attach it to your email to the restaurant.</p><p>It says when it was made at the top, so if someone replies late, make a new one.</p>' },
   { tab: 'Responses', levels: ['management', 'office'], q: 'What does "Late" mean?', a: '<p>That person first replied after Friday 20 November.</p>' },
   { tab: 'Responses', levels: ['management', 'office'], q: 'Who is "Not replied"?', a: '<p>Everyone on the staff list who hasn\'t answered yet, so you know who to chase.</p>' }
 ];
