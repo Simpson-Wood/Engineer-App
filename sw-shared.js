@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  sw-shared.js — Simpson & Wood engineer apps, shared code   v1.1
+//  sw-shared.js — Simpson & Wood engineer apps, shared code   v1.2
 //  27 Oct 2026 (v1.1, 28 Oct: Not sent yet can name what's waiting, e.g.
-//  "timesheet", instead of always "test"). One copy of the blocks every page needs, instead of a copy
+//  "timesheet", instead of always "test". v1.2, 25 Nov: one shared Microsoft
+//  sign-in button, swSignIn, and the list of known errors that aren't ours,
+//  SW_NOT_OURS). One copy of the blocks every page needs, instead of a copy
 //  pasted into each page:
 //    · access level · View as (Rob only) · What's New · Help   (standards §15)
 //    · Not sent yet                                             (standards §15.1)
@@ -22,7 +24,7 @@ import {
   doc, getDoc, getDocs, collection, setDoc, getDocFromServer, increment, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-export const SW_SHARED_VERSION = '1.1';
+export const SW_SHARED_VERSION = '1.2';
 export const SW_OWNER = 'rob.rose@simpsonandwood.co.uk';
 export const SW_MGMT_POSITIONS = ['Manager', 'QS', 'Director'];   // must match isManager() in the rules
 export const SW_VA_MSG = 'You\'re viewing as someone else, so nothing is saved or sent.';
@@ -251,6 +253,60 @@ export function swuStart() {
   window.addEventListener('storage', e => { if (e.key === SWU_KEY) swuRender(); });
   setInterval(swuCheck, 60000);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SIGN IN WITH MICROSOFT (v1.2, 25 Nov 2026). One copy for every page's own
+//  Sign in button. Pages switch to it when they're next changed (home page
+//  first). The page passes in its own Firebase calls, so this file doesn't
+//  load Firebase's sign-in code itself:
+//    SWS.swSignIn({ button, errBox,
+//      popup: () => signInWithPopup(auth, provider),
+//      redirect: () => signInWithRedirect(auth, provider) });
+//  The window opens straight from the tap (iPhones block it otherwise). If
+//  the phone blocks the window, it falls back to going to Microsoft's page.
+//  Firebase has a known bug ("Pending promise was never set", SW_NOT_OURS)
+//  where the window finishes but sign-in doesn't: nothing happened on screen,
+//  so people tapped again and again (Scott ×10, 23 Nov). Now it says so.
+// ═══════════════════════════════════════════════════════════════════════════
+export const SW_SIGNIN_RETRY = 'Sign-in didn\'t finish. Tap Sign in again.';
+export function swSignInError(err) {
+  const code = (err && err.code) || '', msg = String((err && err.message) || '');
+  if (/Pending promise was never set/i.test(msg)) return SW_SIGNIN_RETRY;
+  if (code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
+  if (code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
+  if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(code)) return null;
+  if (code === 'auth/network-request-failed') return 'No signal. Check your connection and tap Sign in again.';
+  return 'Sign-in failed (' + (code || msg || 'unknown error') + '). Tap Sign in again.';
+}
+let swSignInBox = null;
+export function swSignIn(opts) {
+  const btn = opts.button, box = opts.errBox;
+  swSignInBox = box;
+  const show = err => { const m = swSignInError(err); if (m && box) box.textContent = m; };
+  btn.addEventListener('click', () => {
+    if (box) box.textContent = '';
+    opts.popup().catch(err => {
+      if (err && (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment')) {
+        opts.redirect().catch(show);
+        return;
+      }
+      show(err);
+    });
+  });
+}
+// Firebase's bug arrives on its own, not through the button's promise.
+window.addEventListener('unhandledrejection', e => {
+  const r = e.reason;
+  if (swSignInBox && /Pending promise was never set/i.test(String((r && r.message) || r || ''))) swSignInBox.textContent = SW_SIGNIN_RETRY;
+});
+
+// Errors from someone else's code that we can't fix. They're still recorded
+// and counted, but Management → Errors shows them as one summary line, and
+// they don't count towards "errors to look at". Add to this list as we find them.
+export const SW_NOT_OURS = [
+  { re: /Pending promise was never set/i, who: 'Firebase', what: 'Firebase sign-in bug', why: 'A known bug in Firebase\'s Microsoft sign-in window. It usually works on the second try, and the sign-in page now says to tap again.' }
+];
+export const swNotOurs = message => SW_NOT_OURS.find(x => x.re.test(String(message || ''))) || null;
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ERROR REPORTING (standards §15.3, agreed 27 Oct 2026).

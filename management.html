@@ -124,6 +124,9 @@
   .err-where{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:var(--grey); margin-top:3px; overflow-wrap:anywhere;}
   .err-when .err-n{display:inline-block; background:var(--red); color:#fff; border-radius:20px; font-size:12px; font-weight:700; padding:1px 8px; margin-top:4px;}
   .err-acts{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .err-known{display:flex; gap:10px 16px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px;}
+  .err-known .err-msg i{color:var(--grey); margin-right:4px;}
+  .err-known-list .err-row{opacity:.75;}
   @media (max-width:1000px){ .imp-row{grid-template-columns:1fr 1fr;} }
   @media (max-width:640px){
     .imp-row{grid-template-columns:1fr;} .imp-summary{grid-template-columns:repeat(2,1fr);}
@@ -275,7 +278,7 @@
       <div class="notes">
         <h3>Good to know</h3>
         <p>Problems the apps hit: crashes, saves that failed and things that didn't load. Only you can see this. The same error, for the same person, on the same page and day is one line with a count. Errors are cleared after 90 days.</p>
-        <p>So far the home page, this page and the timesheet report errors. The other pages follow as they're next changed. Errors marked <b>not ours to fix</b> come from someone else's code (for example Firebase), so we can't fix them.</p>
+        <p>So far the home page, this page and the timesheet report errors. The other pages follow as they're next changed. Errors that are <b>not ours to fix</b> come from someone else's code (for example Firebase), so we can't fix them. They're one line at the top with how often they happen, not a line each.</p>
       </div>
     </section>
   </div>
@@ -304,7 +307,7 @@ import * as SWS from './sw-shared.js';
 // v4.0 (27 Oct 2026): shared files; design catch-up (full width, tabs,
 // guide fields and buttons, notes at the bottom); Errors tab (Rob only);
 // failed saves and loads are reported; multi-tab cache.
-const VERSION = "v4.4";
+const VERSION = "v4.5";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -412,6 +415,10 @@ async function checkManager(email){
   return false;
 }
 
+// v4.5 (25 Nov 2026): Errors: errors that aren't ours to fix (the list is in
+// sw-shared.js, SW_NOT_OURS) are one summary line at the top with how many
+// times and how many people, not a line each to mark as dealt with. "Show
+// them" lists them.
 // v4.4 (Rob, 15 Nov 2026): positions in order, lowest first. A manager can only
 // give someone a position at or below their own, and can't change or remove
 // someone above them. Only Rob (the owner) can go higher, and only Rob sets the
@@ -1346,10 +1353,24 @@ let ERRS = [], errFilter = 'open', errTidied = false;
 const ERR_KIND = { crash: 'Crash', save: 'Didn\'t save', load: 'Didn\'t load' };
 // v4.1: errors that come from a bug in someone else's code, which we can't fix.
 // They're still listed and counted, just marked. Add to this list as we find them.
-const NOT_OURS = [
-  { re: /Pending promise was never set/i, who: 'Firebase', why: 'A known bug in Firebase\'s Microsoft sign-in window. It usually works on the second try.' }
-];
-const notOurs = r => NOT_OURS.find(x => x.re.test(String(r.message || '')));
+// v4.5: the list lives in sw-shared.js (SW_NOT_OURS), shared with the home page.
+const notOurs = r => SWS.swNotOurs(r.message);
+let errShowKnown = false;
+// One summary line per known error: how many times and how many people, in the
+// last 7 and 30 days, so it's easy to see if it's getting worse.
+function errKnownHtml(known) {
+  if (!known.length) return '';
+  const day7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10), day30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const groups = new Map();
+  known.forEach(r => { const k = notOurs(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+  const stat = (list, from) => { const l = list.filter(r => (r.day || '') >= from); return { n: l.reduce((t, r) => t + (r.count || 1), 0), people: new Set(l.map(r => r.email)).size }; };
+  const txt = s => s.n ? `${s.n} time${s.n === 1 ? '' : 's'}, ${s.people} ${s.people === 1 ? 'person' : 'people'}` : 'none';
+  const lines = [...groups.entries()].map(([k, list]) => `<div class="err-known"><div><div class="err-msg"><i class="ti ti-info-circle"></i>${escapeHtml(k.what)}: not ours to fix</div>
+    <div class="err-meta"><span><b>Last 7 days:</b> ${txt(stat(list, day7))}</span><span><b>Last 30 days:</b> ${txt(stat(list, day30))}</span></div>
+    <div class="err-meta">${escapeHtml(k.why)}</div></div>
+    <button type="button" class="btn" id="errKnownBtn">${errShowKnown ? 'Hide them' : 'Show them'}</button></div>`).join('');
+  return lines + (errShowKnown ? '<div class="err-known-list">' + known.map(errRowHtml).join('') + '</div>' : '');
+}
 function errWhen(r) {
   const t = r.lastAt && r.lastAt.toDate ? r.lastAt.toDate() : null;
   const d = t || new Date(r.day + 'T12:00:00');
@@ -1384,12 +1405,17 @@ async function renderErrors(reload) {
     if (gone) showToast('Cleared ' + gone + ' error' + (gone === 1 ? '' : 's') + ' older than 90 days');
   }
   ERRS.sort((a, b) => ((b.lastAt && b.lastAt.seconds) || 0) - ((a.lastAt && a.lastAt.seconds) || 0) || String(b.day).localeCompare(String(a.day)));
-  const open = ERRS.filter(r => !r.dealt);
+  // v4.5: errors that aren't ours go in one summary line, not the list.
+  const known = ERRS.filter(r => notOurs(r)), ours = ERRS.filter(r => !notOurs(r));
+  const open = ours.filter(r => !r.dealt);
   setCount('errCount', open.length);
-  const rows = errFilter === 'open' ? open : errFilter === 'dealt' ? ERRS.filter(r => r.dealt) : ERRS;
+  const rows = errFilter === 'open' ? open : errFilter === 'dealt' ? ours.filter(r => r.dealt) : ours;
   document.getElementById('errAllDealt').hidden = !(errFilter !== 'dealt' && rows.some(r => !r.dealt));
-  if (!rows.length) { list.innerHTML = `<div class="empty-note">${errFilter === 'open' ? 'Nothing to look at. No errors waiting.' : 'Nothing here.'}</div>`; return; }
-  list.innerHTML = rows.map(r => {
+  const head = errKnownHtml(known);
+  if (!rows.length) { list.innerHTML = head + `<div class="empty-note">${errFilter === 'open' ? 'Nothing to look at. No errors waiting.' : 'Nothing here.'}</div>`; return; }
+  list.innerHTML = head + rows.map(errRowHtml).join('');
+}
+function errRowHtml(r) {
     const w = errWhen(r);
     return `<div class="err-row${r.dealt ? ' dealt' : ''}">
       <div class="err-when"><b>${escapeHtml(w.day)}</b><span>${escapeHtml(w.time ? 'last at ' + w.time : '')}</span>${(r.count || 1) > 1 ? `<div><span class="err-n">×${r.count}</span></div>` : ''}</div>
@@ -1398,9 +1424,8 @@ async function renderErrors(reload) {
         ${notOurs(r) ? `<div class="err-meta">${escapeHtml(notOurs(r).why)}</div>` : ''}
         ${r.where ? `<div class="err-where">${escapeHtml(r.where)}</div>` : ''}
         ${r.dealt && r.dealtBy ? `<div class="err-meta">Dealt with by ${escapeHtml(staffName(r.dealtBy))}</div>` : ''}</div>
-      <div class="err-acts">${r.dealt ? `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="open">Not dealt with</button>` : `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="dealt"><i class="ti ti-check"></i> Dealt with</button>`}</div>
+      <div class="err-acts">${notOurs(r) ? '' : r.dealt ? `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="open">Not dealt with</button>` : `<button type="button" class="btn" data-err="${escapeHtml(r.id)}" data-to="dealt"><i class="ti ti-check"></i> Dealt with</button>`}</div>
     </div>`;
-  }).join('');
 }
 async function markErrors(ids, dealt) {
   const who = auth.currentUser.email.toLowerCase();
@@ -1411,7 +1436,10 @@ async function markErrors(ids, dealt) {
     renderErrors(false);
   } catch (e) { showToast('Couldn\'t save — ' + failed('save', 'Marking errors didn\'t save', e)); }
 }
-document.getElementById('errList').addEventListener('click', e => { const b = e.target.closest('[data-err]'); if (b) markErrors([b.dataset.err], b.dataset.to === 'dealt'); });
+document.getElementById('errList').addEventListener('click', e => {
+  if (e.target.closest('#errKnownBtn')) { errShowKnown = !errShowKnown; renderErrors(false); return; }
+  const b = e.target.closest('[data-err]'); if (b) markErrors([b.dataset.err], b.dataset.to === 'dealt');
+});
 document.getElementById('errChips').addEventListener('click', e => {
   const c = e.target.closest('[data-ef]'); if (!c) return;
   errFilter = c.dataset.ef;
@@ -1420,7 +1448,7 @@ document.getElementById('errChips').addEventListener('click', e => {
 });
 document.getElementById('errRefresh').addEventListener('click', () => renderErrors(true));
 document.getElementById('errAllDealt').addEventListener('click', () => {
-  const ids = (errFilter === 'open' ? ERRS.filter(r => !r.dealt) : ERRS.filter(r => !r.dealt)).map(r => r.id);
+  const ids = ERRS.filter(r => !r.dealt && !notOurs(r)).map(r => r.id);
   if (ids.length && confirm('Mark ' + ids.length + ' error' + (ids.length === 1 ? '' : 's') + ' as dealt with?')) markErrors(ids, true);
 });
 // Just the count on the tab, without opening it.
@@ -1434,10 +1462,10 @@ async function loadErrorCount() {
 // ═══════════════════════════════════════════════════════════════════════════
 // What's New is only for new features (standards §15). Nothing new for
 // managers in v4.0; the Errors tab is Rob's, so his note is added at sign-in.
-const NEWS = { management: [
-  'You can only give someone a position at or below your own. Only Rob can give a higher one.'
-] };
-const OWNER_NEWS = ['<b>Approver</b> tick on the Staff tab (only you see it): Approvers approve the AOV and gate test rules and AOV site set-ups, and get gate unsafe notices.', ...NEWS.management];
+// v4.5: nothing new for anyone (the Errors change is a tidy-up), so it's empty;
+// otherwise v4.4's notes would show again with the new version number.
+const NEWS = {};
+const OWNER_NEWS = [];
 const HELP = [
   { tab: 'Staff', q: 'How do I add someone?', a: '<p>On the <b>Staff</b> tab, fill in <b>Add staff member</b>: their name, their work email (exactly as they sign in with) and their position. Then press <b>Add staff member</b>.</p>' },
   { tab: 'Staff', q: 'What does each position get?', a: '<p><b>Manager, QS and Director</b>: everything, including this page.</p><p><b>Office</b>: Timesheets &amp; leave.</p><p><b>Everyone else</b>: the engineer apps.</p><p>You can only give someone a position at or below your own, and can\'t change someone above you. Only Rob can.</p>' },
@@ -1452,7 +1480,7 @@ const HELP = [
 ];
 const OWNER_HELP = [
   { tab: 'Errors', q: 'What\'s on the Errors tab?', a: '<p>Problems the apps hit: crashes, saves that failed and things that didn\'t load. Each line says what, where, who, when, and on what phone or computer. The same error for the same person, page and day is one line, with a count.</p><p>Press <b>Dealt with</b> once it\'s sorted. If it happens again, it comes back.</p><p>Only you can see this tab. Errors are cleared after 90 days.</p>' },
-  { tab: 'Errors', q: 'What does "not ours to fix" mean?', a: '<p>The error comes from a bug in someone else\'s code (for example Firebase, which does the Microsoft sign-in), not from our apps. We can\'t fix it, but it\'s still listed so you can see how often it happens.</p>' }
+  { tab: 'Errors', q: 'What does "not ours to fix" mean?', a: '<p>The error comes from a bug in someone else\'s code (for example Firebase, which does the Microsoft sign-in), not from our apps. We can\'t fix it, so it isn\'t a line to mark as dealt with. It\'s one line at the top of the list, with how many times it\'s happened in the last 7 and 30 days. Press <b>Show them</b> to see each one.</p>' }
 ];
 const TAB_NAMES = { staff: 'Staff', import: 'Data import', corrections: 'Fire toolkit', errors: 'Errors' };
 
@@ -1499,7 +1527,7 @@ onAuthStateChanged(auth, async (user) => {
   showTab(location.hash.slice(1) || 'staff');
   if (isOwner && location.hash !== '#errors') loadErrorCount();
   SWS.swExtrasStart({ page: 'management', version: VERSION, level: 'management',
-    news: isOwner ? { management: OWNER_NEWS } : NEWS, help: isOwner ? HELP.concat(OWNER_HELP) : HELP,
+    news: isOwner && OWNER_NEWS.length ? { management: OWNER_NEWS } : NEWS, help: isOwner ? HELP.concat(OWNER_HELP) : HELP,
     tab: () => TAB_NAMES[(document.querySelector('#tabs .tab.active') || {}).dataset?.tab] || '' });
 });
 </script>

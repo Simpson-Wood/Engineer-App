@@ -229,7 +229,7 @@ import {
 // reporting come from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
-const VERSION = "v4.4";
+const VERSION = "v4.5";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -243,6 +243,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v4.5 (25 Nov 2026): "Received another way" days (Timesheets & leave v5.0)
+// no longer count as missing, in the To do box and in your own missing-days
+// box. Sign in uses the shared button (sw-shared.js v1.2), which says "tap
+// again" when Firebase's sign-in bug stops it finishing. Rob's error count
+// leaves out errors that aren't ours to fix.
 // v4.4 (25 Nov 2026): "Install the S&W app" card at the top on phones and
 // tablets (one tap on Android, a Share > Add to Home Screen guide on iPhone and
 // iPad). Hidden in the installed app and after "Not now". Help line added.
@@ -515,26 +520,16 @@ async function getAccessLevel(email){
   return { isManager, isOffice };
 }
 
-function describeAuthError(err) {
-  if (err.code === 'auth/unauthorized-domain') return 'This site\'s domain isn\'t authorised in Firebase yet.';
-  if (err.code === 'auth/operation-not-allowed') return 'Microsoft sign-in isn\'t enabled in Firebase yet.';
-  if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) return null;
-  return 'Sign-in failed — ' + (err.code || err.message || 'unknown error') + '.';
-}
-document.getElementById('msSignInBtn').addEventListener('click', () => {
-  const errBox = document.getElementById('signinErr');
-  errBox.textContent = '';
-  signInWithPopup(auth, msProvider).catch(err => {
-    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      signInWithRedirect(auth, msProvider).catch(err2 => { const msg = describeAuthError(err2); if (msg) errBox.textContent = msg; });
-      return;
-    }
-    const msg = describeAuthError(err); if (msg) errBox.textContent = msg;
-  });
+// v4.5: the shared Sign in button (sw-shared.js v1.2).
+SWS.swSignIn({
+  button: document.getElementById('msSignInBtn'),
+  errBox: document.getElementById('signinErr'),
+  popup: () => signInWithPopup(auth, msProvider),
+  redirect: () => signInWithRedirect(auth, msProvider)
 });
 document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
 getRedirectResult(auth).catch(err => {
-  document.getElementById('signinErr').textContent = 'Sign-in failed — ' + (err.message || 'try again.');
+  const msg = SWS.swSignInError(err); if (msg) document.getElementById('signinErr').textContent = msg;
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -649,7 +644,7 @@ function hbWhen(a, b) {   // "4:30pm – 8am" (overnight), or "4:30pm – Mon 26
 
 async function loadHome(email, level) {
   const me = email.toLowerCase(), today = todayISO();
-  H.me = me; H.level = level;
+  H.me = me; H.level = level; H.recv = new Set();
   const docs = snap => { const out = []; snap.forEach(d => out.push(Object.assign({ id: d.id }, d.data()))); return out; };
   const jobs = [
     getDocs(collection(db, 'staff')).then(snap => { STAFF = new Map(); snap.forEach(d => { const x = d.data(); STAFF.set(d.id.toLowerCase(), { name: x.name || d.id, position: x.position || '', fills: x.fillsTimesheets !== false }); }); }),
@@ -658,13 +653,16 @@ async function loadHome(email, level) {
     getDocs(query(collection(db, 'leave'), where('email', '==', me))).then(snap => { H.myLeave = real(docs(snap)); }),
     Promise.all([getDocs(query(collection(db, 'oncallSwaps'), where('aEmail', '==', me))), getDocs(query(collection(db, 'oncallSwaps'), where('bEmail', '==', me)))])
       .then(([a, b]) => { H.mySwaps = real([...docs(a), ...docs(b)]); }),
-    getDocs(query(collection(db, 'timesheets'), where('engineerEmail', '==', me))).then(snap => { H.myTs = real(docs(snap)); })
+    getDocs(query(collection(db, 'timesheets'), where('engineerEmail', '==', me))).then(snap => { H.myTs = real(docs(snap)); }),
+    // v4.5: days the office marked "received another way" aren't missing.
+    getDocs(query(collection(db, 'timesheetReceived'), where('engineerEmail', '==', me))).then(snap => { snap.forEach(d => H.recv.add(recvKey(d.data().engineerEmail, d.data().date))); })
   ];
   if (level !== 'engineer') jobs.push(
     getDocs(query(collection(db, 'leave'), where('to', '>=', addDays(today, -62)))).then(snap => { H.leave = real(docs(snap)); }),
     getDocs(query(collection(db, 'oncallSwaps'), where('firstShift', '>=', addDays(today, -31)))).then(snap => { H.swaps = real(docs(snap)); }),
     // Two months is enough to work out the last 31 days (the report page loads them all).
-    getDocs(query(collection(db, 'timesheets'), where('date', '>=', addDays(today, -62)))).then(snap => { H.ts = real(docs(snap)); })
+    getDocs(query(collection(db, 'timesheets'), where('date', '>=', addDays(today, -62)))).then(snap => { H.ts = real(docs(snap)); }),
+    getDocs(query(collection(db, 'timesheetReceived'), where('date', '>=', addDays(today, -62)))).then(snap => { snap.forEach(d => H.recv.add(recvKey(d.data().engineerEmail, d.data().date))); })
   );
   // v4.0: the person's own home page layout (Arrange). Not while viewing as someone.
   if (!SWS.swViewingAs() && auth.currentUser) jobs.push(getDoc(doc(db, 'userPrefs', auth.currentUser.email))
@@ -711,6 +709,8 @@ function approvedFullOff(list, email, date) {
 }
 // Same rules as Timesheets & leave: from their first timesheet, weekdays only,
 // not bank holidays, shutdown or a full day of approved leave, not today.
+// v4.5: "<email>_<date>" for days marked "received another way".
+const recvKey = (email, date) => String(email || '').toLowerCase() + '_' + date;
 function missingFor(email, recs, leaveList) {
   if (!recs.length) return [];
   const have = new Set(recs.map(r => r.date)), today = todayISO();
@@ -718,7 +718,7 @@ function missingFor(email, recs, leaveList) {
   if (from < addDays(today, -LOOKBACK_DAYS)) from = addDays(today, -LOOKBACK_DAYS);
   const out = [];
   for (let d = from; d < today; d = addDays(d, 1)) {
-    if (isOffDay(d) || approvedFullOff(leaveList, email, d)) continue;
+    if (isOffDay(d) || approvedFullOff(leaveList, email, d) || (H.recv && H.recv.has(recvKey(email, d)))) continue;
     if (!have.has(d)) out.push(d);
   }
   return out;
@@ -1004,7 +1004,9 @@ PHONE_MQ.addEventListener && PHONE_MQ.addEventListener('change', () => { if (ARR
 async function loadErrorCount() {
   try {
     const snap = await getDocs(query(collection(db, 'appErrors'), where('dealt', '==', false)));
-    H.errs = snap.size;
+    // v4.5: errors that aren't ours to fix (SW_NOT_OURS) are left out.
+    let n = 0; snap.forEach(d => { if (!SWS.swNotOurs(d.data().message)) n++; });
+    H.errs = n;
     const t = document.getElementById('hbTodo'); if (t) t.outerHTML = hbTodo();
   } catch (e) { console.warn('Error count not loaded', e); }
 }
