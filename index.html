@@ -159,9 +159,31 @@
   .tile .unsent-pill{display:inline-block; margin-left:6px; background:var(--amber-bg); color:var(--amber); border-radius:20px; padding:1px 7px; font-size:10.5px; font-weight:600; white-space:nowrap;}
   .tile .unsent-pill.bad{background:var(--red-tint); color:var(--bad-ink);}
   @media (max-width:899px){ .tile .unsent-pill{display:block; margin:4px auto 0; width:max-content;} }
+
+  /* ---- v4.4: Install the app card (phones and tablets only) ---- */
+  .install-card{margin-bottom:12px; border-left:4px solid var(--red);}
+  .install-card p{margin:0; color:var(--grey);}
+  button.hb-btn{cursor:pointer; font-family:inherit;}
+  .ios-steps{margin:0; padding:0; list-style:none; counter-reset:st;}
+  .ios-steps li{counter-increment:st; display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-top:1px solid #e2e2e2; font-size:15.5px; line-height:1.45;}
+  .ios-steps li:first-child{border-top:none;}
+  .ios-steps li::before{content:counter(st); flex-shrink:0; width:26px; height:26px; border-radius:50%; background:#D0222A; color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .ios-steps .pic{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border:1.5px solid #cfcfcf; border-radius:8px; color:#007aff; font-size:19px; vertical-align:middle; margin:0 3px; background:#fff;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
+<script>
+// v4.4: Android/Chrome offers the install as an event that can fire before the
+// page's main script has loaded, so it's caught here and kept for the
+// "Install the S&W app" card. Only on Android: computers keep Chrome's own
+// install button in the address bar.
+window.addEventListener('beforeinstallprompt', function (e) {
+  if (!/Android/i.test(navigator.userAgent)) return;
+  e.preventDefault();
+  window.swInstallEvt = e;
+  document.dispatchEvent(new Event('sw-install-ready'));
+});
+</script>
 </head>
 <body>
 
@@ -187,7 +209,7 @@
   </header>
   <div class="layout">
     <nav class="tool-nav" id="tool-nav"></nav>
-    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner"><div class="home-boxes" id="homeBoxes"></div></div></div>
+    <div class="content-pane" id="content-pane"><div class="content-pane-inner" id="content-pane-inner"><div class="hb-card install-card" id="installCard" hidden></div><div class="home-boxes" id="homeBoxes"></div></div></div>
   </div>
 </div>
 
@@ -207,7 +229,7 @@ import {
 // reporting come from the shared file (standards §15), not copies in this page.
 import * as SWS from './sw-shared.js';
 
-const VERSION = "v4.3";
+const VERSION = "v4.4";
 document.getElementById('versionLabel').textContent = VERSION;
 
 const firebaseConfig = {
@@ -221,6 +243,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+// v4.4 (25 Nov 2026): "Install the S&W app" card at the top on phones and
+// tablets (one tap on Android, a Share > Add to Home Screen guide on iPhone and
+// iPad). Hidden in the installed app and after "Not now". Help line added.
 // v4.3 (15 Nov 2026): AOV testing's QS count counts visits sent to QS only.
 // v4.1 (28 Oct 2026): a proper "ready for QS" count for isolator testing
 // once the old photos are out of the test records (it used to stop at 30).
@@ -1007,6 +1032,7 @@ const HELP = [
   { levels: ['engineer'], q: 'How do I answer a swap?', a: '<p>Press <b>Accept</b> or <b>Decline</b> on the home page. Leave &amp; on-call opens and asks you to confirm, and the other person gets an email.</p>' },
   { levels: ['engineer'], q: 'How do I get my on-call in my phone calendar?', a: '<p>Press <b>Add to my phone calendar</b> under My next on-call. It takes you to the download in Leave &amp; on-call.</p>' },
   { q: 'It says I\'ve days without a timesheet', a: '<p>Those are weekdays in the last month with no timesheet sent. Weekends, bank holidays, the shutdown and booked holiday don\'t count. Press <b>Fill them in</b>.</p>' },
+  { q: 'How do I put the app on my phone?', a: '<p>Tap <b>Install</b> on the <b>Install the S&amp;W app</b> box at the top of the home page.</p><p>On an iPhone or iPad it shows you how: tap Share, then <b>Add to Home Screen</b>.</p><p>After that, open it from the S&amp;W icon on your home screen. If you pressed <b>Not now</b> and the box has gone, an iPhone can still do it: Share, then Add to Home Screen.</p>' },
   { q: 'Can I use the apps with no signal?', a: '<p>Yes, they open with no signal and save your work. It goes up when you\'re back in signal, so don\'t clear the app until it has.</p>' },
   { q: 'What\'s the yellow bar at the top?', a: '<p>Tests saved on this phone that haven\'t reached the office yet. Keep the app open with signal and it clears on its own. Tap it to see which ones.</p><p>Don\'t clear the app or uninstall it while it\'s showing. If it goes <b>red</b>, a test didn\'t save: log it again.</p>' },
   { q: 'What\'s the "new version is ready" bar?', a: '<p>The app has been updated. Tap <b>Update</b> to switch to the new version. If you\'re in the middle of a test, or tests are still sending, it asks you to finish first.</p>' },
@@ -1017,6 +1043,65 @@ const HELP = [
   { levels: ['management'], q: 'Where do I add staff or change someone\'s position?', a: '<p>Press the <b>cog</b> at the top right to open Management.</p>' }
 ];
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  INSTALL THE S&W APP (v4.4) — phones and tablets only
+// ═══════════════════════════════════════════════════════════════════════════
+// Android (Chrome, Edge, Samsung): Install opens the phone's own "Install app"
+// box. The card only shows once the phone says it can install, so it never
+// shows if the app is already installed. iPhone / iPad: Apple doesn't let a web
+// page install itself, so Install opens a short Share > Add to Home Screen
+// guide. Safari can't tell the page the app is on the home screen, so "Not now"
+// is how it goes away there. Never shown inside the installed app.
+const INSTALL_HIDE_KEY = 'sw-install-hidden';
+const UA = navigator.userAgent || '';
+const IS_IOS = /iPhone|iPad|iPod/i.test(UA) || (/Macintosh/i.test(UA) && navigator.maxTouchPoints > 1);   // iPads say "Macintosh"
+const IS_ANDROID = /Android/i.test(UA);
+const IN_APP = () => (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)) || navigator.standalone === true;
+function installHidden() { try { return localStorage.getItem(INSTALL_HIDE_KEY) === '1'; } catch (e) { return false; } }
+function installHide(remember) {
+  if (remember) { try { localStorage.setItem(INSTALL_HIDE_KEY, '1'); } catch (e) {} }
+  const c = document.getElementById('installCard'); if (c) { c.hidden = true; c.innerHTML = ''; }
+}
+function installCardShow() {
+  const c = document.getElementById('installCard');
+  if (!c || IN_APP() || installHidden()) return;
+  if (!(IS_IOS || (IS_ANDROID && window.swInstallEvt))) return;
+  c.innerHTML = `<h3><i class="ti ti-device-mobile" aria-hidden="true"></i> Install the S&amp;W app</h3>
+    <p>Opens straight from your home screen, like any other app.</p>
+    <div class="hb-acts"><button type="button" class="hb-btn" id="installGo"><i class="ti ti-download" aria-hidden="true"></i> Install</button><button type="button" class="hb-btn ghost" id="installLater">Not now</button></div>`;
+  c.hidden = false;
+  document.getElementById('installGo').addEventListener('click', installGo);
+  document.getElementById('installLater').addEventListener('click', () => installHide(true));
+}
+async function installGo() {
+  if (IS_IOS) { installIosGuide(); return; }
+  const ev = window.swInstallEvt; if (!ev) { installHide(false); return; }
+  window.swInstallEvt = null;   // the phone only lets it be used once
+  try {
+    ev.prompt();
+    await ev.userChoice;
+    // Installed or cancelled, the card goes for now. If they cancelled, Chrome
+    // offers it again on a later visit and the card comes back then.
+    installHide(false);
+  } catch (e) {
+    console.error('Install failed:', e);
+    SWS.swReport('other', 'Install button: ' + (e.message || e));
+    installHide(false);
+  }
+}
+function installIosGuide() {
+  const where = /iPad/i.test(UA) || /Macintosh/i.test(UA) ? 'at the top of the screen' : 'at the bottom of the screen';
+  SWS.swModal(`<div class="sw-modal"><h3>Install the S&amp;W app</h3>
+    <ol class="ios-steps">
+      <li><span>Tap the <b>Share</b> button <span class="pic"><i class="ti ti-share-2" aria-hidden="true"></i></span> ${where}. If you can't see it, tap <span class="pic"><i class="ti ti-dots" aria-hidden="true"></i></span> first.</span></li>
+      <li><span>Scroll down and tap <b>Add to Home Screen</b> <span class="pic"><i class="ti ti-square-plus" aria-hidden="true"></i></span></span></li>
+      <li><span>Tap <b>Add</b>. The S&amp;W icon is now on your home screen. Open the app from there from now on.</span></li>
+    </ol>
+    <div class="sw-mbtns"><button type="button" class="sw-btn sw-btn-red" data-swclose>OK</button></div></div>`);
+}
+document.addEventListener('sw-install-ready', () => { if (!document.getElementById('appRoot').hidden) installCardShow(); });
+window.addEventListener('appinstalled', () => installHide(false));
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     document.getElementById('signinScreen').hidden = false;
@@ -1025,6 +1110,7 @@ onAuthStateChanged(auth, async (user) => {
   }
   document.getElementById('signinScreen').hidden = true;
   document.getElementById('appRoot').hidden = false;
+  installCardShow();
   const va = await SWS.swViewAsInit(user);
   document.getElementById('whoName').textContent = va ? va.name : (user.displayName || user.email);
 
