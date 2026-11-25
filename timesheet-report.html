@@ -62,6 +62,13 @@
   .grid td.c.done{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
   .grid td.c.off{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
   .grid td.c.miss{background:var(--red-tint); border-color:var(--bad-line); color:var(--red-dark);}
+  .grid td.c.miss[data-miss], .grid td.c.recv{cursor:pointer;}
+  /* v5.0: received another way (not through the app) */
+  .grid td.c.recv{background:#eef2ec; border-color:#c9d4c4; border-style:dashed; color:#56704f;}
+  .mkweek{display:flex; align-items:center; gap:10px; margin:14px 0 2px; font-weight:700; font-size:14px; color:var(--grey);}
+  .mkweek input{width:19px; height:19px;}
+  .modal.mk .mbtns{position:sticky; bottom:-20px; background:#fff; margin:12px -20px -20px; padding:12px 20px; border-top:1px solid var(--line);}
+  .mknote{width:100%; box-sizing:border-box; font:inherit; font-size:15px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; margin-top:4px;}
   .grid td.c.wkend{background:#ecebe7; cursor:default;}
   .grid td.c.future{cursor:default;}
   @media (max-width:640px){
@@ -296,7 +303,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheets &amp; leave</h1>
-        <p id="versionLabel">v4.0</p>
+        <p id="versionLabel">v5.0</p>
       </div>
     </a>
     <div class="right">
@@ -325,7 +332,7 @@
           <button class="btn red" id="remindBtn"><i class="ti ti-mail"></i> Send reminders</button>
         </div>
         <div class="gridwrap" id="grid"><div class="empty">Loading…</div></div>
-        <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:var(--blue-bg);border-style:dashed"></i>Booked leave (no timesheet needed)</span><span><i style="background:#4a6fa5;border-radius:50%"></i>Amended</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>
+        <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working</span><span><i style="background:var(--red-tint)"></i>Missing (tap to mark as received)</span><span><i style="background:#eef2ec;border:1px dashed #c9d4c4"></i>Received another way</span><span><i style="background:var(--blue-bg);border-style:dashed"></i>Booked leave (no timesheet needed)</span><span><i style="background:#4a6fa5;border-radius:50%"></i>Amended</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>
       </div>
 
       <div class="card">
@@ -399,6 +406,12 @@ import {
 // this page.
 import * as SWS from './sw-shared.js';
 
+// v5.0 (25 Nov 2026): "Received another way". A manager or the office marks
+// missing days whose timesheet came in the old way (paper, the old form), so
+// they stop showing as missing here, on the engineer's page and in reminders.
+// Saved in timesheetReceived/<email>_<date>. If an app timesheet comes in
+// later for that day, the mark counts as version 1 and it shows as amended.
+
 // v4.0 (28 Oct 2026): managers and the office can send a timesheet's email to
 // the office when the engineer's didn't go (one at a time, or "Send unsent
 // emails" for all of them), from their own account, marked "Sent by … for …";
@@ -406,7 +419,7 @@ import * as SWS from './sw-shared.js';
 // shared files, error reporting, the update bar, the multi-tab cache and the
 // Microsoft-window rules (standards §1.1: straight from the tap, no going off
 // to Microsoft's page, 2-minute limit).
-const REPORT_VERSION = 'v4.0';
+const REPORT_VERSION = 'v5.0';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -816,6 +829,7 @@ const APP_LINK = 'https://app.simpsonandwood.co.uk/timesheet.html';
 let ME = null;            // { email, rawEmail, name }
 let STAFF = new Map();    // email -> { name, position, fills }
 let RECS = [];            // every timesheet
+let RECV = new Map();     // v5.0: "received another way" marks, id (<email>_<date>) -> mark
 let LOGO = null;
 let weekStart = mondayOf(todayISO());
 let showTest = false;
@@ -854,6 +868,8 @@ function isMissing(p, date) {
   if (w === 0 || w === 6 || BANK_HOLIDAYS[date] || isShutdown(date)) return false;
   // v2.0: a full day of approved leave isn't missing
   if (!p.test) { const lv = leaveOn(p.email, date); if (lv && lv.part === 'full') return false; }
+  // v5.0: the office has it another way (paper, the old form)
+  if (!p.test && recvOf(p.email, date)) return false;
   return !p.byDate.has(date);
 }
 function missingFor(p) {
@@ -862,6 +878,13 @@ function missingFor(p) {
   return out;
 }
 const emailSent = r => r.email && r.email.status === 'sent' && (r.email.version || 1) === (r.version || 1);
+// v5.0: received another way
+const recvId = (email, date) => email + '_' + date;
+function recvOf(email, date) { return RECV.get(recvId(String(email || '').toLowerCase(), date)) || null; }
+// Shown as amended if it's been changed, or if the office had marked the day
+// as received another way before the app timesheet came in.
+const isAmended = r => (r.version || 1) > 1 || (!r.testData && !!recvOf(r.engineerEmail, r.date));
+const whenText = iso => { try { return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
 
 // ---- week grid ----
 function renderGrid() {
@@ -876,12 +899,14 @@ function renderGrid() {
   const rows = people.map(p => {
     const cells = days.map(d => {
       const r = p.byDate.get(d), t = dayType(d);
-      const dots = r ? ((r.version || 1) > 1 ? '<span class="dot amend" title="Amended"></span>' : '') + (!emailSent(r) ? '<span class="dot unsent" title="Email not sent"></span>' : '') : '';
+      const dots = r ? (isAmended(r) ? '<span class="dot amend" title="Amended"></span>' : '') + (!emailSent(r) ? '<span class="dot unsent" title="Email not sent"></span>' : '') : '';
       if (r && r.kind === 'off') return `<td class="c off" data-open="${esc(r.id)}"><div class="v">${esc({ holiday: 'H', sick: 'S', dayOff: 'D', bankHoliday: 'BH' }[r.offReason] || '–')}</div><div class="s">${esc(REASONS[r.offReason] || '')}</div>${dots}</td>`;
       if (r) return `<td class="c done" data-open="${esc(r.id)}"><div class="v">${fmtNum(r.totals ? r.totals.totalMins : 0)}</div><div class="s">${r.jobs.length} job${r.jobs.length === 1 ? '' : 's'}</div>${dots}</td>`;
       const lv = !p.test && leaveOn(p.email, d);
       if (lv && lv.part === 'full') return `<td class="c lv"><div class="v">${esc({ holiday: 'H', sick: 'S', training: 'T', other: 'O' }[lv.type] || 'L')}</div><div class="s">Booked</div></td>`;
-      if (isMissing(p, d)) return `<td class="c miss"><div class="v">!</div><div class="s">Missing${lv ? ' · ' + (lv.part === 'am' ? 'AM' : 'PM') + ' off' : ''}</div></td>`;
+      const rv = !p.test && recvOf(p.email, d);
+      if (rv) return `<td class="c recv" data-recv="${esc(rv.id)}" title="Received another way"><div class="v"><i class="ti ti-check"></i></div><div class="s">Received</div></td>`;
+      if (isMissing(p, d)) return `<td class="c miss"${p.test ? '' : ` data-miss="${esc(p.email)}|${d}"`}><div class="v">!</div><div class="s">Missing${lv ? ' · ' + (lv.part === 'am' ? 'AM' : 'PM') + ' off' : ''}</div></td>`;
       if (t !== 'wk') return '<td class="c wkend"></td>';
       return `<td class="c ${d >= today ? 'future' : ''}"></td>`;
     }).join('');
@@ -894,7 +919,7 @@ function renderGrid() {
 
 // ---- one timesheet, laid out like the office PDF ----
 function sheetHTML(r, opts = {}) {
-  const amended = (r.version || 1) > 1;
+  const amended = opts.old ? (r.version || 1) > 1 : isAmended(r);
   let h = `<div class="sheet"><div class="top"><div><h2>${esc(r.engineerName || r.engineerEmail)}</h2>${r.testData ? '<span class="tag test">Test data</span>' : ''}${amended ? `<span class="tag outline">Amended · version ${r.version}</span>` : ''}${opts.old ? '<span class="tag warn">Earlier version</span>' : ''}</div><div class="date">${esc(longDate(r.date))}</div></div>`;
   if (r.kind === 'off') {
     h += `<div class="sjob"><div class="h"><span>NOT WORKING</span></div><div class="b"><div class="cust">${esc(REASONS[r.offReason] || r.offReason || '')}</div>${r.offNote ? `<div class="det">${esc(r.offNote)}</div>` : ''}</div></div>`;
@@ -932,7 +957,12 @@ function sheetHTML(r, opts = {}) {
   }
   if (r.noStaffRecord) h += `<p class="flags">This account wasn't on the staff list when it was sent.</p>`;
   if (!opts.old) {
-    const hist = (r.history || []).map(x => `<div>Version ${x.v}: ${x.v === 1 ? 'sent' : 'amended'} ${esc(new Date(x.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))} by ${esc(x.byName || x.by)}${x.v < (r.version || 1) ? `<button data-ver="${x.v}">View</button>` : ''}</div>`).join('');
+    // v5.0: a "received another way" mark shows as the first line of the history.
+    const mark = !r.testData && recvOf(r.engineerEmail, r.date);
+    const recvLine = m => `<div>${m.v ? `Version ${m.v}: ` : ''}received another way (not through the app), marked ${esc(whenText(m.at))} by ${esc(m.byName || m.by)}${m.note ? ` · "${esc(m.note)}"` : ''}</div>`;
+    let hist = (r.history || []).map(x => x.received ? recvLine(x)
+      : `<div>Version ${x.v}: ${x.v === 1 ? 'sent' : 'amended'} ${esc(whenText(x.at))} by ${esc(x.byName || x.by)}${x.v < (r.version || 1) ? `<button data-ver="${x.v}">View</button>` : ''}</div>`).join('');
+    if (mark && !(r.history || []).some(x => x.received)) hist = recvLine(mark) + hist;
     const mail = emailSent(r)
       ? `Emailed to ${esc(r.email.to || 'the office')}${r.email.sentAt ? ' ' + esc(new Date(r.email.sentAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}${r.email.sentByName ? ' by ' + esc(r.email.sentByName) : ''}`
       : `<b style="color:var(--red-dark)">The email for this version hasn't gone to the office.</b>${r.email && r.email.error ? `<span class="mailwhy">Why: ${esc(r.email.error)}</span>` : ''}
@@ -987,7 +1017,7 @@ function officeEmailHTML(rec) {
   let h = `<div style="${st}">`;
   if (rec.testData) h += `<p style="color:#5a3d8a;font-weight:bold">TEST — not a real timesheet.</p>`;
   h += `<p style="color:#5c5c5c">Sent by <b>${esc(ME.name)}</b> for ${esc(rec.engineerName)}, because the email from ${esc(firstName(rec.engineerName))}'s timesheet app didn't go.</p>`;
-  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. This replaces the timesheet sent earlier for this day.</p>`;
+  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. ${(rec.history || []).some(x => x.received) && rec.version === 2 ? 'This day was marked as received another way (not through the app).' : 'This replaces the timesheet sent earlier for this day.'}</p>`;
   h += `<p style="font-size:16px"><b>${esc(rec.engineerName)}</b> — ${esc(longDate(rec.date))}</p>`;
   if (rec.kind === 'off') {
     h += `<p style="font-size:16px">Not working: <b>${esc(REASONS[rec.offReason] || rec.offReason)}</b></p>`;
@@ -1127,6 +1157,97 @@ function renderCustomerSearch() {
     <table class="list"><thead><tr><th>Date</th><th>Engineer</th><th>Customer</th><th>Times</th><th>Hours</th><th></th></tr></thead><tbody>${hits.slice(0, 200).map(({ r, j }) => `<tr class="click" data-open="${esc(r.id)}">
       <td><b>${esc(shortDate(r.date))}</b> ${r.date.slice(0, 4)}</td><td>${esc(r.engineerName)}${r.testData ? ' <span class="tag test">Test</span>' : ''}</td><td>${esc(j.customer)}</td><td>${esc(j.start)}–${esc(j.end)}</td><td>${fmtNum(j.paidMins)} h</td>
       <td>${j.callout === 'Yes' ? '<span class="tag red">Call-out</span>' : ''}${j.testCert === 'Yes' ? '<span class="tag amber">Test cert</span>' : ''}${j.status === 'Return visit needed' ? '<span class="tag outline">Return visit</span>' : ''}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ---- v5.0: received another way (agreed 25 Nov 2026) ----
+// Every missing day for this person since their first app timesheet, not
+// just the last 31 days, so an old backlog can be cleared in one go.
+function allMissingFor(p) {
+  const out = [], today = todayISO();
+  if (!p.first) return out;
+  for (let d = p.first; d < today; d = addDays(d, 1)) if (isMissing(p, d)) out.push(d);
+  return out;
+}
+async function loadReceived() {
+  try {
+    const snap = await getDocs(collection(db, 'timesheetReceived'));
+    RECV = new Map(); snap.forEach(d => RECV.set(d.id, Object.assign({ id: d.id }, d.data())));
+  } catch (e) {
+    console.error('received marks not loaded', e);
+    report('load', '"Received another way" marks didn\'t load', e);
+    if (e && e.code === 'permission-denied') toast('Received marks didn\'t load: the new Firestore rules may not be published yet.');
+  }
+}
+function openMarkDialog(email, date) {
+  const p = peopleFor(false).find(x => x.email === email); if (!p) return;
+  const days = allMissingFor(p).reverse();                    // newest first
+  if (!days.includes(date)) return;
+  const weeks = [];
+  days.forEach(d => { const w = mondayOf(d); let g = weeks.find(x => x.w === w); if (!g) weeks.push(g = { w, days: [] }); g.days.push(d); });
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal mk" role="dialog" aria-modal="true"><h3>Received another way</h3><div class="mbody">
+    <p><b>${esc(p.name)}</b>: tick the days the office already has a timesheet for (paper, the old form). They stop showing as missing.</p>
+    ${weeks.map((g, gi) => `<label class="mkweek"><input type="checkbox" data-wk-all="${gi}">Week of ${esc(parseISO(g.w).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</label>
+      ${g.days.map(d => `<label class="rem"><input type="checkbox" data-day="${d}" data-g="${gi}"${d === date ? ' checked' : ''}><span><b>${esc(longDate(d))}</b></span></label>`).join('')}`).join('')}
+    <p style="margin-top:14px"><label for="mkNote"><b>Note</b> (optional)</label><input id="mkNote" class="mknote" maxlength="200" placeholder="e.g. paper copy in the office"></p>
+    </div><div class="mbtns"><button class="btn" data-all>Tick all</button><button class="btn" data-cancel>Cancel</button><button class="btn red" data-save>Mark 1 day</button></div></div>`;
+  document.body.appendChild(bg);
+  const ticked = () => [...bg.querySelectorAll('input[data-day]:checked')].map(i => i.dataset.day);
+  const sync = () => {
+    weeks.forEach((g, gi) => { const boxes = [...bg.querySelectorAll(`input[data-g="${gi}"]`)]; const all = bg.querySelector(`[data-wk-all="${gi}"]`); all.checked = boxes.every(b => b.checked); all.indeterminate = !all.checked && boxes.some(b => b.checked); });
+    const n = ticked().length; const b = bg.querySelector('[data-save]');
+    b.textContent = n ? `Mark ${n} day${n === 1 ? '' : 's'}` : 'Mark days'; b.disabled = !n;
+  };
+  sync();
+  bg.addEventListener('change', e => {
+    const w = e.target.closest('[data-wk-all]');
+    if (w) bg.querySelectorAll(`input[data-g="${w.dataset.wkAll}"]`).forEach(b => { b.checked = w.checked; });
+    sync();
+  });
+  let busy = false;
+  bg.addEventListener('click', async e => {
+    if (busy) return;
+    if (e.target === bg || e.target.closest('[data-cancel]')) { bg.remove(); return; }
+    if (e.target.closest('[data-all]')) { const boxes = [...bg.querySelectorAll('input[data-day]')]; const on = !boxes.every(b => b.checked); boxes.forEach(b => { b.checked = on; }); sync(); return; }
+    const sv = e.target.closest('[data-save]'); if (!sv) return;
+    const chosen = ticked(); if (!chosen.length) return;
+    const note = bg.querySelector('#mkNote').value.trim().slice(0, 200);
+    const at = new Date().toISOString();
+    busy = true; sv.disabled = true; sv.textContent = 'Saving…';
+    try {
+      // A batch holds up to 500 writes; split just in case.
+      for (let i = 0; i < chosen.length; i += 400) {
+        const b = writeBatch(db);
+        chosen.slice(i, i + 400).forEach(d => b.set(doc(db, 'timesheetReceived', recvId(p.email, d)), { engineerEmail: p.email, date: d, note, by: ME.email, byName: ME.name, at }));
+        await b.commit();
+      }
+      chosen.forEach(d => RECV.set(recvId(p.email, d), { id: recvId(p.email, d), engineerEmail: p.email, date: d, note, by: ME.email, byName: ME.name, at }));
+      bg.remove(); renderGrid();
+      toast(`${chosen.length} day${chosen.length === 1 ? '' : 's'} marked as received.`);
+    } catch (err) {
+      busy = false; sv.disabled = false; sync();
+      if (isVaError(err)) { toast(SWS.SW_VA_MSG); return; }
+      toast('Couldn\'t save: ' + report('save', '"Received another way" didn\'t save', err));
+    }
+  });
+}
+async function openRecvDialog(id) {
+  const m = RECV.get(id); if (!m) return;
+  const s = STAFF.get(m.engineerEmail);
+  const v = await modal({ title: 'Received another way',
+    body: `<p><b>${esc((s && s.name) || m.engineerEmail)}</b> · ${esc(longDate(m.date))}</p><p>The office has this timesheet another way (not through the app). Marked ${esc(whenText(m.at))} by ${esc(m.byName || m.by)}.</p>${m.note ? `<p>Note: ${esc(m.note)}</p>` : ''}`,
+    buttons: [{ label: 'Remove mark', value: 'rm' }, { label: 'Close', value: null, primary: true }] });
+  if (v !== 'rm') return;
+  const ok = await modal({ title: 'Remove the mark?', body: `<p>${esc(longDate(m.date))} shows as <b>missing</b> again, unless a timesheet has been sent for it.</p>`, buttons: [{ label: 'Cancel', value: false }, { label: 'Remove', value: true, primary: true }] });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'timesheetReceived', id));
+    RECV.delete(id); renderGrid(); toast('Mark removed.');
+  } catch (err) {
+    if (isVaError(err)) { toast(SWS.SW_VA_MSG); return; }
+    toast('Couldn\'t remove it: ' + report('save', '"Received another way" mark didn\'t remove', err));
+  }
 }
 
 // ---- reminders ----
@@ -2092,11 +2213,16 @@ document.addEventListener('click', async e => {
 const NEWS_SEND = [
   'If an engineer\'s timesheet email didn\'t go to the office (the <b>orange dot</b>), you can now send it yourself. Open the timesheet and press <b>Send email to the office</b>, or press <b>Send unsent emails</b> at the top to send them all. It goes from your email, and the engineer gets their copy.'
 ];
-const NEWS = { management: NEWS_SEND, office: NEWS_SEND };
+// v5.0 (25 Nov 2026)
+const NEWS_RECV = [
+  'Someone sent their timesheet the old way (paper or the old form)? <b>Tap the red Missing box</b> and choose which days the office already has. They stop showing as missing, for you and for them, and they won\'t get reminders for them. You can tick a whole week, or every missing day at once.'
+];
+const NEWS = { management: NEWS_RECV, office: NEWS_RECV };
 const HELP = [
-  { tab: 'Timesheets', q: 'What do the colours on the week mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. A <b>blue dot</b> means it\'s been changed since it was first sent. An <b>orange dot</b> means the email to the office didn\'t go: tap it to send it.</p>' },
+  { tab: 'Timesheets', q: 'What do the colours on the week mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. <b>Pale green with a tick</b>: received another way (not through the app). A <b>blue dot</b> means it\'s been changed since it was first sent. An <b>orange dot</b> means the email to the office didn\'t go: tap it to send it.</p>' },
   { tab: 'Timesheets', q: 'How do I see someone\'s timesheet?', a: '<p>Tap their box for that day. You can download the office copy from there too.</p>' },
   { tab: 'Timesheets', q: 'The orange dot: the email didn\'t go', a: '<p>The timesheet is saved, but the email to the office didn\'t go. Open it to see why.</p><p>Press <b>Send email to the office</b> to send it yourself, or <b>Send unsent emails</b> at the top for all of them (the last 31 days). It goes from your email, marked "sent by" you, and the engineer gets their copy.</p><p>If a Microsoft window opens, choose your work account.</p>' },
+  { tab: 'Timesheets', q: 'They sent it the old way, but it shows as missing', a: '<p>Tap the red <b>Missing</b> box. Tick the days the office already has (tick a week, or <b>Tick all</b>), add a note if you like, and press <b>Mark</b>.</p><p>Those days stop showing as missing, for you and for them, and no reminders go for them.</p><p>Got it wrong? Tap the pale green box and press <b>Remove mark</b>.</p>' },
   { tab: 'Timesheets', q: 'How do I chase missing timesheets?', a: '<p>Press <b>Send reminders</b>. You see who\'s missing which days first, and each person gets their own email from you.</p>' },
   { tab: 'Timesheets', q: 'Why isn\'t someone on the list?', a: '<p>Only people with <b>Fills in timesheets</b> ticked in Management are shown.</p>' },
   { tab: 'Leave', q: 'How do I approve holiday?', a: '<p>It\'s at the top under <b>To approve</b>.</p><p>If they\'re on call in that time, press <b>Details and cover</b> and pick who\'s covering each shift (from the printed sheet). Leave it as "No change" if they sorted it themselves.</p><p>Press <b>Approve</b>. The rota changes, it goes in the work diary, and they get an email.</p>' },
@@ -2131,6 +2257,8 @@ async function loadLeaveData() {
 // ---- wiring ----
 document.addEventListener('click', e => {
   const o = e.target.closest('[data-open]'); if (o && !e.target.closest('.overlay')) { openSheet(o.dataset.open); return; }
+  const mk = e.target.closest('[data-miss]'); if (mk) { const [em, dt] = mk.dataset.miss.split('|'); openMarkDialog(em, dt); return; }
+  const rc = e.target.closest('[data-recv]'); if (rc) { openRecvDialog(rc.dataset.recv); return; }
   const w = e.target.closest('[data-wk]'); if (w) { weekStart = addDays(weekStart, 7 * +w.dataset.wk); renderGrid(); return; }
   const tk = e.target.closest('[data-tidy]');
   if (tk) { tidyKind = tk.dataset.tidy; document.querySelectorAll('[data-tidy]').forEach(b => b.classList.toggle('on', b === tk)); $('tidyQ').value = ''; loadTidy(); }
@@ -2184,7 +2312,7 @@ onAuthStateChanged(auth, async user => {
     const snap = await getDocs(collection(db, 'timesheets'));
     RECS = []; snap.forEach(d => RECS.push(Object.assign({ id: d.id }, d.data())));
   } catch (e) { $('grid').innerHTML = `<div class="empty">Couldn't load timesheets (${esc(report('load', 'Timesheets didn\'t load', e))}).</div>`; }
-  await loadLeaveData();
+  await Promise.all([loadLeaveData(), loadReceived()]);
   renderGrid();
   updateLeaveCount();
   loadLogo();

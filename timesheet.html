@@ -139,6 +139,7 @@
   .cal .c.done{background:var(--green-bg); border-color:var(--green-line); color:var(--green);}
   .cal .c.off{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue);}
   .cal .c.miss{background:var(--red-tint); border-color:var(--bad-line); color:var(--red-dark);}
+  .cal .c.recv{background:#eef2ec; border:1px dashed #c9d4c4; color:#56704f;}   /* v6.0: received another way */
   .cal .c.today{box-shadow:0 0 0 2px var(--ink) inset;}
   .cal .c.future{opacity:.65;}
   .cal .c .dot{position:absolute; top:8px; right:8px; width:10px; height:10px; border-radius:50%; background:#e8a317;}
@@ -206,7 +207,7 @@
       <img src="sw-logo-white.png" alt="Simpson &amp; Wood">
       <div>
         <h1>Timesheet</h1>
-        <p id="versionLabel">v5.0</p>
+        <p id="versionLabel">v6.0</p>
       </div>
     </a>
     <div class="right">
@@ -325,6 +326,10 @@ import {
 // not copies in this page.
 import * as SWS from './sw-shared.js';
 
+// v6.0 (25 Nov 2026): days the office has marked "received another way" (in
+// Timesheets & leave) aren't missing and show as Received. Sending one later
+// makes it version 2, marked AMENDED. Also: pressing Send on a blank form for
+// a day that's already been sent asks first ("Do you want this to replace it?").
 // v5.0 (28 Oct 2026): the email fix. Timesheets saved but the email never went,
 // with no error, on iPhones: the Microsoft window opened only after the save
 // had waited for the server, so the phone blocked it, and the fallback (going
@@ -337,7 +342,7 @@ import * as SWS from './sw-shared.js';
 // Also (agreed 28 Oct, same release): a warning if the day hasn't finished
 // yet, opening on the last working day before midday, and the date big above
 // the hours.
-const VERSION = 'v5.0';
+const VERSION = 'v6.0';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5foKhRfIMG91bD5QyT7hHd1XBbeQGucw",
@@ -489,6 +494,7 @@ let lastStatus = null;  // what the send panel is showing
 // v4.3: approved leave (from the Leave & on-call app) and Christmas shutdown
 // days. A full day of either never counts as a missing timesheet.
 let MYLEAVE = new Map();   // date -> { type, part }
+let MYRECV = new Map();    // v6.0: date -> "received another way" mark from the office
 let SHUTDOWN = {};         // year -> [dates]
 const isShutdown = d => (SHUTDOWN[d.slice(0, 4)] || []).includes(d);
 const LEAVE_LETTER = { holiday: 'H', sick: 'S', training: 'T', other: 'O' };
@@ -508,7 +514,7 @@ function defaultDate() {
   for (let k = 0; k < 14; k++, d = addDays(d, -1)) {
     const w = dow(d);
     if (w === 0 || w === 6 || BANK_HOLIDAYS[d] || isShutdown(d) || (!TEST && bookedFull(d))) continue;
-    return recordFor(d) ? today : d;
+    return (recordFor(d) || (!TEST && MYRECV.has(d))) ? today : d;
   }
   return today;
 }
@@ -601,6 +607,7 @@ function missingDays() {
   for (let d = from; d < today; d = addDays(d, 1)) {
     const w = dow(d);
     if (w === 0 || w === 6 || BANK_HOLIDAYS[d] || isShutdown(d) || (!TEST && bookedFull(d))) continue;
+    if (!TEST && MYRECV.has(d)) continue;          // v6.0: the office has it another way
     if (!have.has(d)) out.push(d);
   }
   return out;
@@ -1106,9 +1113,14 @@ function saveRecord(rec) {
   if (viewingAs()) throw new Error(SWS.SW_VA_MSG);
   const id = recordId(rec.date);
   const existing = MINE.find(r => r.id === id);
-  const v = existing ? (existing.version || 1) + 1 : 1;
+  // v6.0: if the office marked this day "received another way", that counts
+  // as version 1, so this one is version 2 and goes as AMENDED.
+  const mark = !existing && !TEST ? MYRECV.get(rec.date) : null;
+  const v = existing ? (existing.version || 1) + 1 : mark ? 2 : 1;
   const nowIso = new Date().toISOString();
-  const history = [...((existing && existing.history) || []), { v, at: nowIso, by: ME.email, byName: ME.name }];
+  const before = existing ? (existing.history || [])
+    : mark ? [{ v: 1, received: true, at: mark.at || nowIso, by: mark.by || '', byName: mark.byName || '', note: mark.note || '' }] : [];
+  const history = [...before, { v, at: nowIso, by: ME.email, byName: ME.name }];
   const full = Object.assign({}, rec, {
     version: v, history, updatedAt: serverTimestamp(), updatedBy: ME.email,
     createdAt: existing && existing.createdAt ? existing.createdAt : serverTimestamp(),
@@ -1380,7 +1392,7 @@ function emailHTML(rec) {
   const td = 'padding:5px 14px 5px 0;border-bottom:1px solid #e5e5e5';
   let h = `<div style="${st}">`;
   if (rec.testData) h += `<p style="color:#5a3d8a;font-weight:bold">TEST — not a real timesheet.</p>`;
-  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. This replaces the timesheet sent earlier for this day.</p>`;
+  if (amended) h += `<p style="color:#D0222A;font-weight:bold;font-size:16px">AMENDED — version ${rec.version}. ${(rec.history || []).some(x => x.received) && rec.version === 2 ? 'This day was marked as received another way (not through the app).' : 'This replaces the timesheet sent earlier for this day.'}</p>`;
   h += `<p style="font-size:16px"><b>${esc(rec.engineerName)}</b> — ${esc(longDate(rec.date))}</p>`;
   if (rec.kind === 'off') {
     h += `<p style="font-size:16px">Not working: <b>${esc(REASONS[rec.offReason] || rec.offReason)}</b></p>`;
@@ -1533,14 +1545,27 @@ async function onSend() {
       if (!ok) return;
     }
   }
-  if (!state.editing) {
+  // v6.0 (agreed 25 Nov): a blank form for a day that's already been sent
+  // (e.g. straight after sending) asks before replacing it.
+  const already = !state.editing && recordFor(state.date);
+  const marked = !state.editing && !already && !TEST && MYRECV.has(state.date);
+  if (already) {
+    const ok = await modal({ title: `You've already sent ${shortDate(state.date)}`, body: '<p>Do you want this to replace it?</p><p>The office gets it marked <b>AMENDED</b>. The old one is kept.</p>',
+      buttons: [{ label: 'Go back', value: false }, { label: 'Replace it', value: true, primary: true }] });
+    if (!ok) return;
+  } else if (marked) {
+    const ok = await modal({ title: `The office already has ${shortDate(state.date)}`, body: '<p>They\'ve marked it as received another way. Send this one too?</p><p>The office gets it marked <b>AMENDED</b>.</p>',
+      buttons: [{ label: 'Go back', value: false }, { label: 'Send it', value: true, primary: true }] });
+    if (!ok) return;
+  }
+  if (!state.editing && !already && !marked) {
     const earlier = missingDays().filter(d => d < state.date);
     if (earlier.length) {
       const ok = await modal({ title: 'Earlier days still to do', body: `<p>You haven't done ${earlier.length === 1 ? 'this day' : 'these days'} yet:</p><p><b>${earlier.map(d => esc(shortDate(d))).join(', ')}</b></p><p>You can send this one now, but you'll still need to do ${earlier.length === 1 ? 'that one' : 'those'}.</p>`,
         buttons: [{ label: 'Go back', value: false }, { label: 'Send this one anyway', value: true, primary: true }] });
       if (!ok) return;
     }
-  } else {
+  } else if (state.editing) {
     const ok = await modal({ title: 'Send the amended timesheet?', body: `<p>This replaces version ${state.editing.version} for ${esc(shortDate(state.date))}. The office gets a new email marked <b>AMENDED</b> with new PDFs. The old version is kept.</p>`,
       buttons: [{ label: 'Go back', value: false }, { label: 'Send amended', value: true, primary: true }] });
     if (!ok) return;
@@ -1588,6 +1613,8 @@ function renderCalendar() {
     } else if (!TEST && bookedFull(date)) {
       const l = MYLEAVE.get(date);
       cls.push('off'); parts.push(`<span class="v">${LEAVE_LETTER[l.type] || 'L'}</span><span class="s">${esc(LEAVE_WORD[l.type] || 'Leave')} (booked)</span>`);
+    } else if (!TEST && MYRECV.has(date)) {
+      cls.push('recv'); parts.push('<span class="v"><i class="ti ti-check"></i></span><span class="s">Received</span>');
     } else if (missing.has(date)) {
       cls.push('miss'); parts.push('<span class="v">!</span><span class="s">Missing</span>');
     } else if (isShutdown(date)) {
@@ -1603,7 +1630,7 @@ function renderCalendar() {
   const label = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   return `<div class="cal-h"><button type="button" data-calmove="-1" aria-label="Previous month">‹</button><h3>${esc(label)}</h3><button type="button" data-calmove="1" aria-label="Next month">›</button></div>
     <div class="cal">${html}</div>
-    <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working (H holiday · S sick · D day off) or booked leave</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>`;
+    <div class="legend"><span><i style="background:var(--green-bg)"></i>Done (hours)</span><span><i style="background:var(--blue-bg)"></i>Not working (H holiday · S sick · D day off) or booked leave</span><span><i style="background:var(--red-tint)"></i>Missing</span><span><i style="background:#eef2ec;border:1px dashed #c9d4c4"></i>Received (the office has it another way)</span><span><i style="background:#e8a317;border-radius:50%"></i>Email not sent</span></div>`;
 }
 function renderMine() {
   const box = $('mineList');
@@ -1617,7 +1644,7 @@ function renderMine() {
     const tags = [(r.version || 1) > 1 ? `<span class="tag warn">Amended · v${r.version}</span>` : '',
       sent ? '' : '<span class="tag bad">Email not sent</span>',
       r.testData ? '<span class="tag test">Test</span>' : ''].join('');
-    const hist = openHist.has(r.id) ? `<div class="hist">${(r.history || []).map(h => `<div>Version ${h.v}: ${h.v === 1 ? 'sent' : 'amended'} ${esc(new Date(h.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} by ${esc(h.byName || h.by)}</div>`).join('') || 'No history recorded.'}</div>` : '';
+    const hist = openHist.has(r.id) ? `<div class="hist">${(r.history || []).map(h => `<div>Version ${h.v}: ${h.received ? 'received by the office another way, marked' : h.v === 1 ? 'sent' : 'amended'} ${esc(new Date(h.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} by ${esc(h.byName || h.by)}</div>`).join('') || 'No history recorded.'}</div>` : '';
     return `<div class="trow"><div class="d"><b>${esc(shortDate(r.date))}</b><span>${r.date.slice(0, 4)}</span></div>
       <div class="what">${what}<div>${tags}</div></div>
       <div class="acts">${!sent ? `<button type="button" class="mini" data-send="${esc(r.id)}" style="color:var(--red)">Send email</button>` : ''}
@@ -1692,6 +1719,13 @@ async function loadLeave() {
     if (st.exists()) SHUTDOWN = st.data().shutdown || {};
   } catch (e) { console.warn('leave not loaded', e); report('load', 'Booked leave didn\'t load', e); }
 }
+// v6.0: days the office has marked "received another way".
+async function loadReceived() {
+  try {
+    const snap = await getDocs(query(collection(db, 'timesheetReceived'), where('engineerEmail', '==', ME.email)));
+    MYRECV = new Map(); snap.forEach(d => { const x = d.data(); if (x.date) MYRECV.set(x.date, x); });
+  } catch (e) { console.warn('received marks not loaded', e); report('load', '"Received another way" marks didn\'t load', e); }
+}
 async function loadCustomers() {
   const names = new Map();
   try {
@@ -1722,7 +1756,10 @@ const NEWS_ALL = [
   'If the email to the office doesn\'t go, a <b>red box</b> at the top of the page now says which days, with a button to send each one.',
   'No signal? You can still press <b>Send</b>. Your timesheet is kept on your phone, and a <b>yellow bar</b> shows until it\'s reached the office\'s records. Then send the email from the red box once you have signal.'
 ];
-const NEWS = { engineer: NEWS_ALL, office: NEWS_ALL, management: NEWS_ALL };
+// v6.0: nothing new to announce on this page (agreed 25 Nov: the What's New
+// for "received another way" is on Timesheets & leave only).
+void NEWS_ALL;
+const NEWS = {};
 const HELP = [
   { tab: 'Timesheet', q: 'How do I fill in my timesheet?', a: '<p>1. Check the <b>date</b> and pick <b>Working</b>. In the morning it opens on your last working day; after midday, on today.</p><p>2. For each job, put in the <b>customer</b>, the <b>start and finish</b> times (tap the hour, then the minutes), what you did, and any materials from stores.</p><p>3. Press <b>Add another job</b> for the next one.</p><p>4. Press <b>Send timesheet</b>. It goes to the office from your own email, and you get a copy.</p>' },
   { tab: 'Timesheet', q: 'I wasn\'t working that day', a: '<p>Pick <b>Not working</b>, then Holiday, Sick, Day off or Bank holiday, and press Send.</p><p>Holiday the office has already approved shows as booked, so you don\'t need to send anything for it.</p>' },
@@ -1730,7 +1767,8 @@ const HELP = [
   { tab: 'Timesheet', q: 'A Microsoft window popped up when I pressed Send', a: '<p>That\'s Microsoft checking it\'s you, because the email goes from your own account. Choose your work account. It usually just flashes up and closes.</p>' },
   { tab: 'Timesheet', q: 'What\'s the yellow bar?', a: '<p>Your timesheet is saved on your phone but hasn\'t reached the office\'s records yet, usually because there\'s no signal. Keep the app open with signal and it goes on its own.</p><p>Don\'t clear the app or delete it while the bar is showing.</p>' },
   { tab: 'Timesheet', q: 'Why does it say I\'ve missed some days?', a: '<p>Those weekdays have no timesheet yet. Tap a day to fill it in. If you were off, choose <b>Not working</b>.</p>' },
-  { tab: 'My timesheets', q: 'What do the colours mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. <b>Grey</b>: a weekend or bank holiday. An <b>orange dot</b> means the email hasn\'t gone yet.</p>' },
+  { tab: 'My timesheets', q: 'What do the colours mean?', a: '<p><b>Green</b>: done, with the hours. <b>Blue</b>: not working, or holiday that\'s booked. <b>Red</b>: missing. <b>Pale green with a tick</b>: the office already has it another way, so you don\'t need to do it. <b>Grey</b>: a weekend or bank holiday. An <b>orange dot</b> means the email hasn\'t gone yet.</p>' },
+  { tab: 'Timesheet', q: 'It says I\'ve already sent this day', a: '<p>You\'ve already sent a timesheet for that day. Press <b>Replace it</b> if this one is right, and the office gets it marked as amended. Press <b>Go back</b> if you meant a different day, and change the date.</p>' },
   { tab: 'My timesheets', q: 'I made a mistake on a timesheet', a: '<p>Tap the day, change it, and send it again. The office gets the new one, marked as amended.</p>' },
   { tab: 'My timesheets', q: 'It says the email wasn\'t sent', a: '<p>Your timesheet is saved. Tap the day in the <b>red box</b> at the top of the Timesheet page (or <b>Send email</b> on that day here) to try again. If a Microsoft window opens, choose your work account.</p><p>The message says why it didn\'t go, for example no signal.</p>' }
 ];
@@ -1757,7 +1795,7 @@ onAuthStateChanged(auth, async user => {
   } catch (e) { console.error('staff lookup failed', e); report('load', 'Your staff record didn\'t load', e); }
   $('whoName').textContent = ME.name;
   try { await loadMine(); } catch (e) { console.error('could not load my timesheets', e); report('load', 'My timesheets didn\'t load', e); }
-  await Promise.all([loadCustomers(), loadGear(), loadLogo(), loadLeave()]);
+  await Promise.all([loadCustomers(), loadGear(), loadLogo(), loadLeave(), loadReceived()]);
   const draft = loadDraft();
   if (draft) {
     state = draft.state;
